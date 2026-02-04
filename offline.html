@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Нет соединения</title>
+
+  <!-- просто подключаем нужные стили -->
+  <link rel="stylesheet" href="/css/fa-styles.css">
+  <link rel="stylesheet" href="/css/fa-purged.css">
+  <link rel="stylesheet" href="/css/account-styles.css">
+  <style>
+    /* минимальное «утилизированное» переопределение – без новых стилей */
+    html,body{height:100%;margin:0;background:var(--bg-light)}
+  </style>
+</head>
+
+<body class="reservation"> <!-- забираем фон из reservation -->
+
+  <div class="account-container" style="height:100%;justify-content:center;text-align:center">
+    <div class="section-header">
+      <i class="fas fa-wifi-slash" style="font-size:72px;color:var(--accent-color)"></i>
+      <h2 style="margin-top:20px">Сеть недоступна</h2>
+      <p>Проверьте подключение к интернету и попробуйте снова.</p>
+
+      <button class="btn"
+              onclick="location.reload()">
+        <i class="fas fa-redo"></i> Обновить
+      </button>
+    </div>
+  </div>
+
+</body>
+</html>
