@@ -21,7 +21,15 @@ $activeCategory = $_COOKIE['activeMenuCategory'] ?? $categories[0]['category'];
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
 
     <!-- Preloader - мгновенная загрузка -->
-    
+    <style>
+        .cart-item-image {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            transition: none;
+        }
+    </style>
+
 </head>
 
 <body id="body">
