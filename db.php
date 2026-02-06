@@ -1,20 +1,27 @@
 <?php
-// Проверка пути к config.php
-require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../config_copy.php';
+
+if (file_exists(__DIR__ . '/QueryCache.php')) {
+    require_once __DIR__ . '/QueryCache.php';
+}
 
 class Database
 {
     private $connection;
     private static $instance = null;
     private $preparedStatements = [];
+    private $useQueryCache = true;
+    private $queryCache = null;
 
-    // Приватный конструктор (Singleton)
     private function __construct()
     {
         $this->connect();
+        
+        if ($this->useQueryCache && class_exists('QueryCache')) {
+            $this->queryCache = QueryCache::getInstance();
+        }
     }
 
-    // Получение экземпляра класса
     public static function getInstance()
     {
         if (self::$instance === null) {
@@ -23,24 +30,33 @@ class Database
         return self::$instance;
     }
 
-/**
- * Возвращает единственное значение (первую колонку первой строки).
- * $sql  – запрос с плейсхолдерами
- * $params – массив параметров
- */
     public function scalar(string $sql, array $params = [])
     {
+        if ($this->useQueryCache && $this->queryCache) {
+            $cacheKey = QueryCache::generateKey($sql, $params);
+            $cached = $this->queryCache->get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+        
         try {
             $stmt = $this->prepareCached($sql);
             $stmt->execute($params);
-            return $stmt->fetchColumn();
+            $result = $stmt->fetchColumn();
+            
+            if ($this->useQueryCache && $this->queryCache && $result !== false) {
+                $cacheKey = QueryCache::generateKey($sql, $params);
+                $this->queryCache->set($cacheKey, $result, 60);
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("scalar() PDO error: " . $e->getMessage());
             return null;
         }
     }
 
-    // Подключение к базе данных
     private function connect()
     {
         try {
@@ -52,14 +68,14 @@ class Database
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                     PDO::ATTR_EMULATE_PREPARES => false,
-                    PDO::ATTR_PERSISTENT => false,
+                    PDO::ATTR_PERSISTENT => true,
+                    PDO::ATTR_TIMEOUT => 5,
                     PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
                     PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
                     PDO::MYSQL_ATTR_COMPRESS => true
                 ]
             );
             
-            // Устанавливаем SQL режим для совместимости
             $this->connection->exec("SET sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
             $this->connection->exec("SET time_zone='+03:00'");
             
@@ -70,7 +86,6 @@ class Database
         }
     }
 
-    // Метод для получения подготовленного выражения с кешированием
     private function prepareCached($sql)
     {
         if (!isset($this->preparedStatements[$sql])) {
@@ -79,9 +94,46 @@ class Database
         return $this->preparedStatements[$sql];
     }
 
-    // Методы для работы с меню
+    private function invalidateMenuCache()
+    {
+        if ($this->queryCache) {
+            $this->queryCache->invalidate('/^menu_/');
+            $this->queryCache->invalidate('/^product_/');
+            $this->queryCache->invalidate('/^categories_/');
+        }
+    }
+
+    private function invalidateOrderCache($orderId = null)
+    {
+        if ($this->queryCache) {
+            if ($orderId) {
+                $this->queryCache->remove('order_' . $orderId);
+            }
+            $this->queryCache->invalidate('/^order_/');
+        }
+    }
+
+    private function invalidateUserCache($userId = null)
+    {
+        if ($this->queryCache) {
+            if ($userId) {
+                $this->queryCache->remove('user_' . $userId);
+            }
+            $this->queryCache->invalidate('/^user_/');
+        }
+    }
+
     public function getProductById($id)
     {
+        $cacheKey = 'product_' . $id;
+        
+        if ($this->useQueryCache && $this->queryCache) {
+            $cached = $this->queryCache->get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+        
         try {
             $stmt = $this->prepareCached(
                 "SELECT id, name, description, composition, price, image, 
@@ -90,7 +142,13 @@ class Database
             );
             $stmt->bindValue(':id', $id, PDO::PARAM_INT);
             $stmt->execute();
-            return $stmt->fetch();
+            $result = $stmt->fetch();
+            
+            if ($this->useQueryCache && $this->queryCache && $result !== false) {
+                $this->queryCache->set($cacheKey, $result, 300);
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("getProductById Error: " . $e->getMessage());
             return false;
@@ -99,6 +157,15 @@ class Database
 
     public function getOrderById($orderId)
     {
+        $cacheKey = 'order_' . $orderId;
+        
+        if ($this->useQueryCache && $this->queryCache) {
+            $cached = $this->queryCache->get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+        
         try {
             $stmt = $this->prepareCached("
                 SELECT o.id, o.user_id, o.items, o.total, o.status, 
@@ -118,6 +185,10 @@ class Database
                 }
             }
             
+            if ($this->useQueryCache && $this->queryCache && $order !== false) {
+                $this->queryCache->set($cacheKey, $order, 180);
+            }
+            
             return $order;
         } catch (PDOException $e) {
             error_log("getOrderById Error: " . $e->getMessage());
@@ -127,6 +198,15 @@ class Database
 
     public function getMenuItems($category = null)
     {
+        $cacheKey = QueryCache::generateMenuKey($category);
+        
+        if ($this->useQueryCache && $this->queryCache) {
+            $cached = $this->queryCache->get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+        
         try {
             $sql = "SELECT id, name, description, composition, price, image, 
                    calories, protein, fat, carbs, category, available 
@@ -142,7 +222,13 @@ class Database
                 $stmt->bindValue(':category', $category, PDO::PARAM_STR);
             }
             $stmt->execute();
-            return $stmt->fetchAll();
+            $result = $stmt->fetchAll();
+            
+            if ($this->useQueryCache && $this->queryCache) {
+                $this->queryCache->set($cacheKey, $result, 300);
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("getMenuItems Error: " . $e->getMessage());
             return [];
@@ -182,7 +268,7 @@ class Database
 
             $stmt = $this->prepareCached($sql);
 
-            return $stmt->execute([
+            $result = $stmt->execute([
                 ':name' => $name,
                 ':description' => $description,
                 ':composition' => $composition,
@@ -196,6 +282,12 @@ class Database
                 ':available' => $available,
                 ':id' => $id
             ]);
+            
+            if ($result) {
+                $this->invalidateMenuCache();
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("updateMenuItems Error: " . $e->getMessage());
             return false;
@@ -204,19 +296,33 @@ class Database
 
     public function getUniqueCategories()
     {
+        $cacheKey = QueryCache::generateCategoriesKey();
+        
+        if ($this->useQueryCache && $this->queryCache) {
+            $cached = $this->queryCache->get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+        
         try {
             $stmt = $this->prepareCached(
                 "SELECT DISTINCT category FROM menu_items WHERE available = 1 ORDER BY category"
             );
             $stmt->execute();
-            return $stmt->fetchAll();
+            $result = $stmt->fetchAll();
+            
+            if ($this->useQueryCache && $this->queryCache) {
+                $this->queryCache->set($cacheKey, $result, 600);
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("getUniqueCategories Error: " . $e->getMessage());
             return [];
         }
     }
 
-    // Методы для работы с пользователями
     public function createUser($email, $passwordHash, $name, $phone, $verificationToken)
     {
         try {
@@ -234,7 +340,11 @@ class Database
                 ':phone' => $phone ?: null,
                 ':verification_token' => $verificationToken
             ]);
-            return $this->connection->lastInsertId();
+            $userId = $this->connection->lastInsertId();
+            
+            $this->invalidateUserCache($userId);
+            
+            return $userId;
         } catch (PDOException $e) {
             error_log("createUser Error: " . $e->getMessage());
             return false;
@@ -245,7 +355,13 @@ class Database
     {
         try {
             $stmt = $this->prepareCached("UPDATE users SET menu_view = ? WHERE id = ?");
-            return $stmt->execute([$view, $userId]);
+            $result = $stmt->execute([$view, $userId]);
+            
+            if ($result) {
+                $this->invalidateUserCache($userId);
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("updateMenuView Error: " . $e->getMessage());
             return false;
@@ -254,6 +370,15 @@ class Database
 
     public function getUniqueOrderStatuses()
     {
+        $cacheKey = 'order_statuses';
+        
+        if ($this->useQueryCache && $this->queryCache) {
+            $cached = $this->queryCache->get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+        
         try {
             $stmt = $this->prepareCached(
                 "SELECT DISTINCT status FROM orders ORDER BY 
@@ -267,7 +392,13 @@ class Database
                  END"
             );
             $stmt->execute();
-            return $stmt->fetchAll();
+            $result = $stmt->fetchAll();
+            
+            if ($this->useQueryCache && $this->queryCache) {
+                $this->queryCache->set($cacheKey, $result, 300);
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("getUniqueOrderStatuses Error: " . $e->getMessage());
             return [];
@@ -288,13 +419,13 @@ class Database
                 ORDER BY o.created_at DESC
             ");
             $stmt->execute();
-
+ 
             $orders = $stmt->fetchAll();
-
+ 
             foreach ($orders as &$order) {
                 $order['items'] = json_decode($order['items'], true);
             }
-
+ 
             return $orders;
         } catch (PDOException $e) {
             error_log("getAllOrders Error: " . $e->getMessage());
@@ -321,11 +452,26 @@ class Database
 
     public function getOrderStatus($orderId)
     {
+        $cacheKey = 'order_status_' . $orderId;
+        
+        if ($this->useQueryCache && $this->queryCache) {
+            $cached = $this->queryCache->get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+        
         try {
             $stmt = $this->prepareCached("SELECT status FROM orders WHERE id = :id");
             $stmt->bindValue(':id', $orderId, PDO::PARAM_INT);
             $stmt->execute();
-            return $stmt->fetchColumn();
+            $result = $stmt->fetchColumn();
+            
+            if ($this->useQueryCache && $this->queryCache) {
+                $this->queryCache->set($cacheKey, $result, 60);
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("getOrderStatus Error: " . $e->getMessage());
             return false;
@@ -361,6 +507,9 @@ class Database
             ]);
 
             $this->connection->commit();
+            
+            $this->invalidateOrderCache($orderId);
+            
             return true;
         } catch (Throwable $e) {
             $this->connection->rollBack();
@@ -371,12 +520,27 @@ class Database
 
     public function getUserByEmail($email)
     {
+        $cacheKey = 'user_email_' . md5($email);
+        
+        if ($this->useQueryCache && $this->queryCache) {
+            $cached = $this->queryCache->get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+        
         try {
             $stmt = $this->prepareCached(
                 "SELECT * FROM users WHERE email = :email LIMIT 1"
             );
             $stmt->execute([':email' => $email]);
-            return $stmt->fetch();
+            $result = $stmt->fetch();
+            
+            if ($this->useQueryCache && $this->queryCache) {
+                $this->queryCache->set($cacheKey, $result, 300);
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("getUserByEmail Error: " . $e->getMessage());
             return false;
@@ -385,13 +549,28 @@ class Database
 
     public function getUserById($id)
     {
+        $cacheKey = 'user_' . $id;
+        
+        if ($this->useQueryCache && $this->queryCache) {
+            $cached = $this->queryCache->get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+        
         try {
             $stmt = $this->prepareCached(
                 "SELECT id, email, name, phone, is_active, role, menu_view
                  FROM users WHERE id = :id LIMIT 1"
             );
             $stmt->execute([':id' => $id]);
-            return $stmt->fetch();
+            $result = $stmt->fetch();
+            
+            if ($this->useQueryCache && $this->queryCache) {
+                $this->queryCache->set($cacheKey, $result, 300);
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("getUserById Error: " . $e->getMessage());
             return false;
@@ -400,13 +579,28 @@ class Database
 
     public function getAllUsers()
     {
+        $cacheKey = 'all_users';
+        
+        if ($this->useQueryCache && $this->queryCache) {
+            $cached = $this->queryCache->get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+        
         try {
             $stmt = $this->prepareCached(
                 "SELECT id, email, name, phone, is_active, role, menu_view
                  FROM users WHERE id != 999999 ORDER BY id"
             );
             $stmt->execute();
-            return $stmt->fetchAll();
+            $result = $stmt->fetchAll();
+            
+            if ($this->useQueryCache && $this->queryCache) {
+                $this->queryCache->set($cacheKey, $result, 60);
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("getAllUsers Error: " . $e->getMessage());
             return false;
@@ -519,6 +713,9 @@ class Database
             $stmt->execute([':token' => $token]);
 
             $this->connection->commit();
+            
+            $this->invalidateUserCache($user['id']);
+            
             return 'success';
         } catch (PDOException $e) {
             $this->connection->rollBack();
@@ -536,7 +733,13 @@ class Database
                     reset_token_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR)
                 WHERE email = :email
             ");
-            return $stmt->execute([':token' => $token, ':email' => $email]);
+            $result = $stmt->execute([':token' => $token, ':email' => $email]);
+            
+            if ($result) {
+                $this->invalidateUserCache();
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("setPasswordResetToken Error: " . $e->getMessage());
             return false;
@@ -550,7 +753,7 @@ class Database
                     calories, protein, fat, carbs, category, available) 
                     VALUES (:n, :d, :cmp, :p, :i, :cal, :prot, :fat, :carb, :c, :a)";
             $stmt = $this->prepareCached($sql);
-            return $stmt->execute([
+            $result = $stmt->execute([
                 ':n' => $name,
                 ':d' => $description,
                 ':cmp' => $composition,
@@ -563,6 +766,12 @@ class Database
                 ':c' => $category,
                 ':a' => $available
             ]);
+            
+            if ($result) {
+                $this->invalidateMenuCache();
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("addMenuItem Error: " . $e->getMessage());
             return false;
@@ -598,6 +807,9 @@ class Database
             ]);
 
             $this->connection->commit();
+            
+            $this->invalidateUserCache($user['id']);
+            
             return $result;
         } catch (PDOException $e) {
             $this->connection->rollBack();
@@ -675,6 +887,9 @@ class Database
             }
 
             $this->connection->commit();
+            
+            $this->invalidateMenuCache();
+            
             return true;
         } catch (Throwable $e) {
             $this->connection->rollBack();
@@ -692,11 +907,17 @@ class Database
                 SET name = :name, phone = :phone 
                 WHERE id = :id
             ");
-            return $stmt->execute([
+            $result = $stmt->execute([
                 ':name' => $name,
                 ':phone' => $phone ?: null,
                 ':id' => $userId
             ]);
+            
+            if ($result) {
+                $this->invalidateUserCache($userId);
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("updateUser Error: " . $e->getMessage());
             return false;
@@ -711,72 +932,26 @@ class Database
                 SET password_hash = :password_hash 
                 WHERE id = :id
             ");
-            return $stmt->execute([
+            $result = $stmt->execute([
                 ':password_hash' => $newPasswordHash,
                 ':id' => $userId
             ]);
+            
+            if ($result) {
+                $this->invalidateUserCache($userId);
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("updatePassword Error: " . $e->getMessage());
             return false;
         }
     }
 
-    public function createOrder($userId, $items, $total, $deliveryType = 'bar', $deliveryDetail = '')
-    {
-        try {
-            $this->connection->beginTransaction();
-
-            $stmt = $this->prepareCached("
-                INSERT INTO orders 
-                (user_id, items, total, status, delivery_type, delivery_details, created_at, updated_at) 
-                VALUES (:user_id, :items, :total, 'Приём', :delivery_type, :delivery_details, NOW(), NOW())
-            ");
-
-            $itemsJson = json_encode($items, JSON_UNESCAPED_UNICODE);
-            
-            $params = [
-                ':user_id' => $userId,
-                ':items' => $itemsJson,
-                ':total' => $total,
-                ':delivery_type' => $deliveryType,
-                ':delivery_details' => $deliveryDetail
-            ];
-
-            error_log("Executing with params: " . print_r($params, true));
-
-            $stmt->execute($params);
-            $orderId = $this->connection->lastInsertId();
-
-            $historyStmt = $this->prepareCached("
-                INSERT INTO order_status_history 
-                (order_id, status, changed_by, changed_at) 
-                VALUES (:order_id, 'Приём', :user_id, NOW()) 
-            ");
-            $historyStmt->execute([
-                ':order_id' => $orderId,
-                ':user_id' => $userId,
-            ]);
-
-            $this->connection->commit();
-            return $orderId;
-        } catch (PDOException $e) {
-            $this->connection->rollBack();
-            error_log("createOrder Error: " . $e->getMessage());
-            error_log("Error info: " . print_r($stmt->errorInfo(), true));
-            return false;
-        }
-    }
-
-    /**
-     * Создаёт гостевого пользователя (если ещё не существует) и возвращает его ID.
-     * @return int|false ID гостевого пользователя или false при ошибке
-     */
     private function ensureGuestUserExists()
     {
         try {
-            // Используем специальный ID, который не конфликтует с AUTO_INCREMENT
             $guestId = 999999;
-            // Проверяем, существует ли уже пользователь с этим id
             $stmt = $this->prepareCached("SELECT id FROM users WHERE id = ?");
             $stmt->execute([$guestId]);
             $existing = $stmt->fetchColumn();
@@ -786,7 +961,6 @@ class Database
             }
 
             error_log("Creating guest user with id: " . $guestId);
-            // Создаём гостевого пользователя с указанным id
             $stmt = $this->prepareCached("
                 INSERT INTO users (id, email, password_hash, name, phone, role, created_at)
                 VALUES (?, 'guest@system.local', '', 'Гость', '', 'guest', NOW())
@@ -801,584 +975,526 @@ class Database
     }
 
     public function getUserOrders($userId)
-{
-    try {
-        $stmt = $this->prepareCached("
-            SELECT o.id, o.items, o.total, o.status, o.delivery_type, o.delivery_details, 
-                   o.created_at, o.updated_at, o.last_updated_by,
-                   u.name as user_name, u.phone as user_phone,
-                   updater.name as updater_name
-            FROM orders o
-            JOIN users u ON o.user_id = u.id
-            LEFT JOIN users updater ON o.last_updated_by = updater.id
-            WHERE o.user_id = :user_id
-            ORDER BY o.created_at DESC
-        ");
-        $stmt->execute([':user_id' => $userId]);
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT o.id, o.items, o.total, o.status, o.delivery_type, o.delivery_details, 
+                       o.created_at, o.updated_at, o.last_updated_by,
+                       u.name as user_name, u.phone as user_phone,
+                       updater.name as updater_name
+                FROM orders o
+                JOIN users u ON o.user_id = u.id
+                LEFT JOIN users updater ON o.last_updated_by = updater.id
+                WHERE o.user_id = :user_id
+                ORDER BY o.created_at DESC
+            ");
+            $stmt->execute([':user_id' => $userId]);
 
-        $orders = $stmt->fetchAll();
+            $orders = $stmt->fetchAll();
 
-        foreach ($orders as &$order) {
-            $order['items'] = json_decode($order['items'], true);
+            foreach ($orders as &$order) {
+                $order['items'] = json_decode($order['items'], true);
+            }
+
+            return $orders;
+        } catch (PDOException $e) {
+            error_log("getUserOrders Error: " . $e->getMessage());
+            return [];
         }
-
-        return $orders;
-    } catch (PDOException $e) {
-        error_log("getUserOrders Error: " . $e->getMessage());
-        return [];
     }
-}
 
-    // Получение соединения PDO
-    public function getConnection()
+    public function getSalesReport($period = 'day')
     {
-        return $this->connection;
-    }
-
-    // Закрытие соединения
-    public function close()
-    {
-        $this->connection = null;
-        self::$instance = null;
-    }
-
-    // Деструктор
-    public function __destruct()
-    {
-        $this->close();
-    }
-
-    //Методы кабинета владельца
-/**
- * Получить отчет по продажам
- */
-public function getSalesReport($period = 'day')
-{
-    $intervals = [
-        'day' => '1 DAY',
-        'week' => '1 WEEK',
-        'month' => '1 MONTH',
-        'year' => '1 YEAR'
-    ];
-    
-    $interval = $intervals[$period] ?? '1 DAY';
-    
-    if ($period === 'day') {
-        // Для дня - показываем отдельные заказы
-        $sql = "SELECT 
-                    id as order_id,
-                    TIME(created_at) as time,
-                    total as total_revenue,
-                    (SELECT COUNT(*) 
-                     FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                         id INT PATH '$.id'
-                     )) j) as item_count
-                FROM orders
-                WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                AND status = 'завершён'
-                AND DAY(created_at) = DAY(NOW())
-                ORDER BY created_at DESC";
-    } else {
-        // Определяем формат даты и группировку в зависимости от периода
-        if ($period === 'year') {
-            // Для года - группировка по месяцам
-            $dateFormat = '%m.%Y';
-            $groupBy = 'YEAR(created_at), MONTH(created_at)';
-            $orderBy = 'YEAR(created_at) DESC, MONTH(created_at) DESC';
-            $selectDate = "DATE_FORMAT(created_at, '$dateFormat') as date";
-            $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                            AND YEAR(created_at) = YEAR(NOW())";
-        } elseif ($period === 'month') {
-            // Для месяца - группировка по неделям (только текущий месяц)
-            $groupBy = 'YEAR(created_at), WEEK(created_at, 1)';
-            $orderBy = 'YEAR(created_at) DESC, WEEK(created_at, 1) DESC';
-            $selectDate = "CONCAT('Неделя ', WEEK(created_at, 1), ' (', 
-                              DATE_FORMAT(DATE_ADD(created_at, INTERVAL -WEEKDAY(created_at) DAY), '%d.%m'), ' - ',
-                              DATE_FORMAT(DATE_ADD(created_at, INTERVAL 6-WEEKDAY(created_at) DAY), '%d.%m'), ')') as date";
-            $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval) 
-                            AND MONTH(created_at) = MONTH(NOW()) 
-                            AND YEAR(created_at) = YEAR(NOW())";
+        $intervals = [
+            'day' => '1 DAY',
+            'week' => '1 WEEK',
+            'month' => '1 MONTH',
+            'year' => '1 YEAR'
+        ];
+        
+        $interval = $intervals[$period] ?? '1 DAY';
+        
+        if ($period === 'day') {
+            $sql = "SELECT 
+                        id as order_id,
+                        TIME(created_at) as time,
+                        total as total_revenue,
+                        (SELECT COUNT(*) 
+                         FROM JSON_TABLE(items, '$[*]' COLUMNS(
+                             id INT PATH '$.id'
+                         )) j) as item_count
+                    FROM orders
+                    WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                    AND status = 'завершён'
+                    AND DAY(created_at) = DAY(NOW())
+                    ORDER BY created_at DESC";
         } else {
-            // Для недели - группировка по дням
-            $dateFormat = '%d.%m';
-            $groupBy = 'DATE(created_at)';
-            $orderBy = 'date DESC';
-            $selectDate = "DATE_FORMAT(created_at, '$dateFormat') as date";
-            $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                            AND MONTH(created_at) = MONTH(NOW()) 
-                            AND YEAR(created_at) = YEAR(NOW())";
+            if ($period === 'year') {
+                $dateFormat = '%m.%Y';
+                $groupBy = 'YEAR(created_at), MONTH(created_at)';
+                $orderBy = 'YEAR(created_at) DESC, MONTH(created_at) DESC';
+                $selectDate = "DATE_FORMAT(created_at, '$dateFormat') as date";
+                $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                                AND YEAR(created_at) = YEAR(NOW())";
+            } elseif ($period === 'month') {
+                $groupBy = 'YEAR(created_at), WEEK(created_at, 1)';
+                $orderBy = 'YEAR(created_at) DESC, WEEK(created_at, 1) DESC';
+                $selectDate = "CONCAT('Неделя ', WEEK(created_at, 1), ' (', 
+                                  DATE_FORMAT(DATE_ADD(created_at, INTERVAL -WEEKDAY(created_at) DAY), '%d.%m'), ' - ',
+                                  DATE_FORMAT(DATE_ADD(created_at, INTERVAL 6-WEEKDAY(created_at) DAY), '%d.%m'), ')') as date";
+                $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval) 
+                                AND MONTH(created_at) = MONTH(NOW()) 
+                                AND YEAR(created_at) = YEAR(NOW())";
+            } else {
+                $dateFormat = '%d.%m';
+                $groupBy = 'DATE(created_at)';
+                $orderBy = 'date DESC';
+                $selectDate = "DATE_FORMAT(created_at, '$dateFormat') as date";
+                $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                                AND MONTH(created_at) = MONTH(NOW()) 
+                                AND YEAR(created_at) = YEAR(NOW())";
+            }
+            
+            $sql = "SELECT 
+                        $selectDate,
+                        COUNT(*) as order_count,
+                        SUM(total) as total_revenue,
+                        AVG(total) as avg_order_value
+                    FROM orders
+                    WHERE $whereClause
+                    AND status = 'завершён'
+                    GROUP BY $groupBy
+                    ORDER BY $orderBy";
         }
         
-        $sql = "SELECT 
-                    $selectDate,
-                    COUNT(*) as order_count,
-                    SUM(total) as total_revenue,
-                    AVG(total) as avg_order_value
-                FROM orders
-                WHERE $whereClause
-                AND status = 'завершён'
-                GROUP BY $groupBy
-                ORDER BY $orderBy";
-    }
-    
-    try {
-        $stmt = $this->prepareCached($sql);
-        $stmt->execute();
-        
-        // Переименовываем колонку time в Время для дня
-        $result = $stmt->fetchAll();
-        if ($period === 'day' && !empty($result)) {
-            foreach ($result as &$row) {
-                if (isset($row['time'])) {
-                    $row['Время'] = $row['time'];
-                    unset($row['time']);
+        try {
+            $stmt = $this->prepareCached($sql);
+            $stmt->execute();
+            
+            $result = $stmt->fetchAll();
+            if ($period === 'day' && !empty($result)) {
+                foreach ($result as &$row) {
+                    if (isset($row['time'])) {
+                        $row['Время'] = $row['time'];
+                        unset($row['time']);
+                    }
                 }
             }
+            
+            return $result;
+        } catch (PDOException $e) {
+            error_log("getSalesReport Error: " . $e->getMessage());
+            return [];
         }
-        
-        return $result;
-    } catch (PDOException $e) {
-        error_log("getSalesReport Error: " . $e->getMessage());
-        return [];
     }
-}
 
-/**
- * Получить отчет по прибыли
- */
-public function getProfitReport($period = 'day')
-{
-    $intervals = [
-        'day' => '1 DAY',
-        'week' => '1 WEEK', 
-        'month' => '1 MONTH',
-        'year' => '1 YEAR'
-    ];
-    
-    $interval = $intervals[$period] ?? '1 DAY';
-    
-    if ($period === 'day') {
-        // Для дня - показываем отдельные заказы
-        $sql = "SELECT 
-                    id as order_id,
-                    TIME(created_at) as time,
-                    total as total_revenue,
-                    (SELECT SUM(mi.cost * (j.quantity)) 
-                     FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                         id INT PATH '$.id',
-                         quantity INT PATH '$.quantity'
-                     )) j
-                     JOIN menu_items mi ON mi.id = j.id) as total_expenses,
-                    total - (SELECT SUM(mi.cost * (j.quantity)) 
-                             FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                                 id INT PATH '$.id',
-                                 quantity INT PATH '$.quantity'
-                             )) j
-                             JOIN menu_items mi ON mi.id = j.id) as total_profit,
-                    ROUND(((total - (SELECT SUM(mi.cost * (j.quantity)) 
-                                   FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                                       id INT PATH '$.id',
-                                       quantity INT PATH '$.quantity'
-                                   )) j
-                                   JOIN menu_items mi ON mi.id = j.id)) / total) * 100, 2) as profitability_percent
-                FROM orders
-                WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                AND DAY(created_at) = DAY(NOW())
-                AND status = 'завершён'
-                ORDER BY created_at DESC";
-    } else {
-        // Определяем формат даты и группировку в зависимости от периода
-        if ($period === 'year') {
-            // Для года - группировка по месяцам
-            $dateFormat = '%m.%Y';
-            $groupBy = 'YEAR(created_at), MONTH(created_at)';
-            $orderBy = 'YEAR(created_at) DESC, MONTH(created_at) DESC';
-            $selectDate = "DATE_FORMAT(created_at, '$dateFormat') as date";
-            $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                            AND YEAR(created_at) = YEAR(NOW())";
-        } elseif ($period === 'month') {
-            // Для месяца - группировка по неделям (только текущий месяц)
-            $groupBy = 'YEAR(created_at), WEEK(created_at, 1)';
-            $orderBy = 'YEAR(created_at) DESC, WEEK(created_at, 1) DESC';
-            $selectDate = "CONCAT('Неделя ', WEEK(created_at, 1), ' (', 
-                              DATE_FORMAT(DATE_ADD(created_at, INTERVAL -WEEKDAY(created_at) DAY), '%d.%m'), ' - ',
-                              DATE_FORMAT(DATE_ADD(created_at, INTERVAL 6-WEEKDAY(created_at) DAY), '%d.%m'), ')') as date";
-            $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval) 
-                            AND MONTH(created_at) = MONTH(NOW()) 
-                            AND YEAR(created_at) = YEAR(NOW())";
+    public function getProfitReport($period = 'day')
+    {
+        $intervals = [
+            'day' => '1 DAY',
+            'week' => '1 WEEK', 
+            'month' => '1 MONTH',
+            'year' => '1 YEAR'
+        ];
+        
+        $interval = $intervals[$period] ?? '1 DAY';
+        
+        if ($period === 'day') {
+            $sql = "SELECT 
+                        id as order_id,
+                        TIME(created_at) as time,
+                        total as total_revenue,
+                        (SELECT SUM(mi.cost * (j.quantity)) 
+                         FROM JSON_TABLE(items, '$[*]' COLUMNS(
+                             id INT PATH '$.id',
+                             quantity INT PATH '$.quantity'
+                         )) j
+                         JOIN menu_items mi ON mi.id = j.id) as total_expenses,
+                        total - (SELECT SUM(mi.cost * (j.quantity)) 
+                                 FROM JSON_TABLE(items, '$[*]' COLUMNS(
+                                     id INT PATH '$.id',
+                                     quantity INT PATH '$.quantity'
+                                 )) j
+                                 JOIN menu_items mi ON mi.id = j.id) as total_profit,
+                        ROUND(((total - (SELECT SUM(mi.cost * (j.quantity)) 
+                                       FROM JSON_TABLE(items, '$[*]' COLUMNS(
+                                           id INT PATH '$.id',
+                                           quantity INT PATH '$.quantity'
+                                       )) j
+                                       JOIN menu_items mi ON mi.id = j.id)) / total) * 100, 2) as profitability_percent
+                    FROM orders
+                    WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                    AND DAY(created_at) = DAY(NOW())
+                    AND status = 'завершён'
+                    ORDER BY created_at DESC";
         } else {
-            // Для недели - группировка по дням
-            $dateFormat = '%d.%m';
-            $groupBy = 'DATE(created_at)';
-            $orderBy = 'date DESC';
-            $selectDate = "DATE_FORMAT(created_at, '$dateFormat') as date";
-            $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                            AND MONTH(created_at) = MONTH(NOW()) 
-                            AND YEAR(created_at) = YEAR(NOW())";
-        }
-        
-        $sql = "SELECT 
-                    $selectDate,
-                    COUNT(*) as order_count,
-                    SUM(total) as total_revenue,
-                    SUM((SELECT SUM(mi.cost * (j.quantity)) 
-                         FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                             id INT PATH '$.id',
-                             quantity INT PATH '$.quantity'
-                         )) j
-                         JOIN menu_items mi ON mi.id = j.id)) as total_expenses,
-                    SUM(total - (SELECT SUM(mi.cost * (j.quantity)) 
-                                 FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                                     id INT PATH '$.id',
-                                     quantity INT PATH '$.quantity'
-                                 )) j
-                                 JOIN menu_items mi ON mi.id = j.id)) as total_profit,
-                    ROUND((SUM(total - (SELECT SUM(mi.cost * (j.quantity)) 
-                                      FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                                          id INT PATH '$.id',
-                                          quantity INT PATH '$.quantity'
-                                      )) j
-                                      JOIN menu_items mi ON mi.id = j.id)) / SUM(total)) * 100, 2) as profitability_percent
-                FROM orders
-                WHERE $whereClause
-                AND status = 'завершён'
-                GROUP BY $groupBy
-                ORDER BY $orderBy";
-    }
-    
-    try {
-        $stmt = $this->prepareCached($sql);
-        $stmt->execute();
-        return $stmt->fetchAll();
-    } catch (PDOException $e) {
-        error_log("getProfitReport Error: " . $e->getMessage());
-        return [];
-    }
-}
-
-/**
- * Получить оперативность за период
- */
-public function getEfficiencyReport($period = 'day')
-{
-    $intervals = [
-        'day' => '1 DAY',
-        'week' => '1 WEEK',
-        'month' => '1 MONTH', 
-        'year' => '1 YEAR'
-    ];
-    
-    $interval = $intervals[$period] ?? '1 DAY';
-    
-    if ($period === 'day') {
-        // Для дня - показываем отдельные заказы
-        $sql = "SELECT 
-                    id as order_id,
-                    delivery_type,
-                    TIMESTAMPDIFF(MINUTE, created_at, updated_at) as time_minutes,
-                    total as total_revenue,
-                    (SELECT SUM(mi.cost * (j.quantity)) 
-                     FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                         id INT PATH '$.id',
-                         quantity INT PATH '$.quantity'
-                     )) j
-                     JOIN menu_items mi ON mi.id = j.id) as total_expenses,
-                    total - (SELECT SUM(mi.cost * (j.quantity)) 
+            if ($period === 'year') {
+                $dateFormat = '%m.%Y';
+                $groupBy = 'YEAR(created_at), MONTH(created_at)';
+                $orderBy = 'YEAR(created_at) DESC, MONTH(created_at) DESC';
+                $selectDate = "DATE_FORMAT(created_at, '$dateFormat') as date";
+                $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                                AND YEAR(created_at) = YEAR(NOW())";
+            } elseif ($period === 'month') {
+                $groupBy = 'YEAR(created_at), WEEK(created_at, 1)';
+                $orderBy = 'YEAR(created_at) DESC, WEEK(created_at, 1) DESC';
+                $selectDate = "CONCAT('Неделя ', WEEK(created_at, 1), ' (', 
+                                  DATE_FORMAT(DATE_ADD(created_at, INTERVAL -WEEKDAY(created_at) DAY), '%d.%m'), ' - ',
+                                  DATE_FORMAT(DATE_ADD(created_at, INTERVAL 6-WEEKDAY(created_at) DAY), '%d.%m'), ')') as date";
+                $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval) 
+                                AND MONTH(created_at) = MONTH(NOW()) 
+                                AND YEAR(created_at) = YEAR(NOW())";
+            } else {
+                $dateFormat = '%d.%m';
+                $groupBy = 'DATE(created_at)';
+                $orderBy = 'date DESC';
+                $selectDate = "DATE_FORMAT(created_at, '$dateFormat') as date";
+                $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                                AND MONTH(created_at) = MONTH(NOW()) 
+                                AND YEAR(created_at) = YEAR(NOW())";
+            }
+            
+            $sql = "SELECT 
+                        $selectDate,
+                        COUNT(*) as order_count,
+                        SUM(total) as total_revenue,
+                        SUM((SELECT SUM(mi.cost * (j.quantity)) 
                              FROM JSON_TABLE(items, '$[*]' COLUMNS(
                                  id INT PATH '$.id',
                                  quantity INT PATH '$.quantity'
                              )) j
-                             JOIN menu_items mi ON mi.id = j.id) as total_profit
-                FROM orders
-                WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                AND status = 'завершён'
-                ORDER BY created_at DESC";
-    } else {
-        // Для других периодов - группировка по типам доставки с СРЕДНИМ временем
-        $sql = "SELECT 
-                    delivery_type,
-                    FLOOR(AVG(TIMESTAMPDIFF(MINUTE, created_at, updated_at))) as avg_time_minutes,
-                    COUNT(*) as order_count,
-                    SUM(total) as total_revenue,
-                    SUM((SELECT SUM(mi.cost * (j.quantity)) 
+                             JOIN menu_items mi ON mi.id = j.id)) as total_expenses,
+                        SUM(total - (SELECT SUM(mi.cost * (j.quantity)) 
+                                     FROM JSON_TABLE(items, '$[*]' COLUMNS(
+                                         id INT PATH '$.id',
+                                         quantity INT PATH '$.quantity'
+                                     )) j
+                                     JOIN menu_items mi ON mi.id = j.id)) as total_profit,
+                        ROUND((SUM(total - (SELECT SUM(mi.cost * (j.quantity)) 
+                                          FROM JSON_TABLE(items, '$[*]' COLUMNS(
+                                              id INT PATH '$.id',
+                                              quantity INT PATH '$.quantity'
+                                          )) j
+                                          JOIN menu_items mi ON mi.id = j.id)) / SUM(total)) * 100, 2) as profitability_percent
+                    FROM orders
+                    WHERE $whereClause
+                    AND status = 'завершён'
+                    GROUP BY $groupBy
+                    ORDER BY $orderBy";
+        }
+        
+        try {
+            $stmt = $this->prepareCached($sql);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("getProfitReport Error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    // Добавляем остальные отчеты аналогично (getEfficiencyReport, getTopCustomers, getTopDishes, getEmployeeStats, getHourlyLoad)
+    public function getEfficiencyReport($period = 'day')
+    {
+        $intervals = [
+            'day' => '1 DAY',
+            'week' => '1 WEEK',
+            'month' => '1 MONTH', 
+            'year' => '1 YEAR'
+        ];
+        
+        $interval = $intervals[$period] ?? '1 DAY';
+        
+        if ($period === 'day') {
+            $sql = "SELECT 
+                        id as order_id,
+                        delivery_type,
+                        TIMESTAMPDIFF(MINUTE, created_at, updated_at) as time_minutes,
+                        total as total_revenue,
+                        (SELECT SUM(mi.cost * (j.quantity)) 
                          FROM JSON_TABLE(items, '$[*]' COLUMNS(
                              id INT PATH '$.id',
                              quantity INT PATH '$.quantity'
                          )) j
-                         JOIN menu_items mi ON mi.id = j.id)) as total_expenses,
-                    SUM(total - (SELECT SUM(mi.cost * (j.quantity)) 
+                         JOIN menu_items mi ON mi.id = j.id) as total_expenses,
+                        total - (SELECT SUM(mi.cost * (j.quantity)) 
                                  FROM JSON_TABLE(items, '$[*]' COLUMNS(
                                      id INT PATH '$.id',
                                      quantity INT PATH '$.quantity'
                                  )) j
-                                 JOIN menu_items mi ON mi.id = j.id)) as total_profit
-                FROM orders
-                WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                AND status = 'завершён'
-                GROUP BY delivery_type
-                ORDER BY order_count DESC";
+                                 JOIN menu_items mi ON mi.id = j.id) as total_profit
+                    FROM orders
+                    WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                    AND status = 'завершён'
+                    ORDER BY created_at DESC";
+        } else {
+            $sql = "SELECT 
+                        delivery_type,
+                        FLOOR(AVG(TIMESTAMPDIFF(MINUTE, created_at, updated_at))) as avg_time_minutes,
+                        COUNT(*) as order_count,
+                        SUM(total) as total_revenue,
+                        SUM((SELECT SUM(mi.cost * (j.quantity)) 
+                             FROM JSON_TABLE(items, '$[*]' COLUMNS(
+                                 id INT PATH '$.id',
+                                 quantity INT PATH '$.quantity'
+                             )) j
+                             JOIN menu_items mi ON mi.id = j.id)) as total_expenses,
+                        SUM(total - (SELECT SUM(mi.cost * (j.quantity)) 
+                                     FROM JSON_TABLE(items, '$[*]' COLUMNS(
+                                         id INT PATH '$.id',
+                                         quantity INT PATH '$.quantity'
+                                     )) j
+                                     JOIN menu_items mi ON mi.id = j.id)) as total_profit
+                    FROM orders
+                    WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                    AND status = 'завершён'
+                    GROUP BY delivery_type
+                    ORDER BY order_count DESC";
+        }
+        
+        try {
+            $stmt = $this->prepareCached($sql);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("getEfficiencyReport Error: " . $e->getMessage());
+            return [];
+        }
     }
-    
-    try {
-        $stmt = $this->prepareCached($sql);
-        $stmt->execute();
-        return $stmt->fetchAll();
-    } catch (PDOException $e) {
-        error_log("getEfficiencyReport Error: " . $e->getMessage());
-        return [];
-    }
-}
 
-/**
- * Получить топ клиентов
- */
-public function getTopCustomers($period = 'day', $limit = 20)
-{
-    $intervals = [
-        'day' => '1 DAY',
-        'week' => '1 WEEK',
-        'month' => '1 MONTH',
-        'year' => '1 YEAR'
-    ];
-    
-    $interval = $intervals[$period] ?? '1 DAY';
-    
-    if ($period === 'day') {
-        // Для дня - показываем отдельные заказы
-        $sql = "SELECT 
-                    o.id as order_id,
-                    u.name,
-                    u.phone,
-                    TIME(o.created_at) as time,
-                    o.total as order_total,
-                    (SELECT COUNT(*) 
-                     FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
-                         id INT PATH '$.id'
-                     )) j) as item_count,
-                    (SELECT SUM(mi.cost * (j.quantity)) 
-                     FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
-                         id INT PATH '$.id',
-                         quantity INT PATH '$.quantity'
-                     )) j
-                     JOIN menu_items mi ON mi.id = j.id) as order_expenses,
-                    o.total - (SELECT SUM(mi.cost * (j.quantity)) 
-                               FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
-                                   id INT PATH '$.id',
-                                   quantity INT PATH '$.quantity'
-                               )) j
-                               JOIN menu_items mi ON mi.id = j.id) as order_profit
-                FROM orders o
-                JOIN users u ON o.user_id = u.id
-                WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                AND o.status = 'завершён'
-                ORDER BY o.created_at DESC
-                LIMIT ?";
-    } else {
-        // Для других периодов - группировка по клиентам
-        $sql = "SELECT 
-                    u.id,
-                    u.name,
-                    u.phone,
-                    COUNT(o.id) as order_count,
-                    SUM(o.total) as total_spent,
-                    AVG(o.total) as avg_order_value
-                FROM orders o
-                JOIN users u ON o.user_id = u.id
-                WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                AND o.status = 'завершён'
-                GROUP BY u.id
-                ORDER BY total_spent DESC
-                LIMIT ?";
-    }
-    
-    try {
-        $stmt = $this->prepareCached($sql);
-        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetchAll();
-    } catch (PDOException $e) {
-        error_log("getTopCustomers Error: " . $e->getMessage());
-        return [];
-    }
-}
-
-/**
- * Получить топ блюд
- */
-public function getTopDishes($period = 'day', $limit = 20)
-{
-    $intervals = [
-        'day' => '1 DAY',
-        'week' => '1 WEEK',
-        'month' => '1 MONTH',
-        'year' => '1 YEAR'
-    ];
-    
-    $interval = $intervals[$period] ?? '1 DAY';
-    
-    $sql = "SELECT 
-                mi.id,
-                mi.name,
-                mi.category,
-                SUM(j.quantity) as total_quantity,
-                SUM(j.quantity * j.price) as total_revenue,
-                SUM(j.quantity * (j.price - mi.cost)) as total_profit,
-                SUM(j.quantity * mi.cost) as total_expenses
-            FROM orders o,
-            JSON_TABLE(o.items, '$[*]' COLUMNS(
-                id INT PATH '$.id',
-                quantity INT PATH '$.quantity',
-                price DECIMAL(10,2) PATH '$.price'
-            )) j
-            JOIN menu_items mi ON mi.id = j.id
-            WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-            AND o.status = 'завершён'
-            GROUP BY mi.id
-            ORDER BY total_profit DESC
-            LIMIT ?";
-    
-    try {
-        $stmt = $this->prepareCached($sql);
-        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetchAll();
-    } catch (PDOException $e) {
-        error_log("getTopDishes Error: " . $e->getMessage());
-        return [];
-    }
-}
-
-/**
- * Получить статистику по официантам/сотрудникам
- */
-public function getEmployeeStats($period = 'day', $limit = 20)
-{
-    $intervals = [
-        'day' => '1 DAY',
-        'week' => '1 WEEK',
-        'month' => '1 MONTH',
-        'year' => '1 YEAR'
-    ];
-    
-    $interval = $intervals[$period] ?? '1 DAY';
-    
-    if ($period === 'day') {
-        // Для дня - показываем отдельные заказы
-        $sql = "SELECT 
-                    o.id as order_id,
-                    u.name,
-                    u.phone,
-                    TIMESTAMPDIFF(MINUTE, o.created_at, o.updated_at) as processing_time,
-                    o.total as total_revenue,
-                    (SELECT SUM(mi.cost * (j.quantity)) 
-                     FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
-                         id INT PATH '$.id',
-                         quantity INT PATH '$.quantity'
-                     )) j
-                     JOIN menu_items mi ON mi.id = j.id) as total_expenses,
-                    o.total - (SELECT SUM(mi.cost * (j.quantity)) 
-                               FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
-                                   id INT PATH '$.id',
-                                   quantity INT PATH '$.quantity'
-                               )) j
-                               JOIN menu_items mi ON mi.id = j.id) as total_profit
-                FROM orders o
-                JOIN users u ON o.last_updated_by = u.id
-                WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                AND o.status = 'завершён'
-                AND u.role IN ('owner', 'employee', 'admin')
-                ORDER BY o.created_at DESC
-                LIMIT ?";
-    } else {
-        // Для других периодов - группировка по официантам с СРЕДНИМ временем обработки
-        $sql = "SELECT 
-                    u.id,
-                    u.name,
-                    u.phone,
-                    COUNT(o.id) as order_count,
-                    SUM(o.total) as total_revenue,
-                    FLOOR(AVG(TIMESTAMPDIFF(MINUTE, o.created_at, o.updated_at))) as avg_processing_time,
-                    SUM((SELECT SUM(mi.cost * (j.quantity)) 
+    public function getTopCustomers($period = 'day', $limit = 20)
+    {
+        $intervals = [
+            'day' => '1 DAY',
+            'week' => '1 WEEK',
+            'month' => '1 MONTH',
+            'year' => '1 YEAR'
+        ];
+        
+        $interval = $intervals[$period] ?? '1 DAY';
+        
+        if ($period === 'day') {
+            $sql = "SELECT 
+                        o.id as order_id,
+                        u.name,
+                        u.phone,
+                        TIME(o.created_at) as time,
+                        o.total as order_total,
+                        (SELECT COUNT(*) 
+                         FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
+                             id INT PATH '$.id'
+                         )) j) as item_count,
+                        (SELECT SUM(mi.cost * (j.quantity)) 
                          FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
                              id INT PATH '$.id',
                              quantity INT PATH '$.quantity'
                          )) j
-                         JOIN menu_items mi ON mi.id = j.id)) as total_expenses,
-                    SUM(o.total - (SELECT SUM(mi.cost * (j.quantity)) 
-                                  FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
-                                      id INT PATH '$.id',
-                                      quantity INT PATH '$.quantity'
-                                  )) j
-                                  JOIN menu_items mi ON mi.id = j.id)) as total_profit
-                FROM orders o
-                JOIN users u ON o.last_updated_by = u.id
+                         JOIN menu_items mi ON mi.id = j.id) as order_expenses,
+                        o.total - (SELECT SUM(mi.cost * (j.quantity)) 
+                                   FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
+                                       id INT PATH '$.id',
+                                       quantity INT PATH '$.quantity'
+                                   )) j
+                                   JOIN menu_items mi ON mi.id = j.id) as order_profit
+                    FROM orders o
+                    JOIN users u ON o.user_id = u.id
+                    WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                    AND o.status = 'завершён'
+                    ORDER BY o.created_at DESC
+                    LIMIT ?";
+        } else {
+            $sql = "SELECT 
+                        u.id,
+                        u.name,
+                        u.phone,
+                        COUNT(o.id) as order_count,
+                        SUM(o.total) as total_spent,
+                        AVG(o.total) as avg_order_value
+                    FROM orders o
+                    JOIN users u ON o.user_id = u.id
+                    WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                    AND o.status = 'завершён'
+                    GROUP BY u.id
+                    ORDER BY total_spent DESC
+                    LIMIT ?";
+        }
+        
+        try {
+            $stmt = $this->prepareCached($sql);
+            $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("getTopCustomers Error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getTopDishes($period = 'day', $limit = 20)
+    {
+        $intervals = [
+            'day' => '1 DAY',
+            'week' => '1 WEEK',
+            'month' => '1 MONTH',
+            'year' => '1 YEAR'
+        ];
+        
+        $interval = $intervals[$period] ?? '1 DAY';
+        
+        $sql = "SELECT 
+                    mi.id,
+                    mi.name,
+                    mi.category,
+                    SUM(j.quantity) as total_quantity,
+                    SUM(j.quantity * j.price) as total_revenue,
+                    SUM(j.quantity * (j.price - mi.cost)) as total_profit,
+                    SUM(j.quantity * mi.cost) as total_expenses
+                FROM orders o,
+                JSON_TABLE(o.items, '$[*]' COLUMNS(
+                    id INT PATH '$.id',
+                    quantity INT PATH '$.quantity',
+                    price DECIMAL(10,2) PATH '$.price'
+                )) j
+                JOIN menu_items mi ON mi.id = j.id
                 WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
                 AND o.status = 'завершён'
-                AND u.role IN ('owner', 'employee', 'admin')
-                GROUP BY u.id
-                ORDER BY total_revenue DESC
+                GROUP BY mi.id
+                ORDER BY total_profit DESC
                 LIMIT ?";
+        
+        try {
+            $stmt = $this->prepareCached($sql);
+            $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("getTopDishes Error: " . $e->getMessage());
+            return [];
+        }
     }
-    
-    try {
-        $stmt = $this->prepareCached($sql);
-        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetchAll();
-    } catch (PDOException $e) {
-        error_log("getEmployeeStats Error: " . $e->getMessage());
-        return [];
-    }
-}
 
-/**
- * Получить загруженность по часам
- */
-public function getHourlyLoad($period = 'day')
-{
-    $intervals = [
-        'day' => '1 DAY',
-        'week' => '1 WEEK',
-        'month' => '1 MONTH',
-        'year' => '1 YEAR'
-    ];
-    
-    $interval = $intervals[$period] ?? '1 DAY';
-    
-    $sql = "SELECT 
-                HOUR(created_at) as hour,
-                COUNT(*) as order_count,
-                AVG(total) as avg_order_value,
-                SUM(total) as total_revenue,
-                SUM(total - (SELECT SUM(mi.cost * (j.quantity)) 
-                            FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
-                                id INT PATH '$.id',
-                                quantity INT PATH '$.quantity'
-                            )) j
-                            JOIN menu_items mi ON mi.id = j.id)) as total_profit,
-                SUM((SELECT SUM(mi.cost * (j.quantity)) 
-                    FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
-                        id INT PATH '$.id',
-                        quantity INT PATH '$.quantity'
-                    )) j
-                    JOIN menu_items mi ON mi.id = j.id)) as total_expenses
-            FROM orders o
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-            AND status = 'завершён'
-            GROUP BY HOUR(created_at)
-            ORDER BY hour ASC";
-    
-    try {
-        $stmt = $this->prepareCached($sql);
-        $stmt->execute();
-        return $stmt->fetchAll();
-    } catch (PDOException $e) {
-        error_log("getHourlyLoad Error: " . $e->getMessage());
-        return [];
+    public function getEmployeeStats($period = 'day', $limit = 20)
+    {
+        $intervals = [
+            'day' => '1 DAY',
+            'week' => '1 WEEK',
+            'month' => '1 MONTH',
+            'year' => '1 YEAR'
+        ];
+        
+        $interval = $intervals[$period] ?? '1 DAY';
+        
+        if ($period === 'day') {
+            $sql = "SELECT 
+                        o.id as order_id,
+                        u.name,
+                        u.phone,
+                        TIMESTAMPDIFF(MINUTE, o.created_at, o.updated_at) as processing_time,
+                        o.total as total_revenue,
+                        (SELECT SUM(mi.cost * (j.quantity)) 
+                         FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
+                             id INT PATH '$.id',
+                             quantity INT PATH '$.quantity'
+                         )) j
+                         JOIN menu_items mi ON mi.id = j.id) as total_expenses,
+                        o.total - (SELECT SUM(mi.cost * (j.quantity)) 
+                                   FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
+                                       id INT PATH '$.id',
+                                       quantity INT PATH '$.quantity'
+                                   )) j
+                                   JOIN menu_items mi ON mi.id = j.id) as total_profit
+                    FROM orders o
+                    JOIN users u ON o.last_updated_by = u.id
+                    WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                    AND o.status = 'завершён'
+                    AND u.role IN ('owner', 'employee', 'admin')
+                    ORDER BY o.created_at DESC
+                    LIMIT ?";
+        } else {
+            $sql = "SELECT 
+                        u.id,
+                        u.name,
+                        u.phone,
+                        COUNT(o.id) as order_count,
+                        SUM(o.total) as total_revenue,
+                        FLOOR(AVG(TIMESTAMPDIFF(MINUTE, o.created_at, o.updated_at))) as avg_processing_time,
+                        SUM((SELECT SUM(mi.cost * (j.quantity)) 
+                             FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
+                                 id INT PATH '$.id',
+                                 quantity INT PATH '$.quantity'
+                             )) j
+                             JOIN menu_items mi ON mi.id = j.id)) as total_expenses,
+                        SUM(o.total - (SELECT SUM(mi.cost * (j.quantity)) 
+                                      FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
+                                          id INT PATH '$.id',
+                                          quantity INT PATH '$.quantity'
+                                      )) j
+                                      JOIN menu_items mi ON mi.id = j.id)) as total_profit
+                    FROM orders o
+                    JOIN users u ON o.last_updated_by = u.id
+                    WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                    AND o.status = 'завершён'
+                    AND u.role IN ('owner', 'employee', 'admin')
+                    GROUP BY u.id
+                    ORDER BY total_revenue DESC
+                    LIMIT ?";
+        }
+        
+        try {
+            $stmt = $this->prepareCached($sql);
+            $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("getEmployeeStats Error: " . $e->getMessage());
+            return [];
+        }
     }
-}
 
-    // Методы для работы с настройками
+    public function getHourlyLoad($period = 'day')
+    {
+        $intervals = [
+            'day' => '1 DAY',
+            'week' => '1 WEEK',
+            'month' => '1 MONTH',
+            'year' => '1 YEAR'
+        ];
+        
+        $interval = $intervals[$period] ?? '1 DAY';
+        
+        $sql = "SELECT 
+                    HOUR(created_at) as hour,
+                    COUNT(*) as order_count,
+                    AVG(total) as avg_order_value,
+                    SUM(total) as total_revenue,
+                    SUM(total - (SELECT SUM(mi.cost * (j.quantity)) 
+                                FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
+                                    id INT PATH '$.id',
+                                    quantity INT PATH '$.quantity'
+                                )) j
+                                JOIN menu_items mi ON mi.id = j.id)) as total_profit,
+                    SUM((SELECT SUM(mi.cost * (j.quantity)) 
+                        FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
+                            id INT PATH '$.id',
+                            quantity INT PATH '$.quantity'
+                        )) j
+                        JOIN menu_items mi ON mi.id = j.id)) as total_expenses
+                FROM orders o
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                AND status = 'завершён'
+                GROUP BY HOUR(created_at)
+                ORDER BY hour ASC";
+        
+        try {
+            $stmt = $this->prepareCached($sql);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("getHourlyLoad Error: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getSetting($key)
     {
         try {
@@ -1432,12 +1548,6 @@ public function getHourlyLoad($period = 'day')
         }
     }
 
-    /**
-     * Обновляет роль пользователя.
-     * @param int $userId ID пользователя
-     * @param string $role Новая роль (customer, employee, admin, owner)
-     * @return bool Успех операции
-     */
     public function updateUserRole($userId, $role)
     {
         try {
@@ -1445,6 +1555,11 @@ public function getHourlyLoad($period = 'day')
                 "UPDATE users SET role = :role WHERE id = :id"
             );
             $success = $stmt->execute([':role' => $role, ':id' => $userId]);
+            
+            if ($success) {
+                $this->invalidateUserCache($userId);
+            }
+            
             return $success;
         } catch (PDOException $e) {
             error_log("updateUserRole error: " . $e->getMessage());
@@ -1452,30 +1567,16 @@ public function getHourlyLoad($period = 'day')
         }
     }
 
-    /**
-     * Публичный метод для подготовки запроса (обертка вокруг prepareCached)
-     * @param string $sql SQL запрос
-     * @return PDOStatement
-     */
     public function prepare($sql)
     {
         return $this->prepareCached($sql);
     }
 
-    /**
-     * Создает заказ для гостя (без user_id)
-     * @param array $items Товары
-     * @param float $total Сумма
-     * @param string $deliveryType Тип доставки
-     * @param string $deliveryDetail Детали доставки
-     * @return int|false ID заказа или false при ошибке
-     */
     public function createGuestOrder($items, $total, $deliveryType = 'bar', $deliveryDetail = '')
     {
         try {
             $this->connection->beginTransaction();
 
-            // Получаем ID гостевого пользователя (создаём при необходимости)
             $guestUserId = $this->ensureGuestUserExists();
             if ($guestUserId === false) {
                 throw new Exception('Не удалось создать гостевого пользователя');
@@ -1511,6 +1612,9 @@ public function getHourlyLoad($period = 'day')
             ]);
 
             $this->connection->commit();
+            
+            $this->invalidateOrderCache($orderId);
+            
             return $orderId;
         } catch (PDOException $e) {
             $this->connection->rollBack();
@@ -1519,7 +1623,93 @@ public function getHourlyLoad($period = 'day')
         }
     }
 
+    public function createOrder($userId, $items, $total, $deliveryType = 'bar', $deliveryDetail = '')
+    {
+        try {
+            $this->connection->beginTransaction();
+
+            $stmt = $this->prepareCached("
+                INSERT INTO orders 
+                (user_id, items, total, status, delivery_type, delivery_details, created_at, updated_at) 
+                VALUES (:user_id, :items, :total, 'Приём', :delivery_type, :delivery_details, NOW(), NOW())
+            ");
+
+            $itemsJson = json_encode($items, JSON_UNESCAPED_UNICODE);
+            
+            $params = [
+                ':user_id' => $userId,
+                ':items' => $itemsJson,
+                ':total' => $total,
+                ':delivery_type' => $deliveryType,
+                ':delivery_details' => $deliveryDetail
+            ];
+
+            error_log("Executing with params: " . print_r($params, true));
+
+            $stmt->execute($params);
+            $orderId = $this->connection->lastInsertId();
+
+            $historyStmt = $this->prepareCached("
+                INSERT INTO order_status_history 
+                (order_id, status, changed_by, changed_at) 
+                VALUES (:order_id, 'Приём', :user_id, NOW()) 
+            ");
+            $historyStmt->execute([
+                ':order_id' => $orderId,
+                ':user_id' => $userId,
+            ]);
+
+            $this->connection->commit();
+            
+            $this->invalidateOrderCache($orderId);
+            
+            return $orderId;
+        } catch (PDOException $e) {
+            $this->connection->rollBack();
+            error_log("createOrder Error: " . $e->getMessage());
+            error_log("Error info: " . print_r($stmt->errorInfo(), true));
+            return false;
+        }
+    }
+
+    public function setQueryCacheEnabled($enabled)
+    {
+        $this->useQueryCache = $enabled;
+        return $this;
+    }
+
+    public function getQueryCacheStats()
+    {
+        if ($this->queryCache) {
+            return $this->queryCache->getStats();
+        }
+        return ['available' => false];
+    }
+
+    public function clearQueryCache()
+    {
+        if ($this->queryCache) {
+            return $this->queryCache->clear();
+        }
+        return false;
+    }
+
+    public function getConnection()
+    {
+        return $this->connection;
+    }
+
+    public function close()
+    {
+        $this->connection = null;
+        self::$instance = null;
+    }
+
+    public function __destruct()
+    {
+        $this->close();
+    }
 }
 
-// Создаем глобальный экземпляр для обратной совместимости
 $db = Database::getInstance();
+?>

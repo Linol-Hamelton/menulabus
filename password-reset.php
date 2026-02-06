@@ -19,9 +19,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $resetToken = bin2hex(random_bytes(16));
             $db->setPasswordResetToken($email, $resetToken);
             
-            // Отправка письма со ссылкой для сброса
-            $mailer = new Mailer();
-            if ($mailer->sendPasswordResetEmail($email, $user['name'], $resetToken)) {
+            // Отправка письма со ссылкой для сброса через очередь
+            require_once __DIR__ . '/Queue.php';
+            $queue = new Queue();
+            $jobId = $queue->push('send_password_reset_email', [
+                'email' => $email,
+                'name' => $user['name'],
+                'token' => $resetToken
+            ]);
+            if ($jobId !== false) {
                 $success = true;
             } else {
                 $errors[] = "Не удалось отправить письмо для сброса пароля. Пожалуйста, попробуйте позже.";

@@ -25,16 +25,27 @@ const APP_SHELL = [
   "/version.json",
 ];
 
-// 2. Установка – без изменений (кэшируем APP_SHELL)
+// 2. Установка – с обработкой ошибок для каждого ресурса
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
       .then((cache) => {
         console.log("Кэшируем основные файлы");
-        return cache.addAll(APP_SHELL);
+        // Кэшируем каждый ресурс отдельно, чтобы ошибка одного не ломала всю установку
+        const promises = APP_SHELL.map(url =>
+          cache.add(url).catch(error => {
+            console.warn(`Не удалось кэшировать ${url}:`, error);
+            // Пропускаем ошибку, продолжаем с остальными
+            return Promise.resolve();
+          })
+        );
+        return Promise.all(promises);
       })
-      .then(() => self.skipWaiting())
+      .then(() => {
+        console.log("Все ресурсы обработаны (некоторые могли не закэшироваться)");
+        return self.skipWaiting();
+      })
   );
 });
 

@@ -26,7 +26,7 @@ try {
             // Пользователь не найден или неактивен - очищаем сессию
             session_destroy();
             if (isset($_COOKIE['remember'])) {
-                setcookie('remember', '', time() - 3600, '/', 'menu.pub.labus.pro', true, true);
+                setcookie('remember', '', time() - 3600, '/', 'menu.labus.pro', true, true);
             }
         }
     } 
@@ -87,7 +87,7 @@ try {
                             $selector.':'.$new_validator,
                             $new_expires,
                             '/',
-                            'menu.pub.labus.pro',  // Исправляем домен
+                            'menu.labus.pro',  // Исправляем домен
                             true,
                             true
                         );
@@ -104,11 +104,11 @@ try {
                 } else {
                     // Токен просрочен - удаляем
                     $db->deleteRememberToken($selector);
-                    setcookie('remember', '', time() - 3600, '/', 'menu.pub.labus.pro', true, true);
+                    setcookie('remember', '', time() - 3600, '/', 'menu.labus.pro', true, true);
                 }
             } else {
                 // Невалидный токен - удаляем
-                setcookie('remember', '', time() - 3600, '/', 'menu.pub.labus.pro', true, true);
+                setcookie('remember', '', time() - 3600, '/', 'menu.labus.pro', true, true);
             }
         }
     }

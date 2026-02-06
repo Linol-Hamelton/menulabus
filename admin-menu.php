@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/session_init.php';
 require_once __DIR__ . '/require_auth.php';
+require_once __DIR__ . '/clear-nginx-cache.php';
 $required_role = 'admin';
 
 // Ensure script nonce is available for CSP
@@ -72,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 if ($ok) {
                     $_SESSION['success'] = 'Товар обновлён!';
+                    clearNginxCache();
                     header('Location: admin-menu.php?edit=' . $id);
                     exit;
                 }
@@ -92,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 if ($ok) {
                     $_SESSION['success'] = 'Товар добавлен!';
+                    clearNginxCache();
                     header('Location: admin-menu.php');
                     exit;
                 }
@@ -122,6 +125,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['error'] = 'Неверный формат файла (меньше 11 колонок)';
                 } else {
                     $ok = $db->bulkUpdateMenu($tempHandle, $delimiter);
+                    if ($ok) {
+                        clearNginxCache();
+                    }
                     $_SESSION['success'] = $ok ? 'Меню обновлено' : 'Ошибка при обновлении';
                 }
                 fclose($tempHandle);

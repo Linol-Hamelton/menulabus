@@ -24,7 +24,7 @@ if (isset($_COOKIE['remember'])) {
                 '', 
                 time() - 3600, 
                 '/', 
-                'menu.pub.labus.pro', 
+                'menu.labus.pro', 
                 true,    // HTTPS only
                 true     // HTTPOnly
             );
@@ -61,7 +61,7 @@ if (isset($_COOKIE['csrf_token'])) {
         '',
         time() - 3600,
         '/',
-        'menu.pub.labus.pro',
+        'menu.labus.pro',
         true,
         true
     );

@@ -58,8 +58,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $passwordHash = password_hash($password, PASSWORD_DEFAULT);
                     
                     if ($db->createUser($email, $passwordHash, $name, $phone, $verificationToken)) {
-                        $mailer = new Mailer();
-                        if ($mailer->sendVerificationEmail($email, $name, $verificationToken)) {
+                        require_once __DIR__ . '/Queue.php';
+                        $queue = new Queue();
+                        $jobId = $queue->push('send_verification_email', [
+                            'email' => $email,
+                            'name' => $name,
+                            'token' => $verificationToken
+                        ]);
+                        if ($jobId !== false) {
                             $_SESSION['auth_message'] = "Регистрация успешна! Проверьте вашу почту для подтверждения.";
                             header("Location: auth.php?mode=login");
                             exit;
@@ -139,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $selector.':'.$validator,
                         $expires,
                         '/',
-                        'menu.pub.labus.pro',  // Исправляем домен
+                         'menu.labus.pro',  // Исправляем домен
                         true,  // HTTPS only
                         true   // HTTPOnly
                     );

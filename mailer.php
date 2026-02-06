@@ -37,7 +37,7 @@ class Mailer {
             $this->mail->Subject = 'Подтверждение регистрации';
             
             // HTML-версия письма
-            $verificationLink = "https://menu.pub.labus.pro/verify.php?token=$token";
+            $verificationLink = "https://menu.labus.pro/verify.php?token=$token";
             $this->mail->isHTML(true);
             $this->mail->Body = "
                 <h2>Здравствуйте, $name!</h2>
@@ -65,7 +65,7 @@ public function sendPasswordResetEmail($email, $name, $token) {
         $this->mail->Subject = 'Сброс пароля';
         
         // HTML-версия письма
-        $resetLink = "https://menu.pub.labus.pro/password-reset.php?token=$token";
+        $resetLink = "https://menu.labus.pro/password-reset.php?token=$token";
         $this->mail->isHTML(true);
         $this->mail->Body = "
             <h2>Здравствуйте, $name!</h2>

@@ -38,8 +38,24 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.use_only_cookies', 1);
     ini_set('session.trans_sid_hosts', '');
     ini_set('session.trans_sid_tags', '');
-    ini_set('session.save_handler', 'files');
-    ini_set('session.save_path', '/var/www/labus_pro_usr/data/www/menu.pub.labus.pro/data/tmp');
+    // Проверяем доступность Redis/Memcached для сессий
+    if (extension_loaded('redis')) {
+        ini_set('session.save_handler', 'redis');
+        ini_set('session.save_path', 'tcp://127.0.0.1:6379?database=0');
+        // Дополнительные настройки Redis
+        ini_set('redis.session.locking_enabled', 1);
+        ini_set('redis.session.lock_retries', -1);
+        ini_set('redis.session.lock_wait_time', 10000);
+    } elseif (extension_loaded('memcached')) {
+        ini_set('session.save_handler', 'memcached');
+        ini_set('session.save_path', '127.0.0.1:11211');
+        // Дополнительные настройки Memcached
+        ini_set('memcached.sess_binary_protocol', 1);
+        ini_set('memcached.sess_consistent_hash', 1);
+    } else {
+        ini_set('session.save_handler', 'files');
+        ini_set('session.save_path', '/var/www/labus_pro_usr/data/www/menu.labus.pro/data/tmp');
+    }
 
     // По умолчанию: короткая сессия (2 часа) для анонимных пользователей.
     // Для авторизованных — продлим cookie после проверки ниже.
@@ -117,7 +133,7 @@ $securityHeaders = [
     'Cross-Origin-Resource-Policy' => 'same-origin',
     'Cross-Origin-Embedder-Policy' => 'require-corp',
     'Cross-Origin-Opener-Policy' => 'same-origin',
-    'Access-Control-Allow-Origin' => 'https://menu.pub.labus.pro',
+    'Access-Control-Allow-Origin' => 'https://menu.labus.pro',
     'Access-Control-Allow-Methods' => 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers' => 'Content-Type, X-CSRF-Token',
     'Access-Control-Allow-Credentials' => 'true',
@@ -126,10 +142,10 @@ $securityHeaders = [
     'Permissions-Policy'           => join(', ', [
         'accelerometer=()',
         'autoplay=()',
-        'camera=(self "https://menu.pub.labus.pro")',
+        'camera=(self "https://menu.labus.pro")',
         'encrypted-media=()',
         'fullscreen=()',
-        'geolocation=(self "https://menu.pub.labus.pro")',
+        'geolocation=(self "https://menu.labus.pro")',
         'gyroscope=()',
         'magnetometer=()',
         'microphone=()',
@@ -141,7 +157,7 @@ $securityHeaders = [
     // Content Security Policy - добавляем необходимые разрешения (ОБНОВЛЕНО для PWA)
     'Content-Security-Policy' => join('; ', [
         "default-src 'none'",
-        "script-src 'self' 'nonce-$scriptNonce' https://menu.pub.labus.pro",
+        "script-src 'self' 'nonce-$scriptNonce' https://menu.labus.pro",
         "style-src 'self' 'nonce-$styleNonce'",
         "img-src 'self' data: blob:",
         "font-src 'self'",
