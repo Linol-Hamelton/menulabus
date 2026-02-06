@@ -235,6 +235,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 file_put_contents(__DIR__ . '/auto-fonts.css', $cssContent);
             }
             
+            // Если загружено изображение, оптимизируем его
+            if ($folder === 'images') {
+                require_once __DIR__ . '/ImageOptimizer.php';
+                try {
+                    $optimizer = new ImageOptimizer();
+                    $result = $optimizer->optimize($target_file);
+                    if ($result) {
+                        // Логирование успеха
+                        error_log("Image optimized: " . $target_file);
+                    }
+                } catch (Exception $e) {
+                    error_log("Image optimization failed: " . $e->getMessage());
+                }
+            }
+            
             echo json_encode(['success' => true]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Upload failed']);

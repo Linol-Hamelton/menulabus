@@ -13,7 +13,7 @@ $activeCategory = $_COOKIE['activeMenuCategory'] ?? $categories[0]['category'];
 <html lang="ru">
 
 <head>
-    <?php include 'preloader-universal.php'; ?>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>labus | Меню</title>
