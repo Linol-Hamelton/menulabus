@@ -19,6 +19,7 @@ $activeCategory = $_COOKIE['activeMenuCategory'] ?? $categories[0]['category'];
     <title>labus | Меню</title>
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/fix-layout.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
 
     <!-- Preloader - мгновенная загрузка -->
     <style>
