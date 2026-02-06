@@ -87,5 +87,26 @@ public function sendPasswordResetEmail($email, $name, $token) {
         return false;
     }
 }
+
+    public function sendEmail($to, $subject, $body) {
+        try {
+            $this->mail->clearAddresses();
+            $this->mail->addAddress($to);
+            $this->mail->Subject = $subject;
+            $this->mail->isHTML(true);
+            $this->mail->Body = $body;
+            $this->mail->AltBody = strip_tags($body);
+            $this->mail->send();
+            return true;
+        } catch (Exception $e) {
+            error_log("Mail Error: " . $e->getMessage());
+            return false;
+        }
+    }
+}
+
+function sendEmail($to, $subject, $body) {
+    $mailer = new Mailer();
+    return $mailer->sendEmail($to, $subject, $body);
 }
 ?>

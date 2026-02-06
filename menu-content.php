@@ -1,7 +1,18 @@
 <!-- menu-content-info.php LOADED -->
 <?php
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/db.php';
+if (!defined('PUBLIC_MENU')) {
+    require_once __DIR__ . '/session_init.php';
+}
+$requestTimestamp = $GLOBALS['menu_request_ts'] ?? time();
+
+if (!isset($db)) {
+    require_once __DIR__ . '/db.php';
+    $db = Database::getInstance();
+}
+if (!isset($categories)) {
+    $categories = $db->getUniqueCategories();
+}
+$includeMenuCss = empty($GLOBALS['menu_css_in_head']);
 
 ?>
 <!DOCTYPE html>
@@ -10,9 +21,11 @@ require_once __DIR__ . '/db.php';
 <head>
     <meta charset="UTF-8">
     <title>Альтернативное меню</title>
-    <link rel="stylesheet" href="/css/fa-styles.css" nonce="<?= $styleNonce ?>">
-    <link rel="stylesheet" href="css/fa-purged.css" nonce="<?= $styleNonce ?>">
-    <link rel="stylesheet" href="css/menu-alt.css" nonce="<?= $styleNonce ?>">
+    <?php if ($includeMenuCss): ?>
+        <link rel="stylesheet" href="/css/fa-styles.css" nonce="<?= $styleNonce ?>">
+        <link rel="stylesheet" href="css/fa-purged.css" nonce="<?= $styleNonce ?>">
+        <link rel="stylesheet" href="css/menu-alt.css" nonce="<?= $styleNonce ?>">
+    <?php endif; ?>
 </head>
 
 <body>
@@ -32,21 +45,7 @@ require_once __DIR__ . '/db.php';
                     $isActive = $index === 0 ? 'active' : '';
                 ?>
                     <div class="tab-pane <?= $isActive ?>" id="<?= htmlspecialchars($category['category']) ?>">
-                        <?php foreach ($items as $item):
-                            $productData = [
-                                'id' => $item['id'],
-                                'name' => $item['name'],
-                                'price' => $item['price'],
-                                'image' => $item['image'],
-                                'calories' => $item['calories'] ?? 0,
-                                'protein' => $item['protein'] ?? 0,
-                                'fat' => $item['fat'] ?? 0,
-                                'carbs' => $item['carbs'] ?? 0,
-                                'desc' => $item['description'] ?? '',
-                                'csrf' => $csrfToken,
-                                'timestamp' => time()
-                            ];
-                            $signedData = signProductData($productData, CART_SECRET_KEY);
+                <?php foreach ($items as $item):
                         ?>
                             <div class="menu-item">
                                 <img class="cart-item-image no-drag no-context modal-trigger"
@@ -73,7 +72,6 @@ require_once __DIR__ . '/db.php';
                                     data-protein="<?= (int)($item['protein'] ?? 0) ?>"
                                     data-fat="<?= (int)($item['fat'] ?? 0) ?>"
                                     data-carbs="<?= (int)($item['carbs'] ?? 0) ?>"
-                                    data-signed="<?= htmlspecialchars($signedData) ?>"
                                     data-csrf="<?= $csrfToken ?>">
                                     <span class="buy-text">+</span>
                                     <span class="buy-counter hidden">

@@ -106,10 +106,6 @@ if (php_sapi_name() === 'cli') {
                             $job['data']['token']
                         );
                         break;
-                    case 'clear_cache':
-                        require_once __DIR__ . '/clear-cache.php';
-                        clearNginxCache();
-                        break;
                     default:
                         error_log("Unknown job: " . $job['job']);
                 }

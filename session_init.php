@@ -1,22 +1,22 @@
-<?php
+﻿<?php
 ob_start();
 
 header_remove('Cache-Control');
 header_remove('Expires');
 header_remove('Pragma');
 
-// Сначала определяем переменную (ДОБАВЛЕН webmanifest)
+// РЎРЅР°С‡Р°Р»Р° РѕРїСЂРµРґРµР»СЏРµРј РїРµСЂРµРјРµРЅРЅСѓСЋ (Р”РћР‘РђР’Р›Р•Рќ webmanifest)
 $isStaticFile = preg_match('/\.(?:css|js|png|jpg|webp|jpeg|gif|ico|svg|woff|woff2|ttf|json|webmanifest)$/', $_SERVER['REQUEST_URI']);
 
-// Потом обрабатываем статические файлы
+// РџРѕС‚РѕРј РѕР±СЂР°Р±Р°С‚С‹РІР°РµРј СЃС‚Р°С‚РёС‡РµСЃРєРёРµ С„Р°Р№Р»С‹
 if ($isStaticFile) {
-    // Для version.json - короткое кэширование
+    // Р”Р»СЏ version.json - РєРѕСЂРѕС‚РєРѕРµ РєСЌС€РёСЂРѕРІР°РЅРёРµ
     if (strpos($_SERVER['REQUEST_URI'], 'version.json') !== false) {
         header("Cache-Control: no-cache, must-revalidate");
         header("Expires: Thu, 01 Jan 1970 00:00:00 GMT");
         header("Pragma: no-cache");
     } else {
-        // Для остальной статики - длительное кэширование
+        // Р”Р»СЏ РѕСЃС‚Р°Р»СЊРЅРѕР№ СЃС‚Р°С‚РёРєРё - РґР»РёС‚РµР»СЊРЅРѕРµ РєСЌС€РёСЂРѕРІР°РЅРёРµ
         header("Cache-Control: public, max-age=31536000, immutable");
         header("Expires: " . gmdate("D, d M Y H:i:s", time() + 31536000) . " GMT");
         header("Pragma: cache");
@@ -24,46 +24,28 @@ if ($isStaticFile) {
     exit;
 }
 
-// Проверяем, была ли уже запущена сессия
+// РџСЂРѕРІРµСЂСЏРµРј, Р±С‹Р»Р° Р»Рё СѓР¶Рµ Р·Р°РїСѓС‰РµРЅР° СЃРµСЃСЃРёСЏ
 if (session_status() === PHP_SESSION_NONE) {
-    // Конфигурация сессии ДО запуска
+    // РљРѕРЅС„РёРіСѓСЂР°С†РёСЏ СЃРµСЃСЃРёРё Р”Рћ Р·Р°РїСѓСЃРєР°
     ini_set('session.use_strict_mode', 1);
     ini_set('session.cookie_secure', isset($_SERVER['HTTPS']));
     ini_set('session.cookie_httponly', true);
     ini_set('session.cookie_samesite', 'Strict');
     ini_set('session.gc_probability', 1);
-    ini_set('session.gc_divisor', 10); // GC запускается в 10% запросов
+    ini_set('session.gc_divisor', 1000); // GC реже, Redis TTL уже чистит сессии
     ini_set('session.lazy_write', 1);
     ini_set('session.use_cookies', 1);
     ini_set('session.use_only_cookies', 1);
     ini_set('session.trans_sid_hosts', '');
     ini_set('session.trans_sid_tags', '');
-    // Проверяем доступность Redis/Memcached для сессий
-    if (extension_loaded('redis')) {
-        ini_set('session.save_handler', 'redis');
-        ini_set('session.save_path', 'tcp://127.0.0.1:6379?database=0');
-        // Дополнительные настройки Redis
-        ini_set('redis.session.locking_enabled', 1);
-        ini_set('redis.session.lock_retries', -1);
-        ini_set('redis.session.lock_wait_time', 10000);
-    } elseif (extension_loaded('memcached')) {
-        ini_set('session.save_handler', 'memcached');
-        ini_set('session.save_path', '127.0.0.1:11211');
-        // Дополнительные настройки Memcached
-        ini_set('memcached.sess_binary_protocol', 1);
-        ini_set('memcached.sess_consistent_hash', 1);
-    } else {
-        ini_set('session.save_handler', 'files');
-        ini_set('session.save_path', '/var/www/labus_pro_usr/data/www/menu.labus.pro/data/tmp');
-    }
 
-    // По умолчанию: короткая сессия (2 часа) для анонимных пользователей.
-    // Для авторизованных — продлим cookie после проверки ниже.
-    $defaultLifetime = 7200; // 2 часа
+    // РџРѕ СѓРјРѕР»С‡Р°РЅРёСЋ: РєРѕСЂРѕС‚РєР°СЏ СЃРµСЃСЃРёСЏ (2 С‡Р°СЃР°) РґР»СЏ Р°РЅРѕРЅРёРјРЅС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№.
+    // Р”Р»СЏ Р°РІС‚РѕСЂРёР·РѕРІР°РЅРЅС‹С… вЂ” РїСЂРѕРґР»РёРј cookie РїРѕСЃР»Рµ РїСЂРѕРІРµСЂРєРё РЅРёР¶Рµ.
+    $defaultLifetime = 7200; // 2 С‡Р°СЃР°
     ini_set('session.cookie_lifetime', $defaultLifetime);
-    ini_set('session.gc_maxlifetime', 2592000); // 30 дней — максимум жизни файла сессии
+    ini_set('session.gc_maxlifetime', 2592000); // 30 РґРЅРµР№ вЂ” РјР°РєСЃРёРјСѓРј Р¶РёР·РЅРё С„Р°Р№Р»Р° СЃРµСЃСЃРёРё
 
-    // Запускаем сессию с безопасными настройками
+    // Р—Р°РїСѓСЃРєР°РµРј СЃРµСЃСЃРёСЋ СЃ Р±РµР·РѕРїР°СЃРЅС‹РјРё РЅР°СЃС‚СЂРѕР№РєР°РјРё
     session_start([
         'cookie_lifetime' => $defaultLifetime,
         'cookie_httponly' => true,
@@ -71,26 +53,32 @@ if (session_status() === PHP_SESSION_NONE) {
     ]);
 }
 
-// Принудительное обновление кэша при новой версии
+// РџСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕРµ РѕР±РЅРѕРІР»РµРЅРёРµ РєСЌС€Р° РїСЂРё РЅРѕРІРѕР№ РІРµСЂСЃРёРё
 if (session_status() === PHP_SESSION_ACTIVE) {
-    // Проверяем версию приложения
-    $versionFile = __DIR__ . '/version.json';
-    if (file_exists($versionFile)) {
-        $versionData = json_decode(file_get_contents($versionFile), true);
-        $currentVersion = $versionData['version'] ?? '1.0.0';
+    // РџСЂРѕРІРµСЂСЏРµРј РІРµСЂСЃРёСЋ РїСЂРёР»РѕР¶РµРЅРёСЏ (РЅРµ РєР°Р¶РґС‹Р№ Р·Р°РїСЂРѕСЃ)
+    $versionCheckInterval = 60;
+    $now = time();
+    $lastVersionCheck = $_SESSION['version_checked_at'] ?? 0;
+    if (($now - $lastVersionCheck) >= $versionCheckInterval) {
+        $_SESSION['version_checked_at'] = $now;
+        $versionFile = __DIR__ . '/version.json';
+        if (file_exists($versionFile)) {
+            $versionData = json_decode(file_get_contents($versionFile), true);
+            $currentVersion = $versionData['version'] ?? '1.0.0';
 
-        if (empty($_SESSION['app_version']) || $_SESSION['app_version'] !== $currentVersion) {
-            // Новая версия - принудительно обновляем кэш
-            $_SESSION['app_version'] = $currentVersion;
-            $_SESSION['force_no_cache'] = true;
+            if (empty($_SESSION['app_version']) || $_SESSION['app_version'] !== $currentVersion) {
+                // РќРѕРІР°СЏ РІРµСЂСЃРёСЏ - РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕ РѕР±РЅРѕРІР»СЏРµРј РєСЌС€
+                $_SESSION['app_version'] = $currentVersion;
+                $_SESSION['force_no_cache'] = true;
 
-            // Добавляем заголовки против кэширования
-            header("Pragma: no-cache");
-            header("Expires: Thu, 01 Jan 1970 00:00:00 GMT");
+                // Р”РѕР±Р°РІР»СЏРµРј Р·Р°РіРѕР»РѕРІРєРё РїСЂРѕС‚РёРІ РєСЌС€РёСЂРѕРІР°РЅРёСЏ
+                header("Pragma: no-cache");
+                header("Expires: Thu, 01 Jan 1970 00:00:00 GMT");
+            }
         }
     }
 
-    // Принудительное обновление по параметру
+    // РџСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕРµ РѕР±РЅРѕРІР»РµРЅРёРµ РїРѕ РїР°СЂР°РјРµС‚СЂСѓ
     if (isset($_GET['forceReload'])) {
         header("Pragma: no-cache");
         header("Expires: Thu, 01 Jan 1970 00:00:00 GMT");
@@ -98,7 +86,7 @@ if (session_status() === PHP_SESSION_ACTIVE) {
     }
 }
 
-// Принудительное обновление кэша при force_reload
+// РџСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕРµ РѕР±РЅРѕРІР»РµРЅРёРµ РєСЌС€Р° РїСЂРё force_reload
 if (session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['force_reload'])) {
     header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
     header("Pragma: no-cache");
@@ -106,7 +94,7 @@ if (session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['force_reload']))
     unset($_SESSION['force_reload']);
 }
 
-// Генерируем nonce если еще не сгенерирован
+// Р“РµРЅРµСЂРёСЂСѓРµРј nonce РµСЃР»Рё РµС‰Рµ РЅРµ СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅ
 if (session_status() === PHP_SESSION_ACTIVE && empty($_SESSION['csp_nonce'])) {
     $_SESSION['csp_nonce'] = [
         'script' => base64_encode(random_bytes(16)),
@@ -117,13 +105,13 @@ if (session_status() === PHP_SESSION_ACTIVE && empty($_SESSION['csp_nonce'])) {
 $scriptNonce = $_SESSION['csp_nonce']['script'] ?? '';
 $styleNonce = $_SESSION['csp_nonce']['style'] ?? '';
 
-// Убедитесь, что nonce передается в переменные PHP
+// РЈР±РµРґРёС‚РµСЃСЊ, С‡С‚Рѕ nonce РїРµСЂРµРґР°РµС‚СЃСЏ РІ РїРµСЂРµРјРµРЅРЅС‹Рµ PHP
 $GLOBALS['scriptNonce'] = $scriptNonce;
 $GLOBALS['csrfToken'] = $_SESSION['csrf_token'] ?? '';
 
-// ┌────────────────────────────────────────────────────────────┐
-// │ 1. SECURITY HEADERS - Zero-tolerance policy               │
-// └────────────────────────────────────────────────────────────┘
+// в”Њв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”ђ
+// в”‚ 1. SECURITY HEADERS - Zero-tolerance policy               в”‚
+// в””в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”
 $securityHeaders = [
     // Basic security
     'X-Content-Type-Options'       => 'nosniff',
@@ -138,7 +126,7 @@ $securityHeaders = [
     'Access-Control-Allow-Headers' => 'Content-Type, X-CSRF-Token',
     'Access-Control-Allow-Credentials' => 'true',
 
-    // Permissions-Policy - разрешаем камеру и геолокацию для текущего домена
+    // Permissions-Policy - СЂР°Р·СЂРµС€Р°РµРј РєР°РјРµСЂСѓ Рё РіРµРѕР»РѕРєР°С†РёСЋ РґР»СЏ С‚РµРєСѓС‰РµРіРѕ РґРѕРјРµРЅР°
     'Permissions-Policy'           => join(', ', [
         'accelerometer=()',
         'autoplay=()',
@@ -154,7 +142,7 @@ $securityHeaders = [
         'usb=()'
     ]),
 
-    // Content Security Policy - добавляем необходимые разрешения (ОБНОВЛЕНО для PWA)
+    // Content Security Policy - РґРѕР±Р°РІР»СЏРµРј РЅРµРѕР±С…РѕРґРёРјС‹Рµ СЂР°Р·СЂРµС€РµРЅРёСЏ (РћР‘РќРћР’Р›Р•РќРћ РґР»СЏ PWA)
     'Content-Security-Policy' => join('; ', [
         "default-src 'none'",
         "script-src 'self' 'nonce-$scriptNonce' https://menu.labus.pro",
@@ -189,20 +177,20 @@ foreach ($securityHeaders as $key => $value) {
     }
 }
 
-// Принудительные заголовки против кэширования для HTML страниц
-if (!headers_sent() && !$isStaticFile) {
+// РџСЂРёРЅСѓРґРёС‚РµР»СЊРЅС‹Рµ Р·Р°РіРѕР»РѕРІРєРё РїСЂРѕС‚РёРІ РєСЌС€РёСЂРѕРІР°РЅРёСЏ РґР»СЏ HTML СЃС‚СЂР°РЅРёС†
+/* if (!headers_sent() && !$isStaticFile) {
     header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
     header("Pragma: no-cache");
     header("Expires: Thu, 01 Jan 1970 00:00:00 GMT");
-}
+} */
 
-// ┌────────────────────────────────────────────────────────────┐
-// │ 3. CSRF & USER SYNC - Automatic                            │
-// └────────────────────────────────────────────────────────────┘
+// в”Њв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”ђ
+// в”‚ 3. CSRF & USER SYNC - Automatic                            в”‚
+// в””в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”
 // Generate/refresh CSRF token
 require_once __DIR__ . '/db.php';
 
-// Инициализация CSRF токена
+// РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ CSRF С‚РѕРєРµРЅР°
 if (session_status() === PHP_SESSION_ACTIVE) {
     $csrfToken = $_SESSION['csrf_token'] ?? '';
     if (empty($csrfToken)) {
@@ -211,9 +199,12 @@ if (session_status() === PHP_SESSION_ACTIVE) {
     }
 }
 
-// Определение CART_SECRET_KEY если не определен в config.php
-if (!defined('CART_SECRET_KEY')) {
-    define('CART_SECRET_KEY', 'cart-secret-key');
+// РљРѕРЅСЃС‚Р°РЅС‚С‹ РґР»СЏ QueryCache
+if (!defined('QUERY_CACHE_MEMORY_LIMIT')) {
+    define('QUERY_CACHE_MEMORY_LIMIT', 10 * 1024 * 1024); // 10MB
+}
+if (!defined('QUERY_CACHE_DEFAULT_TTL')) {
+    define('QUERY_CACHE_DEFAULT_TTL', 300); // 5 РјРёРЅСѓС‚
 }
 
 // Sync user data if logged in
@@ -236,18 +227,18 @@ if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['user_id']) && e
     }
 }
 
-// ┌────────────────────────────────────────────────────────────┐
-// │ 4. ADDITIONAL SECURITY HARDENING                           │
-// └────────────────────────────────────────────────────────────┘
+// в”Њв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”ђ
+// в”‚ 4. ADDITIONAL SECURITY HARDENING                           в”‚
+// в””в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”
 // Remove PHP version exposure
 header_remove('X-Powered-By');
 // Disable unnecessary features
 header('X-Permitted-Cross-Domain-Policies: none');
 header('X-DNS-Prefetch-Control: off');
 
-// ┌────────────────────────────────────────────────────────────┐
-// │ 5. UTILITY FUNCTIONS                                       │
-// └────────────────────────────────────────────────────────────┘
+// в”Њв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”ђ
+// в”‚ 5. UTILITY FUNCTIONS                                       в”‚
+// в””в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”
 function regenerate_session_id()
 {
     if (session_status() === PHP_SESSION_ACTIVE) {
@@ -277,9 +268,9 @@ function destroy_session_secure()
     }
 }
 
-// ┌────────────────────────────────────────────────────────────┐
-// │ 6. CSRF VALIDATION FOR API REQUESTS                        │
-// └────────────────────────────────────────────────────────────┘
+// в”Њв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”ђ
+// в”‚ 6. CSRF VALIDATION FOR API REQUESTS                        в”‚
+// в””в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”
 
 /**
  * Validate CSRF token for API requests
@@ -321,7 +312,7 @@ $isApiRequest = strpos($_SERVER['REQUEST_URI'] ?? '', '/proxy/') !== false ||
     strpos($_SERVER['REQUEST_URI'] ?? '', '/api/') !== false;
 
 if ($isApiRequest) {
-    // Проверка Content-Type для не-GET запросов
+    // РџСЂРѕРІРµСЂРєР° Content-Type РґР»СЏ РЅРµ-GET Р·Р°РїСЂРѕСЃРѕРІ
     if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
         $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
         if (
@@ -345,66 +336,80 @@ if (isset($_GET['force_reload']) && session_status() === PHP_SESSION_ACTIVE) {
 }
 
 // =================================================================
-// ПРОДЛЕНИЕ СЕССИИ ДЛЯ АВТОРИЗОВАННЫХ ПОЛЬЗОВАТЕЛЕЙ
+// РџР РћР”Р›Р•РќРР• РЎР•РЎРЎРР Р”Р›РЇ РђР’РўРћР РР—РћР’РђРќРќР«РҐ РџРћР›Р¬Р—РћР’РђРўР•Р›Р•Р™
 // =================================================================
 
 if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['user_id'])) {
-    // Обновляем время последней активности
-    $_SESSION['last_activity'] = time();
+    // РћР±РЅРѕРІР»СЏРµРј РІСЂРµРјСЏ РїРѕСЃР»РµРґРЅРµР№ Р°РєС‚РёРІРЅРѕСЃС‚Рё
+    $now = time();
+    $activityInterval = 60;
+    if (empty($_SESSION['last_activity']) || ($now - $_SESSION['last_activity']) >= $activityInterval) {
+        $_SESSION['last_activity'] = $now;
+    }
 
-    // Продлеваем cookie сессии на 30 дней (долгосрочная авторизация — через remember-me)
-    $sessionParams = session_get_cookie_params();
-    setcookie(
-        session_name(),
-        session_id(),
-        time() + 2592000, // 30 дней
-        $sessionParams['path'],
-        $sessionParams['domain'],
-        $sessionParams['secure'],
-        $sessionParams['httponly']
-    );
+    // РџСЂРѕРґР»РµРІР°РµРј cookie СЃРµСЃСЃРёРё РЅРµ С‡Р°С‰Рµ 1 СЂР°Р·Р° РІ 6 С‡Р°СЃРѕРІ
+    $cookieRefreshInterval = 21600; // 6h
+    $lastCookieRefresh = $_SESSION['last_cookie_refresh'] ?? 0;
+    if (($now - $lastCookieRefresh) >= $cookieRefreshInterval) {
+        $sessionParams = session_get_cookie_params();
+        setcookie(
+            session_name(),
+            session_id(),
+            $now + 2592000, // 30 РґРЅРµР№
+            $sessionParams['path'],
+            $sessionParams['domain'],
+            $sessionParams['secure'],
+            $sessionParams['httponly']
+        );
+        $_SESSION['last_cookie_refresh'] = $now;
+    }
 
-    // Регенерируем ID сессии ТОЛЬКО при подозрительной активности
-    // Для зарегистрированных пользователей - одна сессия на все устройства/вкладки
-    // Подозрительная активность: смена IP, user-agent или долгая неактивность
+    // Р РµРіРµРЅРµСЂРёСЂСѓРµРј ID СЃРµСЃСЃРёРё РўРћР›Р¬РљРћ РїСЂРё РїРѕРґРѕР·СЂРёС‚РµР»СЊРЅРѕР№ Р°РєС‚РёРІРЅРѕСЃС‚Рё
+    // Р”Р»СЏ Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅРЅС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ - РѕРґРЅР° СЃРµСЃСЃРёСЏ РЅР° РІСЃРµ СѓСЃС‚СЂРѕР№СЃС‚РІР°/РІРєР»Р°РґРєРё
+    // РџРѕРґРѕР·СЂРёС‚РµР»СЊРЅР°СЏ Р°РєС‚РёРІРЅРѕСЃС‚СЊ: СЃРјРµРЅР° IP, user-agent РёР»Рё РґРѕР»РіР°СЏ РЅРµР°РєС‚РёРІРЅРѕСЃС‚СЊ
     $currentIP = $_SERVER['REMOTE_ADDR'] ?? '';
     $currentUA = $_SERVER['HTTP_USER_AGENT'] ?? '';
+    $securityCheckInterval = 300; // 5 min
+    $lastSecurityCheck = $_SESSION['security_check']['last_check'] ?? 0;
 
-    if (!isset($_SESSION['security_check'])) {
-        $_SESSION['security_check'] = [
-            'ip' => $currentIP,
-            'ua' => $currentUA,
-            'last_check' => time()
-        ];
-    }
+    if (!isset($_SESSION['security_check']) || ($now - $lastSecurityCheck) >= $securityCheckInterval) {
+        if (!isset($_SESSION['security_check'])) {
+            $_SESSION['security_check'] = [
+                'ip' => $currentIP,
+                'ua' => $currentUA,
+                'last_check' => $now
+            ];
+        }
 
-    $suspicious = false;
-    if ($_SESSION['security_check']['ip'] !== $currentIP) {
-        $suspicious = true;
-        error_log("Suspicious activity: IP changed for user {$_SESSION['user_id']}");
-    }
-    if ($_SESSION['security_check']['ua'] !== $currentUA) {
-        $suspicious = true;
-        error_log("Suspicious activity: UA changed for user {$_SESSION['user_id']}");
-    }
+        $suspicious = false;
+        if ($_SESSION['security_check']['ip'] !== $currentIP) {
+            $suspicious = true;
+            error_log("Suspicious activity: IP changed for user {$_SESSION['user_id']}");
+        }
+        if ($_SESSION['security_check']['ua'] !== $currentUA) {
+            $suspicious = true;
+            error_log("Suspicious activity: UA changed for user {$_SESSION['user_id']}");
+        }
 
-    if ($suspicious) {
-        $sessionData = $_SESSION;
-        session_regenerate_id(true);
-        $_SESSION = $sessionData;
+        if ($suspicious) {
+            $sessionData = $_SESSION;
+            session_regenerate_id(true);
+            $_SESSION = $sessionData;
+        }
+
         $_SESSION['security_check']['ip'] = $currentIP;
         $_SESSION['security_check']['ua'] = $currentUA;
-        $_SESSION['security_check']['last_check'] = time();
+        $_SESSION['security_check']['last_check'] = $now;
     }
 }
 
 // =================================================================
-// РЕГЕНЕРАЦИЯ СЕССИИ ДЛЯ НЕЗАРЕГИСТРИРОВАННЫХ ПОЛЬЗОВАТЕЛЕЙ
+// Р Р•Р“Р•РќР•Р РђР¦РРЇ РЎР•РЎРЎРР Р”Р›РЇ РќР•Р—РђР Р•Р“РРЎРўР РР РћР’РђРќРќР«РҐ РџРћР›Р¬Р—РћР’РђРўР•Р›Р•Р™
 // =================================================================
 
 if (session_status() === PHP_SESSION_ACTIVE && empty($_SESSION['user_id'])) {
-    // Для анонимных пользователей регенерируем ID чаще для безопасности
-    $regenerateInterval = 1800; // 30 минут
+    // Р”Р»СЏ Р°РЅРѕРЅРёРјРЅС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ СЂРµРіРµРЅРµСЂРёСЂСѓРµРј ID С‡Р°С‰Рµ РґР»СЏ Р±РµР·РѕРїР°СЃРЅРѕСЃС‚Рё
+    $regenerateInterval = 1800; // 30 РјРёРЅСѓС‚
     if (!isset($_SESSION['last_regeneration']) ||
         (time() - $_SESSION['last_regeneration']) > $regenerateInterval) {
 

@@ -1,6 +1,6 @@
 // sw.js — финальная версия с офлайн-страницей и push-уведомлениями
-const CACHE_NAME = "labus-v5-minified";
-const DYNAMIC_CACHE = "labus-dynamic-v5";
+const CACHE_NAME = "labus-v7-minified";
+const DYNAMIC_CACHE = "labus-dynamic-v7";
 const OFFLINE_URL = '/offline.html';   // добавляем офлайн-страницу
 
 // 1. Расширяем APP_SHELL офлайн-страницей и её ресурсами
@@ -10,6 +10,8 @@ const APP_SHELL = [
   "/css/fa-styles.min.css",
   "/css/account-styles.min.css",
   "/css/fa-purged.min.css",
+  "/css/menu-alt.min.css",
+  "/css/menu-content-info.min.css",
   "/fonts/Inter-SemiBold.woff2",
   "/fonts/proxima-nova-medium.woff2",
   "/fonts/Magistral-Medium.woff2",
@@ -69,22 +71,55 @@ self.addEventListener("activate", (event) => {
 });
 
 // 4. FETCH — добавляем только офлайн-страницу, всё остальное оставляем
+const STATIC_DESTINATIONS = new Set(['style', 'script', 'image', 'font']);
+
+function isHtmlRequest(request) {
+  if (request.mode === 'navigate') return true;
+  const accept = request.headers.get('accept') || '';
+  return accept.includes('text/html');
+}
+
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+  const response = await fetch(request);
+  if (response && response.status === 200) {
+    const cache = await caches.open(CACHE_NAME);
+    cache.put(request, response.clone());
+  }
+  return response;
+}
+
+async function networkFirst(request) {
+  try {
+    const response = await fetch(request);
+    if (response && response.status === 200) {
+      const cache = await caches.open(DYNAMIC_CACHE);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    const cached = await caches.match(request);
+    return cached || caches.match(OFFLINE_URL);
+  }
+}
+
 self.addEventListener('fetch', (event) => {
-  // 1. Пропускаем не-GET и chrome-extension
+  // 1. ???????????????????? ????-GET ?? chrome-extension
   if (event.request.method !== 'GET' ||
       event.request.url.startsWith('chrome-extension://')) {
     return;
   }
 
-    // 2. Исключаем POST-запросы на customer_orders.php
+    // 2. ?????????????????? POST-?????????????? ???? customer_orders.php
   if (
     event.request.method === 'POST' &&
     event.request.url.includes('customer_orders.php')
   ) {
-    return; // отдаём браузеру, SW не мешает
+    return; // ???????????? ????????????????, SW ???? ????????????
   }
 
-  // Специфичные правила (без изменений)
+  // ???????????????????? ?????????????? (?????? ??????????????????)
   if (event.request.url.includes('version.json')) {
     event.respondWith(
       fetch(event.request)
@@ -105,24 +140,17 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Главное: «Сеть сначала, кэш/офлайн потом»
-  event.respondWith(
-    fetch(event.request)
-      .then(networkResponse => {
-        const responseToCache = networkResponse.clone();
-        if (networkResponse.status === 200 &&
-            !event.request.url.includes('/api/') &&
-            !event.request.url.includes('/auth/')) {
-          caches.open(DYNAMIC_CACHE)
-            .then(cache => cache.put(event.request, responseToCache));
-        }
-        return networkResponse;
-      })
-      .catch(() =>
-        caches.match(event.request)
-          .then(cached => cached || caches.match(OFFLINE_URL))
-      )
-  );
+  if (isHtmlRequest(event.request)) {
+    event.respondWith(networkFirst(event.request));
+    return;
+  }
+
+  if (STATIC_DESTINATIONS.has(event.request.destination)) {
+    event.respondWith(cacheFirst(event.request));
+    return;
+  }
+
+  event.respondWith(networkFirst(event.request));
 });
 
 // 5. Обработка сообщений — без изменений

@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/session_init.php';
 require_once __DIR__ . '/require_auth.php';
-require_once __DIR__ . '/clear-nginx-cache.php';
 $required_role = 'admin';
 
 // Ensure script nonce is available for CSP
@@ -73,7 +72,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 if ($ok) {
                     $_SESSION['success'] = 'Товар обновлён!';
-                    clearNginxCache();
                     header('Location: admin-menu.php?edit=' . $id);
                     exit;
                 }
@@ -94,7 +92,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 if ($ok) {
                     $_SESSION['success'] = 'Товар добавлен!';
-                    clearNginxCache();
                     header('Location: admin-menu.php');
                     exit;
                 }
@@ -125,9 +122,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['error'] = 'Неверный формат файла (меньше 11 колонок)';
                 } else {
                     $ok = $db->bulkUpdateMenu($tempHandle, $delimiter);
-                    if ($ok) {
-                        clearNginxCache();
-                    }
                     $_SESSION['success'] = $ok ? 'Меню обновлено' : 'Ошибка при обновлении';
                 }
                 fclose($tempHandle);
@@ -498,11 +492,16 @@ if (!empty($_GET['edit'])) {
         document.addEventListener('DOMContentLoaded', function() {
             const tabBtns = document.querySelectorAll('.admin-tab-btn');
             const tabPanes = document.querySelectorAll('.admin-tab-pane');
+            const storageKey = 'adminActiveTab:admin-menu';
+            const availableTabs = new Set(Array.from(tabPanes, pane => pane.id));
 
             function activateTab(tabId) {
+                if (!availableTabs.has(tabId)) {
+                    tabId = 'dishes';
+                }
                 tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
                 tabPanes.forEach(pane => pane.classList.toggle('active', pane.id === tabId));
-                localStorage.setItem('adminActiveTab', tabId);
+                localStorage.setItem(storageKey, tabId);
             }
 
             tabBtns.forEach(btn => {
@@ -510,7 +509,7 @@ if (!empty($_GET['edit'])) {
             });
 
             // Load saved tab
-            const savedTab = localStorage.getItem('adminActiveTab') || 'dishes';
+            const savedTab = localStorage.getItem(storageKey) || 'dishes';
             if (savedTab === 'update') {
                 activateTab('dishes'); // Redirect old 'update' to 'dishes'
             } else {

@@ -1,10 +1,18 @@
 <?php
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/db.php';
+if (!defined('PUBLIC_MENU')) {
+    require_once __DIR__ . '/session_init.php';
+}
+$requestTimestamp = $GLOBALS['menu_request_ts'] ?? time();
 
-$db   = Database::getInstance();
-$categories = $db->getUniqueCategories();
+if (!isset($db)) {
+    require_once __DIR__ . '/db.php';
+    $db = Database::getInstance();
+}
+if (!isset($categories)) {
+    $categories = $db->getUniqueCategories();
+}
 $activeCategory = $_COOKIE['activeMenuCategory'] ?? ($categories[0]['category'] ?? '');
+$includeMenuCss = empty($GLOBALS['menu_css_in_head']);
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -64,21 +72,7 @@ $activeCategory = $_COOKIE['activeMenuCategory'] ?? ($categories[0]['category'] 
                     $isActive = $index === 0 ? 'active' : '';
                 ?>
                     <div class="tab-pane <?= $isActive ?>" id="<?= htmlspecialchars($category['category']) ?>">
-                        <?php foreach ($items as $item):
-                            $productData = [
-                                'id'       => $item['id'],
-                                'name'     => $item['name'],
-                                'price'    => $item['price'],
-                                'image'    => $item['image'],
-                                'calories' => $item['calories'] ?? 0,
-                                'protein'  => $item['protein']  ?? 0,
-                                'fat'      => $item['fat']      ?? 0,
-                                'carbs'    => $item['carbs']    ?? 0,
-                                'desc'     => $item['description'] ?? '',
-                                'csrf'     => $csrfToken,
-                                'timestamp' => time()
-                            ];
-                            $signedData = signProductData($productData, CART_SECRET_KEY);
+                <?php foreach ($items as $item):
                         ?>
                             <div class="cart-item">
                                 <div class="cart-item-info">
@@ -110,7 +104,6 @@ $activeCategory = $_COOKIE['activeMenuCategory'] ?? ($categories[0]['category'] 
                                         data-protein="<?= (int)($item['protein'] ?? 0) ?>"
                                         data-fat="<?= (int)($item['fat'] ?? 0) ?>"
                                         data-carbs="<?= (int)($item['carbs'] ?? 0) ?>"
-                                        data-signed="<?= htmlspecialchars($signedData) ?>"
                                         data-csrf="<?= $csrfToken ?>">
 
                                         <span class="buy-text">+</span>
@@ -129,9 +122,11 @@ $activeCategory = $_COOKIE['activeMenuCategory'] ?? ($categories[0]['category'] 
             </div>
         </div>
     </section>
-    <link rel="stylesheet" href="/css/fa-styles.min.css" nonce="<?= $styleNonce ?>">
-    <link rel="stylesheet" href="/css/fa-purged.min.css" nonce="<?= $styleNonce ?>">
-    <link rel="stylesheet" href="/css/menu-alt.min.css" nonce="<?= $styleNonce ?>">
+    <?php if ($includeMenuCss): ?>
+        <link rel="stylesheet" href="/css/fa-styles.min.css" nonce="<?= $styleNonce ?>">
+        <link rel="stylesheet" href="/css/fa-purged.min.css" nonce="<?= $styleNonce ?>">
+        <link rel="stylesheet" href="/css/menu-alt.min.css" nonce="<?= $styleNonce ?>">
+    <?php endif; ?>
 </body>
 
 </html>

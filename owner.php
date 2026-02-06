@@ -509,11 +509,16 @@ if (!empty($report_data)) {
         document.addEventListener('DOMContentLoaded', function() {
             const tabBtns = document.querySelectorAll('.admin-tab-btn');
             const tabPanes = document.querySelectorAll('.admin-tab-pane');
+            const storageKey = 'adminActiveTab:owner';
+            const availableTabs = new Set(Array.from(tabPanes, pane => pane.id));
 
             function activateTab(tabId) {
+                if (!availableTabs.has(tabId)) {
+                    tabId = 'stats';
+                }
                 tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
                 tabPanes.forEach(pane => pane.classList.toggle('active', pane.id === tabId));
-                localStorage.setItem('adminActiveTab', tabId);
+                localStorage.setItem(storageKey, tabId);
             }
 
             tabBtns.forEach(btn => {
@@ -521,7 +526,7 @@ if (!empty($report_data)) {
             });
 
             // Load saved tab
-            const savedTab = localStorage.getItem('adminActiveTab') || 'stats';
+            const savedTab = localStorage.getItem(storageKey) || 'stats';
             if (savedTab === 'update') {
                 activateTab('stats'); // Redirect old 'update' to 'stats'
             } else {

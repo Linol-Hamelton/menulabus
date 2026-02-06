@@ -4,14 +4,21 @@ require_once __DIR__ . '/../config_copy.php';
 if (file_exists(__DIR__ . '/QueryCache.php')) {
     require_once __DIR__ . '/QueryCache.php';
 }
+if (file_exists(__DIR__ . '/RedisCache.php')) {
+    require_once __DIR__ . '/RedisCache.php';
+}
 
 class Database
 {
+    private const PRODUCT_CACHE_TTL = 900;
+    private const MENU_CACHE_TTL = 900;
+    private const CATEGORIES_CACHE_TTL = 3600;
     private $connection;
     private static $instance = null;
     private $preparedStatements = [];
     private $useQueryCache = true;
     private $queryCache = null;
+    private $redisCache = null;
 
     private function __construct()
     {
@@ -19,6 +26,9 @@ class Database
         
         if ($this->useQueryCache && class_exists('QueryCache')) {
             $this->queryCache = QueryCache::getInstance();
+        }
+        if (class_exists('RedisCache')) {
+            $this->redisCache = RedisCache::getInstance();
         }
     }
 
@@ -101,6 +111,11 @@ class Database
             $this->queryCache->invalidate('/^product_/');
             $this->queryCache->invalidate('/^categories_/');
         }
+        if ($this->redisCache) {
+            $this->redisCache->invalidate('menu_items_*');
+            $this->redisCache->invalidate('product_*');
+            $this->redisCache->invalidate('categories_*');
+        }
     }
 
     private function invalidateOrderCache($orderId = null)
@@ -126,6 +141,13 @@ class Database
     public function getProductById($id)
     {
         $cacheKey = 'product_' . $id;
+
+        if ($this->redisCache) {
+            $cached = $this->redisCache->get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
         
         if ($this->useQueryCache && $this->queryCache) {
             $cached = $this->queryCache->get($cacheKey);
@@ -144,8 +166,13 @@ class Database
             $stmt->execute();
             $result = $stmt->fetch();
             
-            if ($this->useQueryCache && $this->queryCache && $result !== false) {
-                $this->queryCache->set($cacheKey, $result, 300);
+            if ($result !== false) {
+                if ($this->redisCache) {
+                    $this->redisCache->set($cacheKey, $result, self::PRODUCT_CACHE_TTL);
+                }
+                if ($this->useQueryCache && $this->queryCache) {
+                    $this->queryCache->set($cacheKey, $result, self::PRODUCT_CACHE_TTL);
+                }
             }
             
             return $result;
@@ -199,6 +226,13 @@ class Database
     public function getMenuItems($category = null)
     {
         $cacheKey = QueryCache::generateMenuKey($category);
+
+        if ($this->redisCache) {
+            $cached = $this->redisCache->get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
         
         if ($this->useQueryCache && $this->queryCache) {
             $cached = $this->queryCache->get($cacheKey);
@@ -224,8 +258,11 @@ class Database
             $stmt->execute();
             $result = $stmt->fetchAll();
             
+            if ($this->redisCache) {
+                $this->redisCache->set($cacheKey, $result, self::MENU_CACHE_TTL);
+            }
             if ($this->useQueryCache && $this->queryCache) {
-                $this->queryCache->set($cacheKey, $result, 300);
+                $this->queryCache->set($cacheKey, $result, self::MENU_CACHE_TTL);
             }
             
             return $result;
@@ -297,6 +334,13 @@ class Database
     public function getUniqueCategories()
     {
         $cacheKey = QueryCache::generateCategoriesKey();
+
+        if ($this->redisCache) {
+            $cached = $this->redisCache->get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
         
         if ($this->useQueryCache && $this->queryCache) {
             $cached = $this->queryCache->get($cacheKey);
@@ -312,8 +356,11 @@ class Database
             $stmt->execute();
             $result = $stmt->fetchAll();
             
+            if ($this->redisCache) {
+                $this->redisCache->set($cacheKey, $result, self::CATEGORIES_CACHE_TTL);
+            }
             if ($this->useQueryCache && $this->queryCache) {
-                $this->queryCache->set($cacheKey, $result, 600);
+                $this->queryCache->set($cacheKey, $result, self::CATEGORIES_CACHE_TTL);
             }
             
             return $result;

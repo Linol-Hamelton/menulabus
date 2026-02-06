@@ -1,11 +1,17 @@
-<?php
-require_once __DIR__ . '/session_init.php';
+﻿<?php
+if (!defined('PUBLIC_MENU')) {
+    require_once __DIR__ . '/session_init.php';
+}
+$projectName = $_SESSION['project_name'] ?? ($GLOBALS['projectName'] ?? 'labus');
+$appVersion = $_SESSION['app_version'] ?? ($GLOBALS['appVersion'] ?? '1.0.0');
+$isLoggedIn = !empty($_SESSION['user_id']);
+$includeHeaderCss = empty($GLOBALS['header_css_in_head']);
 ?>
 
 <header class="header">
   <div class="header-inner">
     <div class="logo">
-      <a href="index.php" data-project-name><?= htmlspecialchars($_SESSION['project_name'] ?? 'labus') ?></a>
+      <a href="index.php" data-project-name><?= htmlspecialchars($projectName) ?></a>
     </div>
     <div class="mobile-menu-btn">
       <span class="burger-line"></span>
@@ -26,11 +32,13 @@ require_once __DIR__ . '/session_init.php';
           </a>
         </li>
         <li class="account-menu-item">
-          <a href="<?= isset($_SESSION['user_id']) ? 'account.php' : 'auth.php' ?>">Аккаунт</a>
+          <a href="<?= $isLoggedIn ? 'account.php' : 'auth.php' ?>">Аккаунт</a>
         </li>
       </ul>
     </nav>
   </div>
-  <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
-  <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+  <?php if ($includeHeaderCss): ?>
+    <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($appVersion) ?>">
+    <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($appVersion) ?>">
+  <?php endif; ?>
 </header>
