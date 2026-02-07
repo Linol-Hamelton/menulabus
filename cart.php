@@ -28,7 +28,7 @@ require_once __DIR__ . '/session_init.php';
         unset($_SESSION['repeat_order_js']);
     }
     ?>
-    <?php require_once __DIR__ . '/header.php'; ?>
+    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     <section id="menu" class="section menu">
         <div class="container-cart">
             <div class="section-header-menu">

@@ -182,11 +182,15 @@ class RedisCache {
         // Redis
         if ($this->available && $this->redis) {
             try {
-                $keys = $this->redis->keys($pattern);
-                if (!empty($keys)) {
-                    $this->redis->del($keys);
-                    $deleted += count($keys);
-                }
+                // Use SCAN to avoid blocking Redis on large keyspaces.
+                $iterator = null;
+                do {
+                    $keys = $this->redis->scan($iterator, $pattern, 500);
+                    if ($keys !== false && !empty($keys)) {
+                        $deletedInBatch = $this->redis->del($keys);
+                        $deleted += is_int($deletedInBatch) ? $deletedInBatch : count($keys);
+                    }
+                } while ($iterator !== 0);
             } catch (Exception $e) {
                 error_log('RedisCache invalidate error: ' . $e->getMessage());
             }

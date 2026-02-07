@@ -33,11 +33,10 @@ self.addEventListener("install", (event) => {
     caches
       .open(CACHE_NAME)
       .then((cache) => {
-        console.log("Кэшируем основные файлы");
         // Кэшируем каждый ресурс отдельно, чтобы ошибка одного не ломала всю установку
         const promises = APP_SHELL.map(url =>
           cache.add(url).catch(error => {
-            console.warn(`Не удалось кэшировать ${url}:`, error);
+            // ignore cache miss during install, continue caching others
             // Пропускаем ошибку, продолжаем с остальными
             return Promise.resolve();
           })
@@ -45,7 +44,6 @@ self.addEventListener("install", (event) => {
         return Promise.all(promises);
       })
       .then(() => {
-        console.log("Все ресурсы обработаны (некоторые могли не закэшироваться)");
         return self.skipWaiting();
       })
   );
@@ -60,7 +58,6 @@ self.addEventListener("activate", (event) => {
         Promise.all(
           cacheNames.map((cacheName) => {
             if (cacheName !== CACHE_NAME && cacheName !== DYNAMIC_CACHE) {
-              console.log("Удаляем старый кэш:", cacheName);
               return caches.delete(cacheName);
             }
           })
@@ -159,7 +156,7 @@ self.addEventListener('message', (event) => {
   if (event.data.type === 'CLEAR_CACHE') {
     caches.keys()
       .then(names => Promise.all(names.map(n => caches.delete(n))))
-      .then(() => console.log('Все кэши очищены'));
+      .then(() => Promise.resolve());
   }
 });
 

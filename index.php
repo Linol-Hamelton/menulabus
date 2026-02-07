@@ -31,7 +31,7 @@ require_once __DIR__ . '/session_init.php';
 </head>
 
 <body>
-  <?php require_once __DIR__ . '/header.php'; ?>
+  <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
 
   <section class="hero">
   <!-- Адаптивная картинка, которая будет фоном -->

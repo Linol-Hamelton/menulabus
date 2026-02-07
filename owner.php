@@ -4,6 +4,15 @@ require_once __DIR__ . '/session_init.php';
 require_once __DIR__ . '/require_auth.php';
 $required_role = 'owner';
 
+// Ensure script nonce is available for CSP
+if (empty($scriptNonce) && isset($GLOBALS['scriptNonce'])) {
+    $scriptNonce = $GLOBALS['scriptNonce'];
+}
+// Fallback to session nonce if still empty
+if (empty($scriptNonce) && isset($_SESSION['csp_nonce']['script'])) {
+    $scriptNonce = $_SESSION['csp_nonce']['script'];
+}
+
 $db = Database::getInstance();
 
 // Получаем пользователей для вкладки "Пользователи"
@@ -270,21 +279,23 @@ if (!empty($report_data)) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Панель владельца | labus</title>
+    <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/owner-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
 </head>
 
 <body class="owner-page">
-    <?php require_once __DIR__ . '/header.php'; ?>
+    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     <?php require_once __DIR__ . '/account-header.php'; ?>
 
     <div class="account-container">
         <section class="admin-form-container">
             <div class="admin-tabs-container">
                 <div class="admin-tabs">
-                    <button class="admin-tab-btn <?= $tab === 'stats' ? 'active' : '' ?>" data-tab="stats">Статистика</button>
-                    <button class="admin-tab-btn <?= $tab === 'users' ? 'active' : '' ?>" data-tab="users">Пользователи</button>
+                    <button type="button" class="admin-tab-btn <?= $tab === 'stats' ? 'active' : '' ?>" data-tab="stats">Статистика</button>
+                    <button type="button" class="admin-tab-btn <?= $tab === 'users' ? 'active' : '' ?>" data-tab="users">Пользователи</button>
                 </div>
             </div>
 
@@ -498,95 +509,17 @@ if (!empty($report_data)) {
         </div>
     </div>
 
-    <!-- Передача данных в JavaScript -->
-    <script nonce="<?= $scriptNonce ?>">
-        window.chartData = <?= json_encode($chart_data) ?>;
-        window.currentPeriod = '<?= $period ?>';
-        window.currentReport = '<?= $report_type ?>';
-        window.rawReportData = <?= json_encode($report_data) ?>;
-
-        // Переключение вкладок администратора
-        document.addEventListener('DOMContentLoaded', function() {
-            const tabBtns = document.querySelectorAll('.admin-tab-btn');
-            const tabPanes = document.querySelectorAll('.admin-tab-pane');
-            const storageKey = 'adminActiveTab:owner';
-            const availableTabs = new Set(Array.from(tabPanes, pane => pane.id));
-
-            function activateTab(tabId) {
-                if (!availableTabs.has(tabId)) {
-                    tabId = 'stats';
-                }
-                tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
-                tabPanes.forEach(pane => pane.classList.toggle('active', pane.id === tabId));
-                localStorage.setItem(storageKey, tabId);
-            }
-
-            tabBtns.forEach(btn => {
-                btn.addEventListener('click', () => activateTab(btn.dataset.tab));
-            });
-
-            // Load saved tab
-            const savedTab = localStorage.getItem(storageKey) || 'stats';
-            if (savedTab === 'update') {
-                activateTab('stats'); // Redirect old 'update' to 'stats'
-            } else {
-                activateTab(savedTab);
-            }
-        });
-
-        // Обработка сохранения роли пользователя
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.save-role-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const userId = this.dataset.userId;
-                    const select = this.parentElement.querySelector('.role-select');
-                    const newRole = select.value;
-
-                    // Показываем индикатор загрузки
-                    const originalText = this.textContent;
-                    this.textContent = 'Сохранение...';
-                    this.disabled = true;
-
-                    fetch('/update_user_role.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ user_id: userId, role: newRole })
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('HTTP error ' + response.status);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.success) {
-                            // Успех
-                            this.textContent = 'Сохранено!';
-                            setTimeout(() => {
-                                this.textContent = originalText;
-                                this.disabled = false;
-                            }, 1500);
-                        } else {
-                            alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
-                            this.textContent = originalText;
-                            this.disabled = false;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Ошибка сети', error);
-                        alert('Сетевая ошибка: ' + error.message);
-                        this.textContent = originalText;
-                        this.disabled = false;
-                    });
-                });
-            });
-        });
-    </script>
+    <textarea id="owner-page-data" hidden><?= htmlspecialchars(json_encode([
+        'chartData' => $chart_data,
+        'currentPeriod' => $period,
+        'currentReport' => $report_type,
+        'rawReportData' => $report_data
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8') ?></textarea>
     <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/owner.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/admin-tabs-repair.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/push-notifications.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
 </body>
 
 </html>
+

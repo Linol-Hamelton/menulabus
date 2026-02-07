@@ -10,8 +10,8 @@ if (file_exists(__DIR__ . '/RedisCache.php')) {
 
 class Database
 {
-    private const PRODUCT_CACHE_TTL = 900;
-    private const MENU_CACHE_TTL = 900;
+    private const PRODUCT_CACHE_TTL = 1800;
+    private const MENU_CACHE_TTL = 1800;
     private const CATEGORIES_CACHE_TTL = 3600;
     private $connection;
     private static $instance = null;
@@ -19,10 +19,16 @@ class Database
     private $useQueryCache = true;
     private $queryCache = null;
     private $redisCache = null;
+    private $productCacheTtl;
+    private $menuCacheTtl;
+    private $categoriesCacheTtl;
 
     private function __construct()
     {
         $this->connect();
+        $this->productCacheTtl = $this->resolveCacheTtl('PRODUCT_CACHE_TTL', self::PRODUCT_CACHE_TTL);
+        $this->menuCacheTtl = $this->resolveCacheTtl('MENU_CACHE_TTL', self::MENU_CACHE_TTL);
+        $this->categoriesCacheTtl = $this->resolveCacheTtl('CATEGORIES_CACHE_TTL', self::CATEGORIES_CACHE_TTL);
         
         if ($this->useQueryCache && class_exists('QueryCache')) {
             $this->queryCache = QueryCache::getInstance();
@@ -30,6 +36,23 @@ class Database
         if (class_exists('RedisCache')) {
             $this->redisCache = RedisCache::getInstance();
         }
+    }
+
+    private function resolveCacheTtl(string $key, int $default): int
+    {
+        if (defined($key)) {
+            $definedValue = constant($key);
+            if (is_numeric($definedValue) && (int) $definedValue > 0) {
+                return (int) $definedValue;
+            }
+        }
+
+        $envValue = getenv($key);
+        if ($envValue !== false && is_numeric($envValue) && (int) $envValue > 0) {
+            return (int) $envValue;
+        }
+
+        return $default;
     }
 
     public static function getInstance()
@@ -168,10 +191,10 @@ class Database
             
             if ($result !== false) {
                 if ($this->redisCache) {
-                    $this->redisCache->set($cacheKey, $result, self::PRODUCT_CACHE_TTL);
+                    $this->redisCache->set($cacheKey, $result, $this->productCacheTtl);
                 }
                 if ($this->useQueryCache && $this->queryCache) {
-                    $this->queryCache->set($cacheKey, $result, self::PRODUCT_CACHE_TTL);
+                    $this->queryCache->set($cacheKey, $result, $this->productCacheTtl);
                 }
             }
             
@@ -259,10 +282,10 @@ class Database
             $result = $stmt->fetchAll();
             
             if ($this->redisCache) {
-                $this->redisCache->set($cacheKey, $result, self::MENU_CACHE_TTL);
+                $this->redisCache->set($cacheKey, $result, $this->menuCacheTtl);
             }
             if ($this->useQueryCache && $this->queryCache) {
-                $this->queryCache->set($cacheKey, $result, self::MENU_CACHE_TTL);
+                $this->queryCache->set($cacheKey, $result, $this->menuCacheTtl);
             }
             
             return $result;
@@ -357,10 +380,10 @@ class Database
             $result = $stmt->fetchAll();
             
             if ($this->redisCache) {
-                $this->redisCache->set($cacheKey, $result, self::CATEGORIES_CACHE_TTL);
+                $this->redisCache->set($cacheKey, $result, $this->categoriesCacheTtl);
             }
             if ($this->useQueryCache && $this->queryCache) {
-                $this->queryCache->set($cacheKey, $result, self::CATEGORIES_CACHE_TTL);
+                $this->queryCache->set($cacheKey, $result, $this->categoriesCacheTtl);
             }
             
             return $result;
@@ -684,15 +707,16 @@ class Database
         }
     }
     
-    public function updateRememberToken($selector, $hashedValidator) 
+    public function updateRememberToken($selector, $hashedValidator, $expires) 
     {
         try {
             $stmt = $this->prepareCached(
                 "UPDATE auth_tokens 
-                 SET hashed_validator = ? 
+                 SET hashed_validator = ?,
+                     expires_at = ?
                  WHERE selector = ?"
             );
-            return $stmt->execute([$hashedValidator, $selector]);
+            return $stmt->execute([$hashedValidator, $expires, $selector]);
         } catch (PDOException $e) {
             error_log("updateRememberToken Error: " . $e->getMessage());
             return false;

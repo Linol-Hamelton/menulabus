@@ -71,7 +71,7 @@ echo "\n=== Конец проверки ===\n";
 
 // Рекомендации
 if (!extension_loaded('redis') && ini_get('session.save_handler') === 'files') {
-    echo "\n⚠️  Рекомендация: установите расширение Redis для сессий (см. fastpanel-redis-install.md).\n";
+    echo "\n⚠️  Рекомендация: установите расширение Redis для сессий (см. ACTION-PLAN-2026.md).\n";
 }
 
 if (ini_get('pm.max_children') < 50) {

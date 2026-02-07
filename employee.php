@@ -90,6 +90,10 @@ $activeTab = $_COOKIE['activeOrderTab'] ?? 'Приём';
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <title>Панель сотрудника | labus</title>
 
     <!-- Preloader - мгновенная загрузка -->
@@ -97,7 +101,7 @@ $activeTab = $_COOKIE['activeOrderTab'] ?? 'Приём';
 </head>
 
 <body class="employee-page">
-    <?php require_once __DIR__ . '/header.php'; ?>
+    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     <?php require_once __DIR__ . '/account-header.php'; ?>
 
     <div class="account-container">
@@ -140,6 +144,7 @@ $activeTab = $_COOKIE['activeOrderTab'] ?? 'Приём';
                                     <div class="order-item" data-order-id="<?= $o['id'] ?>" data-status="<?= htmlspecialchars($o['status']) ?>">
                                         <div class="order-header" data-toggle-order>
                                             <span class="order-id">#<?= $o['id'] ?></span>
+                                            <span class="order-status <?= strtolower($o['status']) ?>"><?= $o['status'] ?></span>
                                             <span class="order-date"><?= date('d.m H:i', strtotime($o['created_at'])) ?></span>
                                             <span class="order-total"><?= number_format($o['total'], 0, '.', ' ') ?> ₽</span>
                                             <i class="fas fa-chevron-down employee-toggle-icon"></i>
@@ -195,8 +200,6 @@ $activeTab = $_COOKIE['activeOrderTab'] ?? 'Приём';
                                             <form method="POST" class="update-order-form" data-order-id="<?= $o['id'] ?>">
                                                 <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                                                 <input type="hidden" name="order_id" value="<?= $o['id'] ?>">
-                                                <span class="order-status <?= strtolower($o['status']) ?>"><?= $o['status'] ?></span>
-
                                                 <?php if (!in_array($o['status'], ['завершён', 'отказ'])): ?>
                                                     <button type="button" class="status-btn"
                                                         data-action="update_status"
@@ -236,12 +239,11 @@ $activeTab = $_COOKIE['activeOrderTab'] ?? 'Приём';
             </div>
         </div>
     </div>
-    <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
-    <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <script src="/js/security.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/cart.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/account.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/employee-status-fix.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/ws-orders.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/push-notifications.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
 </body>

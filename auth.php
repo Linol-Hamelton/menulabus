@@ -169,13 +169,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <title><?= htmlspecialchars($mode === 'register' ? 'Регистрация' : 'Вход') ?></title>
 
     <!-- Preloader - мгновенная загрузка -->
     
 </head>
-<body>
-    <?php require_once __DIR__ . '/header.php'; ?>
+<body class="auth-page">
+    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     
     <div class="auth-container">
 <div class="auth-tabs">
@@ -234,7 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         value="<?= isset($_POST['phone']) ? htmlspecialchars($_POST['phone']) : '' ?>"
                     >
                 </div>
-<div class="form-group">
+<div class="form-group has-password-visibility">
     <label for="reg_password" class="visually-hidden"></label>
     <input 
         type="password" 
@@ -246,12 +250,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         minlength="8"
         class="password-input"
     >
-    <input type="checkbox" id="show_reg_password" class="show-password-checkbox">
-    <label for="show_reg_password" class="show-password-label">Показать</label>
+    <div class="password-visibility" data-target="reg_password" role="button" tabindex="0" aria-label="Show password"></div>
 </div>
 
-<div class="form-group">
-    <label for="reg_password_confirm" class="visually-hidden">Подтверждение пароля</label>
+<div class="form-group has-password-visibility">
+    <label for="reg_password_confirm" class="visually-hidden"></label>
     <input 
         type="password" 
         id="reg_password_confirm" 
@@ -261,8 +264,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         autocomplete="new-password"
         class="password-input"
     >
-    <input type="checkbox" id="show_reg_password_confirm" class="show-password-checkbox">
-    <label for="show_reg_password_confirm" class="show-password-label">Показать</label>
+    <div class="password-visibility" data-target="reg_password_confirm" role="button" tabindex="0" aria-label="Show password"></div>
 </div>
                 <button type="submit" class="btn btn-primary">
                     <span class="btn-text">Зарегистрироваться</span>
@@ -282,7 +284,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         value="<?= isset($_POST['email']) ? htmlspecialchars($_POST['email']) : '' ?>"
                     >
                 </div>
-<div class="form-group">
+<div class="form-group has-password-visibility">
     <label for="login_password" class="visually-hidden"></label>
     <input 
         type="password" 
@@ -294,8 +296,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         minlength="8"
         class="password-input"
     >
-    <input type="checkbox" id="show_password" class="show-password-checkbox">
-    <label for="show_password" class="show-password-label">Показать</label>
+    <div class="password-visibility" data-target="login_password" role="button" tabindex="0" aria-label="Show password"></div>
 </div>
                 <div class="form-group remember-me">
                     <input 
@@ -318,8 +319,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </form>
         <?php endif; ?>
     </div>
-    <link rel="preload" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" as="style" id="fa-styles-preload">
-    <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
-    <script src="/js/auth.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+	    <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+	    <script src="/js/auth.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
 </body>
 </html>
+
+
+

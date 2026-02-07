@@ -46,7 +46,7 @@ $csrfToken = bin2hex(random_bytes(16));
 </head>
 
 <body id="body">
-    <?php require_once __DIR__ . '/header.php'; ?>
+    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     <?php
     switch ($menuView) {
         case 'alt':

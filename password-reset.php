@@ -64,12 +64,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <title><?= $mode === 'reset' ? 'Сброс пароля' : 'Забыли пароль' ?></title>
 
     <!-- Preloader - мгновенная загрузка -->
     
 </head>
-<body>
+<body class="auth-page password-reset-page">
     <div class="auth-container">
         <h2><?= $mode === 'reset' ? 'Сброс пароля' : 'Забыли пароль' ?></h2>
         
@@ -107,21 +112,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p class="auth-link"><a href="auth.php">Вернуться к входу</a></p>
         <?php endif; ?>
     </div>
-    <link rel="preload" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" as="style" id="fa-styles-preload">
-<script nonce="<?= $scriptNonce ?>">
-    // Загрузка CSS после загрузки страницы
-    document.getElementById('fa-styles-preload').onload = function() {
-        this.onload = null;
-        this.rel = 'stylesheet';
-    };
-    
-    // Fallback на случай если onload не сработает
-    setTimeout(function() {
-        var link = document.getElementById('fa-styles-preload');
-        if (link && link.rel === 'preload') {
-            link.rel = 'stylesheet';
-        }
-    }, 3000);
-</script>
 </body>
 </html>

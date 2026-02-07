@@ -1,18 +1,23 @@
 <?php
 // monitor.php - Комплексная система мониторинга производительности
-require_once 'check-auth.php';
+$required_role = 'admin';
+require_once __DIR__ . '/require_auth.php';
 
 if ($_SESSION['user_role'] !== 'owner' && $_SESSION['user_role'] !== 'admin') {
     die('Access denied');
 }
 
+$csrfToken = $_SESSION['csrf_token'] ?? '';
+$scriptNonce = $GLOBALS['scriptNonce'] ?? ($_SESSION['csp_nonce']['script'] ?? '');
+
 // Подключаем необходимые файлы
 require_once 'db.php';
 
 // Проверяем доступность QueryCache
-$queryCacheAvailable = class_exists('QueryCache');
-if ($queryCacheAvailable) {
-    require_once 'QueryCache.php';
+$queryCacheAvailable = false;
+if (file_exists(__DIR__ . '/QueryCache.php')) {
+    require_once __DIR__ . '/QueryCache.php';
+    $queryCacheAvailable = class_exists('QueryCache');
 }
 
 // Обработка API запросов
@@ -641,11 +646,9 @@ $metrics = getPerformanceMetrics();
                 <button class="btn btn-warning" onclick="clearOpcache()">
                     <span class="icon">🗑️</span> Очистить OPcache
                 </button>
-                <?php if ($queryCacheAvailable): ?>
                 <button class="btn btn-warning" onclick="clearQueryCache()">
-                    <span class="icon">🗑️</span> Очистить QueryCache
+                    <span class="icon">🗑️</span> Clear Server Cache
                 </button>
-                <?php endif; ?>
                 <button class="btn btn-success" onclick="exportMetrics()">
                     <span class="icon">📥</span> Экспорт метрик
                 </button>
@@ -904,7 +907,7 @@ $metrics = getPerformanceMetrics();
 GET /monitor.php?api=1
 GET /monitor.php?action=get_metrics
 POST /monitor.php?action=clear_opcache
-POST /monitor.php?action=clear_query_cache
+POST /clear-cache.php?scope=server (header: X-CSRF-Token)
             </pre>
             <p>Пример ответа:</p>
             <pre style="background: var(--light); padding: 15px; border-radius: 4px; overflow: auto; max-height: 300px;" id="apiExample">
@@ -913,10 +916,11 @@ POST /monitor.php?action=clear_query_cache
         </div>
     </div>
     
-    <script>
+    <script nonce="<?= htmlspecialchars($scriptNonce ?? '', ENT_QUOTES, 'UTF-8') ?>">
     // Глобальные переменные
     let autoRefreshInterval = null;
     let refreshInterval = 30000; // 30 секунд по умолчанию
+    const monitorCsrfToken = <?= json_encode($csrfToken, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
     
     // Функция для показа результата
     function showResult(message, type = 'success') {
@@ -969,19 +973,46 @@ POST /monitor.php?action=clear_query_cache
         }
     }
     
-    // Функция очистки QueryCache
+    // Функция очистки server cache (QueryCache + Redis)
     async function clearQueryCache() {
         if (!confirm('Вы уверены? Это сбросит весь кэш запросов.')) {
             return;
         }
+
+        if (!monitorCsrfToken) {
+            showResult('CSRF token not found. Reload the page.', 'error');
+            return;
+        }
         
         try {
-            const response = await fetch('?action=clear_query_cache');
+            const response = await fetch('/clear-cache.php?scope=server', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-Token': monitorCsrfToken
+                }
+            });
             const result = await response.json();
-            
-            showResult(result.message, result.success ? 'success' : 'error');
-            
-            if (result.success) {
+
+            const success = response.ok && result.status === 'success';
+            let message = result.message || (success ? 'Server cache cleared' : 'Cache clear failed');
+            if (success && result.details) {
+                const details = [];
+                if ('query_cache_cleared' in result.details) {
+                    details.push(`QueryCache: ${result.details.query_cache_cleared ? 'ok' : 'skip'}`);
+                }
+                if ('redis_cache_cleared' in result.details) {
+                    details.push(`Redis: ${result.details.redis_cache_cleared ? 'ok' : 'skip'}`);
+                }
+                if (details.length) {
+                    message += ` (${details.join(', ')})`;
+                }
+            }
+
+            showResult(message, success ? 'success' : 'error');
+
+            if (success) {
                 // Обновить метрики через 2 секунды
                 setTimeout(refreshMetrics, 2000);
             }

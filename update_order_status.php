@@ -135,9 +135,16 @@ try {
         throw new Exception('Order not found', 404);
     }
 
-    // Определяем следующий статус
+    // Определяем следующий статус.
+    // Нормализуем "ё/е", чтобы не падать на вариантах "Приём/Прием".
+    $normalizeStatus = static function (string $value): string {
+        return str_replace(['ё', 'Ё'], ['е', 'Е'], trim($value));
+    };
+
+    $currentStatusNormalized = $normalizeStatus($currentStatus);
     $statusFlow = ['Приём', 'готовим', 'доставляем', 'завершён'];
-    $currentIndex = array_search($currentStatus, $statusFlow);
+    $statusFlowNormalized = array_map($normalizeStatus, $statusFlow);
+    $currentIndex = array_search($currentStatusNormalized, $statusFlowNormalized, true);
 
     // Обработка отказа
     if (isset($_POST['action']) && $_POST['action'] === 'reject') {
@@ -146,7 +153,7 @@ try {
         if ($currentIndex === false) {
             throw new Exception("Invalid current status: $currentStatus", 400);
         }
-        
+
         if ($currentIndex >= count($statusFlow) - 1) {
             throw new Exception('Cannot change status further', 400);
         }
@@ -196,4 +203,3 @@ try {
 }
 
 echo json_encode($response);
-?>

@@ -22,7 +22,7 @@ $activeCategory = $_COOKIE['activeMenuCategory'] ?? $categories[0]['category'];
 </head>
 
 <body id="body">
-    <?php require_once __DIR__ . '/header.php'; ?>
+    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     <?php
     // РџРѕР»СѓС‡Р°РµРј Р°РєС‚СѓР°Р»СЊРЅС‹Рµ РґР°РЅРЅС‹Рµ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РёР· Р‘Р”
     $now = time();

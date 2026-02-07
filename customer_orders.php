@@ -101,6 +101,10 @@ $activeTab = $_COOKIE['activeOrderTab'] ?? 'all';
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <title>Мои заказы | labus</title>
 
     <!-- Preloader - мгновенная загрузка -->
@@ -108,7 +112,7 @@ $activeTab = $_COOKIE['activeOrderTab'] ?? 'all';
 </head>
 
 <body class="customer_orders-page">
-    <?php require_once __DIR__ . '/header.php'; ?>
+    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     <?php require_once __DIR__ . '/account-header.php'; ?>
 
     <div class="account-container">
@@ -148,6 +152,7 @@ $activeTab = $_COOKIE['activeOrderTab'] ?? 'all';
                                     <div class="order-item" data-order-id="<?= $o['id'] ?>" data-status="<?= htmlspecialchars($o['status']) ?>">
                                         <div class="order-header" data-toggle-order>
                                             <span class="order-id">#<?= $o['id'] ?></span>
+                                            <span class="order-status <?= strtolower($o['status']) ?>"><?= $o['status'] ?></span>
                                             <span class="order-date"><?= date('d.m H:i', strtotime($o['created_at'])) ?></span>
                                             <span class="order-total"><?= number_format($o['total'], 0, '.', ' ') ?> ₽</span>
                                             <i class="fas fa-chevron-down employee-toggle-icon"></i>
@@ -202,7 +207,6 @@ $activeTab = $_COOKIE['activeOrderTab'] ?? 'all';
 
                                         <div class="order-actions">
                                             <form method="POST" class="update-order-form" data-order-id="<?= $o['id'] ?>">
-                                                <span class="order-status <?= strtolower($o['status']) ?>"><?= $o['status'] ?></span>
                                                 <?php if ($o['status'] === 'завершён' || $o['status'] === 'отказ'): ?>
                                                         <form class="repeat-order-form" data-order-id="<?= $o['id'] ?>">
                                                             <input type="hidden" name="action" value="repeat_order">
@@ -234,8 +238,6 @@ $activeTab = $_COOKIE['activeOrderTab'] ?? 'all';
             </div>
         </div>
     </div>
-    <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
-    <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <script src="/js/security.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/cart.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>

@@ -148,6 +148,7 @@ if (!empty($_GET['edit'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
 
 
     <title>Блюда | labus</title>
@@ -174,8 +175,8 @@ if (!empty($_GET['edit'])) {
         <!-- Admin Tabs -->
         <div class="admin-tabs-container">
             <div class="admin-tabs">
-                <button class="admin-tab-btn active" data-tab="dishes">Блюда</button>
-                <button class="admin-tab-btn" data-tab="design">Дизайн</button>
+                <button type="button" class="admin-tab-btn active" data-tab="dishes">Блюда</button>
+                <button type="button" class="admin-tab-btn" data-tab="design">Дизайн</button>
             </div>
         </div>
 
@@ -487,37 +488,8 @@ if (!empty($_GET['edit'])) {
             <?php endforeach; ?>
         </div>
     </div>
-    <script nonce="<?= $scriptNonce ?>">
-        // Admin tabs functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const tabBtns = document.querySelectorAll('.admin-tab-btn');
-            const tabPanes = document.querySelectorAll('.admin-tab-pane');
-            const storageKey = 'adminActiveTab:admin-menu';
-            const availableTabs = new Set(Array.from(tabPanes, pane => pane.id));
-
-            function activateTab(tabId) {
-                if (!availableTabs.has(tabId)) {
-                    tabId = 'dishes';
-                }
-                tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
-                tabPanes.forEach(pane => pane.classList.toggle('active', pane.id === tabId));
-                localStorage.setItem(storageKey, tabId);
-            }
-
-            tabBtns.forEach(btn => {
-                btn.addEventListener('click', () => activateTab(btn.dataset.tab));
-            });
-
-            // Load saved tab
-            const savedTab = localStorage.getItem(storageKey) || 'dishes';
-            if (savedTab === 'update') {
-                activateTab('dishes'); // Redirect old 'update' to 'dishes'
-            } else {
-                activateTab(savedTab);
-            }
-        });
-    </script>
     <script src="/js/file-manager.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/admin-tabs-repair.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/security.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/cart.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
@@ -525,3 +497,4 @@ if (!empty($_GET['edit'])) {
 </body>
 
 </html>
+
