@@ -29,6 +29,7 @@ Thumbs.db
 !data/cache/.gitkeep
 !data/logs/.gitkeep
 !data/queues/.gitkeep
+data/vapid-keys.json
 
 # Temporary files
 *.tmp
@@ -42,10 +43,31 @@ composer.lock
 composer.phar
 
 # npm
-package-lock.json
 # package-lock.json is needed for reproducibility, but we can keep it
 # Uncomment if you want to ignore it
 # package-lock.json
+
+# Capacitor mobile wrapper
+mobile/node_modules/
+mobile/.capacitor/
+mobile/dist/
+mobile/build/
+mobile/www/build/
+
+# Capacitor Android (keep sources, ignore generated/build artifacts)
+mobile/android/.gradle/
+mobile/android/.idea/
+mobile/android/app/build/
+mobile/android/build/
+mobile/android/capacitor-cordova-android-plugins/build/
+mobile/android/local.properties
+
+# Capacitor iOS (keep sources, ignore generated/build artifacts)
+mobile/ios/Pods/
+mobile/ios/App/build/
+mobile/ios/App/DerivedData/
+mobile/ios/App/xcuserdata/
+mobile/ios/App.xcworkspace/xcuserdata/
 
 # Built assets (if any)
 /dist/
@@ -62,3 +84,4 @@ debug.log
 # Custom
 *.backup
 *.bak
+Заказы/

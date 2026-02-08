@@ -1,0 +1,24 @@
+{
+  "name": "menu-labus-mobile",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "cap:android:add": "cap add android",
+    "cap:android:sync": "cap sync android",
+    "cap:android:open": "cap open android",
+    "cap:ios:add": "cap add ios",
+    "cap:ios:sync": "cap sync ios",
+    "cap:ios:open": "cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/ios": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2",
+    "typescript": "^5.5.4"
+  }
+}
+

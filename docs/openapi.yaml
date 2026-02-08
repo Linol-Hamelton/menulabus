@@ -1,0 +1,533 @@
+openapi: 3.0.3
+info:
+  title: Menu Labus Mobile API
+  version: 1.0.0
+  description: Stable API contract for iOS/Android clients.
+servers:
+  - url: https://menu.labus.pro
+
+tags:
+  - name: Auth
+  - name: Menu
+  - name: Orders
+  - name: Push
+
+paths:
+  /api/v1/menu.php:
+    get:
+      tags: [Menu]
+      summary: Get menu items
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+            nullable: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenuResponse"
+        "500":
+          $ref: "#/components/responses/ApiError500"
+
+  /api/v1/auth/login.php:
+    post:
+      tags: [Auth]
+      summary: Login and issue token pair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          $ref: "#/components/responses/ApiError400"
+        "401":
+          $ref: "#/components/responses/ApiError401"
+        "403":
+          $ref: "#/components/responses/ApiError403"
+
+  /api/v1/auth/me.php:
+    get:
+      tags: [Auth]
+      summary: Get current user by access token
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+        "401":
+          $ref: "#/components/responses/ApiError401"
+
+  /api/v1/auth/refresh.php:
+    post:
+      tags: [Auth]
+      summary: Rotate refresh token and issue new pair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefreshResponse"
+        "400":
+          $ref: "#/components/responses/ApiError400"
+        "401":
+          $ref: "#/components/responses/ApiError401"
+
+  /api/v1/auth/logout.php:
+    post:
+      tags: [Auth]
+      summary: Revoke refresh token (logout)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogoutRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutResponse"
+        "400":
+          $ref: "#/components/responses/ApiError400"
+        "401":
+          $ref: "#/components/responses/ApiError401"
+
+  /api/v1/orders/create.php:
+    post:
+      tags: [Orders]
+      summary: Create order (idempotent)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: false
+          schema:
+            type: string
+            maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderCreateResponse"
+        "200":
+          description: OK (idempotency replay)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderCreateResponse"
+        "400":
+          $ref: "#/components/responses/ApiError400"
+        "401":
+          $ref: "#/components/responses/ApiError401"
+        "409":
+          $ref: "#/components/responses/ApiError409"
+        "500":
+          $ref: "#/components/responses/ApiError500"
+
+  /api/v1/orders/status.php:
+    get:
+      tags: [Orders]
+      summary: Get order status/details
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: order_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStatusResponse"
+        "400":
+          $ref: "#/components/responses/ApiError400"
+        "401":
+          $ref: "#/components/responses/ApiError401"
+        "403":
+          $ref: "#/components/responses/ApiError403"
+        "404":
+          $ref: "#/components/responses/ApiError404"
+
+  /api/v1/push/subscribe.php:
+    post:
+      tags: [Push]
+      summary: Save push subscription (auth or guest)
+      description: >
+        If user is authenticated (Bearer token or session), subscription is linked to user.
+        If guest, phone and order_id are required.
+      parameters:
+        - in: header
+          name: Authorization
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushSubscribeRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushSubscribeResponse"
+        "400":
+          $ref: "#/components/responses/ApiError400"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: AccessToken
+
+  responses:
+    ApiError400:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          examples:
+            invalid_json:
+              value: { success: false, error: "Invalid JSON body", meta: {} }
+    ApiError401:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          examples:
+            missing_bearer:
+              value: { success: false, error: "Missing bearer token", meta: {} }
+    ApiError403:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          examples:
+            forbidden:
+              value: { success: false, error: "Forbidden", meta: {} }
+    ApiError404:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          examples:
+            not_found:
+              value: { success: false, error: "Order not found", meta: {} }
+    ApiError409:
+      description: Conflict (idempotency)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          examples:
+            idempotency_conflict:
+              value: { success: false, error: "Idempotency-Key was already used with a different payload", meta: {} }
+    ApiError500:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          examples:
+            create_failed:
+              value: { success: false, error: "Failed to create order", meta: {} }
+
+  schemas:
+    ApiSuccess:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+    ApiError:
+      type: object
+      required: [success, error, meta]
+      properties:
+        success:
+          type: boolean
+          enum: [false]
+        error:
+          type: string
+        meta:
+          type: object
+
+    TokenPair:
+      type: object
+      required: [access_token, refresh_token, token_type, expires_in]
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+          example: 3600
+
+    User:
+      type: object
+      required: [id, email, role]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        role:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        device_name:
+          type: string
+          default: mobile
+
+    LoginResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiSuccess"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [tokens, user]
+              properties:
+                tokens:
+                  $ref: "#/components/schemas/TokenPair"
+                user:
+                  $ref: "#/components/schemas/User"
+
+    MeResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiSuccess"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/User"
+
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+        device_name:
+          type: string
+          default: mobile
+
+    RefreshResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiSuccess"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [tokens]
+              properties:
+                tokens:
+                  $ref: "#/components/schemas/TokenPair"
+
+    LogoutRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+
+    LogoutResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiSuccess"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [revoked]
+              properties:
+                revoked:
+                  type: boolean
+                  example: true
+
+    MenuItem:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        composition: { type: string, nullable: true }
+        price: { type: string }
+        image: { type: string, nullable: true }
+
+    MenuResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiSuccess"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [category, items]
+              properties:
+                category:
+                  type: string
+                  nullable: true
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/MenuItem"
+
+    OrderItemInput:
+      type: object
+      required: [id, quantity]
+      properties:
+        id: { type: integer }
+        name: { type: string, nullable: true }
+        price: { type: number, nullable: true }
+        quantity: { type: integer, minimum: 1 }
+
+    OrderCreateRequest:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/OrderItemInput"
+        total:
+          type: number
+        delivery_type:
+          type: string
+          enum: [bar, delivery, table]
+          default: bar
+        delivery_details:
+          type: string
+          nullable: true
+
+    OrderCreateResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiSuccess"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [order_id, status]
+              properties:
+                order_id: { type: integer }
+                status: { type: string }
+
+    OrderStatusResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiSuccess"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [order_id, status, total, delivery_type, delivery_details, updated_at]
+              properties:
+                order_id: { type: integer }
+                status: { type: string }
+                total: { type: number }
+                delivery_type: { type: string }
+                delivery_details: { type: string }
+                updated_at: { type: string }
+
+    PushSubscription:
+      type: object
+      required: [endpoint, keys]
+      properties:
+        endpoint:
+          type: string
+        keys:
+          type: object
+          required: [p256dh, auth]
+          properties:
+            p256dh: { type: string }
+            auth: { type: string }
+
+    PushSubscribeRequest:
+      type: object
+      required: [subscription]
+      properties:
+        subscription:
+          $ref: "#/components/schemas/PushSubscription"
+        phone:
+          type: string
+          nullable: true
+        order_id:
+          type: integer
+          nullable: true
+
+    PushSubscribeResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiSuccess"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [saved]
+              properties:
+                saved: { type: boolean, example: true }
+

@@ -380,6 +380,16 @@ body.owner-page .menu-tabs .tab-btn {
 
 /* customer_orders.php + employee.php visual alignment pass */
 
+body.customer_orders-page:not(.account-page) #menu,
+body.employee-page #menu,
+body.owner-page #menu {
+  padding-top: 96px !important;
+}
+
+body.account-page #menu {
+  padding-top: 96px !important;
+}
+
 body.customer_orders-page .account-container,
 body.employee-page .account-container {
   max-width: 1240px;
@@ -641,7 +651,6 @@ body.employee-page .menu-tabs .tab-btn {
 /* account.php visual alignment pass */
 
 body.account-page .account-container {
-  margin: 140px auto 28px;
   max-width: 1240px;
   padding: 0 20px;
   width: 100%;
@@ -729,9 +738,16 @@ body.account-page .checkout-btn {
   padding: 8px 14px;
 }
 
-body.account-page .section-header-menu {
-  margin: 10px 0 0;
+body.account-page #menu .section-header-menu {
+  margin: 0 20px 28px;
+  gap: 8px;
   padding: 0;
+}
+
+body.account-page .section-header-nav-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
 }
 
 body.account-page .back-to-menu-btn {
@@ -742,9 +758,40 @@ body.account-page .back-to-menu-btn {
   padding: 8px 16px;
 }
 
+/* Shared account header include (account-header.php).
+   Keep it visually identical across account/owner/employee/admin/customer_orders pages. */
+.account-header-bar .section-header-menu {
+  gap: 8px;
+  margin: 0 20px 28px;
+  padding: 0;
+  flex-wrap: wrap;
+}
+
+.account-header-bar .section-header-quick-actions,
+.account-header-bar .section-header-nav-actions {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.account-header-bar .section-header-quick-actions {
+  width: auto;
+}
+
+.account-header-bar .section-header-nav-actions {
+  margin-left: auto;
+}
+
+.account-header-bar .back-to-menu-btn {
+  border-radius: 10px;
+  margin: 0;
+  min-height: 40px;
+  min-width: 120px;
+  padding: 8px 16px;
+}
+
 @media (max-width: 992px) {
   body.account-page .account-container {
-    margin: 122px auto 22px;
     padding: 0 14px;
   }
 
@@ -758,17 +805,56 @@ body.account-page .back-to-menu-btn {
 }
 
 @media (max-width: 768px) {
+  body.customer_orders-page:not(.account-page) .section-header-menu,
+  body.employee-page .section-header-menu,
+  body.owner-page .section-header-menu {
+    margin-top: 0 !important;
+  }
+
+  body.customer_orders-page:not(.account-page) #menu,
+  body.employee-page #menu,
+  body.owner-page #menu {
+    padding-top: 86px !important;
+  }
+
+  body.account-page #menu {
+    padding-top: 86px !important;
+  }
+
   body.account-page .checkout-btn {
     width: 100%;
   }
 
-  body.account-page .section-header-menu {
+  body.account-page #menu .section-header-menu {
     justify-content: stretch;
+  }
+
+  body.account-page .section-header-nav-actions {
+    gap: 8px;
+    margin-right: 0;
+    width: 70%;
+  }
+
+  .account-header-bar .section-header-menu {
+    justify-content: stretch;
+  }
+
+  .account-header-bar .section-header-nav-actions {
+    gap: 8px;
+    margin-left: 0;
+    width: 66%;
+  }
+
+  .account-header-bar .back-to-menu-btn {
+    justify-content: center;
+    min-width: 0;
+    width: 40%;
   }
 
   body.account-page .back-to-menu-btn {
     justify-content: center;
-    width: 100%;
+    min-width: 0;
+    width: 33%;
   }
 }
 
@@ -783,7 +869,6 @@ body.auth-page .auth-container {
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  margin: 140px auto 28px;
   max-width: 560px;
   padding: 24px;
   width: min(560px, calc(100% - 28px));
@@ -956,7 +1041,6 @@ body.auth-page .auth-separator {
 
 @media (max-width: 768px) {
   body.auth-page .auth-container {
-    margin: 122px auto 22px;
     padding: 18px;
     width: calc(100% - 20px);
   }

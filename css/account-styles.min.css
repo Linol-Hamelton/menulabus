@@ -504,7 +504,6 @@
 }
 .account-admin {
   font-size: 25px;
-  margin: 100px 10px 10px 0;
   padding: 10px 11px;
 }
 .account-admin,
@@ -521,7 +520,6 @@
 }
 .account-owner {
   font-size: 28px;
-  margin: 100px 0 10px;
   padding: 0 13px;
 }
 .save-role-btn {

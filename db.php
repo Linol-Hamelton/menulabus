@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../config_copy.php';
 
 if (file_exists(__DIR__ . '/QueryCache.php')) {
@@ -115,7 +115,7 @@ class Database
         } catch (PDOException $e) {
             error_log("DB Connection Error: " . $e->getMessage());
             header('HTTP/1.1 503 Service Unavailable');
-            die("Ошибка подключения к базе данных. Пожалуйста, попробуйте позже.");
+            die("РћС€РёР±РєР° РїРѕРґРєР»СЋС‡РµРЅРёСЏ Рє Р±Р°Р·Рµ РґР°РЅРЅС‹С…. РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РїРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР·Р¶Рµ.");
         }
     }
 
@@ -125,6 +125,57 @@ class Database
             $this->preparedStatements[$sql] = $this->connection->prepare($sql);
         }
         return $this->preparedStatements[$sql];
+    }
+
+    private function getInitialOrderStatus(): string
+    {
+        static $initialStatus = null;
+        if ($initialStatus !== null) {
+            return $initialStatus;
+        }
+
+        try {
+            $stmt = $this->connection->query(
+                "SELECT COLUMN_TYPE
+                 FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND TABLE_NAME = 'orders'
+                   AND COLUMN_NAME = 'status'
+                 LIMIT 1"
+            );
+            $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+            $columnType = (string)($row['COLUMN_TYPE'] ?? '');
+            if ($columnType !== '' && preg_match("/^enum\\('((?:[^'\\\\]|\\\\.)*)'/u", $columnType, $m)) {
+                $candidate = stripcslashes((string)$m[1]);
+                if ($candidate !== '') {
+                    $initialStatus = $candidate;
+                    return $initialStatus;
+                }
+            }
+        } catch (Throwable $e) {
+            error_log("getInitialOrderStatus metadata lookup failed: " . $e->getMessage());
+        }
+
+        try {
+            $stmt = $this->connection->query(
+                "SELECT status
+                 FROM orders
+                 WHERE status IS NOT NULL
+                 ORDER BY id ASC
+                 LIMIT 1"
+            );
+            $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+            $candidate = trim((string)($row['status'] ?? ''));
+            if ($candidate !== '') {
+                $initialStatus = $candidate;
+                return $initialStatus;
+            }
+        } catch (Throwable $e) {
+            error_log("getInitialOrderStatus fallback lookup failed: " . $e->getMessage());
+        }
+
+        $initialStatus = 'РџСЂРёС‘Рј';
+        return $initialStatus;
     }
 
     private function invalidateMenuCache()
@@ -149,6 +200,87 @@ class Database
             }
             $this->queryCache->invalidate('/^order_/');
         }
+    }
+
+    private function ensureOrderItemsTable(): bool
+    {
+        static $checked = null;
+        if ($checked !== null) {
+            return $checked;
+        }
+
+        try {
+            // Important: no DDL here, otherwise MySQL can implicitly commit
+            // and break createOrder/createGuestOrder transaction flow.
+            $stmt = $this->connection->query("SHOW TABLES LIKE 'order_items'");
+            $checked = (bool)($stmt && $stmt->fetchColumn());
+        } catch (Throwable $e) {
+            error_log("ensureOrderItemsTable check failed: " . $e->getMessage());
+            $checked = false;
+        }
+
+        if (!$checked) {
+            error_log("order_items table is missing; run sql/mobile-api-tables.sql");
+        }
+
+        return $checked;
+    }
+
+    private function persistOrderItems(int $orderId, array $items): void
+    {
+        if (!$orderId || !$items) {
+            return;
+        }
+
+        if (!$this->ensureOrderItemsTable()) {
+            return;
+        }
+        $stmt = $this->prepareCached(
+            "INSERT INTO order_items
+             (order_id, item_id, item_name, quantity, price, created_at)
+             VALUES (:order_id, :item_id, :item_name, :quantity, :price, NOW())"
+        );
+
+        foreach ($items as $item) {
+            $itemId = isset($item['id']) ? (int)$item['id'] : 0;
+            if ($itemId <= 0) {
+                continue;
+            }
+            $quantity = max(1, (int)($item['quantity'] ?? 1));
+            $price = (float)($item['price'] ?? 0);
+            $itemName = isset($item['name']) ? (string)$item['name'] : null;
+
+            $stmt->execute([
+                ':order_id' => $orderId,
+                ':item_id' => $itemId,
+                ':item_name' => $itemName,
+                ':quantity' => $quantity,
+                ':price' => $price,
+            ]);
+        }
+    }
+
+    private function touchOrdersLastUpdate(): void
+    {
+        if ($this->redisCache) {
+            $this->redisCache->set('orders_last_update_ts', time(), 86400);
+        }
+    }
+
+    public function getOrdersLastUpdateTs(): int
+    {
+        if ($this->redisCache) {
+            $cached = $this->redisCache->get('orders_last_update_ts');
+            if (is_numeric($cached)) {
+                return (int)$cached;
+            }
+        }
+
+        $timestamp = (int)$this->scalar("SELECT UNIX_TIMESTAMP(MAX(updated_at)) FROM orders WHERE 1");
+        if ($timestamp > 0 && $this->redisCache) {
+            $this->redisCache->set('orders_last_update_ts', $timestamp, 86400);
+        }
+        return $timestamp;
     }
 
     private function invalidateUserCache($userId = null)
@@ -453,11 +585,11 @@ class Database
             $stmt = $this->prepareCached(
                 "SELECT DISTINCT status FROM orders ORDER BY 
                  CASE 
-                     WHEN status = 'Приём' THEN 1
-                     WHEN status = 'готовим' THEN 2
-                     WHEN status = 'доставляем' THEN 3
-                     WHEN status = 'завершён' THEN 4
-                     WHEN status = 'отказ' THEN 5
+                     WHEN status = 'РџСЂРёС‘Рј' THEN 1
+                     WHEN status = 'РіРѕС‚РѕРІРёРј' THEN 2
+                     WHEN status = 'РґРѕСЃС‚Р°РІР»СЏРµРј' THEN 3
+                     WHEN status = 'Р·Р°РІРµСЂС€С‘РЅ' THEN 4
+                     WHEN status = 'РѕС‚РєР°Р·' THEN 5
                      ELSE 6
                  END"
             );
@@ -516,6 +648,27 @@ class Database
             return $stmt->fetchAll();
         } catch (PDOException $e) {
             error_log("getOrderUpdatesSince Error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getUserOrderUpdatesSince(int $userId, int $timestamp): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, status, updated_at
+                FROM orders
+                WHERE user_id = :user_id
+                  AND updated_at >= FROM_UNIXTIME(:timestamp)
+                ORDER BY updated_at DESC
+            ");
+            $stmt->execute([
+                ':user_id' => $userId,
+                ':timestamp' => $timestamp,
+            ]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("getUserOrderUpdatesSince Error: " . $e->getMessage());
             return [];
         }
     }
@@ -579,6 +732,7 @@ class Database
             $this->connection->commit();
             
             $this->invalidateOrderCache($orderId);
+            $this->touchOrdersLastUpdate();
             
             return true;
         } catch (Throwable $e) {
@@ -916,17 +1070,17 @@ class Database
 
             $header = fgetcsv($csvHandle, 0, $delimiter, '"');
             if ($header === false || count($header) < 11) {
-                throw new Exception("Неверный формат CSV-файла");
+                throw new Exception("РќРµРІРµСЂРЅС‹Р№ С„РѕСЂРјР°С‚ CSV-С„Р°Р№Р»Р°");
             }
 
             $count = 0;
             while (($row = fgetcsv($csvHandle, 0, $delimiter, '"')) !== false) {
                 if (count($row) < 11) {
-                    error_log("Пропуск строки: недостаточно данных");
+                    error_log("РџСЂРѕРїСѓСЃРє СЃС‚СЂРѕРєРё: РЅРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ РґР°РЅРЅС‹С…");
                     continue;
                 }
 
-                error_log("Обработка строки: " . implode(',', $row));
+                error_log("РћР±СЂР°Р±РѕС‚РєР° СЃС‚СЂРѕРєРё: " . implode(',', $row));
 
                 $composition = trim($row[2]);
                 $composition = preg_replace('/([^\s])\s+([^\s])/', '$1, $2', $composition);
@@ -948,13 +1102,13 @@ class Database
                 ];
 
                 if (!$stmt->execute($params)) {
-                    error_log("Ошибка выполнения запроса для строки: " . implode(',', $row));
+                    error_log("РћС€РёР±РєР° РІС‹РїРѕР»РЅРµРЅРёСЏ Р·Р°РїСЂРѕСЃР° РґР»СЏ СЃС‚СЂРѕРєРё: " . implode(',', $row));
                 }
                 $count++;
             }
 
             if ($count === 0) {
-                throw new Exception("CSV-файл не содержит данных для импорта");
+                throw new Exception("CSV-С„Р°Р№Р» РЅРµ СЃРѕРґРµСЂР¶РёС‚ РґР°РЅРЅС‹С… РґР»СЏ РёРјРїРѕСЂС‚Р°");
             }
 
             $this->connection->commit();
@@ -965,7 +1119,7 @@ class Database
         } catch (Throwable $e) {
             $this->connection->rollBack();
             error_log("bulkUpdateMenu Error: " . $e->getMessage());
-            $_SESSION['error'] = "Ошибка загрузки CSV: " . $e->getMessage();
+            $_SESSION['error'] = "РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё CSV: " . $e->getMessage();
             return false;
         }
     }
@@ -1034,7 +1188,7 @@ class Database
             error_log("Creating guest user with id: " . $guestId);
             $stmt = $this->prepareCached("
                 INSERT INTO users (id, email, password_hash, name, phone, role, created_at)
-                VALUES (?, 'guest@system.local', '', 'Гость', '', 'guest', NOW())
+                VALUES (?, 'guest@system.local', '', 'Р“РѕСЃС‚СЊ', '', 'guest', NOW())
             ");
             $stmt->execute([$guestId]);
             error_log("Guest user created successfully");
@@ -1096,7 +1250,7 @@ class Database
                          )) j) as item_count
                     FROM orders
                     WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                    AND status = 'завершён'
+                    AND status = 'Р·Р°РІРµСЂС€С‘РЅ'
                     AND DAY(created_at) = DAY(NOW())
                     ORDER BY created_at DESC";
         } else {
@@ -1110,7 +1264,7 @@ class Database
             } elseif ($period === 'month') {
                 $groupBy = 'YEAR(created_at), WEEK(created_at, 1)';
                 $orderBy = 'YEAR(created_at) DESC, WEEK(created_at, 1) DESC';
-                $selectDate = "CONCAT('Неделя ', WEEK(created_at, 1), ' (', 
+                $selectDate = "CONCAT('РќРµРґРµР»СЏ ', WEEK(created_at, 1), ' (', 
                                   DATE_FORMAT(DATE_ADD(created_at, INTERVAL -WEEKDAY(created_at) DAY), '%d.%m'), ' - ',
                                   DATE_FORMAT(DATE_ADD(created_at, INTERVAL 6-WEEKDAY(created_at) DAY), '%d.%m'), ')') as date";
                 $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval) 
@@ -1133,7 +1287,7 @@ class Database
                         AVG(total) as avg_order_value
                     FROM orders
                     WHERE $whereClause
-                    AND status = 'завершён'
+                    AND status = 'Р·Р°РІРµСЂС€С‘РЅ'
                     GROUP BY $groupBy
                     ORDER BY $orderBy";
         }
@@ -1146,7 +1300,7 @@ class Database
             if ($period === 'day' && !empty($result)) {
                 foreach ($result as &$row) {
                     if (isset($row['time'])) {
-                        $row['Время'] = $row['time'];
+                        $row['Р’СЂРµРјСЏ'] = $row['time'];
                         unset($row['time']);
                     }
                 }
@@ -1196,7 +1350,7 @@ class Database
                     FROM orders
                     WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
                     AND DAY(created_at) = DAY(NOW())
-                    AND status = 'завершён'
+                    AND status = 'Р·Р°РІРµСЂС€С‘РЅ'
                     ORDER BY created_at DESC";
         } else {
             if ($period === 'year') {
@@ -1209,7 +1363,7 @@ class Database
             } elseif ($period === 'month') {
                 $groupBy = 'YEAR(created_at), WEEK(created_at, 1)';
                 $orderBy = 'YEAR(created_at) DESC, WEEK(created_at, 1) DESC';
-                $selectDate = "CONCAT('Неделя ', WEEK(created_at, 1), ' (', 
+                $selectDate = "CONCAT('РќРµРґРµР»СЏ ', WEEK(created_at, 1), ' (', 
                                   DATE_FORMAT(DATE_ADD(created_at, INTERVAL -WEEKDAY(created_at) DAY), '%d.%m'), ' - ',
                                   DATE_FORMAT(DATE_ADD(created_at, INTERVAL 6-WEEKDAY(created_at) DAY), '%d.%m'), ')') as date";
                 $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval) 
@@ -1249,7 +1403,7 @@ class Database
                                           JOIN menu_items mi ON mi.id = j.id)) / SUM(total)) * 100, 2) as profitability_percent
                     FROM orders
                     WHERE $whereClause
-                    AND status = 'завершён'
+                    AND status = 'Р·Р°РІРµСЂС€С‘РЅ'
                     GROUP BY $groupBy
                     ORDER BY $orderBy";
         }
@@ -1264,7 +1418,7 @@ class Database
         }
     }
 
-    // Добавляем остальные отчеты аналогично (getEfficiencyReport, getTopCustomers, getTopDishes, getEmployeeStats, getHourlyLoad)
+    // Р”РѕР±Р°РІР»СЏРµРј РѕСЃС‚Р°Р»СЊРЅС‹Рµ РѕС‚С‡РµС‚С‹ Р°РЅР°Р»РѕРіРёС‡РЅРѕ (getEfficiencyReport, getTopCustomers, getTopDishes, getEmployeeStats, getHourlyLoad)
     public function getEfficiencyReport($period = 'day')
     {
         $intervals = [
@@ -1296,7 +1450,7 @@ class Database
                                  JOIN menu_items mi ON mi.id = j.id) as total_profit
                     FROM orders
                     WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                    AND status = 'завершён'
+                    AND status = 'Р·Р°РІРµСЂС€С‘РЅ'
                     ORDER BY created_at DESC";
         } else {
             $sql = "SELECT 
@@ -1318,7 +1472,7 @@ class Database
                                      JOIN menu_items mi ON mi.id = j.id)) as total_profit
                     FROM orders
                     WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                    AND status = 'завершён'
+                    AND status = 'Р·Р°РІРµСЂС€С‘РЅ'
                     GROUP BY delivery_type
                     ORDER BY order_count DESC";
         }
@@ -1370,7 +1524,7 @@ class Database
                     FROM orders o
                     JOIN users u ON o.user_id = u.id
                     WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                    AND o.status = 'завершён'
+                    AND o.status = 'Р·Р°РІРµСЂС€С‘РЅ'
                     ORDER BY o.created_at DESC
                     LIMIT ?";
         } else {
@@ -1384,7 +1538,7 @@ class Database
                     FROM orders o
                     JOIN users u ON o.user_id = u.id
                     WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                    AND o.status = 'завершён'
+                    AND o.status = 'Р·Р°РІРµСЂС€С‘РЅ'
                     GROUP BY u.id
                     ORDER BY total_spent DESC
                     LIMIT ?";
@@ -1428,7 +1582,7 @@ class Database
                 )) j
                 JOIN menu_items mi ON mi.id = j.id
                 WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                AND o.status = 'завершён'
+                AND o.status = 'Р·Р°РІРµСЂС€С‘РЅ'
                 GROUP BY mi.id
                 ORDER BY total_profit DESC
                 LIMIT ?";
@@ -1477,7 +1631,7 @@ class Database
                     FROM orders o
                     JOIN users u ON o.last_updated_by = u.id
                     WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                    AND o.status = 'завершён'
+                    AND o.status = 'Р·Р°РІРµСЂС€С‘РЅ'
                     AND u.role IN ('owner', 'employee', 'admin')
                     ORDER BY o.created_at DESC
                     LIMIT ?";
@@ -1504,7 +1658,7 @@ class Database
                     FROM orders o
                     JOIN users u ON o.last_updated_by = u.id
                     WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                    AND o.status = 'завершён'
+                    AND o.status = 'Р·Р°РІРµСЂС€С‘РЅ'
                     AND u.role IN ('owner', 'employee', 'admin')
                     GROUP BY u.id
                     ORDER BY total_revenue DESC
@@ -1552,7 +1706,7 @@ class Database
                         JOIN menu_items mi ON mi.id = j.id)) as total_expenses
                 FROM orders o
                 WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                AND status = 'завершён'
+                AND status = 'Р·Р°РІРµСЂС€С‘РЅ'
                 GROUP BY HOUR(created_at)
                 ORDER BY hour ASC";
         
@@ -1647,26 +1801,31 @@ class Database
     {
         try {
             $this->connection->beginTransaction();
+            $initialStatus = $this->getInitialOrderStatus();
 
             $guestUserId = $this->ensureGuestUserExists();
             if ($guestUserId === false) {
-                throw new Exception('Не удалось создать гостевого пользователя');
+                throw new Exception('Failed to ensure guest user exists');
             }
 
             $stmt = $this->prepareCached("
                 INSERT INTO orders
                 (user_id, items, total, status, delivery_type, delivery_details, created_at, updated_at)
-                VALUES (:user_id, :items, :total, 'Приём', :delivery_type, :delivery_details, NOW(), NOW())
+                VALUES (:user_id, :items, :total, :initial_status, :delivery_type, :delivery_details, NOW(), NOW())
             ");
 
-            $itemsJson = json_encode($items, JSON_UNESCAPED_UNICODE);
+            $itemsJson = json_encode($items, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+            if ($itemsJson === false) {
+                throw new Exception('Failed to encode order items to JSON');
+            }
 
             $params = [
                 ':user_id' => $guestUserId,
                 ':items' => $itemsJson,
                 ':total' => $total,
+                ':initial_status' => $initialStatus,
                 ':delivery_type' => $deliveryType,
-                ':delivery_details' => $deliveryDetail
+                ':delivery_details' => $deliveryDetail,
             ];
 
             $stmt->execute($params);
@@ -1675,20 +1834,26 @@ class Database
             $historyStmt = $this->prepareCached("
                 INSERT INTO order_status_history
                 (order_id, status, changed_by, changed_at)
-                VALUES (:order_id, 'Приём', :changed_by, NOW())
+                VALUES (:order_id, :initial_status, :changed_by, NOW())
             ");
             $historyStmt->execute([
                 ':order_id' => $orderId,
-                ':changed_by' => $guestUserId
+                ':initial_status' => $initialStatus,
+                ':changed_by' => $guestUserId,
             ]);
 
+            $this->persistOrderItems((int)$orderId, $items);
+
             $this->connection->commit();
-            
+
             $this->invalidateOrderCache($orderId);
-            
+            $this->touchOrdersLastUpdate();
+
             return $orderId;
-        } catch (PDOException $e) {
-            $this->connection->rollBack();
+        } catch (Throwable $e) {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
             error_log("createGuestOrder error: " . $e->getMessage());
             return false;
         }
@@ -1698,51 +1863,58 @@ class Database
     {
         try {
             $this->connection->beginTransaction();
+            $initialStatus = $this->getInitialOrderStatus();
 
             $stmt = $this->prepareCached("
-                INSERT INTO orders 
-                (user_id, items, total, status, delivery_type, delivery_details, created_at, updated_at) 
-                VALUES (:user_id, :items, :total, 'Приём', :delivery_type, :delivery_details, NOW(), NOW())
+                INSERT INTO orders
+                (user_id, items, total, status, delivery_type, delivery_details, created_at, updated_at)
+                VALUES (:user_id, :items, :total, :initial_status, :delivery_type, :delivery_details, NOW(), NOW())
             ");
 
-            $itemsJson = json_encode($items, JSON_UNESCAPED_UNICODE);
-            
+            $itemsJson = json_encode($items, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+            if ($itemsJson === false) {
+                throw new Exception('Failed to encode order items to JSON');
+            }
+
             $params = [
                 ':user_id' => $userId,
                 ':items' => $itemsJson,
                 ':total' => $total,
+                ':initial_status' => $initialStatus,
                 ':delivery_type' => $deliveryType,
-                ':delivery_details' => $deliveryDetail
+                ':delivery_details' => $deliveryDetail,
             ];
-
-            error_log("Executing with params: " . print_r($params, true));
 
             $stmt->execute($params);
             $orderId = $this->connection->lastInsertId();
 
             $historyStmt = $this->prepareCached("
-                INSERT INTO order_status_history 
-                (order_id, status, changed_by, changed_at) 
-                VALUES (:order_id, 'Приём', :user_id, NOW()) 
+                INSERT INTO order_status_history
+                (order_id, status, changed_by, changed_at)
+                VALUES (:order_id, :initial_status, :user_id, NOW())
             ");
             $historyStmt->execute([
                 ':order_id' => $orderId,
+                ':initial_status' => $initialStatus,
                 ':user_id' => $userId,
             ]);
 
+            $this->persistOrderItems((int)$orderId, $items);
+
             $this->connection->commit();
-            
+
             $this->invalidateOrderCache($orderId);
-            
+            $this->touchOrdersLastUpdate();
+
             return $orderId;
-        } catch (PDOException $e) {
-            $this->connection->rollBack();
-            error_log("createOrder Error: " . $e->getMessage());
-            error_log("Error info: " . print_r($stmt->errorInfo(), true));
+        } catch (Throwable $e) {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+            error_log("createOrder error: " . $e->getMessage());
             return false;
         }
     }
-
     public function setQueryCacheEnabled($enabled)
     {
         $this->useQueryCache = $enabled;

@@ -1113,7 +1113,7 @@ a {
   align-items: center;
   display: flex;
   justify-content: space-between;
-  margin-bottom: 11%;
+  margin: 28px 0;
   padding: 0 8%;
   position: relative;
 }
@@ -1199,6 +1199,18 @@ a {
 .section-header-menu div {
   align-items: center;
   display: flex;
+}
+.section-header-quick-actions {
+  gap: 10px;
+  width: 100%;
+}
+.section-header-nav-actions {
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.section-header-nav-actions .back-to-menu-btn {
+  margin: 0;
 }
 .back-to-menu-btn:hover,
 .order-summary-btn:hover {

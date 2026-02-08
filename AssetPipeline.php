@@ -6,7 +6,7 @@
 
 class AssetPipeline {
     private static $manifest = null;
-    private static $manifestFile = __DIR__ . '/manifest.json';
+    private static $manifestFile = __DIR__ . '/asset-manifest.json';
     
     public static function asset($path) {
         if (self::$manifest === null) {

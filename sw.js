@@ -1,6 +1,6 @@
 // sw.js — финальная версия с офлайн-страницей и push-уведомлениями
-const CACHE_NAME = "labus-v7-minified";
-const DYNAMIC_CACHE = "labus-dynamic-v7";
+const CACHE_NAME = "labus-v8-minified";
+const DYNAMIC_CACHE = "labus-dynamic-v8";
 const OFFLINE_URL = '/offline.html';   // добавляем офлайн-страницу
 
 // 1. Расширяем APP_SHELL офлайн-страницей и её ресурсами
@@ -23,7 +23,7 @@ const APP_SHELL = [
   "/js/version-checker.min.js",
   "/js/pwa-install.min.js",
   "/icons/favicon.ico",
-  "/manifest.json",
+  "/manifest.webmanifest",
   "/version.json",
 ];
 
@@ -68,7 +68,7 @@ self.addEventListener("activate", (event) => {
 });
 
 // 4. FETCH — добавляем только офлайн-страницу, всё остальное оставляем
-const STATIC_DESTINATIONS = new Set(['style', 'script', 'image', 'font']);
+const STATIC_DESTINATIONS = new Set(['script', 'image', 'font']);
 
 function isHtmlRequest(request) {
   if (request.mode === 'navigate') return true;
@@ -134,6 +134,25 @@ self.addEventListener('fetch', (event) => {
   if (event.request.url.includes('/api/') ||
       event.request.url.includes('/auth/')) {
     event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Never cache dynamic style endpoints and live update channels.
+  if (event.request.url.includes('/auto-colors.php') ||
+      event.request.url.includes('/auto-fonts.php')) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
+    return;
+  }
+
+  if (event.request.url.includes('/orders-sse.php') ||
+      event.request.url.includes('/ws-poll.php')) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
+    return;
+  }
+
+  // Styles should prefer network to avoid stale theme/layout after deploys.
+  if (event.request.destination === 'style') {
+    event.respondWith(networkFirst(event.request));
     return;
   }
 

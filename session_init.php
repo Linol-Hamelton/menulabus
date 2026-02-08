@@ -1,5 +1,11 @@
-﻿<?php
+<?php
 ob_start();
+
+$requestStart = microtime(true);
+$requestId = bin2hex(random_bytes(8));
+$requestUri = (string)($_SERVER['REQUEST_URI'] ?? '/');
+$requestMethod = (string)($_SERVER['REQUEST_METHOD'] ?? 'GET');
+$GLOBALS['request_id'] = $requestId;
 
 header_remove('Cache-Control');
 header_remove('Expires');
@@ -109,6 +115,25 @@ $styleNonce = $_SESSION['csp_nonce']['style'] ?? '';
 $GLOBALS['scriptNonce'] = $scriptNonce;
 $GLOBALS['csrfToken'] = $_SESSION['csrf_token'] ?? '';
 
+$origin = (string)($_SERVER['HTTP_ORIGIN'] ?? '');
+$allowedOrigins = [
+    'https://menu.labus.pro',
+    'https://www.menu.labus.pro',
+    'capacitor://localhost',
+    'ionic://localhost',
+    'http://localhost',
+    'http://127.0.0.1',
+];
+$allowedCorsOrigin = 'https://menu.labus.pro';
+if ($origin !== '') {
+    foreach ($allowedOrigins as $allowed) {
+        if ($origin === $allowed || strpos($origin, $allowed . ':') === 0) {
+            $allowedCorsOrigin = $origin;
+            break;
+        }
+    }
+}
+
 // в”Њв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”ђ
 // в”‚ 1. SECURITY HEADERS - Zero-tolerance policy               в”‚
 // в””в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”
@@ -121,9 +146,9 @@ $securityHeaders = [
     'Cross-Origin-Resource-Policy' => 'same-origin',
     'Cross-Origin-Embedder-Policy' => 'require-corp',
     'Cross-Origin-Opener-Policy' => 'same-origin',
-    'Access-Control-Allow-Origin' => 'https://menu.labus.pro',
+    'Access-Control-Allow-Origin' => $allowedCorsOrigin,
     'Access-Control-Allow-Methods' => 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers' => 'Content-Type, X-CSRF-Token',
+    'Access-Control-Allow-Headers' => 'Content-Type, X-CSRF-Token, Authorization, Idempotency-Key, X-Request-Id',
     'Access-Control-Allow-Credentials' => 'true',
 
     // Permissions-Policy - СЂР°Р·СЂРµС€Р°РµРј РєР°РјРµСЂСѓ Рё РіРµРѕР»РѕРєР°С†РёСЋ РґР»СЏ С‚РµРєСѓС‰РµРіРѕ РґРѕРјРµРЅР°
@@ -149,7 +174,8 @@ $securityHeaders = [
         "style-src 'self' 'nonce-$styleNonce'",
         "img-src 'self' data: blob:",
         "font-src 'self'",
-        "connect-src 'self' https://nominatim.openstreetmap.org",
+        // Allow API calls if the app is served from Capacitor local origin (capacitor://localhost).
+        "connect-src 'self' https://menu.labus.pro https://www.menu.labus.pro https://nominatim.openstreetmap.org",
         "frame-src 'none'",
         "object-src 'none'",
         "base-uri 'self'",
@@ -175,6 +201,10 @@ foreach ($securityHeaders as $key => $value) {
     if (!headers_sent() && !empty($value)) {
         header("$key: $value");
     }
+}
+if (!headers_sent()) {
+    header('X-Request-Id: ' . $requestId);
+    header('Vary: Origin', false);
 }
 
 // РџСЂРёРЅСѓРґРёС‚РµР»СЊРЅС‹Рµ Р·Р°РіРѕР»РѕРІРєРё РїСЂРѕС‚РёРІ РєСЌС€РёСЂРѕРІР°РЅРёСЏ РґР»СЏ HTML СЃС‚СЂР°РЅРёС†
@@ -312,12 +342,18 @@ $isApiRequest = strpos($_SERVER['REQUEST_URI'] ?? '', '/proxy/') !== false ||
     strpos($_SERVER['REQUEST_URI'] ?? '', '/api/') !== false;
 
 if ($isApiRequest) {
+    if ($requestMethod === 'OPTIONS') {
+        http_response_code(204);
+        exit;
+    }
+
     // РџСЂРѕРІРµСЂРєР° Content-Type РґР»СЏ РЅРµ-GET Р·Р°РїСЂРѕСЃРѕРІ
-    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    if ($requestMethod !== 'GET') {
         $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
         if (
             strpos($contentType, 'application/json') === false &&
-            strpos($contentType, 'application/x-www-form-urlencoded') === false
+            strpos($contentType, 'application/x-www-form-urlencoded') === false &&
+            strpos($contentType, 'multipart/form-data') === false
         ) {
             http_response_code(415);
             echo json_encode(['error' => 'Unsupported Media Type']);
@@ -325,7 +361,17 @@ if ($isApiRequest) {
         }
     }
 
-    validate_csrf_token();
+    $hasBearer = isset($_SERVER['HTTP_AUTHORIZATION']) &&
+        stripos((string)$_SERVER['HTTP_AUTHORIZATION'], 'Bearer ') === 0;
+    $isMobileAuthEndpoint = strpos($requestUri, '/api/v1/auth/') !== false;
+    $isPushSubscribeEndpoint =
+        strpos($requestUri, '/api/v1/push/subscribe.php') !== false ||
+        strpos($requestUri, '/api/save-push-subscription.php') !== false;
+    $requiresCsrf = !$hasBearer && !$isMobileAuthEndpoint && !$isPushSubscribeEndpoint;
+
+    if ($requiresCsrf) {
+        validate_csrf_token();
+    }
 }
 
 if (isset($_GET['force_reload']) && session_status() === PHP_SESSION_ACTIVE) {
@@ -420,8 +466,24 @@ if (session_status() === PHP_SESSION_ACTIVE && empty($_SESSION['user_id'])) {
     }
 }
 
-register_shutdown_function(function() {
-    if (isset($GLOBALS['db'])) {
+register_shutdown_function(function() use ($requestStart, $requestId, $requestUri, $requestMethod) {
+    if (strpos($requestUri, '/api/') !== false) {
+        $durationMs = (microtime(true) - $requestStart) * 1000;
+        $statusCode = http_response_code();
+        $logLine = sprintf(
+            "[%s] request_id=%s method=%s uri=%s status=%d duration_ms=%.2f\n",
+            date('Y-m-d H:i:s'),
+            $requestId,
+            $requestMethod,
+            $requestUri,
+            (int)$statusCode,
+            $durationMs
+        );
+        $logFile = __DIR__ . '/data/logs/api-performance.log';
+        @file_put_contents($logFile, $logLine, FILE_APPEND | LOCK_EX);
+    }
+
+    if (isset($GLOBALS['db']) && is_object($GLOBALS['db'])) {
         $GLOBALS['db']->close();
     }
 });

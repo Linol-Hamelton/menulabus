@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  openapi:
+    name: OpenAPI Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run openapi:validate
+
+  php_syntax:
+    name: PHP Syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+      - name: Syntax check (php -l)
+        run: |
+          set -euo pipefail
+          files="$(find . -type f -name '*.php' \
+            -not -path './vendor/*' \
+            -not -path './node_modules/*' \
+            -not -path './data/*' \
+            -not -path './.tmp-*/*')"
+          for f in $files; do
+            php -l "$f" >/dev/null
+          done
+

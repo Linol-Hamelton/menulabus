@@ -4,123 +4,131 @@ ob_start();
 
 require_once __DIR__ . '/session_init.php';
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/lib/Idempotency.php';
 
 $response = ['success' => false];
+$input = [];
 
 try {
-    // Получаем входные данные
-    error_log("Delivery details received: " . print_r($deliveryDetail, true));
-    $input = json_decode(file_get_contents('php://input'), true);
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
-    // 1. Проверка CSRF токена
-$csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $input['csrf_token'] ?? null;
-if (!$csrfToken || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfToken)) {
-    $response['error'] = 'Ошибка безопасности (CSRF)';
-    http_response_code(403);
-    echo json_encode($response);
-    exit;
-}
+    $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $input['csrf_token'] ?? null;
+    if (!$csrfToken || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfToken)) {
+        $response['error'] = 'Ошибка безопасности (CSRF)';
+        http_response_code(403);
+        echo json_encode($response, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 
-    // 2. Проверка авторизации пользователя
     if (!isset($_SESSION['user_id'])) {
         $response['error'] = 'Требуется авторизация';
         http_response_code(401);
-        echo json_encode($response);
+        echo json_encode($response, JSON_UNESCAPED_UNICODE);
         exit;
     }
 
     $db = Database::getInstance();
-    $user = $db->getUserById($_SESSION['user_id']);
-
-    // 3. Проверка роли (разрешаем и customer и employee)
+    $user = $db->getUserById((int)$_SESSION['user_id']);
     if (!$user) {
         $response['error'] = 'Доступ запрещен';
         http_response_code(403);
-        echo json_encode($response);
+        echo json_encode($response, JSON_UNESCAPED_UNICODE);
         exit;
     }
 
-    // Определяем тип операции (создание заказа или изменение статуса)
     if (isset($input['items'])) {
-        // 4A. Создание нового заказа
         $items = $input['items'];
-        $total = $input['total'];
-        $deliveryType = $input['delivery_type'] ?? 'bar';
-        $deliveryDetail = $input['delivery_details'] ?? '';
+        $total = (float)($input['total'] ?? 0);
+        $deliveryType = (string)($input['delivery_type'] ?? 'bar');
+        $deliveryDetail = (string)($input['delivery_details'] ?? '');
 
-        // Проверка обязательных полей для определенных типов доставки
-        if ($deliveryType === 'delivery' && empty($deliveryDetail)) {
-            $response['error'] = 'Укажите адрес доставки';
-            http_response_code(400);
-            echo json_encode($response);
-            exit;
-        }
-
-        if ($deliveryType === 'table' && empty($deliveryDetail)) {
-            $response['error'] = 'Укажите номер стола';
-            http_response_code(400);
-            echo json_encode($response);
-            exit;
-        }
-
-        $itemsJson = json_encode($items);
-
-        if (!$items || !$total) {
+        if (!is_array($items) || empty($items) || $total <= 0) {
             $response['error'] = 'Неверные параметры заказа';
             http_response_code(400);
-            echo json_encode($response);
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        if ($deliveryType === 'delivery' && trim($deliveryDetail) === '') {
+            $response['error'] = 'Укажите адрес доставки';
+            http_response_code(400);
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        if ($deliveryType === 'table' && trim($deliveryDetail) === '') {
+            $response['error'] = 'Укажите номер стола';
+            http_response_code(400);
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
             exit;
         }
 
-        // Создаем новый заказ с типом доставки
-        $success = $db->createOrder($_SESSION['user_id'], $items, $total, $deliveryType, $deliveryDetail);
-        if ($success) {
-            $response['success'] = true;
-            $response['orderId'] = $success;
-            http_response_code(200);
+        $idempotencyKey = Idempotency::getHeaderKey();
+        $requestHash = Idempotency::hashPayload([
+            'user_id' => (int)$_SESSION['user_id'],
+            'items' => $items,
+            'total' => $total,
+            'delivery_type' => $deliveryType,
+            'delivery_details' => $deliveryDetail,
+        ]);
 
-            // Очищаем корзину только после успешного создания заказа
-        } else {
+        if ($idempotencyKey !== null) {
+            $existing = Idempotency::find($db->getConnection(), 'web_order_create', $idempotencyKey, $requestHash);
+            if ($existing && !empty($existing['conflict'])) {
+                $response['error'] = 'Idempotency-Key уже использован с другим payload';
+                http_response_code(409);
+                echo json_encode($response, JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+            if ($existing && is_array($existing['response'])) {
+                $cached = $existing['response'];
+                $cached['idempotent_replay'] = true;
+                $response = array_merge(['success' => true], $cached);
+                http_response_code(200);
+                echo json_encode($response, JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+        }
+
+        $orderId = $db->createOrder((int)$_SESSION['user_id'], $items, $total, $deliveryType, $deliveryDetail);
+        if (!$orderId) {
             $response['error'] = 'Ошибка при создании заказа';
             http_response_code(500);
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
+            exit;
         }
+
+        $payload = ['orderId' => (int)$orderId];
+        if ($idempotencyKey !== null) {
+            Idempotency::store($db->getConnection(), 'web_order_create', $idempotencyKey, $requestHash, $payload);
+        }
+
+        $response['success'] = true;
+        $response['orderId'] = (int)$orderId;
+        http_response_code(200);
     } elseif (isset($input['order_id']) && isset($input['action'])) {
-        // 4B. Изменение статуса существующего заказа (только для employee)
-        if ($user['role'] !== 'employee') {
+        if (($user['role'] ?? '') !== 'employee') {
             $response['error'] = 'Недостаточно прав для изменения статуса';
             http_response_code(403);
-            echo json_encode($response);
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
             exit;
         }
 
-        $orderId = $input['order_id'];
-        $action = $input['action'];
-
-        // 5. Получаем текущий статус заказа
+        $orderId = (int)$input['order_id'];
         $currentStatus = $db->getOrderStatus($orderId);
+        $statusFlow = ['Приём', 'готовим', 'доставляем', 'завершён'];
+        $currentIndex = array_search($currentStatus, $statusFlow, true);
 
-        if (!$currentStatus) {
+        if ($currentStatus === false) {
             $response['error'] = 'Заказ не найден';
             http_response_code(404);
-            echo json_encode($response);
-            exit;
-        }
-
-        // 6. Определяем следующий статус
-        $statusFlow = ['Приём', 'готовим', 'доставляем', 'завершён'];
-        $currentIndex = array_search($currentStatus, $statusFlow);
-
-        // 7. Проверяем возможность изменения статуса
-        if ($currentIndex === false) {
+        } elseif ($currentIndex === false) {
             $response['error'] = 'Неизвестный текущий статус заказа';
             http_response_code(400);
         } elseif ($currentIndex >= count($statusFlow) - 1) {
             $response['error'] = 'Заказ уже завершён';
             http_response_code(400);
         } else {
-            // 8. Обновляем статус
             $newStatus = $statusFlow[$currentIndex + 1];
-            $success = $db->updateOrderStatus($orderId, $newStatus, $_SESSION['user_id']);
+            $success = $db->updateOrderStatus($orderId, $newStatus, (int)$_SESSION['user_id']);
 
             if ($success) {
                 $response['success'] = true;
@@ -136,7 +144,7 @@ if (!$csrfToken || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfToken)) {
         $response['error'] = 'Неверные параметры запроса';
         http_response_code(400);
     }
-} catch (Exception $e) {
+} catch (Throwable $e) {
     error_log("Order processing error: " . $e->getMessage());
     error_log("Input data: " . print_r($input, true));
     error_log("Session data: " . print_r($_SESSION, true));
@@ -145,7 +153,7 @@ if (!$csrfToken || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfToken)) {
 }
 
 ob_end_clean();
-
 header('Content-Type: application/json; charset=utf-8');
 echo json_encode($response, JSON_UNESCAPED_UNICODE);
 exit;
+
