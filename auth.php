@@ -8,6 +8,8 @@ $db = Database::getInstance(); // <- Ключевое исправление з�
 $mode = $_GET['mode'] ?? 'login';
 $successMessage = $_SESSION['auth_message'] ?? null;
 unset($_SESSION['auth_message']);
+$sessionErrorMessage = $_SESSION['auth_error_message'] ?? null;
+unset($_SESSION['auth_error_message']);
 
 // Обработка POST-запросов
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -192,6 +194,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p><?= htmlspecialchars($successMessage) ?></p>
             </div>
         <?php endif; ?>
+
+        <?php if ($sessionErrorMessage): ?>
+            <div class="auth-errors">
+                <p><?= htmlspecialchars($sessionErrorMessage) ?></p>
+            </div>
+        <?php endif; ?>
         
         <?php if (!empty($errors)): ?>
             <div class="auth-errors">
@@ -270,6 +278,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span class="btn-text">Зарегистрироваться</span>
                 </button>
             </form>
+
+            <div class="auth-oauth-divider">или</div>
+            <div class="auth-form auth-oauth-form">
+                <a href="/google-oauth-start.php?mode=register" class="btn btn-primary" role="button">
+                    <span class="btn-text">Продолжить через Google</span>
+                    <span class="btn-loader" aria-hidden="true"></span>
+                </a>
+            </div>
         <?php else: ?>
             <form class="auth-form" method="POST" autocomplete="on">
                 <div class="form-group">
@@ -317,6 +333,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <a href="auth.php?mode=register" class="auth-link">Регистрация</a>
                 </div>
             </form>
+
+            <div class="auth-oauth-divider">или</div>
+            <div class="auth-form auth-oauth-form">
+                <a href="/google-oauth-start.php?mode=login" class="btn btn-primary" role="button">
+                    <span class="btn-text">Войти через Google</span>
+                    <span class="btn-loader" aria-hidden="true"></span>
+                </a>
+            </div>
         <?php endif; ?>
     </div>
 	    <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>

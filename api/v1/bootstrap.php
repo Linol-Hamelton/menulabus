@@ -6,6 +6,14 @@ require_once __DIR__ . '/../../lib/ApiResponse.php';
 require_once __DIR__ . '/../../lib/MobileTokenAuth.php';
 require_once __DIR__ . '/../../lib/Idempotency.php';
 
+// Optional composer autoload (some deployments may ship an incomplete vendor/ tree).
+// We guard against a broken vendor/autoload.php that would fatal at include-time.
+$autoload = __DIR__ . '/../../vendor/autoload.php';
+$autoloadReal = __DIR__ . '/../../vendor/composer/autoload_real.php';
+if (is_file($autoload) && is_file($autoloadReal)) {
+    require_once $autoload;
+}
+
 function api_v1_require_method(string $method): void
 {
     if (strtoupper($_SERVER['REQUEST_METHOD'] ?? '') !== strtoupper($method)) {
@@ -33,4 +41,3 @@ function api_v1_auth_user_from_bearer(): array
 
     return $user;
 }
-

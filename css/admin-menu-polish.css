@@ -189,7 +189,6 @@ body.employee-page .font-control {
 /* owner.php visual alignment pass */
 
 body.owner-page .account-container {
-  max-width: 1240px;
   padding: 0 20px;
   width: 100%;
 }
@@ -832,7 +831,7 @@ body.account-page .back-to-menu-btn {
   body.account-page .section-header-nav-actions {
     gap: 8px;
     margin-right: 0;
-    width: 70%;
+    width: 60%;
   }
 
   .account-header-bar .section-header-menu {
@@ -841,8 +840,8 @@ body.account-page .back-to-menu-btn {
 
   .account-header-bar .section-header-nav-actions {
     gap: 8px;
-    margin-left: 0;
-    width: 66%;
+    margin-right: 0;
+    width: 55%;
   }
 
   .account-header-bar .back-to-menu-btn {
@@ -854,7 +853,7 @@ body.account-page .back-to-menu-btn {
   body.account-page .back-to-menu-btn {
     justify-content: center;
     min-width: 0;
-    width: 33%;
+    width: 45%;
   }
 }
 
@@ -1012,6 +1011,26 @@ body.auth-page .auth-container form .btn {
     margin: 0 auto;
     width: 80%;
     display: block;
+    text-align: center;
+}
+
+body.auth-page .auth-oauth-divider {
+  align-items: center;
+  color: var(--light-text);
+  display: flex;
+  font-weight: 600;
+  gap: 12px;
+  justify-content: center;
+  margin: 14px auto;
+  width: 80%;
+}
+
+body.auth-page .auth-oauth-divider::before,
+body.auth-page .auth-oauth-divider::after {
+  background: rgba(0, 0, 0, 0.12);
+  content: "";
+  flex: 1;
+  height: 1px;
 }
 
 body.auth-page .auth-footer {

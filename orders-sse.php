@@ -41,10 +41,7 @@ while (!connection_aborted() && (time() - $startedAt) < 25) {
             'orderUpdated' => true,
             'changedOrderIds' => array_column($changedOrders, 'id'),
             'changedOrderStatuses' => array_column($changedOrders, 'status'),
-            'cartTotal' => (int)$db->scalar(
-                "SELECT COALESCE(SUM(quantity),0) FROM cart_items WHERE user_id = ?",
-                [$userId]
-            ),
+            'cartTotal' => (int)$db->getCartTotalCountForUser($userId),
             'activeOrders' => (int)$db->scalar(
                 "SELECT COUNT(*) FROM orders WHERE status IN ('Приём','готовим','доставляем')"
             ),
@@ -62,10 +59,7 @@ while (!connection_aborted() && (time() - $startedAt) < 25) {
         $ping = [
             'timestamp' => time(),
             'orderUpdated' => false,
-            'cartTotal' => (int)$db->scalar(
-                "SELECT COALESCE(SUM(quantity),0) FROM cart_items WHERE user_id = ?",
-                [$userId]
-            ),
+            'cartTotal' => (int)$db->getCartTotalCountForUser($userId),
         ];
         echo "event: ping\n";
         echo "data: " . json_encode($ping, JSON_UNESCAPED_UNICODE) . "\n\n";

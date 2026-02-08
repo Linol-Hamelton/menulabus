@@ -1,6 +1,6 @@
 // sw.js — финальная версия с офлайн-страницей и push-уведомлениями
-const CACHE_NAME = "labus-v8-minified";
-const DYNAMIC_CACHE = "labus-dynamic-v8";
+const CACHE_NAME = "labus-v10-minified";
+const DYNAMIC_CACHE = "labus-dynamic-v10";
 const OFFLINE_URL = '/offline.html';   // добавляем офлайн-страницу
 
 // 1. Расширяем APP_SHELL офлайн-страницей и её ресурсами
@@ -80,7 +80,7 @@ async function cacheFirst(request) {
   const cached = await caches.match(request);
   if (cached) return cached;
   const response = await fetch(request);
-  if (response && response.status === 200) {
+  if (response && shouldStore(response)) {
     const cache = await caches.open(CACHE_NAME);
     cache.put(request, response.clone());
   }
@@ -90,7 +90,7 @@ async function cacheFirst(request) {
 async function networkFirst(request) {
   try {
     const response = await fetch(request);
-    if (response && response.status === 200) {
+    if (response && shouldStore(response)) {
       const cache = await caches.open(DYNAMIC_CACHE);
       cache.put(request, response.clone());
     }
@@ -99,6 +99,14 @@ async function networkFirst(request) {
     const cached = await caches.match(request);
     return cached || caches.match(OFFLINE_URL);
   }
+}
+
+function shouldStore(response) {
+  if (!response || response.status !== 200) return false;
+  const cc = (response.headers.get('Cache-Control') || '').toLowerCase();
+  // Respect server intent: never cache no-store/no-cache pages (auth/account).
+  if (cc.includes('no-store') || cc.includes('no-cache')) return false;
+  return true;
 }
 
 self.addEventListener('fetch', (event) => {
@@ -129,6 +137,23 @@ self.addEventListener('fetch', (event) => {
         )
     );
     return;
+  }
+
+  // Never let SW cache/serve auth and OAuth flow HTML.
+  // This prevents stale auth.php markup (e.g. old <form action=...>) after deploy.
+  try {
+    const url = new URL(event.request.url);
+    const bypassPaths = new Set([
+      '/auth.php',
+      '/google-oauth-start.php',
+      '/google-oauth-callback.php',
+    ]);
+    if (bypassPaths.has(url.pathname)) {
+      event.respondWith(fetch(event.request, { cache: 'no-store' }));
+      return;
+    }
+  } catch (e) {
+    // ignore URL parse issues
   }
 
   if (event.request.url.includes('/api/') ||

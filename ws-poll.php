@@ -16,10 +16,7 @@ if ($userId <= 0) {
     exit;
 }
 
-$response['cartTotal'] = (int)$db->scalar(
-    "SELECT COALESCE(SUM(quantity),0) FROM cart_items WHERE user_id = ?",
-    [$userId]
-);
+$response['cartTotal'] = (int)$db->getCartTotalCountForUser($userId);
 
 $userRole = (string)($_SESSION['user_role'] ?? '');
 

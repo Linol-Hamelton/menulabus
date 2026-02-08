@@ -226,6 +226,41 @@ class Database
         return $checked;
     }
 
+    private function ensureCartItemsTable(): bool
+    {
+        static $checked = null;
+        if ($checked !== null) {
+            return $checked;
+        }
+
+        try {
+            $stmt = $this->connection->query("SHOW TABLES LIKE 'cart_items'");
+            $checked = (bool)($stmt && $stmt->fetchColumn());
+        } catch (Throwable $e) {
+            error_log("ensureCartItemsTable check failed: " . $e->getMessage());
+            $checked = false;
+        }
+
+        return $checked;
+    }
+
+    public function getCartTotalCountForUser(int $userId): int
+    {
+        if ($userId <= 0) {
+            return 0;
+        }
+        if (!$this->ensureCartItemsTable()) {
+            // Cart is stored client-side (localStorage) in current stack; server table may not exist.
+            return 0;
+        }
+
+        $val = $this->scalar(
+            "SELECT COALESCE(SUM(quantity),0) FROM cart_items WHERE user_id = ?",
+            [$userId]
+        );
+        return is_numeric($val) ? (int)$val : 0;
+    }
+
     private function persistOrderItems(int $orderId, array $items): void
     {
         if (!$orderId || !$items) {
@@ -1145,6 +1180,30 @@ class Database
             return $result;
         } catch (PDOException $e) {
             error_log("updateUser Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function updateUserPhone(int $userId, ?string $phone): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE users
+                SET phone = :phone
+                WHERE id = :id
+            ");
+            $result = $stmt->execute([
+                ':phone' => $phone ?: null,
+                ':id' => $userId,
+            ]);
+
+            if ($result) {
+                $this->invalidateUserCache($userId);
+            }
+
+            return (bool)$result;
+        } catch (PDOException $e) {
+            error_log("updateUserPhone Error: " . $e->getMessage());
             return false;
         }
     }

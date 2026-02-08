@@ -34,6 +34,9 @@ data/vapid-keys.json
 # Temporary files
 *.tmp
 *.temp
+data/tmp/
+*.bak-*
+.tmp-*
 
 # Uploads (if any)
 uploads/
