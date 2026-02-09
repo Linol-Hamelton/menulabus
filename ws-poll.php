@@ -10,6 +10,13 @@ $db = Database::getInstance();
 $response = ['timestamp' => time()];
 
 $userId = (int)($_SESSION['user_id'] ?? 0);
+$userRole = (string)($_SESSION['user_role'] ?? '');
+
+// Release session lock early (polling is frequent; do not block page navigation).
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
+
 if ($userId <= 0) {
     http_response_code(401);
     echo json_encode(['error' => 'auth_required'], JSON_UNESCAPED_UNICODE);
@@ -17,8 +24,6 @@ if ($userId <= 0) {
 }
 
 $response['cartTotal'] = (int)$db->getCartTotalCountForUser($userId);
-
-$userRole = (string)($_SESSION['user_role'] ?? '');
 
 // Use Redis-backed marker to avoid heavy aggregate query on every poll.
 $lastOrderUpdate = (int)$db->getOrdersLastUpdateTs();
@@ -35,7 +40,7 @@ if ($lastOrderUpdate > $lastKnown) {
 }
 
 $response['activeOrders'] = (int)$db->scalar(
-    "SELECT COUNT(*) FROM orders WHERE status IN ('Приём','готовим','доставляем')"
+    "SELECT COUNT(*) FROM orders WHERE status IN (1,2,3)"
 );
 
 echo json_encode($response, JSON_UNESCAPED_UNICODE);

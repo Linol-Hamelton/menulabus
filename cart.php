@@ -10,6 +10,7 @@ require_once __DIR__ . '/session_init.php';
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.webmanifest?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <meta name="csrf-token" content="<?= $_SESSION['csrf_token'] ?? '' ?>">
     <meta http-equiv="Permissions-Policy" content="camera=(self 'https://menu.labus.pro'), microphone=()">
     <meta http-equiv="Content-Security-Policy" content="media-src 'self' blob:;">

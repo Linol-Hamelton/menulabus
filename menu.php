@@ -14,6 +14,7 @@ $activeCategory = $_COOKIE['activeMenuCategory'] ?? $categories[0]['category'];
 <head>  
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.webmanifest?v=<?= htmlspecialchars($appVersion) ?>">
     <title>labus | Меню</title>
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($appVersion) ?>">

@@ -1,6 +1,6 @@
 {
-  "version": "1.3.4",
+  "version": "1.3.7",
   "release_date": "2026-02-08",
-  "changelog": "Stability/perf: orders pages refresh via lightweight partial HTML; live-update fetches include credentials and handle auth redirects.",
+  "changelog": "Perf/stability: service worker now intercepts only navigations (offline fallback) to avoid SSE/asset proxying; SSE header fix for HTTP/2; remove legacy address-autocomplete dependency; add manifest link on all main pages.",
   "critical": true
 }

@@ -79,6 +79,7 @@ mobile/ios/App.xcworkspace/xcuserdata/
 # Debug files
 debug.log
 *.log
+fix.md
 
 # System files
 *.sqlite

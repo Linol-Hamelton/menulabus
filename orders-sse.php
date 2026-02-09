@@ -3,7 +3,6 @@ require_once __DIR__ . '/session_init.php';
 
 header('Content-Type: text/event-stream; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-header('Connection: keep-alive');
 header('X-Accel-Buffering: no');
 
 ignore_user_abort(true);
@@ -12,6 +11,12 @@ ignore_user_abort(true);
 $db = Database::getInstance();
 $userId = (int)($_SESSION['user_id'] ?? 0);
 $userRole = (string)($_SESSION['user_role'] ?? '');
+
+// IMPORTANT: release PHP session lock before long-lived SSE loop.
+// Otherwise this stream blocks other same-user requests (page navigation) until it finishes.
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
 
 if ($userId <= 0) {
     http_response_code(401);
@@ -43,7 +48,7 @@ while (!connection_aborted() && (time() - $startedAt) < 25) {
             'changedOrderStatuses' => array_column($changedOrders, 'status'),
             'cartTotal' => (int)$db->getCartTotalCountForUser($userId),
             'activeOrders' => (int)$db->scalar(
-                "SELECT COUNT(*) FROM orders WHERE status IN ('Приём','готовим','доставляем')"
+                "SELECT COUNT(*) FROM orders WHERE status IN (1,2,3)"
             ),
         ];
 
