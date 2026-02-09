@@ -189,6 +189,7 @@ body.employee-page .font-control {
 /* owner.php visual alignment pass */
 
 body.owner-page .account-container {
+  margin: auto;
   padding: 0 20px;
   width: 100%;
 }
@@ -653,6 +654,7 @@ body.account-page .account-container {
   max-width: 1240px;
   padding: 0 20px;
   width: 100%;
+  margin-bottom: 20px;
 }
 
 body.account-page .account-sections {
@@ -821,7 +823,7 @@ body.account-page .back-to-menu-btn {
   }
 
   body.account-page .checkout-btn {
-    width: 100%;
+    gap: 20px;
   }
 
   body.account-page #menu .section-header-menu {

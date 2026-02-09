@@ -179,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="ru">
 
 <head>
-    
+
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -192,103 +192,102 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Личный кабинет | labus</title>
 
     <!-- Preloader - мгновенная загрузка -->
-    
+
 </head>
 
 <body class="customer_orders-page account-page">
-        <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
-        <?php require_once __DIR__ . '/account-header.php'; ?>
+    <?php $GLOBALS['header_css_in_head'] = true;
+    require_once __DIR__ . '/header.php'; ?>
+    <?php require_once __DIR__ . '/account-header.php'; ?>
 
-        <div class="account-container">
-            <?php if ($successMessage): ?>
-                <div class="alert alert-success"><?= htmlspecialchars($successMessage) ?></div>
-            <?php endif; ?>
+    <div class="account-container">
+        <?php if ($successMessage): ?>
+            <div class="alert alert-success"><?= htmlspecialchars($successMessage) ?></div>
+        <?php endif; ?>
 
-            <?php if (!empty($errors)): ?>
-                <div class="alert alert-danger">
-                    <?php foreach ($errors as $error): ?>
-                        <p><?= htmlspecialchars($error) ?></p>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
-
-            <div class="account-sections">
-                <section class="account-section">
-                    <h2>Профиль</h2>
-                    <form method="POST">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-                        <div class="form-group">
-                            <label>Email:</label><br>
-                            <input type="email" value="<?= htmlspecialchars($user['email']) ?>" disabled>
-                        </div>
-                        <div class="form-group">
-                            <label for="name">Имя:</label><br>
-                            <input type="text" name="name" id="name" value="<?= htmlspecialchars($user['name']) ?>" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="phone">Телефон:</label><br>
-                            <input type="tel" name="phone" id="phone" value="<?= htmlspecialchars($user['phone'] ?? '') ?>">
-                        </div>
-                        <button type="submit" name="update_profile" class="checkout-btn">Сохранить изменения</button>
-                    </form>
-                </section>
-
-                <section class="account-section">
-                    <h2>Безопасность</h2>
-                    <form method="POST">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-                        <div class="form-group">
-                            <label for="current_password">Текущий пароль:</label><br>
-                            <input type="password" name="current_password" id="current_password" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="new_password">Новый пароль:</label><br>
-                            <input type="password" name="new_password" id="new_password" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="confirm_password">Подтвердите пароль:</label><br>
-                            <input type="password" name="confirm_password" id="confirm_password" required>
-                        </div>
-                        <button type="submit" name="change_password" class="checkout-btn">Изменить пароль</button>
-                    </form>
-                </section>
+        <?php if (!empty($errors)): ?>
+            <div class="alert alert-danger">
+                <?php foreach ($errors as $error): ?>
+                    <p><?= htmlspecialchars($error) ?></p>
+                <?php endforeach; ?>
             </div>
+        <?php endif; ?>
 
-            <!-- Секция настройки вида меню -->
+        <div class="account-sections">
             <section class="account-section">
-                <h2>Настройки отображения меню</h2>
+                <h2>Профиль</h2>
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                     <div class="form-group">
-                        <label>Выберите вид меню:</label><br>
-                        <div class="menu-view-options">
-                            <label>
-                                <input type="radio" name="menu_view" value="default" <?= $menuView === 'default' ? 'checked' : '' ?>>
-                                <p class="menu-view-text">Меню список. С информацией и увеличением фото.</p>
-                            </label>
-                            <label>
-                                <input type="radio" name="menu_view" value="info" <?= $menuView === 'info' ? 'checked' : '' ?>>
-                                <p class="menu-view-text">Меню плиткой с информацией о составе и увеличением фото.</p>
-                            </label>
-                            <label>
-                                <input type="radio" name="menu_view" value="alt" <?= $menuView === 'alt' ? 'checked' : '' ?>>
-                                <p class="menu-view-text">Меню плиткой без информации о составе и увеличения фото.</p>
-                            </label>
-                        </div>
+                        <label>Email:</label><br>
+                        <input type="email" value="<?= htmlspecialchars($user['email']) ?>" disabled>
                     </div>
-                    <button type="submit" name="change_menu_view" class="checkout-btn">Сохранить настройки</button>
+                    <div class="form-group">
+                        <label for="name">Имя:</label><br>
+                        <input type="text" name="name" id="name" value="<?= htmlspecialchars($user['name']) ?>" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Телефон:</label><br>
+                        <input type="tel" name="phone" id="phone" value="<?= htmlspecialchars($user['phone'] ?? '') ?>">
+                    </div>
+                    <button type="submit" name="update_profile" class="checkout-btn">Сохранить изменения</button>
                 </form>
             </section>
 
-            <div class="section-header-menu">
-                <a href="logout.php" class="back-to-menu-btn">Выйти</a>
-            </div>
+            <section class="account-section">
+                <h2>Безопасность</h2>
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                    <div class="form-group">
+                        <label for="current_password">Текущий пароль:</label><br>
+                        <input type="password" name="current_password" id="current_password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new_password">Новый пароль:</label><br>
+                        <input type="password" name="new_password" id="new_password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm_password">Подтвердите пароль:</label><br>
+                        <input type="password" name="confirm_password" id="confirm_password" required>
+                    </div>
+                    <button type="submit" name="change_password" class="checkout-btn">Изменить пароль</button>
+                </form>
+            </section>
         </div>
-        <script src="/js/security.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
-        <script src="/js/cart.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
-        <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
-        <script src="/js/account.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
-        <script src="/js/version-checker.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+
+        <!-- Секция настройки вида меню -->
+        <section class="account-section">
+            <h2>Настройки отображения меню</h2>
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                <div class="form-group">
+                    <label>Выберите вид меню:</label><br>
+                    <div class="menu-view-options">
+                        <label>
+                            <input type="radio" name="menu_view" value="default" <?= $menuView === 'default' ? 'checked' : '' ?>>
+                            <p class="menu-view-text">Меню список. С информацией и увеличением фото.</p>
+                        </label>
+                        <label>
+                            <input type="radio" name="menu_view" value="info" <?= $menuView === 'info' ? 'checked' : '' ?>>
+                            <p class="menu-view-text">Меню плиткой с информацией о составе и увеличением фото.</p>
+                        </label>
+                        <label>
+                            <input type="radio" name="menu_view" value="alt" <?= $menuView === 'alt' ? 'checked' : '' ?>>
+                            <p class="menu-view-text">Меню плиткой без информации о составе и увеличения фото.</p>
+                        </label>
+                    </div>
+                </div>
+                <div class="section-header-menu">
+                    <button type="submit" name="change_menu_view" class="checkout-btn">Сохранить</button><a href="logout.php" class="back-to-menu-btn">Выйти</a>
+                </div>
+            </form>
+        </section>
+    </div>
+    <script src="/js/security.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/cart.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/account.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/version-checker.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
 </body>
 
 </html>

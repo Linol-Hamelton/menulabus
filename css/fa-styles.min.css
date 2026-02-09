@@ -251,7 +251,7 @@ a {
   height: auto;
   margin-right: 10%;
   object-fit: cover;
-  width: 8vw;
+  width: 9vw;
 }
 .cart-item-title {
   color: var(--light-text);
@@ -1113,9 +1113,10 @@ a {
   align-items: center;
   display: flex;
   justify-content: space-between;
-  margin: 28px 0;
+  margin: auto;
   padding: 0 8%;
   position: relative;
+  height: 15%;
 }
 .order-item {
   background: var(--white);
@@ -1411,7 +1412,7 @@ a {
   grid-template-columns: repeat(3, 1fr);
 }
 .menu-content {
-  margin: 11% auto;
+  margin: 50px auto;
   width: 95%;
 }
 .menu-tabs-container {
