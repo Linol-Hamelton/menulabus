@@ -192,6 +192,18 @@ if ($userId) {
         if (!$user) {
             auth_fail('Yandex OAuth: failed to create user');
         }
+    } else {
+        // Update user's name if it's empty and OAuth provides one
+        if ((empty($user['name']) || $user['name'] === 'User') && !empty($name) && $name !== 'User') {
+            $stmt = $pdo->prepare("UPDATE users SET name = :name WHERE id = :id");
+            $stmt->execute([':name' => $name, ':id' => (int)$user['id']]);
+            $user['name'] = $name;
+        }
+        // Update email_verified_at if not set and OAuth email is verified
+        if (empty($user['email_verified_at']) && $emailVerified) {
+            $stmt = $pdo->prepare("UPDATE users SET email_verified_at = NOW() WHERE id = :id");
+            $stmt->execute([':id' => (int)$user['id']]);
+        }
     }
 
     if (empty($user['is_active'])) {
