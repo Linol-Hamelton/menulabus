@@ -80,10 +80,6 @@ body.employee-page .download-button-container {
   margin-left: 0;
 }
 
-body.employee-page .desktop-table {
-  margin: 16px 0 26px;
-}
-
 body.employee-page .mobile-table-item {
   margin: 0 0 14px;
 }
@@ -321,7 +317,7 @@ body.owner-page .menu-tabs-container {
 
 body.owner-page .menu-tabs {
   gap: 2px;
-  padding: 8px 6px;
+  padding: 10px 0;
 }
 
 body.owner-page .menu-tabs .tab-btn {
@@ -410,6 +406,7 @@ body.employee-page .account-section {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   margin-top: 0;
+  margin-bottom: 100px;
   padding: 24px;
 }
 

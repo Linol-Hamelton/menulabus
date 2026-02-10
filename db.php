@@ -179,7 +179,7 @@ class Database
             error_log("getInitialOrderStatus fallback lookup failed: " . $e->getMessage());
         }
 
-        $initialStatus = 'РџСЂРёС‘Рј';
+        $initialStatus = 'Приём';
         return $initialStatus;
     }
 
@@ -625,11 +625,11 @@ class Database
             $stmt = $this->prepareCached(
                 "SELECT DISTINCT status FROM orders ORDER BY 
                  CASE 
-                     WHEN status = 'РџСЂРёС‘Рј' THEN 1
-                     WHEN status = 'РіРѕС‚РѕРІРёРј' THEN 2
-                     WHEN status = 'РґРѕСЃС‚Р°РІР»СЏРµРј' THEN 3
-                     WHEN status = 'Р·Р°РІРµСЂС€С‘РЅ' THEN 4
-                     WHEN status = 'РѕС‚РєР°Р·' THEN 5
+                     WHEN status = 'Приём' THEN 1
+                     WHEN status = 'готовим' THEN 2
+                     WHEN status = 'доставляем' THEN 3
+                     WHEN status = 'завершён' THEN 4
+                     WHEN status = 'отказ' THEN 5
                      ELSE 6
                  END"
             );
@@ -1308,13 +1308,10 @@ class Database
                         id as order_id,
                         TIME(created_at) as time,
                         total as total_revenue,
-                        (SELECT COUNT(*) 
-                         FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                             id INT PATH '$.id'
-                         )) j) as item_count
+                        (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = orders.id) as item_count
                     FROM orders
                     WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                    AND status = 'Р·Р°РІРµСЂС€С‘РЅ'
+                    AND status = 'завершён'
                     AND DAY(created_at) = DAY(NOW())
                     ORDER BY created_at DESC";
         } else {
@@ -1328,7 +1325,7 @@ class Database
             } elseif ($period === 'month') {
                 $groupBy = 'YEAR(created_at), WEEK(created_at, 1)';
                 $orderBy = 'YEAR(created_at) DESC, WEEK(created_at, 1) DESC';
-                $selectDate = "CONCAT('РќРµРґРµР»СЏ ', WEEK(created_at, 1), ' (', 
+                $selectDate = "CONCAT('Неделя ', WEEK(created_at, 1), ' (', 
                                   DATE_FORMAT(DATE_ADD(created_at, INTERVAL -WEEKDAY(created_at) DAY), '%d.%m'), ' - ',
                                   DATE_FORMAT(DATE_ADD(created_at, INTERVAL 6-WEEKDAY(created_at) DAY), '%d.%m'), ')') as date";
                 $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval) 
@@ -1351,20 +1348,20 @@ class Database
                         AVG(total) as avg_order_value
                     FROM orders
                     WHERE $whereClause
-                    AND status = 'Р·Р°РІРµСЂС€С‘РЅ'
+                    AND status = 'завершён'
                     GROUP BY $groupBy
                     ORDER BY $orderBy";
         }
-        
+
         try {
             $stmt = $this->prepareCached($sql);
             $stmt->execute();
-            
+
             $result = $stmt->fetchAll();
             if ($period === 'day' && !empty($result)) {
                 foreach ($result as &$row) {
                     if (isset($row['time'])) {
-                        $row['Р’СЂРµРјСЏ'] = $row['time'];
+                        $row['Время'] = $row['time'];
                         unset($row['time']);
                     }
                 }
@@ -1393,28 +1390,13 @@ class Database
                         id as order_id,
                         TIME(created_at) as time,
                         total as total_revenue,
-                        (SELECT SUM(mi.cost * (j.quantity)) 
-                         FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                             id INT PATH '$.id',
-                             quantity INT PATH '$.quantity'
-                         )) j
-                         JOIN menu_items mi ON mi.id = j.id) as total_expenses,
-                        total - (SELECT SUM(mi.cost * (j.quantity)) 
-                                 FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                                     id INT PATH '$.id',
-                                     quantity INT PATH '$.quantity'
-                                 )) j
-                                 JOIN menu_items mi ON mi.id = j.id) as total_profit,
-                        ROUND(((total - (SELECT SUM(mi.cost * (j.quantity)) 
-                                       FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                                           id INT PATH '$.id',
-                                           quantity INT PATH '$.quantity'
-                                       )) j
-                                       JOIN menu_items mi ON mi.id = j.id)) / total) * 100, 2) as profitability_percent
+                        (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id) as total_expenses,
+                        total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id) as total_profit,
+                        ROUND(((total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id)) / total) * 100, 2) as profitability_percent
                     FROM orders
                     WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
                     AND DAY(created_at) = DAY(NOW())
-                    AND status = 'Р·Р°РІРµСЂС€С‘РЅ'
+                    AND status = 'завершён'
                     ORDER BY created_at DESC";
         } else {
             if ($period === 'year') {
@@ -1427,7 +1409,7 @@ class Database
             } elseif ($period === 'month') {
                 $groupBy = 'YEAR(created_at), WEEK(created_at, 1)';
                 $orderBy = 'YEAR(created_at) DESC, WEEK(created_at, 1) DESC';
-                $selectDate = "CONCAT('РќРµРґРµР»СЏ ', WEEK(created_at, 1), ' (', 
+                $selectDate = "CONCAT('Неделя ', WEEK(created_at, 1), ' (', 
                                   DATE_FORMAT(DATE_ADD(created_at, INTERVAL -WEEKDAY(created_at) DAY), '%d.%m'), ' - ',
                                   DATE_FORMAT(DATE_ADD(created_at, INTERVAL 6-WEEKDAY(created_at) DAY), '%d.%m'), ')') as date";
                 $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval) 
@@ -1447,31 +1429,16 @@ class Database
                         $selectDate,
                         COUNT(*) as order_count,
                         SUM(total) as total_revenue,
-                        SUM((SELECT SUM(mi.cost * (j.quantity)) 
-                             FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                                 id INT PATH '$.id',
-                                 quantity INT PATH '$.quantity'
-                             )) j
-                             JOIN menu_items mi ON mi.id = j.id)) as total_expenses,
-                        SUM(total - (SELECT SUM(mi.cost * (j.quantity)) 
-                                     FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                                         id INT PATH '$.id',
-                                         quantity INT PATH '$.quantity'
-                                     )) j
-                                     JOIN menu_items mi ON mi.id = j.id)) as total_profit,
-                        ROUND((SUM(total - (SELECT SUM(mi.cost * (j.quantity)) 
-                                          FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                                              id INT PATH '$.id',
-                                              quantity INT PATH '$.quantity'
-                                          )) j
-                                          JOIN menu_items mi ON mi.id = j.id)) / SUM(total)) * 100, 2) as profitability_percent
+                        SUM((SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id)) as total_expenses,
+                        SUM(total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id)) as total_profit,
+                        ROUND((SUM(total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id)) / SUM(total)) * 100, 2) as profitability_percent
                     FROM orders
                     WHERE $whereClause
-                    AND status = 'Р·Р°РІРµСЂС€С‘РЅ'
+                    AND status = 'завершён'
                     GROUP BY $groupBy
                     ORDER BY $orderBy";
         }
-        
+
         try {
             $stmt = $this->prepareCached($sql);
             $stmt->execute();
@@ -1500,43 +1467,23 @@ class Database
                         delivery_type,
                         TIMESTAMPDIFF(MINUTE, created_at, updated_at) as time_minutes,
                         total as total_revenue,
-                        (SELECT SUM(mi.cost * (j.quantity)) 
-                         FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                             id INT PATH '$.id',
-                             quantity INT PATH '$.quantity'
-                         )) j
-                         JOIN menu_items mi ON mi.id = j.id) as total_expenses,
-                        total - (SELECT SUM(mi.cost * (j.quantity)) 
-                                 FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                                     id INT PATH '$.id',
-                                     quantity INT PATH '$.quantity'
-                                 )) j
-                                 JOIN menu_items mi ON mi.id = j.id) as total_profit
+                        (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id) as total_expenses,
+                        total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id) as total_profit
                     FROM orders
                     WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                    AND status = 'Р·Р°РІРµСЂС€С‘РЅ'
+                    AND status = 'завершён'
                     ORDER BY created_at DESC";
         } else {
-            $sql = "SELECT 
+            $sql = "SELECT
                         delivery_type,
                         FLOOR(AVG(TIMESTAMPDIFF(MINUTE, created_at, updated_at))) as avg_time_minutes,
                         COUNT(*) as order_count,
                         SUM(total) as total_revenue,
-                        SUM((SELECT SUM(mi.cost * (j.quantity)) 
-                             FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                                 id INT PATH '$.id',
-                                 quantity INT PATH '$.quantity'
-                             )) j
-                             JOIN menu_items mi ON mi.id = j.id)) as total_expenses,
-                        SUM(total - (SELECT SUM(mi.cost * (j.quantity)) 
-                                     FROM JSON_TABLE(items, '$[*]' COLUMNS(
-                                         id INT PATH '$.id',
-                                         quantity INT PATH '$.quantity'
-                                     )) j
-                                     JOIN menu_items mi ON mi.id = j.id)) as total_profit
+                        SUM((SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id)) as total_expenses,
+                        SUM(total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id)) as total_profit
                     FROM orders
                     WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                    AND status = 'Р·Р°РІРµСЂС€С‘РЅ'
+                    AND status = 'завершён'
                     GROUP BY delivery_type
                     ORDER BY order_count DESC";
         }
@@ -1569,26 +1516,13 @@ class Database
                         u.phone,
                         TIME(o.created_at) as time,
                         o.total as order_total,
-                        (SELECT COUNT(*) 
-                         FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
-                             id INT PATH '$.id'
-                         )) j) as item_count,
-                        (SELECT SUM(mi.cost * (j.quantity)) 
-                         FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
-                             id INT PATH '$.id',
-                             quantity INT PATH '$.quantity'
-                         )) j
-                         JOIN menu_items mi ON mi.id = j.id) as order_expenses,
-                        o.total - (SELECT SUM(mi.cost * (j.quantity)) 
-                                   FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
-                                       id INT PATH '$.id',
-                                       quantity INT PATH '$.quantity'
-                                   )) j
-                                   JOIN menu_items mi ON mi.id = j.id) as order_profit
+                        (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) as item_count,
+                        (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = o.id) as order_expenses,
+                        o.total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = o.id) as order_profit
                     FROM orders o
                     JOIN users u ON o.user_id = u.id
                     WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                    AND o.status = 'Р·Р°РІРµСЂС€С‘РЅ'
+                    AND o.status = 'завершён'
                     ORDER BY o.created_at DESC
                     LIMIT ?";
         } else {
@@ -1602,7 +1536,7 @@ class Database
                     FROM orders o
                     JOIN users u ON o.user_id = u.id
                     WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                    AND o.status = 'Р·Р°РІРµСЂС€С‘РЅ'
+                    AND o.status = 'завершён'
                     GROUP BY u.id
                     ORDER BY total_spent DESC
                     LIMIT ?";
@@ -1634,19 +1568,15 @@ class Database
                     mi.id,
                     mi.name,
                     mi.category,
-                    SUM(j.quantity) as total_quantity,
-                    SUM(j.quantity * j.price) as total_revenue,
-                    SUM(j.quantity * (j.price - mi.cost)) as total_profit,
-                    SUM(j.quantity * mi.cost) as total_expenses
-                FROM orders o,
-                JSON_TABLE(o.items, '$[*]' COLUMNS(
-                    id INT PATH '$.id',
-                    quantity INT PATH '$.quantity',
-                    price DECIMAL(10,2) PATH '$.price'
-                )) j
-                JOIN menu_items mi ON mi.id = j.id
+                    SUM(oi.quantity) as total_quantity,
+                    SUM(oi.quantity * oi.price) as total_revenue,
+                    SUM(oi.quantity * (oi.price - mi.cost)) as total_profit,
+                    SUM(oi.quantity * mi.cost) as total_expenses
+                FROM orders o
+                JOIN order_items oi ON oi.order_id = o.id
+                JOIN menu_items mi ON mi.id = oi.item_id
                 WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                AND o.status = 'Р·Р°РІРµСЂС€С‘РЅ'
+                AND o.status = 'завершён'
                 GROUP BY mi.id
                 ORDER BY total_profit DESC
                 LIMIT ?";
@@ -1680,49 +1610,29 @@ class Database
                         u.phone,
                         TIMESTAMPDIFF(MINUTE, o.created_at, o.updated_at) as processing_time,
                         o.total as total_revenue,
-                        (SELECT SUM(mi.cost * (j.quantity)) 
-                         FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
-                             id INT PATH '$.id',
-                             quantity INT PATH '$.quantity'
-                         )) j
-                         JOIN menu_items mi ON mi.id = j.id) as total_expenses,
-                        o.total - (SELECT SUM(mi.cost * (j.quantity)) 
-                                   FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
-                                       id INT PATH '$.id',
-                                       quantity INT PATH '$.quantity'
-                                   )) j
-                                   JOIN menu_items mi ON mi.id = j.id) as total_profit
+                        (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = o.id) as total_expenses,
+                        o.total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = o.id) as total_profit
                     FROM orders o
                     JOIN users u ON o.last_updated_by = u.id
                     WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                    AND o.status = 'Р·Р°РІРµСЂС€С‘РЅ'
+                    AND o.status = 'завершён'
                     AND u.role IN ('owner', 'employee', 'admin')
                     ORDER BY o.created_at DESC
                     LIMIT ?";
         } else {
-            $sql = "SELECT 
+            $sql = "SELECT
                         u.id,
                         u.name,
                         u.phone,
                         COUNT(o.id) as order_count,
                         SUM(o.total) as total_revenue,
                         FLOOR(AVG(TIMESTAMPDIFF(MINUTE, o.created_at, o.updated_at))) as avg_processing_time,
-                        SUM((SELECT SUM(mi.cost * (j.quantity)) 
-                             FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
-                                 id INT PATH '$.id',
-                                 quantity INT PATH '$.quantity'
-                             )) j
-                             JOIN menu_items mi ON mi.id = j.id)) as total_expenses,
-                        SUM(o.total - (SELECT SUM(mi.cost * (j.quantity)) 
-                                      FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
-                                          id INT PATH '$.id',
-                                          quantity INT PATH '$.quantity'
-                                      )) j
-                                      JOIN menu_items mi ON mi.id = j.id)) as total_profit
+                        SUM((SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = o.id)) as total_expenses,
+                        SUM(o.total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = o.id)) as total_profit
                     FROM orders o
                     JOIN users u ON o.last_updated_by = u.id
                     WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                    AND o.status = 'Р·Р°РІРµСЂС€С‘РЅ'
+                    AND o.status = 'завершён'
                     AND u.role IN ('owner', 'employee', 'admin')
                     GROUP BY u.id
                     ORDER BY total_revenue DESC
@@ -1756,21 +1666,11 @@ class Database
                     COUNT(*) as order_count,
                     AVG(total) as avg_order_value,
                     SUM(total) as total_revenue,
-                    SUM(total - (SELECT SUM(mi.cost * (j.quantity)) 
-                                FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
-                                    id INT PATH '$.id',
-                                    quantity INT PATH '$.quantity'
-                                )) j
-                                JOIN menu_items mi ON mi.id = j.id)) as total_profit,
-                    SUM((SELECT SUM(mi.cost * (j.quantity)) 
-                        FROM JSON_TABLE(o.items, '$[*]' COLUMNS(
-                            id INT PATH '$.id',
-                            quantity INT PATH '$.quantity'
-                        )) j
-                        JOIN menu_items mi ON mi.id = j.id)) as total_expenses
+                    SUM(total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = o.id)) as total_profit,
+                    SUM((SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = o.id)) as total_expenses
                 FROM orders o
                 WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                AND status = 'Р·Р°РІРµСЂС€С‘РЅ'
+                AND status = 'завершён'
                 GROUP BY HOUR(created_at)
                 ORDER BY hour ASC";
         

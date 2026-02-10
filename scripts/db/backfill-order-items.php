@@ -123,7 +123,7 @@ while (true) {
     $sqlPage = $sqlSelect;
     $pageParams = $params;
     if ($lastId > 0) {
-        $sqlPage = preg_replace('/ORDER BY o\\.id\\s*$/', "AND o.id > :after_id\nORDER BY o.id", $sqlPage);
+        $sqlPage = preg_replace('/ORDER BY o\\.id/', "AND o.id > :after_id\nORDER BY o.id", $sqlPage, 1);
         $pageParams[':after_id'] = $lastId;
     }
 

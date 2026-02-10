@@ -162,12 +162,12 @@ function getChartFields($report_type, $period)
     switch ($report_type) {
         case 'sales':
             $fields = $period === 'day'
-                ? ['order_total', 'item_count']
+                ? ['total_revenue', 'item_count']
                 : ['order_count', 'total_revenue', 'avg_order_value'];
             break;
         case 'profit':
             $fields = $period === 'day'
-                ? ['total_revenue', 'order_expenses', 'order_profit', 'profitability_percent']
+                ? ['total_revenue', 'total_expenses', 'total_profit', 'profitability_percent']
                 : ['order_count', 'total_revenue', 'total_expenses', 'total_profit', 'profitability_percent'];
             break;
         case 'efficiency':
