@@ -111,6 +111,88 @@ class RedisCache {
         $this->misses++;
         return null;
     }
+
+    /**
+     * Batch get (best-effort): returns an associative array key => value (null if missing).
+     * Uses Redis MGET when available; falls back to individual get().
+     *
+     * @param string[] $keys
+     * @return array<string,mixed|null>
+     */
+    public function mget(array $keys): array {
+        $out = [];
+        if (empty($keys)) {
+            return $out;
+        }
+
+        // Ensure stable order and string keys.
+        $keys = array_values(array_map('strval', $keys));
+
+        if ($this->available && $this->redis) {
+            try {
+                $values = $this->redis->mGet($keys);
+                if (is_array($values)) {
+                    foreach ($keys as $i => $k) {
+                        $v = $values[$i] ?? false;
+                        if ($v !== false && $v !== null) {
+                            $this->hits++;
+                            $out[$k] = @unserialize($v);
+                        } else {
+                            $this->misses++;
+                            $out[$k] = null;
+                        }
+                    }
+                    return $out;
+                }
+            } catch (Exception $e) {
+                error_log('RedisCache mget error: ' . $e->getMessage());
+                $this->available = false;
+            }
+        }
+
+        // Fallback.
+        foreach ($keys as $k) {
+            $out[$k] = $this->get($k);
+        }
+        return $out;
+    }
+
+    /**
+     * Batch set (best-effort) with a single TTL for all keys.
+     * Uses Redis pipeline when available; falls back to individual set().
+     *
+     * @param array<string,mixed> $items
+     * @param int $ttl
+     * @return bool
+     */
+    public function mset(array $items, int $ttl = 300): bool {
+        if (empty($items)) {
+            return true;
+        }
+
+        if ($this->available && $this->redis) {
+            try {
+                $this->redis->multi(Redis::PIPELINE);
+                foreach ($items as $k => $data) {
+                    $this->redis->setex((string)$k, $ttl, serialize($data));
+                    $this->memoryCache[(string)$k] = [
+                        'data' => $data,
+                        'expires' => time() + $ttl
+                    ];
+                }
+                $this->redis->exec();
+                return true;
+            } catch (Exception $e) {
+                error_log('RedisCache mset error: ' . $e->getMessage());
+                $this->available = false;
+            }
+        }
+
+        foreach ($items as $k => $data) {
+            $this->set((string)$k, $data, $ttl);
+        }
+        return true;
+    }
     
     /**
      * Сохранить значение в кэш

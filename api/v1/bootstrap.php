@@ -1,5 +1,6 @@
 <?php
-
+// API bootstrap must be lightweight: do not run full web session init.
+define('LABUS_CTX', 'api');
 require_once __DIR__ . '/../../session_init.php';
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../lib/ApiResponse.php';

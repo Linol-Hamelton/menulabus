@@ -39,7 +39,7 @@ def worker(url, timeout, count):
     return times, statuses
 
 
-def run_load_test(url, concurrency, total_requests, timeout=10):
+def run_load_test(url, concurrency, total_requests, timeout=2):
     print(f"Load test {url}")
     print(f"Total requests: {total_requests}, concurrency: {concurrency}, timeout: {timeout}s")
 

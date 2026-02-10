@@ -89,3 +89,5 @@ fix.md
 *.backup
 *.bak
 Заказы/
+# Perf output
+perf-results/

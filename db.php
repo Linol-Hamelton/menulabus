@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../config_copy.php';
 
 if (file_exists(__DIR__ . '/QueryCache.php')) {
@@ -93,6 +93,11 @@ class Database
     private function connect()
     {
         try {
+            $persistentEnv = getenv('DB_PDO_PERSISTENT');
+            // Default is off for stability (persistent connections can leak transaction/session state
+            // across requests if code exits unexpectedly).
+            $usePersistent = filter_var($persistentEnv !== false ? $persistentEnv : '0', FILTER_VALIDATE_BOOLEAN);
+
             $this->connection = new PDO(
                 "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
                 DB_USER,
@@ -101,7 +106,7 @@ class Database
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                     PDO::ATTR_EMULATE_PREPARES => false,
-                    PDO::ATTR_PERSISTENT => true,
+                    PDO::ATTR_PERSISTENT => $usePersistent,
                     PDO::ATTR_TIMEOUT => 5,
                     PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
                     PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,

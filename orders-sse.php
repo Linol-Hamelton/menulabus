@@ -1,4 +1,5 @@
 <?php
+define('LABUS_CTX', 'sse');
 require_once __DIR__ . '/session_init.php';
 
 header('Content-Type: text/event-stream; charset=utf-8');
@@ -8,7 +9,6 @@ header('X-Accel-Buffering: no');
 ignore_user_abort(true);
 @set_time_limit(35);
 
-$db = Database::getInstance();
 $userId = (int)($_SESSION['user_id'] ?? 0);
 $userRole = (string)($_SESSION['user_role'] ?? '');
 
@@ -26,6 +26,9 @@ if ($userId <= 0) {
     @flush();
     exit;
 }
+
+require_once __DIR__ . '/db.php';
+$db = Database::getInstance();
 
 $lastKnown = (int)($_GET['t'] ?? 0);
 $startedAt = time();

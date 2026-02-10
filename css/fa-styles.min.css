@@ -309,6 +309,7 @@ a {
   margin: 20px 0;
   overflow: hidden;
   width: 100%;
+  margin-bottom: 100px;
 }
 .desktop-table th {
   background: var(--primary-dark);
@@ -910,6 +911,7 @@ a {
   display: block;
   overflow-x: auto;
   width: 100%;
+  margin-bottom: 100px;
   -webkit-overflow-scrolling: touch;
 }
 .mobile-table table {

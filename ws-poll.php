@@ -1,12 +1,11 @@
 <?php
+define('LABUS_CTX', 'sse');
 require_once __DIR__ . '/session_init.php';
 
 header('Content-Type: application/json');
 header('Cache-Control: no-store');
 
 $lastKnown = (int)($_GET['t'] ?? 0);
-
-$db = Database::getInstance();
 $response = ['timestamp' => time()];
 
 $userId = (int)($_SESSION['user_id'] ?? 0);
@@ -22,6 +21,9 @@ if ($userId <= 0) {
     echo json_encode(['error' => 'auth_required'], JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+require_once __DIR__ . '/db.php';
+$db = Database::getInstance();
 
 $response['cartTotal'] = (int)$db->getCartTotalCountForUser($userId);
 

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 header('Cache-Control: public, max-age=600, s-maxage=600');
 header('Content-Type: text/html; charset=utf-8');
 

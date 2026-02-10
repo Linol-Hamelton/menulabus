@@ -1,5 +1,18 @@
 <?php
-ob_start();
+// session_init.php
+// Default behavior is for web pages. For performance-critical paths (API/SSE),
+// callers can set a context before including this file:
+//   define('LABUS_CTX', 'api');  // API endpoints (/api/v1/*)
+//   define('LABUS_CTX', 'sse');  // long-lived SSE/polling endpoints
+//
+// Context goals:
+// - api: do NOT start sessions, do NOT generate CSP nonces/CSRF, do NOT do file I/O.
+// - sse: keep auth via session, but keep init minimal (caller should session_write_close()).
+
+$labusCtx = defined('LABUS_CTX') ? (string)LABUS_CTX : 'web';
+if (!in_array($labusCtx, ['web', 'api', 'sse'], true)) {
+    $labusCtx = 'web';
+}
 
 $requestStart = microtime(true);
 $requestId = bin2hex(random_bytes(8));
@@ -10,6 +23,125 @@ $GLOBALS['request_id'] = $requestId;
 header_remove('Cache-Control');
 header_remove('Expires');
 header_remove('Pragma');
+
+// Lightweight init for API: no sessions, no CSP, no CSRF, fast OPTIONS.
+if ($labusCtx === 'api') {
+    $origin = (string)($_SERVER['HTTP_ORIGIN'] ?? '');
+    $allowedOrigins = [
+        'https://menu.labus.pro',
+        'https://www.menu.labus.pro',
+        'capacitor://localhost',
+        'ionic://localhost',
+        'http://localhost',
+        'http://127.0.0.1',
+    ];
+    $allowedCorsOrigin = 'https://menu.labus.pro';
+    if ($origin !== '') {
+        foreach ($allowedOrigins as $allowed) {
+            if ($origin === $allowed || strpos($origin, $allowed . ':') === 0) {
+                $allowedCorsOrigin = $origin;
+                break;
+            }
+        }
+    }
+
+    if (!headers_sent()) {
+        header('X-Request-Id: ' . $requestId);
+        header('Vary: Origin', false);
+        header('X-Content-Type-Options: nosniff');
+        header('X-Frame-Options: DENY');
+        header('Referrer-Policy: strict-origin-when-cross-origin');
+        header('Access-Control-Allow-Origin: ' . $allowedCorsOrigin);
+        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type, X-CSRF-Token, Authorization, Idempotency-Key, X-Request-Id');
+        header('Access-Control-Allow-Credentials: true');
+        header('Cache-Control: no-store');
+    }
+
+    // Fast CORS preflight.
+    if (strtoupper($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+        http_response_code(204);
+        exit;
+    }
+
+    // No session/csp/csrf for API.
+    $GLOBALS['scriptNonce'] = '';
+    $GLOBALS['csrfToken'] = '';
+
+    register_shutdown_function(function() use ($requestStart, $requestId, $requestUri, $requestMethod) {
+        // Keep existing API perf log behavior.
+        if (strpos($requestUri, '/api/') !== false) {
+            $durationMs = (microtime(true) - $requestStart) * 1000;
+            $statusCode = http_response_code();
+            $logLine = sprintf(
+                "[%s] request_id=%s method=%s uri=%s status=%d duration_ms=%.2f\n",
+                date('Y-m-d H:i:s'),
+                $requestId,
+                $requestMethod,
+                $requestUri,
+                (int)$statusCode,
+                $durationMs
+            );
+            $logFile = __DIR__ . '/data/logs/api-performance.log';
+            @file_put_contents($logFile, $logLine, FILE_APPEND | LOCK_EX);
+        }
+
+        if (isset($GLOBALS['db']) && is_object($GLOBALS['db'])) {
+            $GLOBALS['db']->close();
+        }
+    });
+
+    return;
+}
+
+// SSE context: keep init minimal, but allow session for auth (caller closes lock).
+if ($labusCtx === 'sse') {
+    // Avoid output buffering/compression that can break streaming.
+    @ini_set('output_buffering', '0');
+    @ini_set('zlib.output_compression', '0');
+    while (ob_get_level() > 0) {
+        // Important: do NOT flush buffers here, flushing can trigger header send
+        // and break SSE (EventSource expects Content-Type: text/event-stream).
+        @ob_end_clean();
+    }
+
+    if (session_status() === PHP_SESSION_NONE) {
+        // Prevent PHP's session module from emitting its own cache headers.
+        // SSE endpoints will set Cache-Control themselves.
+        @session_cache_limiter('');
+        ini_set('session.use_strict_mode', 1);
+        ini_set('session.cookie_secure', isset($_SERVER['HTTPS']));
+        ini_set('session.cookie_httponly', true);
+        ini_set('session.cookie_samesite', 'Strict');
+        session_start([
+            'cookie_lifetime' => 7200,
+            'cookie_httponly' => true,
+            'cookie_samesite' => 'Strict'
+        ]);
+    }
+
+    if (!headers_sent()) {
+        header('X-Request-Id: ' . $requestId);
+        header('X-Content-Type-Options: nosniff');
+        header('X-Frame-Options: DENY');
+        header('Referrer-Policy: strict-origin-when-cross-origin');
+    }
+
+    // No CSP/CSRF generation here.
+    $GLOBALS['scriptNonce'] = '';
+    $GLOBALS['csrfToken'] = $_SESSION['csrf_token'] ?? '';
+
+    register_shutdown_function(function() use ($requestStart, $requestId, $requestUri, $requestMethod) {
+        if (isset($GLOBALS['db']) && is_object($GLOBALS['db'])) {
+            $GLOBALS['db']->close();
+        }
+    });
+
+    return;
+}
+
+// Web context (default).
+ob_start();
 
 // РЎРЅР°С‡Р°Р»Р° РѕРїСЂРµРґРµР»СЏРµРј РїРµСЂРµРјРµРЅРЅСѓСЋ (Р”РћР‘РђР’Р›Р•Рќ webmanifest)
 $isStaticFile = preg_match('/\.(?:css|js|png|jpg|webp|jpeg|gif|ico|svg|woff|woff2|ttf|json|webmanifest)$/', $_SERVER['REQUEST_URI']);

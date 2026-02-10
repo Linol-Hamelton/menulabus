@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 header('Cache-Control: public, max-age=600, s-maxage=600');
 require_once __DIR__ . '/session_init.php';
 

@@ -516,7 +516,7 @@ body.employee-page .order-product {
 
 body.customer_orders-page .product-name,
 body.employee-page .product-name {
-  color: var(--text-color);
+  color: var(--light-text);
   font-weight: 600;
 }
 

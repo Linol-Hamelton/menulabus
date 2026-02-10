@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if (!defined('PUBLIC_MENU')) {
     require_once __DIR__ . '/session_init.php';
 }
