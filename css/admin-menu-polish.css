@@ -1177,6 +1177,22 @@ body.auth-page .btn-yandex .btn-text {
   color: #000;
 }
 
+body.auth-page .btn-vk {
+  background: #ffdb4d;
+  border: none;
+  color: #000;
+  font-weight: 600;
+  margin: 5px auto;
+}
+
+body.auth-page .btn-vk:hover {
+  background: #ffd633;
+}
+
+body.auth-page .btn-vk .btn-text {
+  color: #000;
+}
+
 body.auth-page .auth-footer {
   align-items: center;
   display: flex;
