@@ -282,7 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="auth-oauth-divider">или</div>
             <div class="auth-form auth-oauth-form">
-                <a href="/google-oauth-start.php?mode=register" class="btn btn-primary" role="button">
+                <a href="/google-oauth-start.php?mode=register" class="btn btn-google" role="button">
                     <span class="btn-text">Продолжить через Google</span>
                     <span class="btn-loader" aria-hidden="true"></span>
                 </a>
@@ -341,7 +341,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="auth-oauth-divider">или</div>
             <div class="auth-form auth-oauth-form">
-                <a href="/google-oauth-start.php?mode=login" class="btn btn-primary" role="button">
+                <a href="/google-oauth-start.php?mode=login" class="btn btn-google" role="button">
                     <span class="btn-text">Войти через Google</span>
                     <span class="btn-loader" aria-hidden="true"></span>
                 </a>

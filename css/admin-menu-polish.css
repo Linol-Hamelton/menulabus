@@ -1145,11 +1145,28 @@ body.auth-page .auth-oauth-form .btn {
   width: 100%;
 }
 
+body.auth-page .btn-google {
+  background: #ffdb4d;
+  border: none;
+  color: #000;
+  font-weight: 600;
+  margin: 5px auto;
+}
+
+body.auth-page .btn-google:hover {
+  background: #ffd633;
+}
+
+body.auth-page .btn-google .btn-text {
+  color: #000;
+}
+
 body.auth-page .btn-yandex {
   background: #ffdb4d;
   border: none;
   color: #000;
   font-weight: 600;
+  margin: 5px auto;
 }
 
 body.auth-page .btn-yandex:hover {
