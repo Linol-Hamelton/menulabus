@@ -223,10 +223,12 @@ body.owner-page .admin-tab-btn:hover {
 }
 
 body.owner-page .report-controls {
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
+  background: var(--white);
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   margin: 0 0 18px;
-  padding: 14px 16px;
+  padding: 16px 20px;
 }
 
 body.owner-page .report-filter-form {
@@ -246,19 +248,91 @@ body.owner-page .report-filter-form label {
 }
 
 body.owner-page .report-filter-form select {
-  border: 1px solid var(--light-text);
-  border-radius: 8px;
-  min-height: 40px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--bg-light) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") no-repeat right 14px center;
+  border: 2px solid var(--bg-light);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  min-height: 44px;
   min-width: 170px;
-  padding: 8px 12px;
+  padding: 10px 36px 10px 14px;
+  transition: border-color 0.2s;
+}
+body.owner-page .report-filter-form select:focus {
+  border-color: var(--primary-color);
+  outline: none;
 }
 
 body.owner-page .desktop-table {
+  border: none;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   margin: 16px 0 24px;
+  overflow: hidden;
+}
+body.owner-page .desktop-table th {
+  background: var(--bg-light);
+  border: none;
+  color: var(--light-text);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 14px 16px;
+  text-transform: uppercase;
+}
+body.owner-page .desktop-table th:first-child {
+  border-top-left-radius: 14px;
+}
+body.owner-page .desktop-table th:last-child {
+  border-top-right-radius: 14px;
+}
+body.owner-page .desktop-table td {
+  border: none;
+  border-bottom: 1px solid var(--bg-light);
+  font-size: 15px;
+  font-weight: 500;
+  padding: 14px 16px;
+}
+body.owner-page .desktop-table tr:last-child td {
+  border-bottom: none;
+}
+body.owner-page .desktop-table tr.menu-table:hover {
+  background-color: var(--bg-light);
+  box-shadow: none;
+  transform: none;
 }
 
 body.owner-page .mobile-table-item {
-  margin: 0 0 14px;
+  background: var(--white);
+  border: none;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  margin: 0 0 12px;
+  padding: 16px 18px;
+}
+body.owner-page .mobile-table-row {
+  border-bottom: 1px solid var(--bg-light);
+  padding: 10px 0;
+}
+body.owner-page .mobile-table-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+body.owner-page .mobile-table-row:first-child {
+  padding-top: 0;
+}
+body.owner-page .mobile-table-label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+body.owner-page .mobile-table-value {
+  font-size: 15px;
+  font-weight: 600;
 }
 
 body.owner-page .role-select {
@@ -287,28 +361,54 @@ body.owner-page .charts-container {
 }
 
 body.owner-page .chart-container {
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 12px;
+  background: var(--white);
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   margin: 0;
-  padding: 20px;
+  padding: 22px 20px;
 }
 
 body.owner-page .chart-title {
-  margin-bottom: 14px;
+  color: var(--light-text);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-bottom: 16px;
+  text-transform: uppercase;
 }
 
 body.owner-page .chart-bars {
-  border-bottom: 1px solid var(--light-text);
-  border-radius: 10px;
-  padding: 12px 8px;
+  border-bottom: 2px solid var(--bg-light);
+  border-radius: 0;
+  padding: 12px 4px;
 }
 
 body.owner-page .chart-bar {
-  border-radius: 8px 8px 0 0;
+  border-radius: 10px 10px 0 0;
+  min-width: 36px;
+}
+
+body.owner-page .chart-bar:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px) scale(1.04);
 }
 
 body.owner-page .chart-bar-value {
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: var(--white);
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 10px;
+}
+
+body.owner-page .chart-bar-label {
+  background: transparent;
+  color: var(--light-text);
+  font-size: 11px;
+  font-weight: 600;
 }
 
 body.owner-page .menu-tabs-container {

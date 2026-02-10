@@ -568,6 +568,8 @@ a {
 }
 .delivery {
   align-items: center;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   background-color: #00000080;
   display: none;
   height: 100%;
@@ -583,10 +585,11 @@ a {
 }
 .delivery-content {
   background-color: var(--white);
-  border-radius: 10px;
-  box-shadow: 0 4px 20px #00000026;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  max-height: 90%;
   overflow-y: auto;
-  padding: 30px;
+  padding: 28px 24px;
   width: 25%;
 }
 .delivery-modal {
@@ -608,7 +611,11 @@ a {
   margin-top: 20px;
 }
 .delivery-modal-buttons .checkout-btn {
+  border-radius: 14px;
   flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 14px 20px;
 }
 .delivery-modal-content {
   background-color: var(--white);
@@ -620,10 +627,10 @@ a {
 }
 .delivery-extra-block {
   background-color: var(--bg-light);
-  border: 1px solid var(--light-text);
-  border-radius: 5px;
+  border: none;
+  border-radius: 14px;
   margin-top: 15px;
-  padding: 15px;
+  padding: 16px;
 }
 .delivery-extra-block.visible {
   display: block;
@@ -634,12 +641,31 @@ a {
   width: 100%;
 }
 #deliveryAddress {
-  border: 1px solid var(--light-text);
-  border-radius: 4px;
+  border: 2px solid var(--bg-light);
+  border-radius: 12px;
   box-sizing: border-box;
+  font-size: 16px;
   margin-top: 5px;
-  padding: 10px;
+  padding: 14px 16px;
+  transition: border-color 0.2s;
   width: 100%;
+}
+#deliveryAddress:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+.delivery input[type="tel"],
+.delivery input[type="number"] {
+  border: 2px solid var(--bg-light);
+  border-radius: 12px;
+  font-size: 16px;
+  padding: 14px 16px;
+  transition: border-color 0.2s;
+}
+.delivery input[type="tel"]:focus,
+.delivery input[type="number"]:focus {
+  border-color: var(--primary-color);
+  outline: none;
 }
 .address-input-wrapper {
   align-items: center;
@@ -653,17 +679,17 @@ a {
 .detect-location-btn {
   align-items: center;
   background: var(--bg-light);
-  border: 1px solid var(--light-text);
-  border-radius: 4px;
+  border: 2px solid var(--bg-light);
+  border-radius: 12px;
   color: var(--text-color);
   cursor: pointer;
   display: flex;
   flex-shrink: 0;
   font-size: 1.2em;
-  height: 40px;
+  height: 44px;
   justify-content: center;
   transition: background 0.2s;
-  width: 40px;
+  width: 44px;
 }
 .detect-location-btn:hover {
   background: var(--primary-color);
@@ -679,13 +705,15 @@ a {
 }
 .scan-btn {
   border: none;
-  border-radius: 5px;
+  border-radius: 14px;
   color: var(--white);
   cursor: pointer;
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: 600;
   margin-top: 10px;
-  padding: 12px 20px;
+  padding: 14px 20px;
   transition: background 0.3s;
+  width: 100%;
 }
 .scan-btn,
 .scan-btn:hover {
@@ -694,8 +722,8 @@ a {
 .qr-scanner-container {
   background-color: var(--primary-dark);
   border: 2px dashed var(--light-text);
-  border-radius: 10px;
-  height: 300px;
+  border-radius: 14px;
+  height: 240px;
   margin: 10px 0;
   overflow: hidden;
   position: relative;
@@ -762,25 +790,41 @@ a {
 }
 .delivery-options {
   display: grid;
-  gap: 15px;
+  gap: 12px;
   grid-template-columns: 1fr 1fr;
   margin: 20px 0;
 }
 .delivery-option {
-  border: 1px solid var(--light-text);
-  border-radius: 8px;
+  background: var(--bg-light);
+  border: 2px solid var(--primary-color);
+  border-radius: 14px;
   cursor: pointer;
-  padding: 15px;
-  transition: all 0.3s;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 16px 12px;
+  text-align: center;
+  transition: all 0.2s ease;
 }
 .delivery-option:hover {
-  background-color: var(--bg-light);
+  background: var(--white);
   border-color: var(--primary-color);
 }
 .delivery-option.active {
   background-color: var(--primary-color);
   border-color: var(--primary-color);
   color: var(--white);
+  transform: scale(1.03);
+}
+.delivery h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+.delivery p,
+.delivery label {
+  color: var(--light-text);
+  font-size: 14px;
+  line-height: 1.5;
 }
 .order-customer-info i {
   color: var(--light-text);
@@ -1613,10 +1657,10 @@ a {
 }
 .qr-result {
   background: var(--bg-light);
-  border-radius: 5px;
+  border-radius: 12px;
   font-weight: 700;
   margin-top: 10px;
-  padding: 10px;
+  padding: 12px;
   text-align: center;
 }
 .qr-manual-input-container {
@@ -1638,7 +1682,7 @@ a {
 }
 .cancel-btn,
 .cancel-btn:hover {
-  background: var(--light-text) !important;
+  color: var(--light-text);
 }
 .buy {
   align-items: center;
@@ -2007,6 +2051,7 @@ a {
     max-width: 28vw;
   }
   .delivery-content {
+    padding: 20px 16px;
     width: 90%;
   }
   .about-text p {
