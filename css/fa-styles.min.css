@@ -27,12 +27,22 @@ body,
 html {
   background: var(--bg-light);
   color: var(--light-text);
+  cursor: default;
   font-family: var(--font-text);
   line-height: 1.6;
   opacity: 1;
   overflow-x: hidden;
   scroll-behavior: smooth;
   transition: opacity 0.5s ease-in-out;
+  -webkit-user-select: none;
+  user-select: none;
+}
+input,
+textarea,
+[contenteditable] {
+  -webkit-user-select: text;
+  cursor: text;
+  user-select: text;
 }
 h1,
 h2,
@@ -225,7 +235,7 @@ a {
   justify-content: space-between;
   padding: 3%;
   position: sticky;
-  top: 60px;
+  margin-bottom: 10px;
 }
 .cart-item-info {
   font-family: proxima-nova, sans-serif;
@@ -264,10 +274,31 @@ a {
   color: var(--primary-color);
   font-weight: 500;
 }
+
+.menu-item-quantity {
+  align-items: center;
+  background-color: var(--primary-color);
+  border-radius: 28px;
+  color: var(--white);
+  display: inline-flex;
+  flex-direction: column;
+  float: right;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 .cart-item-quantity {
   align-items: center;
-  display: flex;
-  gap: 5px;
+  background-color: var(--agree);
+  border-radius: 28px;
+  color: var(--white);
+  display: inline-flex;
+  flex-direction: column;
+  float: right;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
 }
 .download-button-container {
   background-color: var(--bg-light);
@@ -435,15 +466,22 @@ a {
   font-size: 14px;
 }
 .quantity-btn {
-  font-family: Inter;
-  font-size: 16px;
-  height: 25px;
-  margin: 0 5px;
-  width: 25px;
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--white);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 20px;
+  font-weight: 600;
+  justify-content: center;
+  min-height: 40px;
+  min-width: 44px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
-.quantity-btn,
 .quantity-btn:hover {
-  background: var(--white);
+  background: none;
 }
 .cart-summary-container {
   align-items: center;
@@ -1414,7 +1452,7 @@ a {
   grid-template-columns: repeat(3, 1fr);
 }
 .menu-content {
-  margin: 50px auto;
+  margin: 30px auto;
   width: 95%;
 }
 .menu-tabs-container {
@@ -1511,17 +1549,21 @@ a {
 .cart-item-price {
   color: var(--light-text);
 }
-.quantity-btn {
-  align-items: center;
-  background: none;
-  border: 1px solid var(--light-text);
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  height: 44px;
-  justify-content: center;
-  touch-action: manipulation;
-  width: 44px;
+
+.menu-item-quantity > span {
+  cursor: default;
+  font-size: 20px;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+}
+
+.cart-item-quantity > span {
+  cursor: default;
+  font-size: 20px;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
 }
 .checkout-btn {
   background-color: var(--primary-color);
@@ -1543,7 +1585,6 @@ a {
   border-top: 1px solid var(--light-text);
   display: flex;
   justify-content: space-between;
-  margin: 80px 0 0;
   padding: 2% 4%;
 }
 .clear-cart-btn {
@@ -1615,6 +1656,8 @@ a {
   padding: 5px 17px;
   position: relative;
   text-decoration: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 .buy-active {
   padding: 0;
@@ -1661,6 +1704,7 @@ a {
   touch-action: manipulation;
 }
 .counter-value {
+  cursor: default;
   font-size: 20px;
   font-weight: 600;
   min-width: 20px;

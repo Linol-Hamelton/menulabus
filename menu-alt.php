@@ -94,7 +94,7 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
                                     </div>
                                 </div>
 
-                                <div class="cart-item-quantity">
+                                <div class="menu-item-quantity">
                                     <div class="buy"
                                         data-product-id="<?= $item['id'] ?>"
                                         data-product-name="<?= htmlspecialchars($item['name']) ?>"

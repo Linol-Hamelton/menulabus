@@ -14,11 +14,10 @@ require_once __DIR__ . '/session_init.php';
     <meta name="csrf-token" content="<?= $_SESSION['csrf_token'] ?? '' ?>">
     <meta http-equiv="Permissions-Policy" content="camera=(self 'https://menu.labus.pro'), microphone=()">
     <meta http-equiv="Content-Security-Policy" content="media-src 'self' blob:;">
-    <title>labus | labus</title>
+    <title>labus | Заказ</title>
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
-
-    <!-- Preloader - мгновенная загрузка -->
-    
+    <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/menu-alt.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
 </head>
 
 <body id="body" data-is-logged-in="<?= isset($_SESSION['user_id']) ? 'true' : 'false' ?>">
@@ -31,12 +30,12 @@ require_once __DIR__ . '/session_init.php';
     ?>
     <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     <section id="menu" class="section menu">
-        <div class="container-cart">
+        <div class="container">
             <div class="section-header-menu">
                 <h2>Заказ</h2>
                 <a href="menu.php" class="back-to-menu-btn">В меню</a>
             </div>
-            <div id="cart-items-container" class="cart-items-container">
+            <div id="cart-items-container" class="menu-content">
                 <div class="empty-cart">
                     <p>Ваша корзина пуста</p>
                 </div>
@@ -116,6 +115,10 @@ require_once __DIR__ . '/session_init.php';
                 <button id="cancelGuestBtn" class="checkout-btn cancel-btn">Отмена</button>
             </div>
         </div>
+    </div>
+
+    <div class="footer-bottom">
+        <p>&copy; 2023 "labus". Все права защищены.</p>
     </div>
 
     <script src="/js/qr-scanner-lazy.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
