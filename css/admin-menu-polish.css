@@ -1132,6 +1132,34 @@ body.auth-page .auth-oauth-divider::after {
   height: 1px;
 }
 
+body.auth-page .auth-oauth-form {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr;
+  margin: 0 auto;
+  width: 80%;
+}
+
+body.auth-page .auth-oauth-form .btn {
+  margin: 0;
+  width: 100%;
+}
+
+body.auth-page .btn-yandex {
+  background: #ffdb4d;
+  border: none;
+  color: #000;
+  font-weight: 600;
+}
+
+body.auth-page .btn-yandex:hover {
+  background: #ffd633;
+}
+
+body.auth-page .btn-yandex .btn-text {
+  color: #000;
+}
+
 body.auth-page .auth-footer {
   align-items: center;
   display: flex;

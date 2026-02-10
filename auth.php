@@ -286,6 +286,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span class="btn-text">Продолжить через Google</span>
                     <span class="btn-loader" aria-hidden="true"></span>
                 </a>
+                <a href="/yandex-oauth-start.php?mode=register" class="btn btn-yandex" role="button">
+                    <span class="btn-text">Продолжить через Яндекс ID</span>
+                    <span class="btn-loader" aria-hidden="true"></span>
+                </a>
             </div>
         <?php else: ?>
             <form class="auth-form" method="POST" autocomplete="on">
@@ -339,6 +343,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="auth-form auth-oauth-form">
                 <a href="/google-oauth-start.php?mode=login" class="btn btn-primary" role="button">
                     <span class="btn-text">Войти через Google</span>
+                    <span class="btn-loader" aria-hidden="true"></span>
+                </a>
+                <a href="/yandex-oauth-start.php?mode=login" class="btn btn-yandex" role="button">
+                    <span class="btn-text">Войти через Яндекс ID</span>
                     <span class="btn-loader" aria-hidden="true"></span>
                 </a>
             </div>
