@@ -67,7 +67,7 @@ $params = [
     'response_type' => 'code',
     'state' => $state,
     'scope' => 'email', // phone scope requires approval from VK
-    'display' => 'page',
+    'display' => 'popup',
     'v' => '5.131', // VK API version
 ];
 

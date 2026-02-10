@@ -1145,52 +1145,58 @@ body.auth-page .auth-oauth-form .btn {
   width: 100%;
 }
 
+/* Google OAuth button - Google Blue */
 body.auth-page .btn-google {
-  background: #ffdb4d;
+  background: #4285F4;
   border: none;
-  color: #000;
+  color: #fff;
   font-weight: 600;
   margin: 5px auto;
+  transition: background 0.2s ease;
 }
 
 body.auth-page .btn-google:hover {
-  background: #ffd633;
+  background: #357AE8;
 }
 
 body.auth-page .btn-google .btn-text {
-  color: #000;
+  color: #fff;
 }
 
+/* Yandex OAuth button - Yandex Red */
 body.auth-page .btn-yandex {
-  background: #ffdb4d;
+  background: #FC3F1D;
   border: none;
-  color: #000;
+  color: #fff;
   font-weight: 600;
   margin: 5px auto;
+  transition: background 0.2s ease;
 }
 
 body.auth-page .btn-yandex:hover {
-  background: #ffd633;
+  background: #DD3B1A;
 }
 
 body.auth-page .btn-yandex .btn-text {
-  color: #000;
+  color: #fff;
 }
 
+/* VK OAuth button - VK Blue */
 body.auth-page .btn-vk {
-  background: #ffdb4d;
+  background: #0077FF;
   border: none;
-  color: #000;
+  color: #fff;
   font-weight: 600;
   margin: 5px auto;
+  transition: background 0.2s ease;
 }
 
 body.auth-page .btn-vk:hover {
-  background: #ffd633;
+  background: #0066DD;
 }
 
 body.auth-page .btn-vk .btn-text {
-  color: #000;
+  color: #fff;
 }
 
 body.auth-page .auth-footer {
