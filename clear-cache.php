@@ -61,9 +61,6 @@ if ($csrfHeader === '' || $csrfSession === '' || !hash_equals($csrfSession, $csr
 
 try {
     require_once __DIR__ . '/db.php';
-
-    $db = Database::getInstance();
-    $queryCacheCleared = (bool) $db->clearQueryCache();
     $redisCacheCleared = function_exists('redis_cache_clear') ? (bool) redis_cache_clear() : false;
 
     echo json_encode([
@@ -72,7 +69,6 @@ try {
         'scope' => 'server',
         'force_reload' => $response['force_reload'],
         'details' => [
-            'query_cache_cleared' => $queryCacheCleared,
             'redis_cache_cleared' => $redisCacheCleared
         ]
     ]);

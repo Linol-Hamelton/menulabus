@@ -1,9 +1,6 @@
 <?php
 require_once __DIR__ . '/../config_copy.php';
 
-if (file_exists(__DIR__ . '/QueryCache.php')) {
-    require_once __DIR__ . '/QueryCache.php';
-}
 if (file_exists(__DIR__ . '/RedisCache.php')) {
     require_once __DIR__ . '/RedisCache.php';
 }
@@ -16,8 +13,6 @@ class Database
     private $connection;
     private static $instance = null;
     private $preparedStatements = [];
-    private $useQueryCache = true;
-    private $queryCache = null;
     private $redisCache = null;
     private $productCacheTtl;
     private $menuCacheTtl;
@@ -30,9 +25,6 @@ class Database
         $this->menuCacheTtl = $this->resolveCacheTtl('MENU_CACHE_TTL', self::MENU_CACHE_TTL);
         $this->categoriesCacheTtl = $this->resolveCacheTtl('CATEGORIES_CACHE_TTL', self::CATEGORIES_CACHE_TTL);
         
-        if ($this->useQueryCache && class_exists('QueryCache')) {
-            $this->queryCache = QueryCache::getInstance();
-        }
         if (class_exists('RedisCache')) {
             $this->redisCache = RedisCache::getInstance();
         }
@@ -65,24 +57,11 @@ class Database
 
     public function scalar(string $sql, array $params = [])
     {
-        if ($this->useQueryCache && $this->queryCache) {
-            $cacheKey = QueryCache::generateKey($sql, $params);
-            $cached = $this->queryCache->get($cacheKey);
-            if ($cached !== null) {
-                return $cached;
-            }
-        }
-        
         try {
             $stmt = $this->prepareCached($sql);
             $stmt->execute($params);
             $result = $stmt->fetchColumn();
-            
-            if ($this->useQueryCache && $this->queryCache && $result !== false) {
-                $cacheKey = QueryCache::generateKey($sql, $params);
-                $this->queryCache->set($cacheKey, $result, 60);
-            }
-            
+
             return $result;
         } catch (PDOException $e) {
             error_log("scalar() PDO error: " . $e->getMessage());
@@ -186,11 +165,6 @@ class Database
 
     private function invalidateMenuCache()
     {
-        if ($this->queryCache) {
-            $this->queryCache->invalidate('/^menu_/');
-            $this->queryCache->invalidate('/^product_/');
-            $this->queryCache->invalidate('/^categories_/');
-        }
         if ($this->redisCache) {
             $this->redisCache->invalidate('menu_items_*');
             $this->redisCache->invalidate('product_*');
@@ -200,12 +174,6 @@ class Database
 
     private function invalidateOrderCache($orderId = null)
     {
-        if ($this->queryCache) {
-            if ($orderId) {
-                $this->queryCache->remove('order_' . $orderId);
-            }
-            $this->queryCache->invalidate('/^order_/');
-        }
     }
 
     private function ensureOrderItemsTable(): bool
@@ -338,12 +306,6 @@ class Database
 
     private function invalidateUserCache($userId = null)
     {
-        if ($this->queryCache) {
-            if ($userId) {
-                $this->queryCache->remove('user_' . $userId);
-            }
-            $this->queryCache->invalidate('/^user_/');
-        }
     }
 
     public function getProductById($id)
@@ -357,29 +319,19 @@ class Database
             }
         }
         
-        if ($this->useQueryCache && $this->queryCache) {
-            $cached = $this->queryCache->get($cacheKey);
-            if ($cached !== null) {
-                return $cached;
-            }
-        }
-        
         try {
             $stmt = $this->prepareCached(
-                "SELECT id, name, description, composition, price, image, 
-                 calories, protein, fat, carbs, category, available 
+                "SELECT id, name, description, composition, price, image,
+                 calories, protein, fat, carbs, category, available
                  FROM menu_items WHERE id = :id"
             );
             $stmt->bindValue(':id', $id, PDO::PARAM_INT);
             $stmt->execute();
             $result = $stmt->fetch();
-            
+
             if ($result !== false) {
                 if ($this->redisCache) {
                     $this->redisCache->set($cacheKey, $result, $this->productCacheTtl);
-                }
-                if ($this->useQueryCache && $this->queryCache) {
-                    $this->queryCache->set($cacheKey, $result, $this->productCacheTtl);
                 }
             }
             
@@ -392,15 +344,6 @@ class Database
 
     public function getOrderById($orderId)
     {
-        $cacheKey = 'order_' . $orderId;
-        
-        if ($this->useQueryCache && $this->queryCache) {
-            $cached = $this->queryCache->get($cacheKey);
-            if ($cached !== null) {
-                return $cached;
-            }
-        }
-        
         try {
             $stmt = $this->prepareCached("
                 SELECT o.id, o.user_id, o.items, o.total, o.status, 
@@ -420,10 +363,6 @@ class Database
                 }
             }
             
-            if ($this->useQueryCache && $this->queryCache && $order !== false) {
-                $this->queryCache->set($cacheKey, $order, 180);
-            }
-            
             return $order;
         } catch (PDOException $e) {
             error_log("getOrderById Error: " . $e->getMessage());
@@ -433,17 +372,10 @@ class Database
 
     public function getMenuItems($category = null)
     {
-        $cacheKey = QueryCache::generateMenuKey($category);
+        $cacheKey = 'menu_items_' . ($category ?: 'all');
 
         if ($this->redisCache) {
             $cached = $this->redisCache->get($cacheKey);
-            if ($cached !== null) {
-                return $cached;
-            }
-        }
-        
-        if ($this->useQueryCache && $this->queryCache) {
-            $cached = $this->queryCache->get($cacheKey);
             if ($cached !== null) {
                 return $cached;
             }
@@ -469,10 +401,7 @@ class Database
             if ($this->redisCache) {
                 $this->redisCache->set($cacheKey, $result, $this->menuCacheTtl);
             }
-            if ($this->useQueryCache && $this->queryCache) {
-                $this->queryCache->set($cacheKey, $result, $this->menuCacheTtl);
-            }
-            
+
             return $result;
         } catch (PDOException $e) {
             error_log("getMenuItems Error: " . $e->getMessage());
@@ -541,17 +470,10 @@ class Database
 
     public function getUniqueCategories()
     {
-        $cacheKey = QueryCache::generateCategoriesKey();
+        $cacheKey = 'categories_unique';
 
         if ($this->redisCache) {
             $cached = $this->redisCache->get($cacheKey);
-            if ($cached !== null) {
-                return $cached;
-            }
-        }
-        
-        if ($this->useQueryCache && $this->queryCache) {
-            $cached = $this->queryCache->get($cacheKey);
             if ($cached !== null) {
                 return $cached;
             }
@@ -567,10 +489,7 @@ class Database
             if ($this->redisCache) {
                 $this->redisCache->set($cacheKey, $result, $this->categoriesCacheTtl);
             }
-            if ($this->useQueryCache && $this->queryCache) {
-                $this->queryCache->set($cacheKey, $result, $this->categoriesCacheTtl);
-            }
-            
+
             return $result;
         } catch (PDOException $e) {
             error_log("getUniqueCategories Error: " . $e->getMessage());
@@ -625,15 +544,6 @@ class Database
 
     public function getUniqueOrderStatuses()
     {
-        $cacheKey = 'order_statuses';
-        
-        if ($this->useQueryCache && $this->queryCache) {
-            $cached = $this->queryCache->get($cacheKey);
-            if ($cached !== null) {
-                return $cached;
-            }
-        }
-        
         try {
             $stmt = $this->prepareCached(
                 "SELECT DISTINCT status FROM orders ORDER BY 
@@ -648,11 +558,7 @@ class Database
             );
             $stmt->execute();
             $result = $stmt->fetchAll();
-            
-            if ($this->useQueryCache && $this->queryCache) {
-                $this->queryCache->set($cacheKey, $result, 300);
-            }
-            
+
             return $result;
         } catch (PDOException $e) {
             error_log("getUniqueOrderStatuses Error: " . $e->getMessage());
@@ -728,25 +634,12 @@ class Database
 
     public function getOrderStatus($orderId)
     {
-        $cacheKey = 'order_status_' . $orderId;
-        
-        if ($this->useQueryCache && $this->queryCache) {
-            $cached = $this->queryCache->get($cacheKey);
-            if ($cached !== null) {
-                return $cached;
-            }
-        }
-        
         try {
             $stmt = $this->prepareCached("SELECT status FROM orders WHERE id = :id");
             $stmt->bindValue(':id', $orderId, PDO::PARAM_INT);
             $stmt->execute();
             $result = $stmt->fetchColumn();
-            
-            if ($this->useQueryCache && $this->queryCache) {
-                $this->queryCache->set($cacheKey, $result, 60);
-            }
-            
+
             return $result;
         } catch (PDOException $e) {
             error_log("getOrderStatus Error: " . $e->getMessage());
@@ -797,26 +690,13 @@ class Database
 
     public function getUserByEmail($email)
     {
-        $cacheKey = 'user_email_' . md5($email);
-        
-        if ($this->useQueryCache && $this->queryCache) {
-            $cached = $this->queryCache->get($cacheKey);
-            if ($cached !== null) {
-                return $cached;
-            }
-        }
-        
         try {
             $stmt = $this->prepareCached(
                 "SELECT * FROM users WHERE email = :email LIMIT 1"
             );
             $stmt->execute([':email' => $email]);
             $result = $stmt->fetch();
-            
-            if ($this->useQueryCache && $this->queryCache) {
-                $this->queryCache->set($cacheKey, $result, 300);
-            }
-            
+
             return $result;
         } catch (PDOException $e) {
             error_log("getUserByEmail Error: " . $e->getMessage());
@@ -826,15 +706,6 @@ class Database
 
     public function getUserById($id)
     {
-        $cacheKey = 'user_' . $id;
-        
-        if ($this->useQueryCache && $this->queryCache) {
-            $cached = $this->queryCache->get($cacheKey);
-            if ($cached !== null) {
-                return $cached;
-            }
-        }
-        
         try {
             $stmt = $this->prepareCached(
                 "SELECT id, email, name, phone, is_active, role, menu_view
@@ -842,11 +713,7 @@ class Database
             );
             $stmt->execute([':id' => $id]);
             $result = $stmt->fetch();
-            
-            if ($this->useQueryCache && $this->queryCache) {
-                $this->queryCache->set($cacheKey, $result, 300);
-            }
-            
+
             return $result;
         } catch (PDOException $e) {
             error_log("getUserById Error: " . $e->getMessage());
@@ -856,15 +723,6 @@ class Database
 
     public function getAllUsers()
     {
-        $cacheKey = 'all_users';
-        
-        if ($this->useQueryCache && $this->queryCache) {
-            $cached = $this->queryCache->get($cacheKey);
-            if ($cached !== null) {
-                return $cached;
-            }
-        }
-        
         try {
             $stmt = $this->prepareCached(
                 "SELECT id, email, name, phone, is_active, role, menu_view
@@ -872,11 +730,7 @@ class Database
             );
             $stmt->execute();
             $result = $stmt->fetchAll();
-            
-            if ($this->useQueryCache && $this->queryCache) {
-                $this->queryCache->set($cacheKey, $result, 60);
-            }
-            
+
             return $result;
         } catch (PDOException $e) {
             error_log("getAllUsers Error: " . $e->getMessage());
@@ -1946,27 +1800,6 @@ class Database
             error_log("createOrder error: " . $e->getMessage());
             return false;
         }
-    }
-    public function setQueryCacheEnabled($enabled)
-    {
-        $this->useQueryCache = $enabled;
-        return $this;
-    }
-
-    public function getQueryCacheStats()
-    {
-        if ($this->queryCache) {
-            return $this->queryCache->getStats();
-        }
-        return ['available' => false];
-    }
-
-    public function clearQueryCache()
-    {
-        if ($this->queryCache) {
-            return $this->queryCache->clear();
-        }
-        return false;
     }
 
     public function getConnection()

@@ -153,6 +153,7 @@ $lastRestartTime = $opcacheStats['last_restart_time'] ?? 0;
             padding: 20px; 
             border-radius: 8px; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
         }
         .card h2 { 
             margin-top: 0; 

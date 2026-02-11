@@ -56,6 +56,11 @@ class RedisCache {
             
             // Проверка доступности
             $this->redis->ping();
+
+            // Кэш использует database 1, чтобы не пересекаться с сессиями (database 0).
+            // flushDB() очистит только кэш, не затрагивая сессии пользователей.
+            $this->redis->select(1);
+
             return true;
         } catch (Exception $e) {
             error_log('RedisCache: Connection exception - ' . $e->getMessage());

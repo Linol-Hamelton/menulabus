@@ -1,7 +1,7 @@
 <?php
+$required_role = 'admin';
 require_once __DIR__ . '/session_init.php';
 require_once __DIR__ . '/require_auth.php';
-$required_role = 'admin';
 
 // Ensure script nonce is available for CSP
 if (empty($scriptNonce) && isset($GLOBALS['scriptNonce'])) {
@@ -178,6 +178,9 @@ if (!empty($_GET['edit'])) {
             <div class="admin-tabs">
                 <button type="button" class="admin-tab-btn active" data-tab="dishes">Блюда</button>
                 <button type="button" class="admin-tab-btn" data-tab="design">Дизайн</button>
+                <?php if (in_array($_SESSION['user_role'] ?? '', ['admin', 'owner'])): ?>
+                    <button type="button" class="admin-tab-btn" data-tab="system">Система</button>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -477,6 +480,21 @@ if (!empty($_GET['edit'])) {
         </div>
     </section>
         </div>
+
+        <?php if (in_array($_SESSION['user_role'] ?? '', ['admin', 'owner'])): ?>
+        <!-- System Tab -->
+        <div class="admin-tab-pane" id="system">
+            <section class="admin-form-container">
+                <h2>Система</h2>
+                <div class="admin-form-group">
+                    <h3>Инструменты</h3>
+                    <div class="form-actions">
+                        <a href="monitor.php" class="checkout-btn">Диагностика</a>
+                    </div>
+                </div>
+            </section>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- TAB-BAR (bottom) -->

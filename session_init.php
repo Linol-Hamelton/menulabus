@@ -361,14 +361,6 @@ if (session_status() === PHP_SESSION_ACTIVE) {
     }
 }
 
-// РљРѕРЅСЃС‚Р°РЅС‚С‹ РґР»СЏ QueryCache
-if (!defined('QUERY_CACHE_MEMORY_LIMIT')) {
-    define('QUERY_CACHE_MEMORY_LIMIT', 10 * 1024 * 1024); // 10MB
-}
-if (!defined('QUERY_CACHE_DEFAULT_TTL')) {
-    define('QUERY_CACHE_DEFAULT_TTL', 300); // 5 РјРёРЅСѓС‚
-}
-
 // Sync user data if logged in
 if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['user_id']) && empty($_SESSION['user_last_sync'])) {
     try {

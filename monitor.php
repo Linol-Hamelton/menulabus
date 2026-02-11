@@ -9,16 +9,10 @@ if ($_SESSION['user_role'] !== 'owner' && $_SESSION['user_role'] !== 'admin') {
 
 $csrfToken = $_SESSION['csrf_token'] ?? '';
 $scriptNonce = $GLOBALS['scriptNonce'] ?? ($_SESSION['csp_nonce']['script'] ?? '');
+$styleNonce = $GLOBALS['styleNonce'] ?? ($_SESSION['csp_nonce']['style'] ?? '');
 
 // Подключаем необходимые файлы
 require_once 'db.php';
-
-// Проверяем доступность QueryCache
-$queryCacheAvailable = false;
-if (file_exists(__DIR__ . '/QueryCache.php')) {
-    require_once __DIR__ . '/QueryCache.php';
-    $queryCacheAvailable = class_exists('QueryCache');
-}
 
 // Обработка API запросов
 if (isset($_GET['api']) && $_GET['api'] == '1') {
@@ -47,21 +41,6 @@ if (isset($_GET['action'])) {
             }
             break;
             
-        case 'clear_query_cache':
-            if ($queryCacheAvailable) {
-                QueryCache::getInstance()->clear();
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'QueryCache очищен'
-                ]);
-            } else {
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'QueryCache не доступен'
-                ]);
-            }
-            break;
-            
         case 'get_metrics':
             echo json_encode(getPerformanceMetrics(), JSON_PRETTY_PRINT);
             break;
@@ -79,14 +58,11 @@ if (isset($_GET['action'])) {
  * Получить все метрики производительности
  */
 function getPerformanceMetrics() {
-    global $queryCacheAvailable;
-    
     $metrics = [
         'timestamp' => date('Y-m-d H:i:s'),
         'server' => getServerMetrics(),
         'php' => getPhpMetrics(),
         'database' => getDatabaseMetrics(),
-        'cache' => getCacheMetrics(),
         'performance' => getPerformanceMetricsData()
     ];
     
@@ -177,81 +153,55 @@ function getPhpMetrics() {
  */
 function getDatabaseMetrics() {
     $metrics = [];
-    
+
     try {
         $db = Database::getInstance();
-        
-        // Buffer Pool Hit Rate
-        $hitRate = $db->scalar("
-            SELECT 
-                ROUND((1 - (
-                    SELECT VARIABLE_VALUE 
-                    FROM performance_schema.global_status 
-                    WHERE VARIABLE_NAME = 'Innodb_buffer_pool_reads'
-                ) / (
-                    SELECT VARIABLE_VALUE 
-                    FROM performance_schema.global_status 
-                    WHERE VARIABLE_NAME = 'Innodb_buffer_pool_read_requests'
-                )) * 100, 2) as hit_rate
-        ");
-        
+        $pdo = $db->getConnection();
+
+        // Helper: получить Value из SHOW STATUS/VARIABLES
+        $getStatusValue = function (string $sql) use ($pdo) {
+            $stmt = $pdo->query($sql);
+            $row = $stmt ? $stmt->fetch(PDO::FETCH_NUM) : false;
+            return $row ? $row[1] : null;
+        };
+
+        // Buffer Pool Hit Rate через SHOW STATUS (не требует performance_schema)
+        $reads = (int)$getStatusValue("SHOW GLOBAL STATUS LIKE 'Innodb_buffer_pool_reads'");
+        $readRequests = (int)$getStatusValue("SHOW GLOBAL STATUS LIKE 'Innodb_buffer_pool_read_requests'");
+        $hitRate = $readRequests > 0
+            ? round((1 - $reads / $readRequests) * 100, 2)
+            : 0;
+
         // Connections
-        $connections = $db->scalar("SHOW STATUS LIKE 'Threads_connected'");
-        $maxConnections = $db->scalar("SHOW VARIABLES LIKE 'max_connections'");
-        
+        $connections = (int)$getStatusValue("SHOW STATUS LIKE 'Threads_connected'");
+        $maxConnections = (int)$getStatusValue("SHOW VARIABLES LIKE 'max_connections'");
+
         // Slow Queries
-        $slowQueries = $db->scalar("SHOW STATUS LIKE 'Slow_queries'");
-        
+        $slowQueries = (int)$getStatusValue("SHOW STATUS LIKE 'Slow_queries'");
+
         // Query Cache
-        $queryCacheHits = $db->scalar("SHOW STATUS LIKE 'Qcache_hits'");
-        $queryCacheInserts = $db->scalar("SHOW STATUS LIKE 'Qcache_inserts'");
-        
+        $queryCacheHits = (int)$getStatusValue("SHOW STATUS LIKE 'Qcache_hits'");
+        $queryCacheInserts = (int)$getStatusValue("SHOW STATUS LIKE 'Qcache_inserts'");
+
         $metrics = [
-            'buffer_pool_hit_rate' => $hitRate ?: 0,
-            'connections' => $connections ?: 0,
-            'max_connections' => $maxConnections ?: 0,
-            'connections_percentage' => $connections && $maxConnections ? 
-                round(($connections / $maxConnections) * 100, 2) : 0,
-            'slow_queries' => $slowQueries ?: 0,
+            'buffer_pool_hit_rate' => $hitRate,
+            'connections' => $connections,
+            'max_connections' => $maxConnections,
+            'connections_percentage' => $maxConnections > 0
+                ? round(($connections / $maxConnections) * 100, 2) : 0,
+            'slow_queries' => $slowQueries,
             'query_cache' => [
-                'hits' => $queryCacheHits ?: 0,
-                'inserts' => $queryCacheInserts ?: 0,
-                'hit_rate' => $queryCacheHits && $queryCacheInserts ? 
-                    round(($queryCacheHits / ($queryCacheHits + $queryCacheInserts)) * 100, 2) : 0
+                'hits' => $queryCacheHits,
+                'inserts' => $queryCacheInserts,
+                'hit_rate' => ($queryCacheHits + $queryCacheInserts) > 0
+                    ? round(($queryCacheHits / ($queryCacheHits + $queryCacheInserts)) * 100, 2) : 0
             ]
         ];
-        
-    } catch (Exception $e) {
+
+    } catch (\Throwable $e) {
         $metrics['error'] = $e->getMessage();
     }
-    
-    return $metrics;
-}
 
-/**
- * Метрики кэшей
- */
-function getCacheMetrics() {
-    global $queryCacheAvailable;
-    
-    $metrics = [];
-    
-    // QueryCache
-    if ($queryCacheAvailable) {
-        $queryCache = QueryCache::getInstance();
-        $stats = $queryCache->getStats();
-        $metrics['query_cache'] = $stats;
-    } else {
-        $metrics['query_cache'] = ['available' => false];
-    }
-    
-    // Сессии
-    $metrics['sessions'] = [
-        'handler' => ini_get('session.save_handler'),
-        'path' => ini_get('session.save_path'),
-        'count' => session_status() === PHP_SESSION_ACTIVE ? 1 : 0
-    ];
-    
     return $metrics;
 }
 
@@ -318,7 +268,7 @@ $metrics = getPerformanceMetrics();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мониторинг производительности</title>
-    <style>
+    <style nonce="<?= htmlspecialchars($styleNonce ?? '', ENT_QUOTES, 'UTF-8') ?>">
         :root {
             --primary: #3498db;
             --success: #2ecc71;
@@ -376,6 +326,7 @@ $metrics = getPerformanceMetrics();
             border-radius: 8px; 
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             transition: transform 0.3s;
+            margin-bottom: 20px;
         }
         
         .card:hover {
@@ -622,6 +573,22 @@ $metrics = getPerformanceMetrics();
             font-size: 0.9em;
             color: var(--gray);
         }
+
+        .hidden { display: none; }
+        .overflow-x-auto { overflow-x: auto; }
+        .code-block {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 4px;
+            overflow: auto;
+        }
+        .code-block-scroll {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 4px;
+            overflow: auto;
+            max-height: 300px;
+        }
     </style>
 </head>
 <body>
@@ -640,29 +607,26 @@ $metrics = getPerformanceMetrics();
         <div class="card">
             <h2>⚡ Быстрые действия</h2>
             <div class="actions">
-                <button class="btn btn-primary" onclick="refreshMetrics()">
+                <button class="btn btn-primary" data-action="refreshMetrics">
                     <span class="icon">🔄</span> Обновить метрики
                 </button>
-                <button class="btn btn-warning" onclick="clearOpcache()">
+                <button class="btn btn-warning" data-action="clearOpcache">
                     <span class="icon">🗑️</span> Очистить OPcache
                 </button>
-                <button class="btn btn-warning" onclick="clearQueryCache()">
-                    <span class="icon">🗑️</span> Clear Server Cache
-                </button>
-                <button class="btn btn-success" onclick="exportMetrics()">
+                <button class="btn btn-success" data-action="exportMetrics">
                     <span class="icon">📥</span> Экспорт метрик
                 </button>
-                <button class="btn" onclick="showApi()">
+                <button class="btn" data-action="showApi">
                     <span class="icon">🔧</span> API Endpoint
                 </button>
             </div>
-            
+
             <div class="auto-refresh">
                 <label>
-                    <input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()">
+                    <input type="checkbox" id="autoRefresh">
                     Автообновление каждые 30 секунд
                 </label>
-                <select id="refreshInterval" onchange="updateRefreshInterval()">
+                <select id="refreshInterval">
                     <option value="10">10 сек</option>
                     <option value="30" selected>30 сек</option>
                     <option value="60">60 сек</option>
@@ -682,7 +646,7 @@ $metrics = getPerformanceMetrics();
                     <div class="metric-label">Общий статус</div>
                     <div class="metric-value" id="systemHealth">Загрузка...</div>
                     <div class="progress-bar">
-                        <div class="progress-fill progress-success" id="healthBar" style="width: 0%"></div>
+                        <div class="progress-fill progress-success" id="healthBar" data-width="0"></div>
                     </div>
                 </div>
                 <div class="stats-grid" id="healthIndicators">
@@ -733,7 +697,7 @@ $metrics = getPerformanceMetrics();
                             <div class="progress-fill <?= 
                                 $metrics['php']['opcache']['hit_rate'] > 90 ? 'progress-success' : 
                                 ($metrics['php']['opcache']['hit_rate'] > 70 ? 'progress-warning' : 'progress-danger')
-                            ?>" style="width: <?= min($metrics['php']['opcache']['hit_rate'], 100) ?>%"></div>
+                            ?>" data-width="<?= min($metrics['php']['opcache']['hit_rate'], 100) ?>"></div>
                         </div>
                     </div>
                     <div class="stats-grid">
@@ -782,7 +746,7 @@ $metrics = getPerformanceMetrics();
                         <div class="progress-fill <?= 
                             $metrics['database']['buffer_pool_hit_rate'] > 99 ? 'progress-success' : 
                             ($metrics['database']['buffer_pool_hit_rate'] > 95 ? 'progress-warning' : 'progress-danger')
-                        ?>" style="width: <?= min($metrics['database']['buffer_pool_hit_rate'], 100) ?>%"></div>
+                        ?>" data-width="<?= min($metrics['database']['buffer_pool_hit_rate'], 100) ?>"></div>
                     </div>
                 </div>
                 <div class="stats-grid">
@@ -805,47 +769,6 @@ $metrics = getPerformanceMetrics();
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Карточка QueryCache -->
-            <div class="card">
-                <h2>📦 QueryCache</h2>
-                <?php if ($queryCacheAvailable && isset($metrics['cache']['query_cache'])): ?>
-                    <div class="metric">
-                        <div class="metric-label">Hit Rate</div>
-                        <div class="metric-value <?= 
-                            $metrics['cache']['query_cache']['hit_rate'] > 80 ? 'status-good' : 
-                            ($metrics['cache']['query_cache']['hit_rate'] > 60 ? 'status-warning' : 'status-critical')
-                        ?>">
-                            <?= $metrics['cache']['query_cache']['hit_rate'] ?>%
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill <?= 
-                                $metrics['cache']['query_cache']['hit_rate'] > 80 ? 'progress-success' : 
-                                ($metrics['cache']['query_cache']['hit_rate'] > 60 ? 'progress-warning' : 'progress-danger')
-                            ?>" style="width: <?= min($metrics['cache']['query_cache']['hit_rate'], 100) ?>%"></div>
-                        </div>
-                    </div>
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <div class="stat-label">Записей в кэше</div>
-                            <div class="stat-value"><?= $metrics['cache']['query_cache']['items'] ?></div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Попаданий</div>
-                            <div class="stat-value"><?= $metrics['cache']['query_cache']['hits'] ?></div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Промахов</div>
-                            <div class="stat-value"><?= $metrics['cache']['query_cache']['misses'] ?></div>
-                        </div>
-                    </div>
-                <?php else: ?>
-                    <div class="metric">
-                        <div class="metric-value status-warning">QueryCache не доступен</div>
-                        <p>Убедитесь, что файл QueryCache.php существует в корне проекта.</p>
-                    </div>
-                <?php endif; ?>
             </div>
             
             <!-- Карточка сервера -->
@@ -882,7 +805,7 @@ $metrics = getPerformanceMetrics();
         <!-- Детальная информация -->
         <div class="card">
             <h2>📋 Детальная информация</h2>
-            <div style="overflow-x: auto;">
+            <div class="overflow-x-auto">
                 <table class="table">
                     <thead>
                         <tr>
@@ -900,17 +823,17 @@ $metrics = getPerformanceMetrics();
         </div>
         
         <!-- API информация -->
-        <div class="card" id="apiSection" style="display: none;">
+        <div class="card hidden" id="apiSection">
             <h2>🔧 API Endpoint</h2>
             <p>Для получения метрик в формате JSON используйте:</p>
-            <pre style="background: var(--light); padding: 15px; border-radius: 4px; overflow: auto;">
+            <pre class="code-block">
 GET /monitor.php?api=1
 GET /monitor.php?action=get_metrics
 POST /monitor.php?action=clear_opcache
 POST /clear-cache.php?scope=server (header: X-CSRF-Token)
             </pre>
             <p>Пример ответа:</p>
-            <pre style="background: var(--light); padding: 15px; border-radius: 4px; overflow: auto; max-height: 300px;" id="apiExample">
+            <pre class="code-block-scroll" id="apiExample">
                 <!-- Заполнится JavaScript -->
             </pre>
         </div>
@@ -973,9 +896,9 @@ POST /clear-cache.php?scope=server (header: X-CSRF-Token)
         }
     }
     
-    // Функция очистки server cache (QueryCache + Redis)
-    async function clearQueryCache() {
-        if (!confirm('Вы уверены? Это сбросит весь кэш запросов.')) {
+    // Функция очистки серверного кэша (Redis)
+    async function clearServerCache() {
+        if (!confirm('Вы уверены? Это сбросит весь серверный кэш.')) {
             return;
         }
 
@@ -983,7 +906,7 @@ POST /clear-cache.php?scope=server (header: X-CSRF-Token)
             showResult('CSRF token not found. Reload the page.', 'error');
             return;
         }
-        
+
         try {
             const response = await fetch('/clear-cache.php?scope=server', {
                 method: 'POST',
@@ -999,9 +922,6 @@ POST /clear-cache.php?scope=server (header: X-CSRF-Token)
             let message = result.message || (success ? 'Server cache cleared' : 'Cache clear failed');
             if (success && result.details) {
                 const details = [];
-                if ('query_cache_cleared' in result.details) {
-                    details.push(`QueryCache: ${result.details.query_cache_cleared ? 'ok' : 'skip'}`);
-                }
                 if ('redis_cache_cleared' in result.details) {
                     details.push(`Redis: ${result.details.redis_cache_cleared ? 'ok' : 'skip'}`);
                 }
@@ -1013,14 +933,13 @@ POST /clear-cache.php?scope=server (header: X-CSRF-Token)
             showResult(message, success ? 'success' : 'error');
 
             if (success) {
-                // Обновить метрики через 2 секунды
                 setTimeout(refreshMetrics, 2000);
             }
         } catch (error) {
             showResult('Ошибка: ' + error.message, 'error');
         }
     }
-    
+
     // Функция экспорта метрик
     function exportMetrics() {
         const data = <?= json_encode($metrics, JSON_PRETTY_PRINT) ?>;
@@ -1040,7 +959,7 @@ POST /clear-cache.php?scope=server (header: X-CSRF-Token)
     // Функция показа API
     function showApi() {
         const apiSection = document.getElementById('apiSection');
-        apiSection.style.display = apiSection.style.display === 'none' ? 'block' : 'none';
+        apiSection.classList.toggle('hidden');
         
         // Показать пример API ответа
         const exampleDiv = document.getElementById('apiExample');
@@ -1074,13 +993,6 @@ POST /clear-cache.php?scope=server (header: X-CSRF-Token)
         const dbRate = metrics.database.buffer_pool_hit_rate;
         healthScore += dbRate >= 99 ? 100 : dbRate >= 95 ? 70 : 30;
         totalMetrics++;
-        
-        // Query cache hit rate
-        if (metrics.cache.query_cache.available !== false) {
-            const queryRate = metrics.cache.query_cache.hit_rate;
-            healthScore += queryRate >= 80 ? 100 : queryRate >= 60 ? 70 : 30;
-            totalMetrics++;
-        }
         
         // CPU load
         const load = metrics.server.load_average?.['1min'] || 0;
@@ -1134,14 +1046,6 @@ POST /clear-cache.php?scope=server (header: X-CSRF-Token)
                 value: metrics.database.buffer_pool_hit_rate + '%',
                 status: metrics.database.buffer_pool_hit_rate >= 99 ? 'good' : 
                         metrics.database.buffer_pool_hit_rate >= 95 ? 'warning' : 'critical'
-            },
-            {
-                label: 'QueryCache',
-                value: metrics.cache.query_cache.available !== false ? 
-                    metrics.cache.query_cache.hit_rate + '%' : 'Не доступен',
-                status: metrics.cache.query_cache.available !== false ? 
-                    (metrics.cache.query_cache.hit_rate >= 80 ? 'good' : 
-                     metrics.cache.query_cache.hit_rate >= 60 ? 'warning' : 'critical') : 'warning'
             },
             {
                 label: 'Загрузка CPU',
@@ -1271,23 +1175,31 @@ POST /clear-cache.php?scope=server (header: X-CSRF-Token)
     document.addEventListener('DOMContentLoaded', function() {
         // Обновить детальную информацию
         updateMetricsDisplay(<?= json_encode($metrics) ?>);
-        
+
         // Установить начальные значения
         const select = document.getElementById('refreshInterval');
         select.value = refreshInterval / 1000;
-        
-        // Добавить обработчики для всех кнопок
-        const buttons = document.querySelectorAll('.btn');
-        buttons.forEach(btn => {
+
+        // Инициализировать ширину progress-bar из data-width
+        document.querySelectorAll('[data-width]').forEach(el => {
+            el.style.width = el.dataset.width + '%';
+        });
+
+        // Обработчики кнопок через data-action
+        const actions = { refreshMetrics, clearOpcache, clearServerCache, exportMetrics, showApi };
+        document.querySelectorAll('[data-action]').forEach(btn => {
             btn.addEventListener('click', function() {
-                // Временная блокировка кнопки на 2 секунды
                 this.disabled = true;
-                setTimeout(() => {
-                    this.disabled = false;
-                }, 2000);
+                setTimeout(() => { this.disabled = false; }, 2000);
+                const fn = actions[this.dataset.action];
+                if (fn) fn();
             });
         });
-        
+
+        // Обработчики checkbox и select
+        document.getElementById('autoRefresh').addEventListener('change', toggleAutoRefresh);
+        select.addEventListener('change', updateRefreshInterval);
+
         // Запустить автообновление если нужно
         if (document.getElementById('autoRefresh').checked) {
             startAutoRefresh();
