@@ -1126,7 +1126,7 @@ body.auth-page .auth-oauth-divider {
 
 body.auth-page .auth-oauth-divider::before,
 body.auth-page .auth-oauth-divider::after {
-  background: rgba(0, 0, 0, 0.12);
+  background: #0000001E;
   content: "";
   flex: 1;
   height: 1px;
@@ -1147,20 +1147,21 @@ body.auth-page .auth-oauth-form .btn {
 
 /* Google OAuth button - Google Blue */
 body.auth-page .btn-google {
-  background: #4285F4;
+  background: #000000;
   border: none;
   color: #fff;
   font-weight: 600;
   margin: 5px auto;
-  transition: background 0.2s ease;
+  overflow: hidden;
+  position: relative;
+  transform: translateZ(0);
+  transition: transform 0.5s cubic-bezier(0.6, 0, 0.2, 1), box-shadow 0.5s ease, background-color 0.5s ease;
+
 }
 
 body.auth-page .btn-google:hover {
-  background: #357AE8;
-}
-
-body.auth-page .btn-google .btn-text {
-  color: #fff;
+  background: #fff;
+  color: #000000;
 }
 
 /* Yandex OAuth button - Yandex Red */
@@ -1170,33 +1171,34 @@ body.auth-page .btn-yandex {
   color: #fff;
   font-weight: 600;
   margin: 5px auto;
-  transition: background 0.2s ease;
+  overflow: hidden;
+  position: relative;
+  transform: translateZ(0);
+  transition: transform 0.5s cubic-bezier(0.6, 0, 0.2, 1), box-shadow 0.5s ease, background-color 0.5s ease;
+
 }
 
 body.auth-page .btn-yandex:hover {
-  background: #DD3B1A;
-}
-
-body.auth-page .btn-yandex .btn-text {
-  color: #fff;
+  background: #fff;
+  color: #DD3B1A;
 }
 
 /* VK OAuth button - VK Blue */
 body.auth-page .btn-vk {
-  background: #0077FF;
+  background: #4680C2;
   border: none;
   color: #fff;
   font-weight: 600;
   margin: 5px auto;
-  transition: background 0.2s ease;
+  overflow: hidden;
+  position: relative;
+  transform: translateZ(0);
+  transition: transform 0.5s cubic-bezier(0.6, 0, 0.2, 1), box-shadow 0.5s ease, background-color 0.5s ease;
 }
 
 body.auth-page .btn-vk:hover {
-  background: #0066DD;
-}
-
-body.auth-page .btn-vk .btn-text {
-  color: #fff;
+  background: #fff;
+  color: #4680C2;
 }
 
 body.auth-page .auth-footer {

@@ -94,9 +94,10 @@ class Database
     {
         try {
             $persistentEnv = getenv('DB_PDO_PERSISTENT');
-            // Default is off for stability (persistent connections can leak transaction/session state
-            // across requests if code exits unexpectedly).
-            $usePersistent = filter_var($persistentEnv !== false ? $persistentEnv : '0', FILTER_VALIDATE_BOOLEAN);
+            // Default is ON for performance (saves ~5-15ms connection overhead per request).
+            // Singleton pattern + PHP-FPM pm.max_requests ensure no state leaks.
+            // Set DB_PDO_PERSISTENT=0 to disable if issues arise.
+            $usePersistent = filter_var($persistentEnv !== false ? $persistentEnv : '1', FILTER_VALIDATE_BOOLEAN);
 
             $this->connection = new PDO(
                 "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
@@ -275,11 +276,11 @@ class Database
         if (!$this->ensureOrderItemsTable()) {
             return;
         }
-        $stmt = $this->prepareCached(
-            "INSERT INTO order_items
-             (order_id, item_id, item_name, quantity, price, created_at)
-             VALUES (:order_id, :item_id, :item_name, :quantity, :price, NOW())"
-        );
+
+        // Collect valid items for batch insert
+        $values = [];
+        $params = [];
+        $i = 0;
 
         foreach ($items as $item) {
             $itemId = isset($item['id']) ? (int)$item['id'] : 0;
@@ -290,14 +291,26 @@ class Database
             $price = (float)($item['price'] ?? 0);
             $itemName = isset($item['name']) ? (string)$item['name'] : null;
 
-            $stmt->execute([
-                ':order_id' => $orderId,
-                ':item_id' => $itemId,
-                ':item_name' => $itemName,
-                ':quantity' => $quantity,
-                ':price' => $price,
-            ]);
+            $values[] = "(:oid_{$i}, :iid_{$i}, :nm_{$i}, :qty_{$i}, :prc_{$i}, NOW())";
+            $params[":oid_{$i}"] = $orderId;
+            $params[":iid_{$i}"] = $itemId;
+            $params[":nm_{$i}"]  = $itemName;
+            $params[":qty_{$i}"] = $quantity;
+            $params[":prc_{$i}"] = $price;
+            $i++;
         }
+
+        if (empty($values)) {
+            return;
+        }
+
+        // Single multi-row INSERT instead of N separate queries
+        $sql = "INSERT INTO order_items
+                (order_id, item_id, item_name, quantity, price, created_at)
+                VALUES " . implode(', ', $values);
+
+        $stmt = $this->connection->prepare($sql);
+        $stmt->execute($params);
     }
 
     private function touchOrdersLastUpdate(): void
@@ -1304,16 +1317,21 @@ class Database
         $interval = $intervals[$period] ?? '1 DAY';
         
         if ($period === 'day') {
-            $sql = "SELECT 
-                        id as order_id,
-                        TIME(created_at) as time,
-                        total as total_revenue,
-                        (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = orders.id) as item_count
-                    FROM orders
-                    WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                    AND status = 'завершён'
-                    AND DAY(created_at) = DAY(NOW())
-                    ORDER BY created_at DESC";
+            $sql = "SELECT
+                        o.id as order_id,
+                        TIME(o.created_at) as time,
+                        o.total as total_revenue,
+                        COALESCE(oi_agg.item_count, 0) as item_count
+                    FROM orders o
+                    LEFT JOIN (
+                        SELECT order_id, COUNT(*) as item_count
+                        FROM order_items
+                        GROUP BY order_id
+                    ) oi_agg ON oi_agg.order_id = o.id
+                    WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                    AND o.status = 'завершён'
+                    AND DAY(o.created_at) = DAY(NOW())
+                    ORDER BY o.created_at DESC";
         } else {
             if ($period === 'year') {
                 $dateFormat = '%m.%Y';
@@ -1386,55 +1404,67 @@ class Database
         $interval = $intervals[$period] ?? '1 DAY';
         
         if ($period === 'day') {
-            $sql = "SELECT 
-                        id as order_id,
-                        TIME(created_at) as time,
-                        total as total_revenue,
-                        (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id) as total_expenses,
-                        total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id) as total_profit,
-                        ROUND(((total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id)) / total) * 100, 2) as profitability_percent
-                    FROM orders
-                    WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                    AND DAY(created_at) = DAY(NOW())
-                    AND status = 'завершён'
-                    ORDER BY created_at DESC";
+            $sql = "SELECT
+                        o.id as order_id,
+                        TIME(o.created_at) as time,
+                        o.total as total_revenue,
+                        COALESCE(oi_agg.expenses, 0) as total_expenses,
+                        o.total - COALESCE(oi_agg.expenses, 0) as total_profit,
+                        ROUND(((o.total - COALESCE(oi_agg.expenses, 0)) / o.total) * 100, 2) as profitability_percent
+                    FROM orders o
+                    LEFT JOIN (
+                        SELECT oi.order_id, SUM(mi.cost * oi.quantity) as expenses
+                        FROM order_items oi
+                        JOIN menu_items mi ON mi.id = oi.item_id
+                        GROUP BY oi.order_id
+                    ) oi_agg ON oi_agg.order_id = o.id
+                    WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                    AND DAY(o.created_at) = DAY(NOW())
+                    AND o.status = 'завершён'
+                    ORDER BY o.created_at DESC";
         } else {
             if ($period === 'year') {
                 $dateFormat = '%m.%Y';
-                $groupBy = 'YEAR(created_at), MONTH(created_at)';
-                $orderBy = 'YEAR(created_at) DESC, MONTH(created_at) DESC';
-                $selectDate = "DATE_FORMAT(created_at, '$dateFormat') as date";
-                $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                                AND YEAR(created_at) = YEAR(NOW())";
+                $groupBy = 'YEAR(o.created_at), MONTH(o.created_at)';
+                $orderBy = 'YEAR(o.created_at) DESC, MONTH(o.created_at) DESC';
+                $selectDate = "DATE_FORMAT(o.created_at, '$dateFormat') as date";
+                $whereClause = "o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                                AND YEAR(o.created_at) = YEAR(NOW())";
             } elseif ($period === 'month') {
-                $groupBy = 'YEAR(created_at), WEEK(created_at, 1)';
-                $orderBy = 'YEAR(created_at) DESC, WEEK(created_at, 1) DESC';
-                $selectDate = "CONCAT('Неделя ', WEEK(created_at, 1), ' (', 
-                                  DATE_FORMAT(DATE_ADD(created_at, INTERVAL -WEEKDAY(created_at) DAY), '%d.%m'), ' - ',
-                                  DATE_FORMAT(DATE_ADD(created_at, INTERVAL 6-WEEKDAY(created_at) DAY), '%d.%m'), ')') as date";
-                $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval) 
-                                AND MONTH(created_at) = MONTH(NOW()) 
-                                AND YEAR(created_at) = YEAR(NOW())";
+                $groupBy = 'YEAR(o.created_at), WEEK(o.created_at, 1)';
+                $orderBy = 'YEAR(o.created_at) DESC, WEEK(o.created_at, 1) DESC';
+                $selectDate = "CONCAT('Неделя ', WEEK(o.created_at, 1), ' (',
+                                  DATE_FORMAT(DATE_ADD(o.created_at, INTERVAL -WEEKDAY(o.created_at) DAY), '%d.%m'), ' - ',
+                                  DATE_FORMAT(DATE_ADD(o.created_at, INTERVAL 6-WEEKDAY(o.created_at) DAY), '%d.%m'), ')') as date";
+                $whereClause = "o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                                AND MONTH(o.created_at) = MONTH(NOW())
+                                AND YEAR(o.created_at) = YEAR(NOW())";
             } else {
                 $dateFormat = '%d.%m';
-                $groupBy = 'DATE(created_at)';
+                $groupBy = 'DATE(o.created_at)';
                 $orderBy = 'date DESC';
-                $selectDate = "DATE_FORMAT(created_at, '$dateFormat') as date";
-                $whereClause = "created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                                AND MONTH(created_at) = MONTH(NOW()) 
-                                AND YEAR(created_at) = YEAR(NOW())";
+                $selectDate = "DATE_FORMAT(o.created_at, '$dateFormat') as date";
+                $whereClause = "o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                                AND MONTH(o.created_at) = MONTH(NOW())
+                                AND YEAR(o.created_at) = YEAR(NOW())";
             }
-            
-            $sql = "SELECT 
+
+            $sql = "SELECT
                         $selectDate,
                         COUNT(*) as order_count,
-                        SUM(total) as total_revenue,
-                        SUM((SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id)) as total_expenses,
-                        SUM(total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id)) as total_profit,
-                        ROUND((SUM(total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id)) / SUM(total)) * 100, 2) as profitability_percent
-                    FROM orders
+                        SUM(o.total) as total_revenue,
+                        SUM(COALESCE(oi_agg.expenses, 0)) as total_expenses,
+                        SUM(o.total - COALESCE(oi_agg.expenses, 0)) as total_profit,
+                        ROUND((SUM(o.total - COALESCE(oi_agg.expenses, 0)) / SUM(o.total)) * 100, 2) as profitability_percent
+                    FROM orders o
+                    LEFT JOIN (
+                        SELECT oi.order_id, SUM(mi.cost * oi.quantity) as expenses
+                        FROM order_items oi
+                        JOIN menu_items mi ON mi.id = oi.item_id
+                        GROUP BY oi.order_id
+                    ) oi_agg ON oi_agg.order_id = o.id
                     WHERE $whereClause
-                    AND status = 'завершён'
+                    AND o.status = 'завершён'
                     GROUP BY $groupBy
                     ORDER BY $orderBy";
         }
@@ -1462,29 +1492,41 @@ class Database
         $interval = $intervals[$period] ?? '1 DAY';
         
         if ($period === 'day') {
-            $sql = "SELECT 
-                        id as order_id,
-                        delivery_type,
-                        TIMESTAMPDIFF(MINUTE, created_at, updated_at) as time_minutes,
-                        total as total_revenue,
-                        (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id) as total_expenses,
-                        total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id) as total_profit
-                    FROM orders
-                    WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                    AND status = 'завершён'
-                    ORDER BY created_at DESC";
+            $sql = "SELECT
+                        o.id as order_id,
+                        o.delivery_type,
+                        TIMESTAMPDIFF(MINUTE, o.created_at, o.updated_at) as time_minutes,
+                        o.total as total_revenue,
+                        COALESCE(oi_agg.expenses, 0) as total_expenses,
+                        o.total - COALESCE(oi_agg.expenses, 0) as total_profit
+                    FROM orders o
+                    LEFT JOIN (
+                        SELECT oi.order_id, SUM(mi.cost * oi.quantity) as expenses
+                        FROM order_items oi
+                        JOIN menu_items mi ON mi.id = oi.item_id
+                        GROUP BY oi.order_id
+                    ) oi_agg ON oi_agg.order_id = o.id
+                    WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                    AND o.status = 'завершён'
+                    ORDER BY o.created_at DESC";
         } else {
             $sql = "SELECT
-                        delivery_type,
-                        FLOOR(AVG(TIMESTAMPDIFF(MINUTE, created_at, updated_at))) as avg_time_minutes,
+                        o.delivery_type,
+                        FLOOR(AVG(TIMESTAMPDIFF(MINUTE, o.created_at, o.updated_at))) as avg_time_minutes,
                         COUNT(*) as order_count,
-                        SUM(total) as total_revenue,
-                        SUM((SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id)) as total_expenses,
-                        SUM(total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = orders.id)) as total_profit
-                    FROM orders
-                    WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                    AND status = 'завершён'
-                    GROUP BY delivery_type
+                        SUM(o.total) as total_revenue,
+                        SUM(COALESCE(oi_agg.expenses, 0)) as total_expenses,
+                        SUM(o.total - COALESCE(oi_agg.expenses, 0)) as total_profit
+                    FROM orders o
+                    LEFT JOIN (
+                        SELECT oi.order_id, SUM(mi.cost * oi.quantity) as expenses
+                        FROM order_items oi
+                        JOIN menu_items mi ON mi.id = oi.item_id
+                        GROUP BY oi.order_id
+                    ) oi_agg ON oi_agg.order_id = o.id
+                    WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                    AND o.status = 'завершён'
+                    GROUP BY o.delivery_type
                     ORDER BY order_count DESC";
         }
         
@@ -1510,17 +1552,25 @@ class Database
         $interval = $intervals[$period] ?? '1 DAY';
         
         if ($period === 'day') {
-            $sql = "SELECT 
+            $sql = "SELECT
                         o.id as order_id,
                         u.name,
                         u.phone,
                         TIME(o.created_at) as time,
                         o.total as order_total,
-                        (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) as item_count,
-                        (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = o.id) as order_expenses,
-                        o.total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = o.id) as order_profit
+                        COALESCE(oi_agg.item_count, 0) as item_count,
+                        COALESCE(oi_agg.expenses, 0) as order_expenses,
+                        o.total - COALESCE(oi_agg.expenses, 0) as order_profit
                     FROM orders o
                     JOIN users u ON o.user_id = u.id
+                    LEFT JOIN (
+                        SELECT oi.order_id,
+                               COUNT(*) as item_count,
+                               SUM(mi.cost * oi.quantity) as expenses
+                        FROM order_items oi
+                        JOIN menu_items mi ON mi.id = oi.item_id
+                        GROUP BY oi.order_id
+                    ) oi_agg ON oi_agg.order_id = o.id
                     WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
                     AND o.status = 'завершён'
                     ORDER BY o.created_at DESC
@@ -1604,16 +1654,22 @@ class Database
         $interval = $intervals[$period] ?? '1 DAY';
         
         if ($period === 'day') {
-            $sql = "SELECT 
+            $sql = "SELECT
                         o.id as order_id,
                         u.name,
                         u.phone,
                         TIMESTAMPDIFF(MINUTE, o.created_at, o.updated_at) as processing_time,
                         o.total as total_revenue,
-                        (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = o.id) as total_expenses,
-                        o.total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = o.id) as total_profit
+                        COALESCE(oi_agg.expenses, 0) as total_expenses,
+                        o.total - COALESCE(oi_agg.expenses, 0) as total_profit
                     FROM orders o
                     JOIN users u ON o.last_updated_by = u.id
+                    LEFT JOIN (
+                        SELECT oi.order_id, SUM(mi.cost * oi.quantity) as expenses
+                        FROM order_items oi
+                        JOIN menu_items mi ON mi.id = oi.item_id
+                        GROUP BY oi.order_id
+                    ) oi_agg ON oi_agg.order_id = o.id
                     WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
                     AND o.status = 'завершён'
                     AND u.role IN ('owner', 'employee', 'admin')
@@ -1627,10 +1683,16 @@ class Database
                         COUNT(o.id) as order_count,
                         SUM(o.total) as total_revenue,
                         FLOOR(AVG(TIMESTAMPDIFF(MINUTE, o.created_at, o.updated_at))) as avg_processing_time,
-                        SUM((SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = o.id)) as total_expenses,
-                        SUM(o.total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = o.id)) as total_profit
+                        SUM(COALESCE(oi_agg.expenses, 0)) as total_expenses,
+                        SUM(o.total - COALESCE(oi_agg.expenses, 0)) as total_profit
                     FROM orders o
                     JOIN users u ON o.last_updated_by = u.id
+                    LEFT JOIN (
+                        SELECT oi.order_id, SUM(mi.cost * oi.quantity) as expenses
+                        FROM order_items oi
+                        JOIN menu_items mi ON mi.id = oi.item_id
+                        GROUP BY oi.order_id
+                    ) oi_agg ON oi_agg.order_id = o.id
                     WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
                     AND o.status = 'завершён'
                     AND u.role IN ('owner', 'employee', 'admin')
@@ -1661,17 +1723,23 @@ class Database
         
         $interval = $intervals[$period] ?? '1 DAY';
         
-        $sql = "SELECT 
-                    HOUR(created_at) as hour,
+        $sql = "SELECT
+                    HOUR(o.created_at) as hour,
                     COUNT(*) as order_count,
-                    AVG(total) as avg_order_value,
-                    SUM(total) as total_revenue,
-                    SUM(total - (SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = o.id)) as total_profit,
-                    SUM((SELECT SUM(mi.cost * oi.quantity) FROM order_items oi JOIN menu_items mi ON mi.id = oi.item_id WHERE oi.order_id = o.id)) as total_expenses
+                    AVG(o.total) as avg_order_value,
+                    SUM(o.total) as total_revenue,
+                    SUM(o.total - COALESCE(oi_agg.expenses, 0)) as total_profit,
+                    SUM(COALESCE(oi_agg.expenses, 0)) as total_expenses
                 FROM orders o
-                WHERE created_at >= DATE_SUB(NOW(), INTERVAL $interval)
-                AND status = 'завершён'
-                GROUP BY HOUR(created_at)
+                LEFT JOIN (
+                    SELECT oi.order_id, SUM(mi.cost * oi.quantity) as expenses
+                    FROM order_items oi
+                    JOIN menu_items mi ON mi.id = oi.item_id
+                    GROUP BY oi.order_id
+                ) oi_agg ON oi_agg.order_id = o.id
+                WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL $interval)
+                AND o.status = 'завершён'
+                GROUP BY HOUR(o.created_at)
                 ORDER BY hour ASC";
         
         try {
