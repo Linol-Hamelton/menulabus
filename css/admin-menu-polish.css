@@ -214,6 +214,7 @@ body.owner-page .admin-tabs {
   align-items: stretch;
   display: flex;
   gap: 8px;
+  justify-content: center;
 }
 
 body.owner-page .admin-tab-btn {
