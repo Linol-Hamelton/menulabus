@@ -106,6 +106,19 @@
                                             </button>
                                         <?php endif; ?>
                                     </form>
+                                    <?php
+                                    $pStatus = $o['payment_status'] ?? 'not_required';
+                                    if (!in_array($o['status'], ['завершён', 'отказ'])
+                                        && $pStatus !== 'paid'
+                                        && ($paymentEnabled ?? false)):
+                                    ?>
+                                    <button type="button"
+                                            class="status-btn pay-link-btn"
+                                            data-order-id="<?= (int)$o['id'] ?>">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,104a8,8,0,0,1-16,0V59.32l-82.34,82.34a8,8,0,0,1-11.32-11.32L196.68,48H152a8,8,0,0,1,0-16h64a8,8,0,0,1,8,8Zm-40,24a8,8,0,0,0-8,8v72H48V80h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,80V208a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V136A8,8,0,0,0,184,128Z"/></svg>
+                                        Оплата
+                                    </button>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -113,6 +126,38 @@
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
+
+        <!-- ── Вкладка: Столы ── -->
+        <div class="orders-list tab-content <?= $activeTab === 'столы' ? 'active' : '' ?>" id="столы">
+            <?php
+            $tableOrders = $db->getActiveTableOrders();
+            ?>
+            <div class="admin-form-group">
+                <a href="/qr-print.php" class="checkout-btn" target="_blank">Распечатать QR-коды столов</a>
+            </div>
+            <?php if (empty($tableOrders)): ?>
+                <p>Нет активных заказов за столиками</p>
+            <?php else: ?>
+                <table class="owner-table">
+                    <thead>
+                        <tr>
+                            <th>Стол</th>
+                            <th>Заказов</th>
+                            <th>Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($tableOrders as $row): ?>
+                        <tr>
+                            <td>Стол <?= htmlspecialchars($row['table_num']) ?></td>
+                            <td><?= (int)$row['order_count'] ?></td>
+                            <td><?= number_format((float)$row['total_sum'], 0, '.', ' ') ?> ₽</td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
     </section>
 </div>
 

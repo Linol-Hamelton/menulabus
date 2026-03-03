@@ -1,0 +1,286 @@
+/* ===== Order Tracking Page ===== */
+
+.track-page {
+    min-height: 100vh;
+    background: var(--bg-light);
+    padding: 0 0 60px;
+}
+
+/* ── Header ── */
+.track-header {
+    background: var(--primary-dark);
+    color: var(--white);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.track-header .back-link {
+    color: var(--white);
+    text-decoration: none;
+    font-size: 20px;
+    line-height: 1;
+    opacity: .8;
+}
+.track-header .back-link:hover { opacity: 1; }
+.track-header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* ── Card wrapper ── */
+.track-card {
+    background: var(--white);
+    border-radius: 16px;
+    margin: 20px 16px 0;
+    padding: 24px 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.08);
+}
+
+/* ── Order meta ── */
+.track-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.track-order-id {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--secondary-color);
+}
+.track-order-id span { color: var(--primary-color); }
+.track-delivery-label {
+    font-size: 13px;
+    color: var(--light-text);
+    background: var(--bg-light);
+    padding: 4px 10px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ── Progress stepper ── */
+.track-steps {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    position: relative;
+    margin: 8px 0 28px;
+}
+
+/* Connector line behind steps */
+.track-steps::before {
+    content: '';
+    position: absolute;
+    top: 18px;
+    left: calc(12.5% + 4px);
+    right: calc(12.5% + 4px);
+    height: 3px;
+    background: #e0e0e0;
+    z-index: 0;
+}
+
+.track-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    z-index: 1;
+}
+
+.track-step-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e0e0e0;
+    border: 3px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: background .5s ease, border-color .5s ease, transform .4s ease;
+    position: relative;
+}
+
+.track-step-label {
+    font-size: 11px;
+    color: #999;
+    text-align: center;
+    font-weight: 500;
+    transition: color .4s ease;
+    line-height: 1.3;
+    max-width: 68px;
+}
+
+/* Connector between circles (overlay on top of ::before) */
+.track-step::after {
+    content: '';
+    position: absolute;
+    top: 18px;
+    left: calc(50% + 18px);
+    right: calc(-50% + 18px);
+    height: 3px;
+    background: #e0e0e0;
+    z-index: 0;
+    transition: background .5s ease;
+}
+.track-step:last-child::after { display: none; }
+
+/* Done state */
+.track-step.done .track-step-circle {
+    background: var(--agree);
+    border-color: var(--agree);
+    color: #fff;
+}
+.track-step.done + .track-step::after,
+.track-step.done::after { background: var(--agree); }
+.track-step.done .track-step-label { color: var(--agree); }
+
+/* Active state */
+.track-step.active .track-step-circle {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+    transform: scale(1.15);
+    animation: pulse-step 2s ease-in-out infinite;
+}
+.track-step.active .track-step-label { color: var(--primary-color); font-weight: 700; }
+
+/* Rejected state */
+.track-step.rejected .track-step-circle {
+    background: #e53935;
+    border-color: #e53935;
+    color: #fff;
+}
+
+@keyframes pulse-step {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(205,23,25,.4); }
+    50%       { box-shadow: 0 0 0 8px rgba(205,23,25,0); }
+}
+
+/* ── Estimated time ── */
+.track-time-box {
+    text-align: center;
+    margin: 4px 0 20px;
+    min-height: 48px;
+}
+.track-time-box .time-label {
+    font-size: 13px;
+    color: var(--light-text);
+    margin-bottom: 4px;
+}
+.track-time-box .time-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--secondary-color);
+    line-height: 1.1;
+    transition: color .4s;
+}
+.track-time-box .time-value.done  { color: var(--agree); }
+.track-time-box .time-value.error { color: #e53935; }
+
+/* ── Rejected banner ── */
+.track-rejected-banner {
+    display: none;
+    background: #fdecea;
+    border-left: 4px solid #e53935;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    color: #c62828;
+    font-weight: 600;
+    font-size: 15px;
+}
+
+/* ── Confetti (done state) ── */
+.track-confetti {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 9999;
+    display: none;
+}
+.confetti-piece {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    top: -10px;
+    border-radius: 2px;
+    animation: confetti-fall 3s ease-in forwards;
+}
+@keyframes confetti-fall {
+    to { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+}
+
+/* ── Order items ── */
+.track-items-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--light-text);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin: 20px 0 12px;
+}
+.track-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--bg-light);
+    font-size: 14px;
+}
+.track-item:last-child { border-bottom: none; }
+.track-item-name { color: var(--secondary-color); font-weight: 500; }
+.track-item-qty  { color: var(--light-text); font-size: 13px; margin-left: 6px; }
+.track-item-price { color: var(--primary-color); font-weight: 600; white-space: nowrap; }
+
+/* ── Total ── */
+.track-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 2px solid var(--bg-light);
+    font-weight: 700;
+    font-size: 16px;
+}
+.track-total-label { color: var(--secondary-color); }
+.track-total-value { color: var(--primary-color); font-size: 20px; }
+
+/* ── CTA button ── */
+.track-cta {
+    margin: 20px 16px 0;
+    text-align: center;
+}
+.track-cta a {
+    display: inline-block;
+    padding: 14px 28px;
+    background: var(--primary-color);
+    color: var(--white);
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+    transition: opacity .2s;
+}
+.track-cta a:hover { opacity: .85; }
+
+/* ── Responsive ── */
+@media (max-width: 380px) {
+    .track-step-label { font-size: 10px; max-width: 58px; }
+    .track-step-circle { width: 30px; height: 30px; font-size: 13px; }
+    .track-steps::before { top: 15px; }
+    .track-step::after   { top: 15px; }
+}
+
+/* rejected banner SVG — prevent icon from shrinking on narrow viewports */
+.track-rejected-banner svg { flex-shrink: 0; }

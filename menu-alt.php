@@ -68,13 +68,15 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
 
             <div class="menu-content">
                 <?php foreach ($categories as $index => $category):
-                    $items = $db->getMenuItems($category['category']);
+                    $items = $db->getMenuItems($category['category'], false);
                     $isActive = $index === 0 ? 'active' : '';
                 ?>
                     <div class="tab-pane <?= $isActive ?>" id="<?= htmlspecialchars($category['category']) ?>">
                 <?php foreach ($items as $item):
+                    $unavail = !$item['available'];
+                    $itemMods = $unavail ? [] : $db->getModifiersByItemId((int)$item['id']);
                         ?>
-                            <div class="cart-item">
+                            <div class="cart-item<?= $unavail ? ' menu-item--unavailable' : '' ?>">
                                 <div class="cart-item-info">
                                     <img class="cart-item-image no-drag no-context modal-trigger"
                                         src="<?= htmlspecialchars($item['image']) ?>"
@@ -95,6 +97,9 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
                                 </div>
 
                                 <div class="menu-item-quantity">
+                                    <?php if ($unavail): ?>
+                                        <span class="menu-item__stopbadge">Нет в наличии</span>
+                                    <?php else: ?>
                                     <div class="buy"
                                         data-product-id="<?= $item['id'] ?>"
                                         data-product-name="<?= htmlspecialchars($item['name']) ?>"
@@ -104,7 +109,7 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
                                         data-protein="<?= (int)($item['protein'] ?? 0) ?>"
                                         data-fat="<?= (int)($item['fat'] ?? 0) ?>"
                                         data-carbs="<?= (int)($item['carbs'] ?? 0) ?>"
-                                        data-csrf="<?= $csrfToken ?>">
+                                        data-csrf="<?= $csrfToken ?>"<?php if ($itemMods): ?> data-modifiers="<?= htmlspecialchars(json_encode($itemMods, JSON_UNESCAPED_UNICODE)) ?>"<?php endif; ?>>
 
                                         <span class="buy-text">+</span>
 
@@ -114,6 +119,7 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
                                             <span class="counter-minus" data-action="decrease">-</span>
                                         </div>
                                     </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -123,9 +129,10 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
         </div>
     </section>
     <?php if ($includeMenuCss): ?>
-        <link rel="stylesheet" href="/css/fa-styles.min.css" nonce="<?= $styleNonce ?>">
-        <link rel="stylesheet" href="/css/fa-purged.min.css" nonce="<?= $styleNonce ?>">
-        <link rel="stylesheet" href="/css/menu-alt.min.css" nonce="<?= $styleNonce ?>">
+        <link rel="stylesheet" href="/css/fa-styles.min.css">
+        <link rel="stylesheet" href="/css/fa-purged.min.css">
+        <link rel="stylesheet" href="/css/menu-alt.min.css">
+        <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion ?? $_SESSION['app_version'] ?? '1.0.0') ?>">
     <?php endif; ?>
 </body>
 

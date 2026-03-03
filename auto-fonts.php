@@ -2,7 +2,7 @@
 require_once __DIR__ . '/session_init.php';
 
 header('Content-Type: text/css');
-header("Cache-Control: public, max-age=31536000");
+header("Cache-Control: no-cache, must-revalidate");
 
 $fontsDir = __DIR__ . '/fonts';
 $fontVariants = [];
@@ -41,9 +41,9 @@ if (is_dir($fontsDir)) {
 foreach ($fontVariants as $fontName => $variants) {
     foreach ($variants as $variant) {
         $extension = strtolower(pathinfo($variant['file'], PATHINFO_EXTENSION));
-        $format = $extension === 'ttf' ? 'truetype' : 
+        $format = $extension === 'ttf' ? 'truetype' :
                  ($extension === 'otf' ? 'opentype' : $extension);
-        
+
         echo "
 @font-face {
     font-family: '{$fontName}';
@@ -55,4 +55,26 @@ foreach ($fontVariants as $fontName => $variants) {
         ";
     }
 }
+
+// CSS-переменные для шрифтов из базы данных
+$db = Database::getInstance();
+
+$defaultFonts = [
+    'logo'    => "'Magistral', serif",
+    'text'    => "'proxima-nova', sans-serif",
+    'heading' => "'Inter', sans-serif",
+];
+
+echo ":root {\n";
+foreach ($defaultFonts as $key => $default) {
+    $saved = $db->getSetting("font_$key");
+    if ($saved) {
+        $decoded = json_decode($saved, true);
+        $value = ($decoded !== null) ? $decoded : $default;
+    } else {
+        $value = $default;
+    }
+    echo "    --font-$key: $value;\n";
+}
+echo "}\n";
 ?>

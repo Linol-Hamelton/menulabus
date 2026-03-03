@@ -1,31 +1,33 @@
 <?php
 header('Cache-Control: public, max-age=600, s-maxage=600');
 require_once __DIR__ . '/session_init.php';
+$siteName  = htmlspecialchars(trim(html_entity_decode($GLOBALS['siteName']    ?? 'labus',                             ENT_QUOTES, 'UTF-8'), '"\''));
+$siteDesc  = htmlspecialchars(trim(html_entity_decode($GLOBALS['siteDesc']    ?? '',                                   ENT_QUOTES, 'UTF-8'), '"\''));
+$tagline   = htmlspecialchars(trim(html_entity_decode($GLOBALS['siteTagline'] ?? 'цифровое меню и управление заказами', ENT_QUOTES, 'UTF-8'), '"\''));
+$faviconUrl = htmlspecialchars($GLOBALS['faviconUrl'] ?? '/icons/favicon.ico');
+$appVer    = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
 ?>
 <!DOCTYPE html>
 <html lang="ru">
 
 <head>
-    
-    
     <meta charset="UTF-8">
-    <!-- Существующие теги -->
-    <link rel="manifest" href="/manifest.webmanifest?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="manifest" href="/manifest.php?v=<?= $appVer ?>">
+    <link rel="icon" href="<?= $faviconUrl ?>">
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="labus">
+    <meta name="apple-mobile-web-app-title" content="<?= $siteName ?>">
+    <?php if ($siteDesc !== ''): ?><meta name="description" content="<?= $siteDesc ?>"><?php endif; ?>
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
     <meta name="msapplication-TileImage" content="/icons/icon-128x128.png">
     <meta name="msapplication-TileColor" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
-    <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
-    <link rel="stylesheet" href="/css/version.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
-  <title>
-    labus | Компания labus — это место, где можно получить профессиональную помощь в продвижении и развитии бизнеса.
-  </title>
+    <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= $appVer ?>">
+    <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= $appVer ?>">
+    <link rel="stylesheet" href="/auto-fonts.php?v=<?= $appVer ?>">
+    <title><?= $siteName ?> | <?= $siteDesc !== '' ? $siteDesc : $tagline ?></title>
 
     <!-- Preloader - мгновенная загрузка -->
 </head>
@@ -48,14 +50,14 @@ require_once __DIR__ . '/session_init.php';
       <img
           src="/images/HDR_1440.webp"
           srcset="/images/HDR_1440.webp 1440w"
-          alt="Меню для ресторанов от labus.pro"
+          alt="Меню от <?= $siteName ?>"
           loading="eager"
           decoding="async">
     </picture>
   </div>
     <div class="hero-content">
-      <h1>labus</h1>
-      <p>цифровое меню и управление заказами</p>
+      <h1><?= $siteName ?></h1>
+      <p><?= $tagline ?></p>
       <a href="#reservation" class="btn">Забронировать</a>
     </div>
   </section>
@@ -89,7 +91,7 @@ require_once __DIR__ . '/session_init.php';
                 srcset="/images/HDR1_1440.webp 1440w"
                 loading="lazy"
                 decoding="async"
-                alt="Меню для ресторанов от labus.pro"
+                alt="Меню от <?= $siteName ?>"
                 sizes="(max-width: 768px) 100vw, (max-width: 1280px) 100vw, 1440px">
           </picture>
         </div>
@@ -139,7 +141,7 @@ require_once __DIR__ . '/session_init.php';
     <div class="container">
       <div class="footer-inner">
         <div class="footer-col">
-          <h3>labus</h3>
+          <h3><?= $siteName ?></h3>
           <p>
             Интуитивные меню, которые повышают аппетит и средний чек.
           </p>
@@ -163,7 +165,7 @@ require_once __DIR__ . '/session_init.php';
         </div>
       </div>
       <div class="footer-bottom">
-        <p>&copy; 2025 "labus". Все права защищены.</p>
+        <p>&copy; <?= date('Y') ?> «<?= $siteName ?>». Все права защищены.</p>
       </div>
     </div>
   </footer>
@@ -171,7 +173,6 @@ require_once __DIR__ . '/session_init.php';
   <script src="/js/cart.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
   <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
   <script src="/js/pwa-install.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
-  <script src="/js/version-checker.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
 </body>
 
 </html>

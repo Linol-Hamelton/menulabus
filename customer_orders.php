@@ -91,7 +91,11 @@ if (
 
 // Получаем заказы пользователя
 $orders = $db->getUserOrders($_SESSION['user_id']);
-$activeTab = $_COOKIE['activeOrderTab'] ?? 'all';
+$allowedOrderTabs = ['Приём', 'готовим', 'доставляем', 'завершён', 'отказ'];
+$activeTab = $_COOKIE['activeOrderTab'] ?? 'Приём';
+if (!in_array($activeTab, $allowedOrderTabs, true)) {
+    $activeTab = 'Приём';
+}
 
 // Partial fetch for SSE refresh (reduces HTML size and prevents UI freezes on low-end devices).
 if (($_GET['partial'] ?? '') === 'account-sections') {
@@ -108,12 +112,13 @@ if (($_GET['partial'] ?? '') === 'account-sections') {
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="/manifest.webmanifest?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="manifest" href="/manifest.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
-    <title>Мои заказы | labus</title>
+    <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <title>Мои заказы | <?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?></title>
 
     <!-- Preloader - мгновенная загрузка -->
     

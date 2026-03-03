@@ -20,7 +20,7 @@
             <p>Нет активных заказов</p>
         <?php else: ?>
             <?php foreach ($statuses as $s): ?>
-                <div class="orders-list tab-content <?= $s['status'] === $activeTab ? 'active' : 'Приём' ?>"
+                <div class="orders-list tab-content <?= $s['status'] === $activeTab ? 'active' : '' ?>"
                      id="<?= htmlspecialchars($s['status']) ?>">
                     <?php
                     $filtered = array_values(array_filter($orders, fn($o) => $o['status'] === $s['status']));
@@ -85,6 +85,12 @@
                                 </div>
 
                                 <div class="order-actions">
+                                    <?php if (in_array($o['status'], ['Приём', 'готовим', 'доставляем'], true)): ?>
+                                        <a href="order-track.php?id=<?= $o['id'] ?>" class="checkout-btn"
+                                           title="Отследить статус заказа">
+                                            <i class="fas fa-map-marker-alt"></i> Отследить
+                                        </a>
+                                    <?php endif; ?>
                                     <?php if ($o['status'] === 'завершён' || $o['status'] === 'отказ'): ?>
                                         <form class="repeat-order-form" data-order-id="<?= $o['id'] ?>">
                                             <input type="hidden" name="action" value="repeat_order">
@@ -105,4 +111,3 @@
         <?php endif; ?>
     </section>
 </div>
-

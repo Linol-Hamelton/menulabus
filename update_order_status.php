@@ -50,13 +50,20 @@ function sendPushNotificationsForOrder($orderId, $newStatus, $updaterName) {
 
     $webPush = new Minishlink\WebPush\WebPush($auth);
 
-    $title = "Статус заказа #$orderId обновлён";
-    $body = "Новый статус: $newStatus (изменил: $updaterName)";
-    $icon = '/icons/icon-192x192.png';
-    $data = [
+    $statusMessages = [
+        'готовим'    => ['title' => "Готовим ваш заказ #$orderId",  'body' => 'Уже на кухне! Следите за статусом.'],
+        'доставляем' => ['title' => "Заказ #$orderId готов!",        'body' => 'Ждём вас или передаём курьеру.'],
+        'завершён'   => ['title' => "Заказ #$orderId завершён",      'body' => 'Спасибо за заказ! Приходите ещё.'],
+        'отказ'      => ['title' => "Заказ #$orderId отменён",       'body' => 'Свяжитесь с рестораном для уточнения.'],
+    ];
+    $msg   = $statusMessages[$newStatus] ?? ['title' => "Статус заказа #$orderId", 'body' => "Новый статус: $newStatus"];
+    $title = $msg['title'];
+    $body  = $msg['body'];
+    $icon  = '/icons/icon-192x192.png';
+    $data  = [
         'orderId' => $orderId,
-        'status' => $newStatus,
-        'url' => '/customer_orders.php?order=' . $orderId
+        'status'  => $newStatus,
+        'url'     => '/order-track.php?id=' . $orderId,
     ];
 
     foreach ($subscriptions as $sub) {
@@ -183,7 +190,7 @@ try {
     // Отправляем push-уведомления подписчикам заказа (в фоне, не блокируем ответ)
     try {
         sendPushNotificationsForOrder($orderId, $newStatus, $updater['name'] ?? 'Сотрудник');
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
         error_log("Push notification error: " . $e->getMessage());
     }
 

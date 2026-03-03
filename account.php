@@ -39,6 +39,32 @@ if (!$user || !$user['is_active']) {
 
 // Получение предпочтений вида меню
 $menuView = $user['menu_view'] ?? 'alt';
+$canManageUpdates = in_array($user['role'], ['owner', 'admin', 'employee'], true);
+$allowedTabs = ['profile', 'security', 'menu'];
+if ($canManageUpdates) {
+    $allowedTabs[] = 'updates';
+}
+$activeTab = $_GET['tab'] ?? 'profile';
+if (!in_array($activeTab, $allowedTabs, true)) {
+    $activeTab = 'profile';
+}
+
+$versionInfo = [
+    'version' => $_SESSION['app_version'] ?? '1.0.0',
+    'release_date' => null,
+    'changelog' => null,
+    'critical' => false,
+];
+$versionFile = __DIR__ . '/version.json';
+if (is_file($versionFile)) {
+    $decoded = json_decode((string) file_get_contents($versionFile), true);
+    if (is_array($decoded)) {
+        $versionInfo['version'] = $decoded['version'] ?? $versionInfo['version'];
+        $versionInfo['release_date'] = $decoded['release_date'] ?? null;
+        $versionInfo['changelog'] = $decoded['changelog'] ?? null;
+        $versionInfo['critical'] = (bool)($decoded['critical'] ?? false);
+    }
+}
 
 // Generate/refresh CSRF token
 if (empty($_SESSION['csrf_token'])) {
@@ -183,13 +209,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="/manifest.webmanifest?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="manifest" href="/manifest.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <?php if ($canManageUpdates && $activeTab === 'updates'): ?>
     <link rel="stylesheet" href="/css/version.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
-    <title>Личный кабинет | labus</title>
+    <?php endif; ?>
+    <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <title>Личный кабинет | <?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?></title>
 
     <!-- Preloader - мгновенная загрузка -->
 
@@ -213,7 +242,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
+        <div class="menu-tabs">
+            <a href="account.php?tab=profile" class="tab-btn <?= $activeTab === 'profile' ? 'active' : '' ?>">Профиль</a>
+            <a href="account.php?tab=security" class="tab-btn <?= $activeTab === 'security' ? 'active' : '' ?>">Безопасность</a>
+            <a href="account.php?tab=menu" class="tab-btn <?= $activeTab === 'menu' ? 'active' : '' ?>">Меню</a>
+            <?php if ($canManageUpdates): ?>
+            <a href="account.php?tab=updates" class="tab-btn <?= $activeTab === 'updates' ? 'active' : '' ?>">Обновления</a>
+            <?php endif; ?>
+        </div>
+
         <div class="account-sections">
+            <?php if ($activeTab === 'profile'): ?>
             <section class="account-section">
                 <h2>Профиль</h2>
                 <form method="POST">
@@ -233,7 +272,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <button type="submit" name="update_profile" class="checkout-btn">Сохранить изменения</button>
                 </form>
             </section>
+            <?php endif; ?>
 
+            <?php if ($activeTab === 'security'): ?>
             <section class="account-section">
                 <h2>Безопасность</h2>
                 <form method="POST">
@@ -253,9 +294,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <button type="submit" name="change_password" class="checkout-btn">Изменить пароль</button>
                 </form>
             </section>
+            <?php endif; ?>
         </div>
 
         <!-- Секция настройки вида меню -->
+        <?php if ($activeTab === 'menu'): ?>
         <section class="account-section">
             <h2>Настройки отображения меню</h2>
             <form method="POST">
@@ -282,12 +325,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </form>
         </section>
+        <?php endif; ?>
+
+        <?php if ($canManageUpdates && $activeTab === 'updates'): ?>
+        <section class="account-section">
+            <h2>Обновления</h2>
+            <p>Проверка версии и запуск обновления выполняются только на этой вкладке.</p>
+            <div class="form-group">
+                <label>Текущая версия в системе:</label><br>
+                <input type="text" value="<?= htmlspecialchars((string)$versionInfo['version']) ?>" disabled>
+            </div>
+            <?php if (!empty($versionInfo['release_date'])): ?>
+            <div class="form-group">
+                <label>Дата релиза:</label><br>
+                <input type="text" value="<?= htmlspecialchars((string)$versionInfo['release_date']) ?>" disabled>
+            </div>
+            <?php endif; ?>
+            <?php if (!empty($versionInfo['changelog'])): ?>
+            <div class="form-group">
+                <label>Что нового:</label><br>
+                <p><?= htmlspecialchars((string)$versionInfo['changelog']) ?></p>
+            </div>
+            <?php endif; ?>
+            <div class="section-header-menu">
+                <a href="account.php?tab=updates" class="checkout-btn">Проверить обновления</a>
+                <a href="logout.php" class="back-to-menu-btn">Выйти</a>
+            </div>
+        </section>
+        <?php endif; ?>
     </div>
     <script src="/js/security.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/cart.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/account.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <?php if ($canManageUpdates && $activeTab === 'updates'): ?>
     <script src="/js/version-checker.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <?php endif; ?>
 </body>
 
 </html>

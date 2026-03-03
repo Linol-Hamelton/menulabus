@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+cd "$ROOT_DIR"
+
+echo "[post-merge] Running post-pull checks..."
+
+old_rev="${ORIG_HEAD:-}"
+new_rev="$(git rev-parse HEAD)"
+
+if command -v php >/dev/null 2>&1; then
+  if [ -n "$old_rev" ] && git rev-parse "$old_rev" >/dev/null 2>&1; then
+    changed_php="$(git diff --name-only "$old_rev" "$new_rev" -- '*.php' || true)"
+  else
+    changed_php="$(git ls-files '*.php')"
+  fi
+
+  if [ -n "$changed_php" ]; then
+    while IFS= read -r file; do
+      [ -f "$file" ] || continue
+      php -l "$file" >/dev/null
+    done <<< "$changed_php"
+    echo "[post-merge] PHP lint OK"
+  fi
+else
+  echo "[post-merge] php not found, skipping lint"
+fi
+
+if [ -d "data/cache" ]; then
+  find "data/cache" -type f ! -name '.gitkeep' -delete || true
+  echo "[post-merge] Cache directory cleaned"
+fi
+
+echo "[post-merge] Complete"

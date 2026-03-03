@@ -153,6 +153,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     );
                 }
                 
+                // First-time owner: redirect to onboarding wizard
+                if ($user['role'] === 'owner') {
+                    $onboardingDone = $db->getSetting('onboarding_done');
+                    if (!$onboardingDone) {
+                        header("Location: onboarding.php");
+                        exit;
+                    }
+                }
+
                 header("Location: account.php");
                 exit;
             }
@@ -171,11 +180,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="/manifest.webmanifest?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="manifest" href="/manifest.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <title><?= htmlspecialchars($mode === 'register' ? 'Регистрация' : 'Вход') ?></title>
 
     <!-- Preloader - мгновенная загрузка -->

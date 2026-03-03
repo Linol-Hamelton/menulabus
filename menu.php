@@ -6,6 +6,11 @@ $appVersion = $_SESSION['app_version'] ?? '1.0.0';
 $db = Database::getInstance();
 $categories = $db->getUniqueCategories();
 $activeCategory = $_COOKIE['activeMenuCategory'] ?? $categories[0]['category'];
+
+// Feature #10: capture table number from QR URL and store in session
+if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['table'] > 0) {
+    $_SESSION['qr_table'] = min((int)$_GET['table'], 999);
+}
 ?>
 
 <!DOCTYPE html>
@@ -14,12 +19,13 @@ $activeCategory = $_COOKIE['activeMenuCategory'] ?? $categories[0]['category'];
 <head>  
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="/manifest.webmanifest?v=<?= htmlspecialchars($appVersion) ?>">
-    <title>labus | Меню</title>
+    <link rel="manifest" href="/manifest.php?v=<?= htmlspecialchars($appVersion) ?>">
+    <title><?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?> | Меню</title>
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/menu-alt.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/menu-content-info.min.css?v=<?= htmlspecialchars($appVersion) ?>">
+    <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion) ?>">
 </head>
 
 <body id="body">
@@ -48,6 +54,7 @@ $activeCategory = $_COOKIE['activeMenuCategory'] ?? $categories[0]['category'];
         session_write_close();
     }
 
+    $GLOBALS['menu_css_in_head'] = true;
     switch ($menuView) {
         case 'alt':
             require_once __DIR__ . '/menu-content.php';
@@ -72,10 +79,11 @@ $activeCategory = $_COOKIE['activeMenuCategory'] ?? $categories[0]['category'];
     </div>
 
     <div class="footer-bottom">
-        <p>&copy; 2023 "labus". Все права защищены.</p>
+        <p>&copy; <?= date('Y') ?> «<?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?>». Все права защищены.</p>
     </div>
     <script src="/js/security.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/cart.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/menu-modifiers.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
 </body>
 

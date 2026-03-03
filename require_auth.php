@@ -39,6 +39,8 @@ if (isset($required_role)) {
     
     if ($required_role === 'admin') {
         $allowed_roles = ['admin', 'owner']; // Владелец имеет права администратора
+    } elseif ($required_role === 'employee') {
+        $allowed_roles = ['employee', 'admin', 'owner']; // Сотрудник + выше
     } elseif ($required_role === 'owner') {
         $allowed_roles = ['owner'];
     }

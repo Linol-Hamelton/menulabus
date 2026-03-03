@@ -346,8 +346,9 @@ class Database
     {
         try {
             $stmt = $this->prepareCached("
-                SELECT o.id, o.user_id, o.items, o.total, o.status, 
-                       o.delivery_type, o.delivery_details, o.created_at
+                SELECT o.id, o.user_id, o.items, o.total, o.status,
+                       o.delivery_type, o.delivery_details, o.created_at,
+                       o.payment_method, o.payment_id, o.payment_status
                 FROM orders o
                 WHERE o.id = :id
                 LIMIT 1
@@ -370,9 +371,9 @@ class Database
         }
     }
 
-    public function getMenuItems($category = null)
+    public function getMenuItems($category = null, bool $availableOnly = true)
     {
-        $cacheKey = 'menu_items_' . ($category ?: 'all');
+        $cacheKey = ($availableOnly ? 'menu_items_' : 'menu_items_all_') . ($category ?: 'all');
 
         if ($this->redisCache) {
             $cached = $this->redisCache->get($cacheKey);
@@ -380,14 +381,14 @@ class Database
                 return $cached;
             }
         }
-        
+
         try {
-            $sql = "SELECT id, name, description, composition, price, image, 
-                   calories, protein, fat, carbs, category, available 
-                   FROM menu_items WHERE available = 1";
-            
+            $sql = "SELECT id, name, description, composition, price, image,
+                   calories, protein, fat, carbs, category, available
+                   FROM menu_items" . ($availableOnly ? " WHERE available = 1" : "");
+
             if ($category) {
-                $sql .= " AND category = :category";
+                $sql .= ($availableOnly ? " AND" : " WHERE") . " category = :category";
             }
             $sql .= " ORDER BY category, name";
 
@@ -464,6 +465,160 @@ class Database
             return $result;
         } catch (PDOException $e) {
             error_log("updateMenuItems Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Toggle available flag for a single menu item.
+     * Returns the NEW available value (0 or 1) on success, or null on failure.
+     */
+    public function toggleItemAvailable(int $id): ?int
+    {
+        try {
+            $stmt = $this->prepareCached(
+                "UPDATE menu_items SET available = NOT available WHERE id = :id"
+            );
+            $stmt->execute([':id' => $id]);
+
+            if ($stmt->rowCount() === 0) {
+                return null; // item not found
+            }
+
+            $this->invalidateMenuCache();
+
+            $row = $this->prepareCached("SELECT available FROM menu_items WHERE id = :id");
+            $row->execute([':id' => $id]);
+            $result = $row->fetch();
+            return $result ? (int)$result['available'] : null;
+        } catch (PDOException $e) {
+            error_log("toggleItemAvailable Error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getMenuItemName(int $id): ?string
+    {
+        try {
+            $stmt = $this->prepareCached("SELECT name FROM menu_items WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+            $row = $stmt->fetch();
+            return $row ? $row['name'] : null;
+        } catch (PDOException $e) {
+            error_log("getMenuItemName Error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getActiveTableOrders(): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT delivery_details AS table_num,
+                       COUNT(*) AS order_count,
+                       SUM(total) AS total_sum
+                FROM orders
+                WHERE delivery_type = 'table'
+                  AND status NOT IN ('завершён', 'отказ')
+                GROUP BY delivery_details
+                ORDER BY CAST(delivery_details AS UNSIGNED) ASC
+            ");
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (PDOException $e) {
+            error_log("getActiveTableOrders Error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getModifiersByItemId(int $itemId): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT g.id AS group_id, g.name AS group_name, g.type, g.required,
+                       o.id AS opt_id, o.name AS opt_name, o.price_delta
+                FROM modifier_groups g
+                JOIN modifier_options o ON o.group_id = g.id
+                WHERE g.item_id = :item_id
+                ORDER BY g.sort_order, o.sort_order
+            ");
+            $stmt->execute([':item_id' => $itemId]);
+            $rows   = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $groups = [];
+            foreach ($rows as $row) {
+                $gid = $row['group_id'];
+                if (!isset($groups[$gid])) {
+                    $groups[$gid] = [
+                        'id'       => $gid,
+                        'name'     => $row['group_name'],
+                        'type'     => $row['type'],
+                        'required' => (bool)$row['required'],
+                        'options'  => [],
+                    ];
+                }
+                $groups[$gid]['options'][] = [
+                    'id'          => $row['opt_id'],
+                    'name'        => $row['opt_name'],
+                    'price_delta' => (float)$row['price_delta'],
+                ];
+            }
+            return array_values($groups);
+        } catch (PDOException $e) {
+            error_log("getModifiersByItemId Error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function saveModifierGroup(int $itemId, ?int $groupId, string $name, string $type, bool $required, int $sortOrder): int|false
+    {
+        try {
+            if ($groupId) {
+                $stmt = $this->prepareCached("UPDATE modifier_groups SET name=:name, type=:type, required=:req, sort_order=:so WHERE id=:id AND item_id=:iid");
+                $stmt->execute([':name'=>$name,':type'=>$type,':req'=>(int)$required,':so'=>$sortOrder,':id'=>$groupId,':iid'=>$itemId]);
+                return $groupId;
+            }
+            $stmt = $this->prepareCached("INSERT INTO modifier_groups (item_id, name, type, required, sort_order) VALUES (:iid,:name,:type,:req,:so)");
+            $stmt->execute([':iid'=>$itemId,':name'=>$name,':type'=>$type,':req'=>(int)$required,':so'=>$sortOrder]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log("saveModifierGroup Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function saveModifierOption(int $groupId, ?int $optionId, string $name, float $priceDelta, int $sortOrder): int|false
+    {
+        try {
+            if ($optionId) {
+                $stmt = $this->prepareCached("UPDATE modifier_options SET name=:name, price_delta=:pd, sort_order=:so WHERE id=:id AND group_id=:gid");
+                $stmt->execute([':name'=>$name,':pd'=>$priceDelta,':so'=>$sortOrder,':id'=>$optionId,':gid'=>$groupId]);
+                return $optionId;
+            }
+            $stmt = $this->prepareCached("INSERT INTO modifier_options (group_id, name, price_delta, sort_order) VALUES (:gid,:name,:pd,:so)");
+            $stmt->execute([':gid'=>$groupId,':name'=>$name,':pd'=>$priceDelta,':so'=>$sortOrder]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log("saveModifierOption Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function deleteModifierGroup(int $groupId): bool
+    {
+        try {
+            return $this->prepareCached("DELETE FROM modifier_groups WHERE id=:id")->execute([':id'=>$groupId]);
+        } catch (PDOException $e) {
+            error_log("deleteModifierGroup Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function deleteModifierOption(int $optionId): bool
+    {
+        try {
+            return $this->prepareCached("DELETE FROM modifier_options WHERE id=:id")->execute([':id'=>$optionId]);
+        } catch (PDOException $e) {
+            error_log("deleteModifierOption Error: " . $e->getMessage());
             return false;
         }
     }
@@ -570,8 +725,9 @@ class Database
     {
         try {
             $stmt = $this->prepareCached("
-                SELECT o.id, o.items, o.total, o.status, o.delivery_type, o.delivery_details, 
+                SELECT o.id, o.items, o.total, o.status, o.delivery_type, o.delivery_details,
                        o.created_at, o.last_updated_by,
+                       o.payment_method, o.payment_id, o.payment_status,
                        u.name as user_name, u.phone as user_phone,
                        updater.name as updater_name
                 FROM orders o
@@ -1394,6 +1550,35 @@ class Database
         }
     }
 
+    public function getAvgCompletionMinutes(string $deliveryType = ''): int
+    {
+        try {
+            if ($deliveryType !== '') {
+                $stmt = $this->prepareCached(
+                    "SELECT FLOOR(AVG(TIMESTAMPDIFF(MINUTE, created_at, updated_at)))
+                     FROM orders
+                     WHERE status = 'завершён'
+                       AND delivery_type = :dt
+                       AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)"
+                );
+                $stmt->execute([':dt' => $deliveryType]);
+            } else {
+                $stmt = $this->prepareCached(
+                    "SELECT FLOOR(AVG(TIMESTAMPDIFF(MINUTE, created_at, updated_at)))
+                     FROM orders
+                     WHERE status = 'завершён'
+                       AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)"
+                );
+                $stmt->execute();
+            }
+            $val = $stmt->fetchColumn();
+            return ($val !== null && $val > 0) ? (int)$val : 20;
+        } catch (PDOException $e) {
+            error_log("getAvgCompletionMinutes Error: " . $e->getMessage());
+            return 20;
+        }
+    }
+
     public function getTopCustomers($period = 'day', $limit = 20)
     {
         $intervals = [
@@ -1745,7 +1930,7 @@ class Database
         }
     }
 
-    public function createOrder($userId, $items, $total, $deliveryType = 'bar', $deliveryDetail = '')
+    public function createOrder($userId, $items, $total, $deliveryType = 'bar', $deliveryDetail = '', $tips = 0.0)
     {
         try {
             $this->connection->beginTransaction();
@@ -1753,8 +1938,8 @@ class Database
 
             $stmt = $this->prepareCached("
                 INSERT INTO orders
-                (user_id, items, total, status, delivery_type, delivery_details, created_at, updated_at)
-                VALUES (:user_id, :items, :total, :initial_status, :delivery_type, :delivery_details, NOW(), NOW())
+                (user_id, items, total, tips, status, delivery_type, delivery_details, created_at, updated_at)
+                VALUES (:user_id, :items, :total, :tips, :initial_status, :delivery_type, :delivery_details, NOW(), NOW())
             ");
 
             $itemsJson = json_encode($items, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
@@ -1766,6 +1951,7 @@ class Database
                 ':user_id' => $userId,
                 ':items' => $itemsJson,
                 ':total' => $total,
+                ':tips' => max(0.0, (float)$tips),
                 ':initial_status' => $initialStatus,
                 ':delivery_type' => $deliveryType,
                 ':delivery_details' => $deliveryDetail,
@@ -1799,6 +1985,41 @@ class Database
             }
             error_log("createOrder error: " . $e->getMessage());
             return false;
+        }
+    }
+
+    public function updateOrderPayment(int $orderId, string $paymentId, string $paymentStatus, string $paymentMethod = ''): bool
+    {
+        try {
+            if ($paymentMethod !== '') {
+                $stmt = $this->prepareCached(
+                    "UPDATE orders SET payment_id = :pid, payment_status = :pstatus, payment_method = :pmethod, updated_at = NOW() WHERE id = :id"
+                );
+                return $stmt->execute([':pid' => $paymentId, ':pstatus' => $paymentStatus, ':pmethod' => $paymentMethod, ':id' => $orderId]);
+            }
+            $stmt = $this->prepareCached(
+                "UPDATE orders SET payment_id = :pid, payment_status = :pstatus, updated_at = NOW() WHERE id = :id"
+            );
+            return $stmt->execute([':pid' => $paymentId, ':pstatus' => $paymentStatus, ':id' => $orderId]);
+        } catch (PDOException $e) {
+            error_log("updateOrderPayment error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getOrderByPaymentId(string $paymentId): ?array
+    {
+        try {
+            $stmt = $this->prepareCached(
+                "SELECT id, user_id, total, status, payment_method, payment_id, payment_status
+                 FROM orders WHERE payment_id = :pid LIMIT 1"
+            );
+            $stmt->execute([':pid' => $paymentId]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log("getOrderByPaymentId error: " . $e->getMessage());
+            return null;
         }
     }
 

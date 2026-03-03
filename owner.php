@@ -61,7 +61,9 @@ function translateFieldName($fieldName)
         'item_count' => 'Товаров',
         'order_expenses' => 'Расходы',
         'order_profit' => 'Прибыль',
-        'processing_time' => 'Время (мин)'
+        'processing_time' => 'Время (мин)',
+        'abc'         => 'ABC',
+        'revenue_pct' => '% выручки',
     ];
 
     return $translations[$fieldName] ?? ucfirst(str_replace('_', ' ', $fieldName));
@@ -131,7 +133,20 @@ switch ($report_type) {
         break;
     case 'dishes':
         $report_data = $db->getTopDishes($period);
-        $report_title = 'Топ блюд';
+        $report_title = 'Топ блюд (ABC)';
+        // ABC-категоризация по выручке: A=80%, B=15%, C=5%
+        if (!empty($report_data)) {
+            $totalRevenue = array_sum(array_column($report_data, 'total_revenue'));
+            $cumulative = 0;
+            foreach ($report_data as &$dish) {
+                $dish['revenue_pct'] = $totalRevenue > 0
+                    ? round((float)$dish['total_revenue'] / $totalRevenue * 100, 1)
+                    : 0;
+                $cumulative += $dish['revenue_pct'];
+                $dish['abc'] = $cumulative <= 80 ? 'A' : ($cumulative <= 95 ? 'B' : 'C');
+            }
+            unset($dish);
+        }
         break;
     case 'load':
         $report_data = $db->getHourlyLoad($period);
@@ -278,13 +293,14 @@ if (!empty($report_data)) {
     
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="/manifest.webmanifest?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
-    <title>Панель владельца | labus</title>
+    <link rel="manifest" href="/manifest.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <title>Панель владельца | <?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?></title>
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/owner-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
 </head>
 
 <body class="owner-page">
@@ -345,7 +361,10 @@ if (!empty($report_data)) {
                                         <?php foreach ($row as $key => $value): ?>
                                             <td>
                                                 <?php
-                                                if ($key === 'delivery_type') {
+                                                if ($key === 'abc') {
+                                                    $cls = 'abc-' . strtolower($value);
+                                                    echo '<span class="abc-badge ' . htmlspecialchars($cls) . '">' . htmlspecialchars($value) . '</span>';
+                                                } else if ($key === 'delivery_type') {
                                                     echo htmlspecialchars(translateDeliveryType($value));
                                                 } else if ($key === 'phone') {
                                                     echo htmlspecialchars(formatPhoneNumber($value));
@@ -378,7 +397,10 @@ if (!empty($report_data)) {
                                             <span class="mobile-table-label"><?= htmlspecialchars(translateFieldName($key)) ?>:</span>
                                             <span class="mobile-table-value">
                                                 <?php
-                                                if ($key === 'delivery_type') {
+                                                if ($key === 'abc') {
+                                                    $cls = 'abc-' . strtolower($value);
+                                                    echo '<span class="abc-badge ' . htmlspecialchars($cls) . '">' . htmlspecialchars($value) . '</span>';
+                                                } else if ($key === 'delivery_type') {
                                                     echo htmlspecialchars(translateDeliveryType($value));
                                                 } else if ($key === 'phone') {
                                                     echo htmlspecialchars(formatPhoneNumber($value));
@@ -431,7 +453,10 @@ if (!empty($report_data)) {
                                     <td><?= htmlspecialchars($user['name']) ?></td>
                                     <td><?= htmlspecialchars($user['email']) ?></td>
                                     <td><?= htmlspecialchars(formatPhoneNumber($user['phone'] ?? '')) ?></td>
-                                    <td><?= $user['is_active'] ? '✅' : '❌' ?></td>
+                                    <td><?= $user['is_active']
+                                        ? '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" class="user-status-active" aria-label="Активен"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg>'
+                                        : '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" class="user-status-inactive" aria-label="Неактивен"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31l-66.34,66.35a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/><path d="M232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg>'
+                                    ?></td>
                                     <td>
                                         <select class="role-select" data-user-id="<?= $user['id'] ?>">
                                             <?php foreach ($roleLabels as $value => $label): ?>

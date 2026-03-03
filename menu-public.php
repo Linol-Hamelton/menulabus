@@ -15,7 +15,8 @@ if (is_file($versionFile)) {
     }
 }
 
-$projectName = 'labus';
+$db = Database::getInstance();
+$projectName = $db->getSetting('app_name') ?: 'labus';
 
 $scriptNonce = base64_encode(random_bytes(16));
 $styleNonce = base64_encode(random_bytes(16));
@@ -24,8 +25,6 @@ $GLOBALS['scriptNonce'] = $scriptNonce;
 $GLOBALS['styleNonce'] = $styleNonce;
 $GLOBALS['appVersion'] = $appVersion;
 $GLOBALS['projectName'] = $projectName;
-
-$db = Database::getInstance();
 $categories = $db->getUniqueCategories();
 $activeCategory = $_COOKIE['activeMenuCategory'] ?? ($categories[0]['category'] ?? '');
 $menuView = 'default';
@@ -38,11 +37,12 @@ $csrfToken = bin2hex(random_bytes(16));
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>labus | Меню</title>
+    <title><?= htmlspecialchars($projectName) ?> | Меню</title>
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/menu-alt.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/menu-content-info.min.css?v=<?= htmlspecialchars($appVersion) ?>">
+    <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion) ?>">
 </head>
 
 <body id="body">
@@ -73,7 +73,7 @@ $csrfToken = bin2hex(random_bytes(16));
     </div>
 
     <div class="footer-bottom">
-        <p>&copy; 2023 "labus". Все права защищены.</p>
+        <p>&copy; <?= date('Y') ?> «<?= htmlspecialchars($projectName) ?>». Все права защищены.</p>
     </div>
     <script src="/js/security.min.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/cart.min.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>

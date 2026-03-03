@@ -233,11 +233,13 @@ if (session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['force_reload']))
 }
 
 // Р“РµРЅРµСЂРёСЂСѓРµРј nonce РµСЃР»Рё РµС‰Рµ РЅРµ СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅ
-if (session_status() === PHP_SESSION_ACTIVE && empty($_SESSION['csp_nonce'])) {
-    $_SESSION['csp_nonce'] = [
-        'script' => base64_encode(random_bytes(16)),
-        'style' => base64_encode(random_bytes(16))
-    ];
+if (session_status() === PHP_SESSION_ACTIVE) {
+    if (empty($_SESSION['csp_nonce']['script'])) {
+        $_SESSION['csp_nonce']['script'] = base64_encode(random_bytes(16));
+    }
+    if (empty($_SESSION['csp_nonce']['style'])) {
+        $_SESSION['csp_nonce']['style'] = base64_encode(random_bytes(16));
+    }
 }
 
 $scriptNonce = $_SESSION['csp_nonce']['script'] ?? '';
@@ -245,6 +247,7 @@ $styleNonce = $_SESSION['csp_nonce']['style'] ?? '';
 
 // РЈР±РµРґРёС‚РµСЃСЊ, С‡С‚Рѕ nonce РїРµСЂРµРґР°РµС‚СЃСЏ РІ РїРµСЂРµРјРµРЅРЅС‹Рµ PHP
 $GLOBALS['scriptNonce'] = $scriptNonce;
+$GLOBALS['styleNonce']  = $styleNonce;
 $GLOBALS['csrfToken'] = $_SESSION['csrf_token'] ?? '';
 
 $origin = (string)($_SERVER['HTTP_ORIGIN'] ?? '');
@@ -381,7 +384,44 @@ if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['user_id']) && e
     }
 }
 
-// в”Њв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”ђ
+// ── Brand globals (White Label) ──────────────────────────────────────────────
+if (session_status() === PHP_SESSION_ACTIVE && $labusCtx === 'web') {
+    try {
+        $db = Database::getInstance();
+        // settings.value is a JSON column; decode before use
+        $bsGet = static function(string $key, string $default = '') use ($db): string {
+            $raw = $db->getSetting($key);
+            return $raw !== null ? (string)(json_decode($raw, true) ?? $default) : $default;
+        };
+        $GLOBALS['siteName']       = $bsGet('app_name',        'labus');
+        $GLOBALS['siteTagline']    = $bsGet('app_tagline',     'Меню ресторана');
+        $GLOBALS['siteDesc']       = $bsGet('app_description', '');
+        $GLOBALS['contactPhone']   = $bsGet('contact_phone',   '+79640020200');
+        $GLOBALS['contactAddress'] = $bsGet('contact_address', '');
+        $GLOBALS['logoUrl']        = $bsGet('logo_url',        '');
+        $GLOBALS['faviconUrl']     = $bsGet('favicon_url',     '/icons/favicon.ico');
+        $GLOBALS['socialTg']           = $bsGet('social_tg',            '');
+        $GLOBALS['socialVk']           = $bsGet('social_vk',            '');
+        $GLOBALS['hideLabusBranding']  = ($bsGet('hide_labus_branding', 'false') === 'true');
+        $GLOBALS['customDomain']       = $bsGet('custom_domain',        '');
+        $_SESSION['project_name']  = $GLOBALS['siteName'];
+    } catch (Exception $e) {
+        error_log("Brand globals load failed: " . $e->getMessage());
+        $GLOBALS['siteName']           = 'labus';
+        $GLOBALS['siteTagline']        = 'Меню ресторана';
+        $GLOBALS['siteDesc']           = '';
+        $GLOBALS['contactPhone']       = '+79640020200';
+        $GLOBALS['contactAddress']     = '';
+        $GLOBALS['logoUrl']            = '';
+        $GLOBALS['faviconUrl']         = '/icons/favicon.ico';
+        $GLOBALS['socialTg']           = '';
+        $GLOBALS['socialVk']           = '';
+        $GLOBALS['hideLabusBranding']  = false;
+        $GLOBALS['customDomain']       = '';
+    }
+}
+
+// в"Њв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”ђ
 // в”‚ 4. ADDITIONAL SECURITY HARDENING                           в”‚
 // в””в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”
 // Remove PHP version exposure

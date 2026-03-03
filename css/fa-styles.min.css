@@ -794,7 +794,7 @@ a {
   grid-template-columns: 1fr 1fr;
   margin: 20px 0;
 }
-.delivery-option {
+.delivery-option,.payment-option {
   background: var(--bg-light);
   border: 2px solid var(--primary-color);
   border-radius: 14px;
@@ -805,11 +805,11 @@ a {
   text-align: center;
   transition: all 0.2s ease;
 }
-.delivery-option:hover {
+.delivery-option:hover,.payment-option:hover {
   background: var(--white);
   border-color: var(--primary-color);
 }
-.delivery-option.active {
+.delivery-option.active,.payment-option.active {
   background-color: var(--primary-color);
   border-color: var(--primary-color);
   color: var(--white);
@@ -1089,7 +1089,6 @@ a {
   color: var(--light-text);
   display: block;
   font-weight: 600;
-  margin-bottom: 8px;
 }
 .admin-form-group input {
   padding: 10px;
@@ -1431,7 +1430,6 @@ a {
 }
 .hero-content h1 {
   animation: fadeInDown 1s ease;
-  font-family: Magistral, serif;
   font-size: 12rem;
   font-weight: 500;
   height: 160px;
@@ -1617,6 +1615,7 @@ a {
   cursor: pointer;
   font-family: Inter;
   font-size: 16px;
+  min-height: 40px;
   padding: 8px 16px;
 }
 .empty-cart {
@@ -2293,3 +2292,15 @@ body {
     box-shadow: 0 0 #cd171900;
   }
 }
+.site-logo-img{max-height:36px;vertical-align:middle}
+.payment-label{font-weight:600;margin-bottom:8px;display:block;color:var(--light-text,#777);font-size:.85rem;text-transform:uppercase;letter-spacing:.04em}
+.tips-section{margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color,#eee)}
+.tips-options{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:8px 0 4px}
+.tips-option{background:var(--bg-light,#f5f5f5);border:2px solid var(--primary-color,#cd1719);border-radius:14px;cursor:pointer;font-size:13px;font-weight:600;padding:10px 4px;text-align:center;color:var(--text-color,#333);transition:all .2s ease;line-height:1.2}
+.tips-option.active{background:var(--primary-color,#cd1719);border-color:var(--primary-color,#cd1719);color:#fff;transform:scale(1.03)}
+.tips-option:hover:not(.active){background:var(--white,#fff)}
+.tips-custom-wrap{display:none;gap:8px;align-items:center;margin-top:8px}
+.tips-custom-wrap.visible{display:flex}
+.tips-custom-wrap .form-group{flex:1;min-width:0;margin-bottom:0}
+.tips-total{margin-top:6px;font-size:.88rem;font-weight:600;color:var(--primary-color,#cd1719)}
+.powered-by-labus{text-align:center;font-size:.7rem;padding:4px 0;opacity:.5}.powered-by-labus a{color:inherit;text-decoration:none}

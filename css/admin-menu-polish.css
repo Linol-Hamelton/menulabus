@@ -42,7 +42,7 @@ body.employee-page .admin-form-container > h2 {
 }
 
 body.employee-page .admin-form-group {
-  margin-bottom: 16px;
+  margin-bottom: 5px;
 }
 
 body.employee-page .admin-form-group input,
@@ -51,7 +51,7 @@ body.employee-page .admin-form-group select {
   border: 1px solid var(--light-text);
   border-radius: 8px;
   min-height: 42px;
-  margin: 10px auto;
+  margin: 5px auto;
 }
 
 body.employee-page .admin-form-group textarea {
@@ -406,9 +406,9 @@ body.owner-page .chart-bar-value {
 
 body.owner-page .chart-bar-label {
   background: transparent;
-  color: var(--light-text);
-  font-size: 11px;
-  font-weight: 600;
+  color: var(--text-color);
+  font-size: 12px;
+  font-weight: 500;
 }
 
 body.owner-page .menu-tabs-container {
@@ -626,19 +626,32 @@ body.employee-page .product-quantity {
   text-align: right;
 }
 
-body.customer_orders-page .order-actions,
-body.employee-page .order-actions {
+body.customer_orders-page .order-actions {
   margin-top: 12px;
   text-align: right;
 }
 
-body.customer_orders-page .update-order-form,
-body.employee-page .update-order-form {
+/* All action buttons (status, reject, pay-link) in one flex row */
+body.employee-page .order-actions {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
+  margin-top: 12px;
+}
+
+body.customer_orders-page .update-order-form {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* form becomes layout-transparent: its buttons join the parent flex directly */
+body.employee-page .update-order-form {
+  display: contents;
 }
 
 body.customer_orders-page .order-status,
@@ -660,6 +673,19 @@ body.employee-page .checkout-btn {
   border-radius: 10px;
   min-height: 36px;
   padding: 7px 12px;
+}
+
+/* admin-menu mobile card actions — uniform row with consistent sizing */
+body.employee-page .mobile-table-actions {
+  align-items: center;
+  gap: 10px;
+}
+body.employee-page .stop-btn,
+body.employee-page .mobile-table-btn {
+  border-radius: 10px;
+  font-size: 13px;
+  min-height: 36px;
+  padding: 7px 16px;
 }
 
 body.customer_orders-page .repeat-order-form {
@@ -730,17 +756,21 @@ body.employee-page .menu-tabs .tab-btn {
     text-align: left;
   }
 
-  body.customer_orders-page .update-order-form,
-  body.employee-page .update-order-form {
+  body.customer_orders-page .update-order-form {
     justify-content: stretch;
   }
 
   body.customer_orders-page .update-order-form .status-btn,
   body.customer_orders-page .update-order-form .status-btn-r,
-  body.customer_orders-page .update-order-form .checkout-btn,
+  body.customer_orders-page .update-order-form .checkout-btn {
+    width: 100%;
+  }
+
+  /* employee: order-actions is the flex container; all buttons go full-width on mobile */
   body.employee-page .update-order-form .status-btn,
   body.employee-page .update-order-form .status-btn-r,
-  body.employee-page .update-order-form .checkout-btn {
+  body.employee-page .update-order-form .checkout-btn,
+  body.employee-page .order-actions .pay-link-btn {
     width: 100%;
   }
 }
@@ -1241,3 +1271,150 @@ body.auth-page .auth-separator {
     padding: 8px 10px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════
+   Phosphor icon colour helpers (CSP-safe: no inline style=)
+   ═══════════════════════════════════════════════════════ */
+.ph-ok  { color: var(--agree, #4caf50); vertical-align: middle; }
+.ph-err { color: #e53935;               vertical-align: middle; }
+
+/* User status icons (owner.php) */
+.user-status-active   { color: var(--agree, #4caf50); }
+.user-status-inactive { color: #e53935; }
+
+/* Pay-link button icon alignment */
+.pay-link-btn svg { vertical-align: middle; }
+
+/* Initially-hidden modal sub-sections (JS toggles display via element.style) */
+#payLinkContent,
+#payLinkCopyMsg,
+#payLinkError { display: none; }
+
+/* ── Pay-link modal (employee.php) ── */
+#payLinkModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .55);
+    z-index: 1200;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
+}
+#payLinkModal.active { display: flex; }
+
+#payLinkModal .modal-box {
+    background: var(--card-bg, #fff);
+    border-radius: 16px;
+    padding: 24px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .18);
+    text-align: center;
+    position: relative;
+    box-sizing: border-box;
+}
+#payLinkModal h3 {
+    margin: 0 0 16px;
+    font-size: 18px;
+    color: var(--text-color, #1a1a1a);
+}
+#payLinkModal .modal-qr img {
+    width: 200px;
+    height: 200px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #eee);
+}
+#payLinkModal .modal-hint {
+    margin: 0 0 10px;
+    font-size: 13px;
+    color: var(--light-text, #555);
+}
+#payLinkModal .modal-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    font-size: 14px;
+    color: var(--light-text, #888);
+}
+#payLinkModal .modal-url-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+}
+#payLinkModal .modal-url-row input {
+    flex: 1;
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--text-color, #333);
+    background: var(--bg-color, #f7f7f7);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#payLinkModal .btn-copy {
+    padding: 8px 14px;
+    background: var(--primary-color, #cd1719);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+#payLinkModal .modal-copy-msg {
+    font-size: 12px;
+    color: var(--agree, #4caf50);
+    margin-bottom: 4px;
+}
+#payLinkModal .modal-error {
+    color: #c00;
+    padding: 8px 0;
+    font-size: 14px;
+}
+#payLinkModal .btn-close-modal {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    background: none;
+    border: none;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--light-text, #888);
+}
+@media (max-width: 480px) {
+    #payLinkModal .modal-box { padding: 20px 16px; }
+    #payLinkModal .modal-qr img { width: 160px; height: 160px; }
+}
+
+/* ── ABC-анализ блюд ── */
+.abc-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-weight:700;font-size:.75rem;color:#fff;flex-shrink:0}
+.abc-a{background:#4caf50}
+.abc-b{background:#ff9800}
+.abc-c{background:#f44336}
+/* Modifier groups admin UI */
+.mod-group{border:1px solid var(--border-color,#e0e0e0);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.mod-group-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.mod-group-name{font-weight:600;flex:1;min-width:0}
+.mod-group-type{font-size:.78rem;color:var(--light-text,#888)}
+.mod-options{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.mod-option{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;background:var(--bg-color,#f9f9f9);border-radius:8px;font-size:.9rem}
+.mod-empty{color:var(--light-text,#aaa);font-size:.85rem;font-style:italic;margin:0}
+.mod-add-option-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.mod-add-option-row .mod-opt-name{flex:2;min-width:120px;padding:7px 10px;border:1px solid var(--border-color,#ddd);border-radius:8px;font-size:.9rem}
+.mod-add-option-row .mod-opt-price{width:80px;padding:7px 10px;border:1px solid var(--border-color,#ddd);border-radius:8px;font-size:.9rem}
+.mod-btn-sm{padding:5px 10px;border:none;border-radius:6px;cursor:pointer;font-size:.82rem;background:var(--primary-color,#cd1719);color:#fff}
+.mod-btn-sm:hover{opacity:.85}
+.mod-new-group-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.mod-new-group-row input,.mod-new-group-row select{padding:7px 10px;border:1px solid var(--border-color,#ddd);border-radius:8px;font-size:.9rem}
+.mod-new-group-row input[type=text]{flex:2;min-width:120px}
+/* Modifier modal group */
+.mod-modal-group{margin-bottom:14px}

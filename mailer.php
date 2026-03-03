@@ -12,6 +12,7 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 class Mailer {
     private $mail;
+    private $appName = 'labus';
 
     public function __construct() {
         $this->mail = new PHPMailer(true);
@@ -28,7 +29,8 @@ class Mailer {
         $this->mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         $this->mail->Port = 465;
         $this->mail->CharSet = 'UTF-8';
-        $this->mail->setFrom('fruslanj@yandex.ru', 'labus');
+        $this->appName = Database::getInstance()->getSetting('app_name') ?: 'labus';
+        $this->mail->setFrom('fruslanj@yandex.ru', $this->appName);
     }
 
     public function sendVerificationEmail($email, $name, $token) {
@@ -41,7 +43,7 @@ class Mailer {
             $this->mail->isHTML(true);
             $this->mail->Body = "
                 <h2>Здравствуйте, $name!</h2>
-                <p>Благодарим вас за регистрацию в сервисе «labus».</p>
+                <p>Благодарим вас за регистрацию в сервисе «{$this->appName}».</p>
                 <p>Для завершения регистрации, пожалуйста, подтвердите ваш email, перейдя по ссылке:</p>
                 <p><a href='$verificationLink'>$verificationLink</a></p>
                 <p>Ссылка действительна в течение 24 часов.</p>
@@ -49,7 +51,7 @@ class Mailer {
             ";
             
             // Текстовая версия для клиентов без поддержки HTML
-            $this->mail->AltBody = "Здравствуйте, $name!\n\nБлагодарим вас за регистрацию в сервисе «labus».\n\nДля завершения регистрации, пожалуйста, подтвердите ваш email, перейдя по ссылке:\n$verificationLink\n\nСсылка действительна в течение 24 часов.\n\nЕсли вы не регистрировались у нас, просто проигнорируйте это письмо.";
+            $this->mail->AltBody = "Здравствуйте, $name!\n\nБлагодарим вас за регистрацию в сервисе «{$this->appName}».\n\nДля завершения регистрации, пожалуйста, подтвердите ваш email, перейдя по ссылке:\n$verificationLink\n\nСсылка действительна в течение 24 часов.\n\nЕсли вы не регистрировались у нас, просто проигнорируйте это письмо.";
             
             $this->mail->send();
             return true;

@@ -14,26 +14,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Запрос на сброс пароля
         $email = trim($_POST['email']);
         $user = $db->getUserByEmail($email);
+        $success = true;
         
         if ($user) {
             $resetToken = bin2hex(random_bytes(16));
-            $db->setPasswordResetToken($email, $resetToken);
-            
-            // Отправка письма со ссылкой для сброса через очередь
-            require_once __DIR__ . '/Queue.php';
-            $queue = new Queue();
-            $jobId = $queue->push('send_password_reset_email', [
-                'email' => $email,
-                'name' => $user['name'],
-                'token' => $resetToken
-            ]);
-            if ($jobId !== false) {
-                $success = true;
+            if ($db->setPasswordResetToken($email, $resetToken)) {
+                // Пытаемся отправить письмо сразу (без зависимости от воркера очереди)
+                $sent = false;
+                try {
+                    $mailer = new Mailer();
+                    $sent = $mailer->sendPasswordResetEmail(
+                        $email,
+                        (string)($user['name'] ?? ''),
+                        $resetToken
+                    );
+                } catch (Throwable $e) {
+                    $sent = false;
+                    error_log('Password reset direct send failed for user id ' . (int)$user['id'] . ': ' . $e->getMessage());
+                }
+
+                // Резерв: ставим в очередь для повторной отправки, если SMTP сейчас недоступен
+                if (!$sent) {
+                    require_once __DIR__ . '/Queue.php';
+                    $queue = new Queue();
+                    $jobId = $queue->push('send_password_reset_email', [
+                        'email' => $email,
+                        'name' => (string)($user['name'] ?? ''),
+                        'token' => $resetToken
+                    ]);
+                    if ($jobId === false) {
+                        error_log('Password reset email enqueue failed for user id: ' . (int)$user['id']);
+                    }
+                }
             } else {
-                $errors[] = "Не удалось отправить письмо для сброса пароля. Пожалуйста, попробуйте позже.";
+                error_log('Password reset token was not saved for user id: ' . (int)$user['id']);
             }
-        } else {
-            $errors[] = "Пользователь с таким email не найден";
         }
     } else {
         // Установка нового пароля
@@ -80,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         <?php if ($success): ?>
             <div class="success-message">
-                Ссылка для сброса пароля отправлена на ваш email.
+                Если такой email существует, мы отправим письмо для сброса пароля.
             </div>
         <?php endif; ?>
         
@@ -114,3 +129,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </body>
 </html>
+

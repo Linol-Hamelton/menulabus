@@ -91,3 +91,19 @@ fix.md
 Заказы/
 # Perf output
 perf-results/
+
+# Codex / Playwright artifacts
+output/
+playwright-report/
+test-results/
+
+# Git hooks local runtime files
+.githooks/*.log
+.githooks/.state/
+
+# Patch/merge leftovers
+*.orig
+*.rej
+
+# Local debug leftovers
+firebase-debug.log

@@ -1,6 +1,7 @@
 <?php
 
 ob_start();
+header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/session_init.php';
 require_once __DIR__ . '/db.php';
@@ -39,8 +40,13 @@ try {
     if (isset($input['items'])) {
         $items = $input['items'];
         $total = (float)($input['total'] ?? 0);
-        $deliveryType = (string)($input['delivery_type'] ?? 'bar');
+        $deliveryType   = (string)($input['delivery_type']   ?? 'bar');
         $deliveryDetail = (string)($input['delivery_details'] ?? '');
+        $paymentMethod = is_string($input['payment_method'] ?? null)
+            ? trim((string)$input['payment_method'])
+            : '';
+        $allowedPaymentMethods = ['cash', 'online', 'sbp', 'tbank_sbp'];
+        $tips = max(0.0, (float)($input['tips'] ?? 0));
 
         if (!is_array($items) || empty($items) || $total <= 0) {
             $response['error'] = 'Неверные параметры заказа';
@@ -60,14 +66,21 @@ try {
             echo json_encode($response, JSON_UNESCAPED_UNICODE);
             exit;
         }
+        if (!in_array($paymentMethod, $allowedPaymentMethods, true)) {
+            $response['error'] = 'Выберите корректный способ оплаты';
+            http_response_code(400);
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
+            exit;
+        }
 
         $idempotencyKey = Idempotency::getHeaderKey();
         $requestHash = Idempotency::hashPayload([
-            'user_id' => (int)$_SESSION['user_id'],
-            'items' => $items,
-            'total' => $total,
-            'delivery_type' => $deliveryType,
+            'user_id'         => (int)$_SESSION['user_id'],
+            'items'           => $items,
+            'total'           => $total,
+            'delivery_type'   => $deliveryType,
             'delivery_details' => $deliveryDetail,
+            'payment_method'  => $paymentMethod,
         ]);
 
         if ($idempotencyKey !== null) {
@@ -88,7 +101,31 @@ try {
             }
         }
 
-        $orderId = $db->createOrder((int)$_SESSION['user_id'], $items, $total, $deliveryType, $deliveryDetail);
+        // Pre-check: verify payment gateway is configured BEFORE creating the order
+        if ($paymentMethod === 'online' || $paymentMethod === 'sbp') {
+            $ykShopId    = json_decode($db->getSetting('yookassa_shop_id')    ?? '""', true) ?? '';
+            $ykSecretKey = json_decode($db->getSetting('yookassa_secret_key') ?? '""', true) ?? '';
+            $ykEnabled   = json_decode($db->getSetting('yookassa_enabled')    ?? '"false"', true) ?? 'false';
+            if ($ykShopId === '' || $ykSecretKey === '' || $ykEnabled !== 'true') {
+                $response['error'] = 'Онлайн-оплата временно недоступна. Выберите другой способ оплаты.';
+                http_response_code(200);
+                echo json_encode($response, JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+        }
+        if ($paymentMethod === 'tbank_sbp') {
+            $tbKey  = json_decode($db->getSetting('tbank_terminal_key') ?? '""', true) ?? '';
+            $tbPass = json_decode($db->getSetting('tbank_password')     ?? '""', true) ?? '';
+            $tbOn   = json_decode($db->getSetting('tbank_enabled')      ?? '"false"', true) ?? 'false';
+            if ($tbKey === '' || $tbPass === '' || $tbOn !== 'true') {
+                $response['error'] = 'СБП через Т-Банк временно недоступен. Выберите другой способ оплаты.';
+                http_response_code(200);
+                echo json_encode($response, JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+        }
+
+        $orderId = $db->createOrder((int)$_SESSION['user_id'], $items, $total, $deliveryType, $deliveryDetail, $tips);
         if (!$orderId) {
             $response['error'] = 'Ошибка при создании заказа';
             http_response_code(500);
@@ -96,13 +133,139 @@ try {
             exit;
         }
 
+        $paymentUrl = null;
+
+        // ── Telegram notification with Accept/Reject buttons ──────────────
+        try {
+            require_once __DIR__ . '/config.php';
+            require_once __DIR__ . '/telegram-notifications.php';
+            $orderRow = $db->getOrderById((int)$orderId);
+            if ($orderRow) {
+                $orderRow['tips'] = $tips;
+                sendOrderToTelegram((int)$orderId, $orderRow, $db);
+            }
+        } catch (Throwable $tgEx) {
+            error_log("Telegram notify error: " . $tgEx->getMessage());
+        }
+
+        // ── Online payment via ЮKassa (card redirect or SBP) ─────────────
+        if ($paymentMethod === 'online' || $paymentMethod === 'sbp') {
+            $shopId    = json_decode($db->getSetting('yookassa_shop_id')    ?? '""', true) ?? '';
+            $secretKey = json_decode($db->getSetting('yookassa_secret_key') ?? '""', true) ?? '';
+            $enabled   = json_decode($db->getSetting('yookassa_enabled')    ?? '"false"', true) ?? 'false';
+
+            if ($shopId !== '' && $secretKey !== '' && $enabled === 'true') {
+                $returnUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http')
+                    . '://' . $_SERVER['HTTP_HOST']
+                    . '/payment-return.php?order_id=' . (int)$orderId;
+
+                $paymentBodyArr = [
+                    'amount'       => [
+                        'value'    => number_format((float)$total + (float)$tips, 2, '.', ''),
+                        'currency' => 'RUB',
+                    ],
+                    'confirmation' => [
+                        'type'       => 'redirect',
+                        'return_url' => $returnUrl,
+                    ],
+                    'capture'      => true,
+                    'description'  => 'Заказ #' . (int)$orderId,
+                    'metadata'     => ['order_id' => (int)$orderId],
+                ];
+
+                // СБП: указываем ЮKassa использовать Систему быстрых платежей
+                if ($paymentMethod === 'sbp') {
+                    $paymentBodyArr['payment_method_data'] = ['type' => 'sbp'];
+                }
+
+                $paymentBody = json_encode($paymentBodyArr, JSON_UNESCAPED_UNICODE);
+
+                $idempKey = uniqid('order_' . $orderId . '_', true);
+                $ch = curl_init('https://api.yookassa.ru/v3/payments');
+                curl_setopt_array($ch, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST           => true,
+                    CURLOPT_POSTFIELDS     => $paymentBody,
+                    CURLOPT_USERPWD        => "$shopId:$secretKey",
+                    CURLOPT_HTTPHEADER     => [
+                        'Content-Type: application/json',
+                        'Idempotence-Key: ' . $idempKey,
+                    ],
+                    CURLOPT_TIMEOUT        => 10,
+                ]);
+                $ykResult = curl_exec($ch);
+                $ykCode   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+
+                if ($ykCode === 200 && $ykResult) {
+                    $ykPayment = json_decode($ykResult, true);
+                    $ykId      = $ykPayment['id'] ?? null;
+                    $paymentUrl = $ykPayment['confirmation']['confirmation_url'] ?? null;
+
+                    if ($ykId) {
+                        // Сохраняем фактический метод ('online' или 'sbp')
+                        $db->updateOrderPayment((int)$orderId, $ykId, 'pending', $paymentMethod);
+                    }
+                    if ($paymentUrl === null || $paymentUrl === '') {
+                        $db->updateOrderStatus((int)$orderId, 'отказ');
+                        $response['error'] = 'Не удалось создать ссылку для оплаты. Попробуйте позже или выберите «Оплата на месте».';
+                        http_response_code(200);
+                        echo json_encode($response, JSON_UNESCAPED_UNICODE);
+                        exit;
+                    }
+                } else {
+                    error_log("ЮKassa create payment failed: code=$ykCode body=$ykResult");
+                    $db->updateOrderStatus((int)$orderId, 'отказ');
+                    $response['error'] = 'Не удалось создать ссылку для оплаты. Попробуйте позже или выберите «Оплата на месте».';
+                    http_response_code(200);
+                    echo json_encode($response, JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+            }
+        }
+        // ── T-Bank SBP payment via Tinkoff Acquiring ─────────────────────
+        if ($paymentMethod === 'tbank_sbp') {
+            require_once __DIR__ . '/lib/TBank.php';
+            $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'];
+            $tbParams = [
+                'TerminalKey'     => $tbKey,
+                'Amount'          => (int)(round(($total + $tips) * 100)),
+                'OrderId'         => (string)$orderId,
+                'Description'     => 'Заказ #' . (int)$orderId,
+                'PaymentMethod'   => 'SBP',
+                'SuccessURL'      => $baseUrl . '/payment-return.php?order_id=' . (int)$orderId,
+                'FailURL'         => $baseUrl . '/payment-return.php?order_id=' . (int)$orderId,
+                'NotificationURL' => $baseUrl . '/payment-webhook.php',
+            ];
+            $tbResult = tBankRequest('Init', $tbParams, $tbPass);
+            if ($tbResult && !empty($tbResult['Success']) && !empty($tbResult['PaymentURL'])) {
+                $paymentUrl = $tbResult['PaymentURL'];
+                $db->updateOrderPayment((int)$orderId, (string)($tbResult['PaymentId'] ?? ''), 'pending', 'tbank_sbp');
+            } else {
+                $tbErr = $tbResult['Message'] ?? ($tbResult['Details'] ?? 'Ошибка Т-Банк');
+                error_log("T-Bank Init failed for order $orderId: " . json_encode($tbResult));
+                $db->updateOrderStatus((int)$orderId, 'отказ');
+                $response['error'] = 'Не удалось создать СБП-ссылку. Попробуйте позже или выберите «Оплата на месте».';
+                http_response_code(200);
+                echo json_encode($response, JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────
+
         $payload = ['orderId' => (int)$orderId];
+        if ($paymentUrl) {
+            $payload['paymentUrl'] = $paymentUrl;
+        }
         if ($idempotencyKey !== null) {
             Idempotency::store($db->getConnection(), 'web_order_create', $idempotencyKey, $requestHash, $payload);
         }
 
         $response['success'] = true;
         $response['orderId'] = (int)$orderId;
+        if ($paymentUrl) {
+            $response['paymentUrl'] = $paymentUrl;
+        }
         http_response_code(200);
     } elseif (isset($input['order_id']) && isset($input['action'])) {
         if (($user['role'] ?? '') !== 'employee') {
@@ -156,4 +319,3 @@ ob_end_clean();
 header('Content-Type: application/json; charset=utf-8');
 echo json_encode($response, JSON_UNESCAPED_UNICODE);
 exit;
-

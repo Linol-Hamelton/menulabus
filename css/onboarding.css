@@ -1,0 +1,32 @@
+/* onboarding.css — Wizard styles for restaurant setup */
+.ob-wrap  { max-width: 520px; margin: 48px auto; padding: 0 20px; }
+.ob-dots  { display: flex; justify-content: center; gap: 8px; margin-bottom: 28px; }
+.ob-dot   { width: 8px; height: 8px; border-radius: 50%; background: #ddd; transition: background .3s; }
+.ob-dot.active { background: var(--primary-color, #cd1719); }
+.ob-card  { background: var(--card-bg, #fff); border-radius: 16px; padding: 40px 36px; box-shadow: 0 4px 24px rgba(0,0,0,.08); }
+.ob-icon  { font-size: 2.4rem; text-align: center; color: var(--primary-color, #cd1719); margin-bottom: 14px; }
+.ob-title { font-size: 1.45rem; font-weight: 700; text-align: center; margin-bottom: 8px; }
+.ob-sub   { color: #666; text-align: center; font-size: .95rem; line-height: 1.5; margin-bottom: 28px; }
+.ob-input { width: 100%; padding: 13px 16px; border: 1.5px solid #ddd; border-radius: 10px;
+            font-size: 1rem; box-sizing: border-box; font-family: inherit; transition: border-color .2s; }
+.ob-input:focus { outline: none; border-color: var(--primary-color, #cd1719); }
+.ob-btn   { display: block; width: 100%; padding: 14px; background: var(--primary-color, #cd1719);
+            color: #fff; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600;
+            cursor: pointer; margin-top: 18px; text-align: center; text-decoration: none; box-sizing: border-box; }
+.ob-btn:hover { opacity: .88; }
+.ob-btn-ghost { background: transparent; color: #777; border: 1.5px solid #ddd; margin-top: 10px; }
+.ob-btn-ghost:hover { background: #f5f5f5; opacity: 1; }
+.ob-qr    { text-align: center; margin: 22px 0; }
+.ob-qr img { border-radius: 12px; border: 1px solid #eee; width: 200px; height: 200px; }
+.ob-qr-url { font-size: .8rem; color: #aaa; margin-top: 8px; word-break: break-all; }
+.ob-skip  { text-align: center; margin-top: 14px; }
+.ob-skip a { color: #bbb; font-size: .85rem; text-decoration: none; }
+.ob-skip a:hover { color: #888; }
+.ob-step  { display: none; }
+.ob-step.active { display: block; }
+.ob-logo-preview { max-height: 60px; margin-top: 10px; border-radius: 8px; display: none; }
+.ob-logo-preview.visible { display: block; margin: 10px auto; }
+.ob-colors-row { display: flex; gap: 20px; justify-content: center; margin: 20px 0; flex-wrap: wrap; }
+.ob-color-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.ob-color-item label { font-size: .85rem; font-weight: 600; color: var(--light-text, #777); }
+.ob-color-swatch { width: 60px; height: 60px; border-radius: 50%; border: 3px solid #eee; cursor: pointer; padding: 0; }
