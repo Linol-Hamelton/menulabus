@@ -6,8 +6,8 @@
   --font-heading: "Inter", sans-serif;
   --ui-surface: var(--white, #fff);
   --ui-surface-muted: var(--bg-light, #f5f5f5);
-  --ui-text: var(--text-color, #1f2328);
-  --ui-text-muted: var(--light-text, #5f6368);
+  --ui-text: var(--surface-text, var(--light-text, #1f2328));
+  --ui-text-muted: var(--surface-text-muted, var(--light-text, #5f6368));
   --ui-border: var(--border-color, rgba(0, 0, 0, 0.14));
   --ui-accent: var(--primary-color, #cd1719);
   --ui-accent-hover: var(--primary-dark, #a11214);
@@ -240,7 +240,7 @@ a {
 .auth-tab {
   background: var(--bg-light);
   border: 1px solid var(--bg-light);
-  color: var(--text-color);
+  color: var(--ui-text);
   display: inline-block;
   padding: 10px 20px;
   text-decoration: none;
