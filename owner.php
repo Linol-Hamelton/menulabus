@@ -290,8 +290,8 @@ if (!empty($report_data)) {
 <html lang="ru">
 
 <head>
-    
-    
+
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?= htmlspecialchars($csrfToken, ENT_QUOTES) ?>">
@@ -306,125 +306,125 @@ if (!empty($report_data)) {
 </head>
 
 <body class="owner-page">
-    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
+    <?php $GLOBALS['header_css_in_head'] = true;
+    require_once __DIR__ . '/header.php'; ?>
     <?php require_once __DIR__ . '/account-header.php'; ?>
 
     <div class="account-container">
+        <div class="admin-tabs-container">
+            <div class="admin-tabs">
+                <button type="button" class="admin-tab-btn <?= $tab === 'stats' ? 'active' : '' ?>" data-tab="stats">Статистика</button>
+                <button type="button" class="admin-tab-btn <?= $tab === 'users' ? 'active' : '' ?>" data-tab="users">Пользователи</button>
+            </div>
+        </div>
         <section class="admin-form-container">
-            <div class="admin-tabs-container">
-                <div class="admin-tabs">
-                    <button type="button" class="admin-tab-btn <?= $tab === 'stats' ? 'active' : '' ?>" data-tab="stats">Статистика</button>
-                    <button type="button" class="admin-tab-btn <?= $tab === 'users' ? 'active' : '' ?>" data-tab="users">Пользователи</button>
-                </div>
-            </div>
-
             <div class="admin-tab-pane <?= $tab === 'stats' ? 'active' : '' ?>" id="stats">
-            <h2>Аналитика - <?= htmlspecialchars($report_title) ?></h2>
+                <h2>Аналитика - <?= htmlspecialchars($report_title) ?></h2>
 
-            <!-- Период и тип отчета -->
-            <div class="report-controls">
-                <form method="GET" class="report-filter-form">
-                    <input type="hidden" name="report" value="<?= htmlspecialchars($report_type) ?>">
+                <!-- Период и тип отчета -->
+                <div class="report-controls">
+                    <form method="GET" class="report-filter-form">
+                        <input type="hidden" name="report" value="<?= htmlspecialchars($report_type) ?>">
 
-                    <div class="form-group">
-                        <label>Период:</label>
-                        <select name="period" id="periodSelect">
-                            <option value="day" <?= $period === 'day' ? 'selected' : '' ?>>День</option>
-                            <option value="week" <?= $period === 'week' ? 'selected' : '' ?>>Неделя</option>
-                            <option value="month" <?= $period === 'month' ? 'selected' : '' ?>>Месяц</option>
-                            <option value="year" <?= $period === 'year' ? 'selected' : '' ?>>Год</option>
-                        </select>
-                    </div>
-                </form>
-            </div>
+                        <div class="form-group">
+                            <label>Период:</label>
+                            <select name="period" id="periodSelect">
+                                <option value="day" <?= $period === 'day' ? 'selected' : '' ?>>День</option>
+                                <option value="week" <?= $period === 'week' ? 'selected' : '' ?>>Неделя</option>
+                                <option value="month" <?= $period === 'month' ? 'selected' : '' ?>>Месяц</option>
+                                <option value="year" <?= $period === 'year' ? 'selected' : '' ?>>Год</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
 
-            <!-- Отчет -->
-            <div class="report-content">
-                <?php if (empty($report_data)): ?>
-                    <p>Нет данных за выбранный период</p>
-                <?php else: ?>
+                <!-- Отчет -->
+                <div class="report-content">
+                    <?php if (empty($report_data)): ?>
+                        <p>Нет данных за выбранный период</p>
+                    <?php else: ?>
 
-                    <!-- Desktop Table -->
-                    <div class="desktop-table">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <?php
-                                    $headers = array_keys($report_data[0]);
-                                    foreach ($headers as $header):
-                                    ?>
-                                        <th><?= htmlspecialchars(translateFieldName($header)) ?></th>
-                                    <?php endforeach; ?>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($report_data as $index => $row): ?>
+                        <!-- Desktop Table -->
+                        <div class="desktop-table">
+                            <table>
+                                <thead>
                                     <tr>
-                                        <?php foreach ($row as $key => $value): ?>
-                                            <td>
-                                                <?php
-                                                if ($key === 'abc') {
-                                                    $cls = 'abc-' . strtolower($value);
-                                                    echo '<span class="abc-badge ' . htmlspecialchars($cls) . '">' . htmlspecialchars($value) . '</span>';
-                                                } else if ($key === 'delivery_type') {
-                                                    echo htmlspecialchars(translateDeliveryType($value));
-                                                } else if ($key === 'phone') {
-                                                    echo htmlspecialchars(formatPhoneNumber($value));
-                                                } else if (is_numeric($value) && $key !== 'avg_time_minutes' && $key !== 'avg_processing_time') {
-                                                    // Форматируем числа, кроме времени (уже округлено в БД)
-                                                    if (strpos($value, '.') !== false) {
-                                                        echo number_format($value, 2);
-                                                    } else {
-                                                        echo number_format($value, 0);
-                                                    }
-                                                } else {
-                                                    echo htmlspecialchars($value);
-                                                }
-                                                ?>
-                                            </td>
+                                        <?php
+                                        $headers = array_keys($report_data[0]);
+                                        foreach ($headers as $header):
+                                        ?>
+                                            <th><?= htmlspecialchars(translateFieldName($header)) ?></th>
                                         <?php endforeach; ?>
                                     </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Mobile Table -->
-                    <div class="mobile-table-container">
-                        <div class="mobile-table">
-                            <?php foreach ($report_data as $row): ?>
-                                <div class="mobile-table-item">
-                                    <?php foreach ($row as $key => $value): ?>
-                                        <div class="mobile-table-row">
-                                            <span class="mobile-table-label"><?= htmlspecialchars(translateFieldName($key)) ?>:</span>
-                                            <span class="mobile-table-value">
-                                                <?php
-                                                if ($key === 'abc') {
-                                                    $cls = 'abc-' . strtolower($value);
-                                                    echo '<span class="abc-badge ' . htmlspecialchars($cls) . '">' . htmlspecialchars($value) . '</span>';
-                                                } else if ($key === 'delivery_type') {
-                                                    echo htmlspecialchars(translateDeliveryType($value));
-                                                } else if ($key === 'phone') {
-                                                    echo htmlspecialchars(formatPhoneNumber($value));
-                                                } else if (is_numeric($value) && $key !== 'avg_time_minutes' && $key !== 'avg_processing_time') {
-                                                    if (strpos($value, '.') !== false) {
-                                                        echo number_format($value, 2);
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($report_data as $index => $row): ?>
+                                        <tr>
+                                            <?php foreach ($row as $key => $value): ?>
+                                                <td>
+                                                    <?php
+                                                    if ($key === 'abc') {
+                                                        $cls = 'abc-' . strtolower($value);
+                                                        echo '<span class="abc-badge ' . htmlspecialchars($cls) . '">' . htmlspecialchars($value) . '</span>';
+                                                    } else if ($key === 'delivery_type') {
+                                                        echo htmlspecialchars(translateDeliveryType($value));
+                                                    } else if ($key === 'phone') {
+                                                        echo htmlspecialchars(formatPhoneNumber($value));
+                                                    } else if (is_numeric($value) && $key !== 'avg_time_minutes' && $key !== 'avg_processing_time') {
+                                                        // Форматируем числа, кроме времени (уже округлено в БД)
+                                                        if (strpos($value, '.') !== false) {
+                                                            echo number_format($value, 2);
+                                                        } else {
+                                                            echo number_format($value, 0);
+                                                        }
                                                     } else {
-                                                        echo number_format($value, 0);
+                                                        echo htmlspecialchars($value);
                                                     }
-                                                } else {
-                                                    echo htmlspecialchars($value);
-                                                }
-                                                ?>
-                                            </span>
-                                        </div>
+                                                    ?>
+                                                </td>
+                                            <?php endforeach; ?>
+                                        </tr>
                                     <?php endforeach; ?>
-                                </div>
-                            <?php endforeach; ?>
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
-                <?php endif; ?>
-            </div>
+
+                        <!-- Mobile Table -->
+                        <div class="mobile-table-container">
+                            <div class="mobile-table">
+                                <?php foreach ($report_data as $row): ?>
+                                    <div class="mobile-table-item">
+                                        <?php foreach ($row as $key => $value): ?>
+                                            <div class="mobile-table-row">
+                                                <span class="mobile-table-label"><?= htmlspecialchars(translateFieldName($key)) ?>:</span>
+                                                <span class="mobile-table-value">
+                                                    <?php
+                                                    if ($key === 'abc') {
+                                                        $cls = 'abc-' . strtolower($value);
+                                                        echo '<span class="abc-badge ' . htmlspecialchars($cls) . '">' . htmlspecialchars($value) . '</span>';
+                                                    } else if ($key === 'delivery_type') {
+                                                        echo htmlspecialchars(translateDeliveryType($value));
+                                                    } else if ($key === 'phone') {
+                                                        echo htmlspecialchars(formatPhoneNumber($value));
+                                                    } else if (is_numeric($value) && $key !== 'avg_time_minutes' && $key !== 'avg_processing_time') {
+                                                        if (strpos($value, '.') !== false) {
+                                                            echo number_format($value, 2);
+                                                        } else {
+                                                            echo number_format($value, 0);
+                                                        }
+                                                    } else {
+                                                        echo htmlspecialchars($value);
+                                                    }
+                                                    ?>
+                                                </span>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
             <div class="admin-tab-pane <?= $tab === 'users' ? 'active' : '' ?>" id="users">
                 <?php
@@ -456,9 +456,9 @@ if (!empty($report_data)) {
                                     <td><?= htmlspecialchars($user['email']) ?></td>
                                     <td><?= htmlspecialchars(formatPhoneNumber($user['phone'] ?? '')) ?></td>
                                     <td><?= $user['is_active']
-                                        ? '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" class="user-status-active" aria-label="Активен"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg>'
-                                        : '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" class="user-status-inactive" aria-label="Неактивен"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31l-66.34,66.35a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/><path d="M232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg>'
-                                    ?></td>
+                                            ? '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" class="user-status-active" aria-label="Активен"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg>'
+                                            : '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" class="user-status-inactive" aria-label="Неактивен"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31l-66.34,66.35a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/><path d="M232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg>'
+                                        ?></td>
                                     <td>
                                         <select class="role-select" data-user-id="<?= $user['id'] ?>">
                                             <?php foreach ($roleLabels as $value => $label): ?>
@@ -538,11 +538,11 @@ if (!empty($report_data)) {
     </div>
 
     <textarea id="owner-page-data" hidden><?= htmlspecialchars(json_encode([
-        'chartData' => $chart_data,
-        'currentPeriod' => $period,
-        'currentReport' => $report_type,
-        'rawReportData' => $report_data
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8') ?></textarea>
+                                                'chartData' => $chart_data,
+                                                'currentPeriod' => $period,
+                                                'currentReport' => $report_type,
+                                                'rawReportData' => $report_data
+                                            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8') ?></textarea>
     <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/owner.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/admin-tabs-repair.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
@@ -550,4 +550,3 @@ if (!empty($report_data)) {
 </body>
 
 </html>
-
