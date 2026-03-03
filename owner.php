@@ -1,8 +1,9 @@
 <?php
 // owner.php
+$required_role = 'owner';
 require_once __DIR__ . '/session_init.php';
 require_once __DIR__ . '/require_auth.php';
-$required_role = 'owner';
+$csrfToken = $_SESSION['csrf_token'] ?? '';
 
 // Ensure script nonce is available for CSP
 if (empty($scriptNonce) && isset($GLOBALS['scriptNonce'])) {
@@ -293,6 +294,7 @@ if (!empty($report_data)) {
     
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?= htmlspecialchars($csrfToken, ENT_QUOTES) ?>">
     <link rel="manifest" href="/manifest.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <title>Панель владельца | <?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?></title>
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">

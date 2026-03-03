@@ -197,8 +197,11 @@ async function saveColorsAndNext() {
     try {
         await fetch('/save-colors.php', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ colors: { 'primary-color': primary, 'secondary-color': secondary } })
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+            body: JSON.stringify({
+                colors: { 'primary-color': primary, 'secondary-color': secondary },
+                csrf_token: csrf
+            })
         });
         window.location.href = '?step=4';
     } catch (e) { btn.textContent = 'Сохранить и продолжить'; btn.disabled = false; }

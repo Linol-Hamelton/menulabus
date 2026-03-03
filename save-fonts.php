@@ -1,7 +1,7 @@
 <?php
-require_once 'session_init.php';
-require_once 'require_auth.php';
 $required_role = 'admin';
+require_once __DIR__ . '/session_init.php';
+require_once __DIR__ . '/require_auth.php';
 
 header('Content-Type: application/json');
 
