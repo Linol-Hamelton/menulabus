@@ -949,7 +949,6 @@ a {
   text-decoration: none;
 }
 .admin-tabs-container {
-  border-bottom: 1px solid var(--light-text);
   margin-bottom: 30px;
 }
 .admin-tabs {

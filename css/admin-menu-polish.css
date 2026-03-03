@@ -7,7 +7,6 @@ body.employee-page .account-form-container {
 }
 
 body.employee-page .admin-tabs-container {
-  border-bottom: 1px solid var(--light-text);
   margin: 0 0 24px;
 }
 
@@ -207,7 +206,6 @@ body.owner-page .admin-form-container {
 }
 
 body.owner-page .admin-tabs-container {
-  border-bottom: 1px solid var(--light-text);
   margin: 0 0 24px;
 }
 
