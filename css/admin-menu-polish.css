@@ -18,18 +18,28 @@ body.employee-page .admin-tabs {
 }
 
 body.employee-page .admin-tab-btn {
-  border: 1px solid transparent;
-  border-bottom: 3px solid transparent;
-  border-radius: 10px 10px 0 0;
-  min-height: 48px;
-  padding: 12px 20px;
+  background: var(--ui-surface-muted);
+  border: 1px solid var(--ui-border);
+  border-bottom: 2px solid var(--ui-border);
+  border-radius: 20px;
+  color: var(--ui-text-muted);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 5px;
+  min-height: 40px;
+  padding: 10px 20px;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-bottom-color 0.2s ease;
 }
 
 body.employee-page .admin-tab-btn.active,
 body.employee-page .admin-tab-btn:hover {
   background: var(--ui-surface);
   border-color: var(--ui-border);
-  border-bottom-color: var(--ui-accent);
+  border-bottom-color: var(--primary-color);
+  color: var(--ui-accent);
 }
 
 body.employee-page .admin-form-container {
@@ -159,7 +169,7 @@ body.employee-page .font-control {
   }
 
   body.employee-page .admin-tab-btn {
-    border-radius: 10px;
+    border-radius: 20px;
     text-align: center;
   }
 
@@ -208,18 +218,28 @@ body.owner-page .admin-tabs {
 }
 
 body.owner-page .admin-tab-btn {
-  border: 1px solid transparent;
-  border-bottom: 3px solid transparent;
-  border-radius: 10px 10px 0 0;
-  min-height: 48px;
-  padding: 12px 20px;
+  background: var(--ui-surface-muted);
+  border: 1px solid var(--ui-border);
+  border-bottom: 2px solid var(--ui-border);
+  border-radius: 20px;
+  color: var(--ui-text-muted);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 5px;
+  min-height: 40px;
+  padding: 10px 20px;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-bottom-color 0.2s ease;
 }
 
 body.owner-page .admin-tab-btn.active,
 body.owner-page .admin-tab-btn:hover {
   background: var(--ui-surface);
   border-color: var(--ui-border);
-  border-bottom-color: var(--ui-accent);
+  border-bottom-color: var(--primary-color);
+  color: var(--ui-accent);
 }
 
 body.owner-page .report-controls {
@@ -431,24 +451,36 @@ body.owner-page .menu-tabs-container {
 }
 
 body.owner-page .menu-tabs {
-    background: var(--ui-surface-muted);
-    border: 1px solid var(--ui-border);
-    border-bottom: 2px solid var(--ui-border);
-    border-radius: 20px;
-    color: var(--ui-text-muted);
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 600;
-    margin: 0 5px;
-    min-height: 40px;
-    padding: 10px 20px;
-    transition: background-color 0.2s ease, color 0.2s ease, border-bottom-color 0.2s ease;
+  display: inline-flex;
+  justify-content: center;
+  min-width: 100%;
+  padding: 10px 0;
 }
 
 body.owner-page .menu-tabs .tab-btn {
-  border-radius: 8px 8px 0 0;
+  background: var(--ui-surface-muted);
+  border: 1px solid var(--ui-border);
+  border-bottom: 2px solid var(--ui-border);
+  border-radius: 20px;
+  color: var(--ui-text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 5px;
   min-height: 40px;
-  padding: 8px 14px;
+  padding: 10px 20px;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-bottom-color 0.2s ease;
+}
+
+body.owner-page .menu-tabs .tab-btn.active,
+body.owner-page .menu-tabs .tab-btn:hover {
+  background: var(--ui-surface);
+  border-color: var(--ui-border);
+  border-bottom-color: var(--primary-color);
+  color: var(--ui-accent);
 }
 
 @media (max-width: 992px) {
@@ -474,7 +506,7 @@ body.owner-page .menu-tabs .tab-btn {
   }
 
   body.owner-page .admin-tab-btn {
-    border-radius: 10px;
+    border-radius: 20px;
     text-align: center;
   }
 
@@ -751,31 +783,42 @@ body.owner-page .menu-tabs-container {
 body.customer_orders-page .menu-tabs,
 body.employee-page .menu-tabs,
 body.owner-page .menu-tabs {
-    background: var(--ui-surface-muted);
-    border: 1px solid var(--ui-border);
-    border-bottom: 2px solid var(--ui-border);
-    border-radius: 20px;
-    color: var(--ui-text-muted);
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 600;
-    margin: 0 5px;
-    min-height: 40px;
-    padding: 10px 20px;
-    transition: background-color 0.2s ease, color 0.2s ease, border-bottom-color 0.2s ease;
+  display: inline-flex;
+  justify-content: center;
+  min-width: 100%;
+  padding: 10px 0;
 }
 
 body.customer_orders-page .menu-tabs .tab-btn,
 body.employee-page .menu-tabs .tab-btn,
 body.owner-page .menu-tabs .tab-btn {
-  border-radius: 8px 8px 0 0;
+  background: var(--ui-surface-muted);
+  border: 1px solid var(--ui-border);
+  border-bottom: 2px solid var(--ui-border);
+  border-radius: 20px;
+  color: var(--ui-text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 5px;
   min-height: 40px;
-  padding: 8px 14px;
+  padding: 10px 20px;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-bottom-color 0.2s ease;
 }
 
-body.employee-page .menu-tabs .tab-btn,
-body.owner-page .menu-tabs .tab-btn {
-  margin: 0;
+body.customer_orders-page .menu-tabs .tab-btn.active,
+body.customer_orders-page .menu-tabs .tab-btn:hover,
+body.employee-page .menu-tabs .tab-btn.active,
+body.employee-page .menu-tabs .tab-btn:hover,
+body.owner-page .menu-tabs .tab-btn.active,
+body.owner-page .menu-tabs .tab-btn:hover {
+  background: var(--ui-surface);
+  border-color: var(--ui-border);
+  border-bottom-color: var(--primary-color);
+  color: var(--ui-accent);
 }
 
 @media (max-width: 992px) {
