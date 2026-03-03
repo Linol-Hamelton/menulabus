@@ -27,9 +27,9 @@ body.employee-page .admin-tab-btn {
 
 body.employee-page .admin-tab-btn.active,
 body.employee-page .admin-tab-btn:hover {
-  background: var(--white);
-  border-color: var(--bg-light);
-  border-bottom-color: var(--primary-color);
+  background: var(--ui-surface);
+  border-color: var(--ui-border);
+  border-bottom-color: var(--ui-accent);
 }
 
 body.employee-page .admin-form-container {
@@ -217,9 +217,9 @@ body.owner-page .admin-tab-btn {
 
 body.owner-page .admin-tab-btn.active,
 body.owner-page .admin-tab-btn:hover {
-  background: var(--white);
-  border-color: var(--bg-light);
-  border-bottom-color: var(--primary-color);
+  background: var(--ui-surface);
+  border-color: var(--ui-border);
+  border-bottom-color: var(--ui-accent);
 }
 
 body.owner-page .report-controls {
@@ -251,7 +251,7 @@ body.owner-page .report-filter-form select {
   -webkit-appearance: none;
   appearance: none;
   background: var(--bg-light) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") no-repeat right 14px center;
-  border: 2px solid var(--bg-light);
+  border: 2px solid var(--ui-border);
   border-radius: 12px;
   cursor: pointer;
   font-size: 15px;
@@ -259,11 +259,13 @@ body.owner-page .report-filter-form select {
   min-height: 44px;
   min-width: 170px;
   padding: 10px 36px 10px 14px;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 body.owner-page .report-filter-form select:focus {
-  border-color: var(--primary-color);
-  outline: none;
+  border-color: var(--ui-focus-ring);
+  box-shadow: 0 0 0 3px var(--ui-focus-shadow);
+  outline: 2px solid var(--ui-focus-ring);
+  outline-offset: 1px;
 }
 
 body.owner-page .desktop-table {
@@ -792,10 +794,10 @@ body.account-page .account-sections {
 }
 
 body.account-page .account-section {
-  background: var(--white);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--ui-shadow-soft);
   margin-top: 0;
   padding: 24px;
 }
@@ -842,8 +844,8 @@ body.account-page .menu-view-options {
 
 body.account-page .menu-view-options label {
   align-items: flex-start;
-  background: var(--white);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
   border-radius: 8px;
   display: flex;
   gap: 10px;
@@ -1241,14 +1243,14 @@ body.auth-page .auth-footer {
 
 body.auth-page .auth-link,
 body.auth-page .auth-link a {
-  color: var(--primary-color);
+  color: var(--ui-accent);
   font-weight: 600;
   text-decoration: none;
 }
 
 body.auth-page .auth-link:hover,
 body.auth-page .auth-link a:hover {
-  color: var(--primary-dark);
+  color: var(--ui-accent-hover);
   text-decoration: underline;
 }
 
@@ -1276,11 +1278,20 @@ body.auth-page .auth-separator {
    Phosphor icon colour helpers (CSP-safe: no inline style=)
    ═══════════════════════════════════════════════════════ */
 .ph-ok  { color: var(--agree, #4caf50); vertical-align: middle; }
-.ph-err { color: #e53935;               vertical-align: middle; }
+.ph-err { color: var(--ui-danger);      vertical-align: middle; }
 
 /* User status icons (owner.php) */
 .user-status-active   { color: var(--agree, #4caf50); }
-.user-status-inactive { color: #e53935; }
+.user-status-inactive { color: var(--ui-danger); }
+
+body.account-page :is(.tab-btn, .checkout-btn, .back-to-menu-btn, .save-role-btn, .role-select, .admin-tab-btn, .status-btn, .status-btn-r, .mobile-table-btn, .pay-link-btn):focus-visible,
+body.employee-page :is(.tab-btn, .checkout-btn, .back-to-menu-btn, .save-role-btn, .role-select, .admin-tab-btn, .status-btn, .status-btn-r, .mobile-table-btn, .pay-link-btn):focus-visible,
+body.owner-page :is(.tab-btn, .checkout-btn, .back-to-menu-btn, .save-role-btn, .role-select, .admin-tab-btn, .status-btn, .status-btn-r, .mobile-table-btn, .pay-link-btn):focus-visible,
+body.auth-page :is(.tab-btn, .checkout-btn, .back-to-menu-btn, .save-role-btn, .role-select, .admin-tab-btn, .status-btn, .status-btn-r, .mobile-table-btn, .pay-link-btn, .auth-link):focus-visible {
+  box-shadow: 0 0 0 3px var(--ui-focus-shadow);
+  outline: 2px solid var(--ui-focus-ring);
+  outline-offset: 2px;
+}
 
 /* Pay-link button icon alignment */
 .pay-link-btn svg { vertical-align: middle; }

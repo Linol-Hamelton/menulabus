@@ -49,9 +49,10 @@
   }
 }
 .account-section {
-  background: var(--bg-light);
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
   border-radius: 15px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--ui-shadow-soft);
   flex: 1;
   margin-top: 25px;
   padding: 30px;
@@ -65,17 +66,18 @@
 }
 
 .form-group label {
-  color: var (--text-color);
+  color: var(--ui-text);
   display: flex;
   font-weight: 600;
 }
 .form-group input:focus {
-  border-color: var(--primary-color);
-  outline: none;
+  border-color: var(--ui-focus-ring);
+  outline: 2px solid var(--ui-focus-ring);
+  outline-offset: 1px;
 }
 .form-group input:disabled {
-  background-color: var(--white);
-  color: var (--light-text);
+  background-color: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
 }
 .tab-content {
   display: none;
@@ -110,7 +112,7 @@
   word-break: break-word;
 }
 .order-date {
-  color: var (--light-text);
+  color: var(--ui-text-muted);
   font-size: 14px;
 }
 .order-status {
@@ -150,7 +152,7 @@
   min-width: 90px;
 }
 .product-quantity {
-  color: var (--light-text);
+  color: var(--ui-text-muted);
   margin-left: 10px;
   min-width: 90px;
   text-align: right;
@@ -176,23 +178,28 @@
   z-index: 100;
 }
 .tab-btn {
-  background: none;
-  border: none;
+  background: var(--ui-surface-muted);
+  border: 1px solid var(--ui-border);
   border-bottom: 2px solid transparent;
-  color: var(--light-text);
+  border-radius: 10px 10px 0 0;
+  color: var(--ui-text-muted);
   cursor: pointer;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   margin: 0 10px;
+  min-height: 40px;
   padding: 10px 20px;
   transition:
+    background-color 0.2s ease,
     color 0.2s ease,
     border-bottom-color 0.2s ease;
 }
 .tab-btn.active,
 .tab-btn:hover {
-  border-bottom-color: var(--primary-color);
-  color: var(--primary-color);
+  background: var(--ui-surface);
+  border-color: var(--ui-border);
+  border-bottom-color: var(--ui-accent);
+  color: var(--ui-accent);
 }
 .status-btn.disabled {
   cursor: not-allowed;
@@ -214,7 +221,7 @@
   display: flex;
 }
 .order-customer-info i {
-  color: var (--light-text);
+  color: var(--ui-text-muted);
   margin-right: 5px;
 }
 .delivery-meta {
@@ -229,7 +236,7 @@
   margin-right: 4px;
 }
 .delivery-details {
-  color: var (--light-text);
+  color: var(--ui-text-muted);
 }
 .divider {
   border: none;
@@ -254,16 +261,17 @@
   border-radius: 4px;
   cursor: pointer;
   font-family: proxima-nova;
+  font-weight: 600;
   padding: 8px 16px;
   transition: background 0.3s;
 }
 .status-btn {
   background: var(--agree);
-  color: #fff;
+  color: var(--ui-accent-contrast);
 }
 .status-btn-r {
   background: var(--accent-color);
-  color: #fff;
+  color: var(--ui-accent-contrast);
   margin-left: 5px;
 }
 .status-btn:hover {
@@ -432,18 +440,20 @@
   margin-top: 5px;
 }
 .admin-checkout-btn {
-  background-color: var(--primary-color);
+  background-color: var(--ui-accent);
   border: none;
-  border-radius: 25px;
-  color: var(--white);
+  border-radius: 10px;
+  color: var(--ui-accent-contrast);
   cursor: pointer;
   font-family: Inter;
   font-size: 16px;
+  font-weight: 600;
+  min-height: 40px;
   padding: 8px 16px;
 }
 .admin-checkout-btn:hover {
-  background-color: var(--primary-dark);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  background-color: var(--ui-accent-hover);
+  box-shadow: var(--ui-shadow-soft);
   transform: translateY(-1px);
 }
 .admin-checkout-btn.cancel {
@@ -451,7 +461,8 @@
 }
 .admin-checkout-btn.cancel,
 .admin-checkout-btn.cancel:hover {
-  background-color: var (--light-text);
+  background-color: var(--ui-text-muted);
+  color: var(--ui-accent-contrast);
 }
 .color {
   height: 50px;
@@ -481,14 +492,14 @@
   margin-top: 10px;
 }
 .progress-bar {
-  background: #f0f0f0;
+  background: var(--ui-surface-muted);
   border-radius: 10px;
   height: 20px;
   overflow: hidden;
   width: 100%;
 }
 .progress {
-  background: #4caf50;
+  background: var(--ui-success);
   height: 100%;
   transition: width 0.3s;
   width: 0;
@@ -523,22 +534,24 @@
   padding: 0 13px;
 }
 .save-role-btn {
-  background-color: var(--primary-color);
+  background-color: var(--ui-accent);
   border: none;
-  border-radius: 12px;
-  color: var(--white);
+  border-radius: 10px;
+  color: var(--ui-accent-contrast);
   cursor: pointer;
   font-family: Inter;
   font-size: 12px;
+  font-weight: 600;
+  min-height: 32px;
   margin-left: 8px;
-  padding: 4px 8px;
+  padding: 6px 10px;
   transition:
     background-color 0.3s,
     transform 0.2s;
 }
 .save-role-btn:hover {
-  background-color: var(--primary-dark);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: var(--ui-accent-hover);
+  box-shadow: var(--ui-shadow-soft);
   transform: translateY(-1px);
 }
 .save-role-btn:active {
@@ -547,4 +560,17 @@
 .save-role-btn.loading {
   cursor: not-allowed;
   opacity: 0.7;
+}
+.role-select {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  color: var(--ui-text);
+  min-height: 32px;
+  padding: 5px 10px;
+}
+:is(.tab-btn, .admin-checkout-btn, .save-role-btn, .status-btn, .status-btn-r, .role-select):focus-visible {
+  box-shadow: 0 0 0 3px var(--ui-focus-shadow);
+  outline: 2px solid var(--ui-focus-ring);
+  outline-offset: 2px;
 }
