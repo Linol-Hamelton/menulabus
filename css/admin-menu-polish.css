@@ -14,6 +14,7 @@ body.employee-page .admin-tabs {
   align-items: stretch;
   display: flex;
   gap: 8px;
+  justify-content: center;
 }
 
 body.employee-page .admin-tab-btn {
@@ -526,6 +527,33 @@ body.owner-page .menu-tabs .tab-btn:hover {
 
   body.owner-page .mobile-table-value .save-role-btn {
     margin-left: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  body.owner-page .mobile-table-item {
+    padding: 14px;
+  }
+
+  body.owner-page .mobile-table-row {
+    gap: 10px;
+  }
+
+  body.owner-page .mobile-table-label {
+    min-width: 84px;
+  }
+
+  body.owner-page .mobile-table-value {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  body.owner-page .mobile-table-value .role-select,
+  body.owner-page .mobile-table-value .save-role-btn {
+    box-sizing: border-box;
+    max-width: 100%;
+    width: 100%;
   }
 }
 
