@@ -1200,9 +1200,9 @@ body.auth-page .auth-oauth-form .btn {
 
 /* Google OAuth button - Google Blue */
 body.auth-page .btn-google {
-  background: #000000;
+  background: var(--ui-oauth-google-bg);
   border: none;
-  color: #fff;
+  color: var(--ui-oauth-google-text);
   font-weight: 600;
   margin: 5px auto;
   overflow: hidden;
@@ -1213,15 +1213,15 @@ body.auth-page .btn-google {
 }
 
 body.auth-page .btn-google:hover {
-  background: #fff;
-  color: #000000;
+  background: var(--ui-oauth-google-hover);
+  color: var(--ui-oauth-google-text);
 }
 
 /* Yandex OAuth button - Yandex Red */
 body.auth-page .btn-yandex {
-  background: #FC3F1D;
+  background: var(--ui-oauth-yandex-bg);
   border: none;
-  color: #fff;
+  color: var(--ui-oauth-yandex-text);
   font-weight: 600;
   margin: 5px auto;
   overflow: hidden;
@@ -1232,15 +1232,15 @@ body.auth-page .btn-yandex {
 }
 
 body.auth-page .btn-yandex:hover {
-  background: #fff;
-  color: #DD3B1A;
+  background: var(--ui-oauth-yandex-hover);
+  color: var(--ui-oauth-yandex-text);
 }
 
 /* VK OAuth button - VK Blue */
 body.auth-page .btn-vk {
-  background: #4680C2;
+  background: var(--ui-oauth-vk-bg);
   border: none;
-  color: #fff;
+  color: var(--ui-oauth-vk-text);
   font-weight: 600;
   margin: 5px auto;
   overflow: hidden;
@@ -1250,8 +1250,8 @@ body.auth-page .btn-vk {
 }
 
 body.auth-page .btn-vk:hover {
-  background: #fff;
-  color: #4680C2;
+  background: var(--ui-oauth-vk-hover);
+  color: var(--ui-oauth-vk-text);
 }
 
 body.auth-page .auth-footer {

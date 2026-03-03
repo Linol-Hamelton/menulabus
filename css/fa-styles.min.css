@@ -18,6 +18,18 @@
   --ui-focus-shadow: rgba(205, 23, 25, 0.22);
   --ui-shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.08);
   --ui-shadow-hover: 0 4px 14px rgba(0, 0, 0, 0.16);
+  --ui-disabled-bg: var(--ui-surface-muted);
+  --ui-disabled-text: var(--ui-text-muted);
+  --ui-disabled-border: var(--ui-border);
+  --ui-oauth-google-bg: #000;
+  --ui-oauth-google-hover: #1f2328;
+  --ui-oauth-google-text: #fff;
+  --ui-oauth-yandex-bg: #c43616;
+  --ui-oauth-yandex-hover: #a82b10;
+  --ui-oauth-yandex-text: #fff;
+  --ui-oauth-vk-bg: #2f5f9f;
+  --ui-oauth-vk-hover: #274e84;
+  --ui-oauth-vk-text: #fff;
 }
 @supports (-webkit-overflow-scrolling: touch) {
   .header {
@@ -1232,11 +1244,14 @@ a {
 .section-header-menu {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   justify-content: space-between;
+  min-height: 72px;
   margin: auto;
-  padding: 0 8%;
+  padding: clamp(84px, 9vw, 104px) 8% 0;
   position: relative;
-  height: 15%;
+  height: auto;
 }
 .order-item {
   background: var(--white);
@@ -1296,9 +1311,9 @@ a {
   border-radius: 25px;
   color: var(--white);
   display: flex;
-  font-weight: 100;
+  font-weight: 600;
   gap: 8px;
-  margin: 100px 0 10px;
+  margin: 0;
   text-decoration: none;
   transition: background-color 0.3s;
 }
@@ -1338,6 +1353,8 @@ a {
   background-color: var(--primary-dark);
 }
 .order-summary-btn .order-total {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
   margin-right: 5px;
 }
 .header {
@@ -1407,9 +1424,11 @@ a {
 }
 .section-header-menu h2 {
   animation: fadeInDown 1s ease;
-  color: var(--primary-color);
+  color: var(--ui-text);
   font-size: 36px;
-  padding-top: 100px;
+  line-height: 1.2;
+  margin: 0;
+  padding-top: 0;
 }
 .hero {
   align-items: center;
@@ -1662,6 +1681,16 @@ a {
   letter-spacing: 0.01em;
   min-height: 40px;
   padding: 8px 16px;
+}
+.checkout-btn:disabled,
+.checkout-btn[disabled] {
+  background: var(--ui-disabled-bg);
+  border-color: var(--ui-disabled-border);
+  box-shadow: none;
+  color: var(--ui-disabled-text);
+  cursor: not-allowed;
+  opacity: 1;
+  pointer-events: none;
 }
 .checkout-btn:hover {
   background-color: var(--ui-accent-hover);
@@ -2158,7 +2187,7 @@ body {
 .btn:hover,
 .buy:hover,
 .cart-item-image:hover,
-.checkout-btn:hover,
+.checkout-btn:hover:not(:disabled):not([disabled]),
 .clear-cart-btn:hover,
 .price:hover {
   box-shadow: var(--ui-shadow-hover);
@@ -2168,7 +2197,7 @@ body {
 .btn:active,
 .buy:active,
 .cart-item-image:active,
-.checkout-btn:active,
+.checkout-btn:active:not(:disabled):not([disabled]),
 .clear-cart-btn:active,
 .price:active {
   transform: translateY(0) scale(0.96);
@@ -2208,7 +2237,7 @@ body {
 .btn-form:hover:after,
 .btn:hover:after,
 .buy:hover:after,
-.checkout-btn:hover:after,
+.checkout-btn:hover:not(:disabled):not([disabled]):after,
 .clear-cart-btn:hover:after,
 .price:hover:after {
   opacity: 0.5;
