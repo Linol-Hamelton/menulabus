@@ -416,12 +416,33 @@ body.owner-page .chart-bar-label {
 }
 
 body.owner-page .menu-tabs-container {
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+  background: var(--ui-surface);
+  border-top: 1px solid var(--ui-border);
+  bottom: 0;
+  box-shadow: var(--ui-shadow-soft);
+  left: 0;
+  position: fixed;
+  right: 0;
+  white-space: nowrap;
+  z-index: 100;
 }
 
 body.owner-page .menu-tabs {
-  gap: 2px;
-  padding: 10px 0;
+    background: var(--ui-surface-muted);
+    border: 1px solid var(--ui-border);
+    border-bottom: 2px solid var(--ui-border);
+    border-radius: 20px;
+    color: var(--ui-text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 5px;
+    min-height: 40px;
+    padding: 10px 20px;
+    transition: background-color 0.2s ease, color 0.2s ease, border-bottom-color 0.2s ease;
 }
 
 body.owner-page .menu-tabs .tab-btn {
@@ -697,27 +718,51 @@ body.customer_orders-page .repeat-order-form {
 }
 
 body.customer_orders-page .menu-tabs-container {
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+  background: var(--ui-surface);
+  border-top: 1px solid var(--ui-border);
+  bottom: 0;
+  box-shadow: var(--ui-shadow-soft);
+  left: 0;
+  position: fixed;
+  right: 0;
+  white-space: nowrap;
+  z-index: 100;
 }
 
 body.employee-page .menu-tabs-container,
 body.owner-page .menu-tabs-container {
-  background: transparent;
-  border-top: 0;
-  bottom: auto;
-  box-shadow: none;
-  left: auto;
-  margin-top: 12px;
-  position: static;
-  right: auto;
-  z-index: auto;
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+  background: var(--ui-surface);
+  border-top: 1px solid var(--ui-border);
+  bottom: 0;
+  box-shadow: var(--ui-shadow-soft);
+  left: 0;
+  position: fixed;
+  right: 0;
+  white-space: nowrap;
+  z-index: 100;
 }
 
 body.customer_orders-page .menu-tabs,
 body.employee-page .menu-tabs,
 body.owner-page .menu-tabs {
-  gap: 2px;
-  padding: 8px 6px;
+    background: var(--ui-surface-muted);
+    border: 1px solid var(--ui-border);
+    border-bottom: 2px solid var(--ui-border);
+    border-radius: 20px;
+    color: var(--ui-text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 5px;
+    min-height: 40px;
+    padding: 10px 20px;
+    transition: background-color 0.2s ease, color 0.2s ease, border-bottom-color 0.2s ease;
 }
 
 body.customer_orders-page .menu-tabs .tab-btn,
@@ -810,7 +855,7 @@ body.account-page .account-container {
 body.account-page .account-sections {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   margin-bottom: 14px;
 }
 
