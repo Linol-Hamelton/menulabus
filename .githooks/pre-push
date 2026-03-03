@@ -6,14 +6,52 @@ cd "$ROOT_DIR"
 
 echo "[pre-push] Running quick checks..."
 
-if command -v php >/dev/null 2>&1; then
+select_php_bin() {
+  local bin
+  for bin in php8.5 php8.4 php8.3 php8.2 php; do
+    if command -v "$bin" >/dev/null 2>&1; then
+      echo "$bin"
+      return 0
+    fi
+  done
+  return 1
+}
+
+is_lint_target() {
+  case "$1" in
+    vendor/*|node_modules/*|.git/*|data/cache/*)
+      return 1
+      ;;
+  esac
+  return 0
+}
+
+PHP_BIN="$(select_php_bin || true)"
+
+if [ -n "$PHP_BIN" ]; then
+  echo "[pre-push] [hook] using $PHP_BIN for lint"
   changed_php="$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.php$' || true)"
   if [ -n "$changed_php" ]; then
+    lint_files=""
     while IFS= read -r file; do
-      [ -f "$file" ] || continue
-      php -l "$file" >/dev/null
+      [ -n "$file" ] || continue
+      is_lint_target "$file" || continue
+      lint_files+="$file"$'\n'
     done <<< "$changed_php"
-    echo "[pre-push] PHP lint OK"
+
+    if [ -z "$lint_files" ]; then
+      echo "[pre-push] No eligible PHP files for lint"
+    fi
+
+    while IFS= read -r file; do
+      [ -n "$file" ] || continue
+      [ -f "$file" ] || continue
+      "$PHP_BIN" -l "$file" >/dev/null
+    done <<< "$lint_files"
+
+    if [ -n "$lint_files" ]; then
+      echo "[pre-push] PHP lint OK"
+    fi
   else
     echo "[pre-push] No staged PHP changes"
   fi

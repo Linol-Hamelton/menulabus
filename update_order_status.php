@@ -10,6 +10,10 @@ header('Content-Type: application/json');
  * Отправляет push-уведомления всем подписчикам заказа
  */
 function sendPushNotificationsForOrder($orderId, $newStatus, $updaterName) {
+    if (PHP_VERSION_ID < 80200) {
+        error_log("WebPush skipped for order {$orderId}: PHP " . PHP_VERSION . " is lower than 8.2");
+        return;
+    }
     // Загружаем VAPID ключи
     $vapidKeysPath = __DIR__ . '/data/vapid-keys.json';
     if (!file_exists($vapidKeysPath)) {
@@ -38,7 +42,20 @@ function sendPushNotificationsForOrder($orderId, $newStatus, $updaterName) {
     }
 
     // Загружаем библиотеку WebPush
-    require_once __DIR__ . '/vendor/autoload.php';
+    $autoloadPath = __DIR__ . '/vendor/autoload.php';
+    if (!is_file($autoloadPath)) {
+        error_log("WebPush skipped for order {$orderId}: autoload file not found");
+        return;
+    }
+    require_once $autoloadPath;
+
+    if (
+        !class_exists('Minishlink\\WebPush\\WebPush')
+        || !class_exists('Minishlink\\WebPush\\Subscription')
+    ) {
+        error_log("WebPush skipped for order {$orderId}: Minishlink WebPush classes are unavailable");
+        return;
+    }
 
     $auth = [
         'VAPID' => [

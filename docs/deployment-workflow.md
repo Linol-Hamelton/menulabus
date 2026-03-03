@@ -1,11 +1,39 @@
 ﻿# Deployment Workflow (Git Pull on Server)
 
+## Quick Copy (Production)
+
+```bash
+WEBUSER="labus_pro_usr"
+PROJECT="/var/www/labus_pro_usr/data/www/menu.labus.pro"
+
+runuser -u "$WEBUSER" -- git -C "$PROJECT" fetch --prune origin
+runuser -u "$WEBUSER" -- git -C "$PROJECT" checkout main
+runuser -u "$WEBUSER" -- git -C "$PROJECT" pull --ff-only origin main
+```
+
+## PHP Compatibility Note (Important)
+
+- On this server, default `php` can point to 8.1, while project dependencies in `vendor/` may require `>=8.2`.
+- Repository hooks (`pre-push`, `post-merge`) auto-select the best available binary for lint in this order:
+  - `php8.5` -> `php8.4` -> `php8.3` -> `php8.2` -> `php`
+- Hooks lint project PHP files only and skip `vendor/`, `node_modules/`, `.git/`, and `data/cache/`.
+- Temporary compatibility mode before runtime upgrade:
+  - WebPush in `update_order_status.php` can run in degrade mode on PHP `<8.2` (status update succeeds, push is skipped with a log entry).
+
 ## Goal
 
 - No WinSCP/manual file upload.
 - Source of truth: Git.
-- Deployment: `git pull` on server.
+- Deployment: `git pull` on server (in `main` only).
 - Everything else (validation and post-pull checks) is automated.
+
+## Current production specifics (as configured)
+
+- Production path: `/var/www/labus_pro_usr/data/www/menu.labus.pro`
+- Git operations are executed as `labus_pro_usr` via `runuser -u ...`.
+- We do not run repo commands as `root` to avoid `dubious ownership`.
+- `core.hooksPath` is set to `.githooks`.
+- Local server-only files are ignored through `.git/info/exclude`.
 
 ## Branch policy
 
@@ -20,16 +48,36 @@ Recommended release flow:
 4. Push to remote.
 5. On server: `git pull --ff-only`.
 
-## One-time setup (local + server clone)
+## One-time setup on server (already applied)
+
+If repository is already initialized in project directory:
 
 ```bash
-git config core.hooksPath .githooks
+WEBUSER="labus_pro_usr"
+PROJECT="/var/www/labus_pro_usr/data/www/menu.labus.pro"
+
+runuser -u "$WEBUSER" -- git -C "$PROJECT" config core.hooksPath .githooks
+runuser -u "$WEBUSER" -- git -C "$PROJECT" config --get core.hooksPath
 ```
 
 This enables:
 
-- `pre-push` hook: PHP syntax check for staged PHP files.
-- `post-merge` hook: PHP syntax check after pull and cache cleanup.
+- `pre-push` hook: PHP syntax check for staged project PHP files with auto-selected PHP binary.
+- `post-merge` hook: PHP syntax check after pull for project PHP files with auto-selected PHP binary, plus cache cleanup.
+
+If project directory has no `.git`, run one-time bootstrap:
+
+```bash
+WEBUSER="labus_pro_usr"
+PROJECT="/var/www/labus_pro_usr/data/www/menu.labus.pro"
+REPO_URL="https://github.com/Linol-Hamelton/menulabus"
+
+runuser -u "$WEBUSER" -- git -C "$PROJECT" init -b main
+runuser -u "$WEBUSER" -- git -C "$PROJECT" remote add origin "$REPO_URL"
+runuser -u "$WEBUSER" -- git -C "$PROJECT" fetch --prune origin
+runuser -u "$WEBUSER" -- git -C "$PROJECT" checkout -f -B main origin/main
+runuser -u "$WEBUSER" -- git -C "$PROJECT" config core.hooksPath .githooks
+```
 
 ## Local release commands
 
@@ -56,10 +104,12 @@ If both remotes use `main`, push `main` to both.
 ## Server deploy commands
 
 ```bash
-cd /var/www/labus_pro_usr/data/www/menu.labus.pro
-git fetch --all --prune
-git checkout main
-git pull --ff-only
+WEBUSER="labus_pro_usr"
+PROJECT="/var/www/labus_pro_usr/data/www/menu.labus.pro"
+
+runuser -u "$WEBUSER" -- git -C "$PROJECT" fetch --prune origin
+runuser -u "$WEBUSER" -- git -C "$PROJECT" checkout main
+runuser -u "$WEBUSER" -- git -C "$PROJECT" pull --ff-only origin main
 ```
 
 After pull:
@@ -79,10 +129,12 @@ After pull:
 Fast rollback by commit hash:
 
 ```bash
-cd /var/www/labus_pro_usr/data/www/menu.labus.pro
-git log --oneline -n 20
+WEBUSER="labus_pro_usr"
+PROJECT="/var/www/labus_pro_usr/data/www/menu.labus.pro"
+
+runuser -u "$WEBUSER" -- git -C "$PROJECT" log --oneline -n 20
 # choose previous stable hash
-git checkout <hash>
+runuser -u "$WEBUSER" -- git -C "$PROJECT" checkout <hash>
 ```
 
 Then apply the same OPcache reset and smoke-check.

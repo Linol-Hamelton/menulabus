@@ -9,7 +9,30 @@ echo "[post-merge] Running post-pull checks..."
 old_rev="${ORIG_HEAD:-}"
 new_rev="$(git rev-parse HEAD)"
 
-if command -v php >/dev/null 2>&1; then
+select_php_bin() {
+  local bin
+  for bin in php8.5 php8.4 php8.3 php8.2 php; do
+    if command -v "$bin" >/dev/null 2>&1; then
+      echo "$bin"
+      return 0
+    fi
+  done
+  return 1
+}
+
+is_lint_target() {
+  case "$1" in
+    vendor/*|node_modules/*|.git/*|data/cache/*)
+      return 1
+      ;;
+  esac
+  return 0
+}
+
+PHP_BIN="$(select_php_bin || true)"
+
+if [ -n "$PHP_BIN" ]; then
+  echo "[post-merge] [hook] using $PHP_BIN for lint"
   if [ -n "$old_rev" ] && git rev-parse "$old_rev" >/dev/null 2>&1; then
     changed_php="$(git diff --name-only "$old_rev" "$new_rev" -- '*.php' || true)"
   else
@@ -17,11 +40,26 @@ if command -v php >/dev/null 2>&1; then
   fi
 
   if [ -n "$changed_php" ]; then
+    lint_files=""
     while IFS= read -r file; do
-      [ -f "$file" ] || continue
-      php -l "$file" >/dev/null
+      [ -n "$file" ] || continue
+      is_lint_target "$file" || continue
+      lint_files+="$file"$'\n'
     done <<< "$changed_php"
-    echo "[post-merge] PHP lint OK"
+
+    if [ -z "$lint_files" ]; then
+      echo "[post-merge] No eligible PHP files for lint"
+    fi
+
+    while IFS= read -r file; do
+      [ -n "$file" ] || continue
+      [ -f "$file" ] || continue
+      "$PHP_BIN" -l "$file" >/dev/null
+    done <<< "$lint_files"
+
+    if [ -n "$lint_files" ]; then
+      echo "[post-merge] PHP lint OK"
+    fi
   fi
 else
   echo "[post-merge] php not found, skipping lint"
