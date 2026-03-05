@@ -275,6 +275,7 @@ if (!empty($_GET['edit'])) {
             font-size: 12px;
             color: var(--light-text, #777)
         }
+
     </style>
 
     <title>Блюда | <?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?></title>
@@ -425,7 +426,7 @@ if (!empty($_GET['edit'])) {
                 <?php endif; ?>
             </section>
 
-            <div class="form-actions" style="margin: 10px 0 14px;">
+            <div class="form-actions menu-view-switch">
                 <a href="admin-menu.php?view=active" class="admin-checkout-btn<?= !$showArchived ? ' cancel' : '' ?>">Активные</a>
                 <a href="admin-menu.php?view=archived" class="admin-checkout-btn<?= $showArchived ? ' cancel' : '' ?>">Архив</a>
             </div>
@@ -463,7 +464,7 @@ if (!empty($_GET['edit'])) {
                                 </td>
                                 <td>
                                     <?php if ($showArchived): ?>
-                                        <form method="POST" style="display:inline;">
+                                        <form method="POST" class="inline-action-form">
                                             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                                             <input type="hidden" name="id" value="<?= (int)$it['id'] ?>">
                                             <button type="submit" name="restore_archived" class="admin-checkout-btn">Восстановить</button>
@@ -510,7 +511,7 @@ if (!empty($_GET['edit'])) {
                             <?php endif; ?>
                             <div class="mobile-table-actions">
                                 <?php if ($showArchived): ?>
-                                    <form method="POST" style="display:inline;">
+                                    <form method="POST" class="inline-action-form">
                                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                                         <input type="hidden" name="id" value="<?= (int)$it['id'] ?>">
                                         <button type="submit" name="restore_archived" class="mobile-table-btn">

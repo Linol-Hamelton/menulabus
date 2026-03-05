@@ -76,6 +76,14 @@ body.employee-page .form-actions {
   justify-content: flex-end;
 }
 
+body.employee-page .menu-view-switch {
+  margin: 10px 0 14px;
+}
+
+body.employee-page .inline-action-form {
+  display: inline;
+}
+
 body.employee-page .checkout-btn,
 body.employee-page .admin-checkout-btn,
 body.employee-page .download-button-container {

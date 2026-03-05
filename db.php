@@ -1428,7 +1428,9 @@ class Database
 
             $normalizeHeader = static function ($value): string {
                 $value = (string)$value;
-                $value = preg_replace('/^\xEF\xBB\xBF/u', '', $value);
+                // Strip UTF-8 BOM robustly (both byte sequence and Unicode FEFF).
+                $value = ltrim($value, "\xEF\xBB\xBF");
+                $value = preg_replace('/^\x{FEFF}/u', '', $value);
                 return strtolower(trim($value));
             };
             $normalizedHeader = array_map($normalizeHeader, $header);
