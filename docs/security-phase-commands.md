@@ -2,7 +2,7 @@
 
 These commands are for controlled production execution, one phase at a time.
 
-## Phase 0 — Baseline capture
+## Phase 0 - Baseline capture
 
 ```bash
 WEBUSER="labus_pro_usr"
@@ -20,7 +20,7 @@ curl -sS -o /dev/null -w "api/menu status=%{http_code} time_total=%{time_total}\
 curl -sS -I https://menu.labus.pro/menu.php | egrep -i "strict-transport-security|content-security-policy|x-frame-options|x-content-type-options|referrer-policy|cross-origin"
 ```
 
-## Phase 1 — `phpinfo` exposure validation
+## Phase 1 - `phpinfo` exposure validation
 
 ```bash
 curl -sS -I https://menu.labus.pro/phpinfo.php
@@ -28,7 +28,7 @@ curl -sS -I https://menu.labus.pro/phpinfo.php
 
 Expected: `HTTP/2 404`.
 
-## Phase 2 — Port/service inventory
+## Phase 2 - Port/service inventory (read-only)
 
 ```bash
 ss -lntp
@@ -40,7 +40,20 @@ Optional external check from trusted host:
 nmap -Pn -p 21,22,25,80,443,3306,8080,8443 menu.labus.pro
 ```
 
-## Phase 3 — SSH/fail2ban validation (after config by admin)
+Detailed runbook and table for this phase:
+
+- `docs/security-phase-2-inventory.md`
+- `scripts/perf/phase2-port-inventory.sh`
+
+Example:
+
+```bash
+bash scripts/perf/phase2-port-inventory.sh menu.labus.pro
+```
+
+Important: before any future firewall edits, keep two active SSH sessions open.
+
+## Phase 3 - SSH/fail2ban validation (after config by admin)
 
 ```bash
 sshd -t
@@ -48,7 +61,7 @@ systemctl status ssh --no-pager
 fail2ban-client status
 ```
 
-## Phase 4 — Nginx safe reload flow
+## Phase 4 - Nginx safe reload flow
 
 ```bash
 nginx -t && systemctl reload nginx
