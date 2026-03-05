@@ -105,6 +105,8 @@ Use one entry per production change step.
 - Stop criteria triggered: `no`
 - Rollback action performed: not required
 - Notes/next step:
-  - Run and archive smoke log on server:
+  - Post-check completed:
     - `bash /var/www/labus_pro_usr/data/www/menu.labus.pro/scripts/perf/security-smoke.sh https://menu.labus.pro | tee "/root/security-smoke-$(date -u +%F-%H%M).log"`
-  - Attach log path/output to this entry for audit completeness.
+    - result: `Security smoke passed for https://menu.labus.pro`
+    - core availability: `/menu.php` and `/api/v1/menu.php` returned `200`
+    - exposure checks: `/phpinfo.php` and `/db-indexes-optimizer-v2.php` returned `404`
