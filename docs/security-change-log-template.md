@@ -113,14 +113,14 @@ Use one entry per production change step.
 
 ---
 
-## Entry (draft, next menu-only hardening rollout)
+## Entry (2026-03-05, Phase 4A completed)
 
-- Date (UTC): `<fill at deploy time>`
+- Date (UTC): 2026-03-05 23:38
 - Environment: production (`menu.labus.pro`, shared host)
-- Step/Phase: Phase 4A (menu-only exposure lock)
+- Step/Phase: Phase 4A (menu-only exposure lock + auth/session hardening)
 - Owner: ops/admin
 - Change objective (single objective): close remaining menu-only public diagnostic/legacy endpoints and align auth/session guards without touching host-wide ports/services
-- Commit hash: `<fill>`
+- Commit hash: `44e2ade`
 - Related config/file:
   - `nginx-optimized.conf`
   - `opcache-status.php`
@@ -140,14 +140,15 @@ Use one entry per production change step.
   - `runuser -u "$WEBUSER" -- git -C "$PROJECT" pull --ff-only origin main`
   - `nginx -t && systemctl reload nginx`
 - Verification checks (post):
-  - `bash /var/www/labus_pro_usr/data/www/menu.labus.pro/scripts/perf/security-smoke.sh https://menu.labus.pro | tee "/root/security-smoke-$(date -u +%F-%H%M).log"`
+  - `bash /var/www/labus_pro_usr/data/www/menu.labus.pro/scripts/perf/security-smoke.sh https://menu.labus.pro | tee "/root/security-smoke-$(date -u +%F-%H%M).log"` => passed
+  - smoke log path: `/root/security-smoke-2026-03-05-2338.log`
+  - endpoint exposure checks returned `404`: `/phpinfo.php`, `/db-indexes-optimizer.php`, `/db-indexes-optimizer-v2.php`, `/order_updates.php`, `/scripts/api-metrics-report.php`, `/scripts/api-smoke-runner.php`
+  - auth gate check: `curl -I https://menu.labus.pro/opcache-status.php` => `HTTP/2 302` with `location: auth.php` (verified from both shared host and external host)
   - manual admin flow: login, clear-cache, CSV import, one order status update path
-- Metrics delta (`5xx`, p95, error-rate): `<fill>`
-- Observation window: `30m`
-- Result: `success` | `rolled_back`
-- Stop criteria triggered: `yes/no`
-- Rollback action performed:
-  - revert exact commit (`git checkout <prev_hash>`) and reload nginx
-  - if admin flow breaks, temporarily remove only failing location block and reload
+- Metrics delta (`5xx`, p95, error-rate): no degradation observed during post-deploy checks and 30-minute observation window; no `5xx` growth detected, p95 remained within accepted range for key routes
+- Observation window: `30m` closed successfully
+- Result: `success`
+- Stop criteria triggered: `no`
+- Rollback action performed: not required
 - Notes/next step:
-  - if stable, proceed to next menu-only hardening iteration
+  - proceed with next menu-only hardening iteration; keep host-wide port/Docker scope lock in place
