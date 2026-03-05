@@ -140,3 +140,19 @@ runuser -u "$WEBUSER" -- git -C "$PROJECT" checkout <hash>
 Then apply the same OPcache reset and smoke-check.
 
 For long-term rollback policy, keep stable releases tagged.
+
+## Security rollout (preventive-first)
+
+Use these documents together:
+
+- `docs/security-hardening-roadmap.md`
+- `docs/security-smoke-checklist.md`
+- `docs/security-change-log-template.md`
+
+Rules for security changes:
+
+1. Apply one production change per release step.
+2. Run config syntax checks (`nginx -t` and relevant service checks) before reload.
+3. Run full smoke from `docs/security-smoke-checklist.md` after each step.
+4. Observe production for 30 minutes before next step.
+5. If stop criteria triggers, rollback immediately and document in change log.
