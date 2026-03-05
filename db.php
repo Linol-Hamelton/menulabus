@@ -1417,7 +1417,6 @@ class Database
 
     public function bulkSyncMenuFromCsv($csvHandle, string $delimiter = ';')
     {
-        $this->connection->beginTransaction();
         try {
             rewind($csvHandle);
 
@@ -1476,7 +1475,11 @@ class Database
                     PRIMARY KEY (external_id)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             ");
-            $this->connection->exec("TRUNCATE TABLE tmp_menu_sync");
+            // Do not use TRUNCATE in transactional flow: it can implicitly commit in MySQL.
+            $this->connection->exec("DELETE FROM tmp_menu_sync");
+
+            // Start atomic section only after temp table prep.
+            $this->connection->beginTransaction();
 
             $insertTmpStmt = $this->prepareCached("
                 INSERT INTO tmp_menu_sync (
