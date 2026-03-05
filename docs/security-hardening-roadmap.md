@@ -21,6 +21,19 @@ Implement security improvements only via reversible, testable, single-step chang
 - `p95` on key routes does not degrade more than 10%.
 - Rollback can be completed within 5–10 minutes.
 
+## Current Findings to Address (curl audit, 2026-03-06)
+
+Menu-only exposures confirmed on production before next rollout:
+
+- `GET /order_updates.php` => `200` (legacy SSE endpoint exposed publicly)
+- `GET /scripts/api-metrics-report.php` => `200` (internal metrics path and counters exposed)
+- `GET /scripts/api-smoke-runner.php` => `200` (internal runner callable from web)
+- `GET /opcache-status.php` => `200` with `{"isLoggedIn":false}` (wrong auth include behavior)
+- `GET /clear-cache.php` => `200` with `Set-Cookie` lacking strict flags on observed response
+- Method probe on `/menu.php`: `TRACE => 405`, but `PUT/DELETE/OPTIONS => 200` (kept unchanged intentionally to avoid breaking app/API behavior)
+
+These findings are handled by Phase 4A only (menu vhost + menu PHP files), without host-wide network changes.
+
 ## Mandatory Change Contract
 
 For every change, fill all six fields before rollout:
@@ -80,6 +93,22 @@ For every change, fill all six fields before rollout:
 3. Set explicit `client_max_body_size` not below real CSV upload need.
 4. Keep strict CSP/security headers as-is (no weakening).
 
+### Phase 4A — Menu-only exposure lock (shared-host safe)
+
+Source: curl-based external checks and endpoint review (menu scope only).
+
+1. Block legacy/public diagnostics and internal CLI paths in `menu.labus.pro` vhost only:
+   - `/order_updates.php` => `404`
+   - `/scripts/api-metrics-report.php` => `404`
+   - `/scripts/api-smoke-runner.php` => `404`
+2. Fix `opcache-status.php` auth gate to use `require_auth.php` with admin role (no public JSON auth probe behavior).
+3. Align `clear-cache.php` session cookie flags with secure defaults (`HttpOnly`, `SameSite=Strict`, HTTPS-aware `Secure`).
+4. Validate by smoke:
+   - core `200` on `/menu.php` and `/api/v1/menu.php`
+   - all locked endpoints return `404`
+   - no regression in admin flow (`clear-cache`, login, CSV import, order flow)
+5. Observation window: 30 minutes; rollback if any admin/business regression.
+
 ### Phase 5 — Patch cadence and operating discipline
 
 1. Nginx/PHP updates only in dedicated maintenance window with rollback plan.
@@ -96,12 +125,17 @@ For every change, fill all six fields before rollout:
 | SSH key-only | Admin lockout risk | 2 active sessions + tested key login | New key-based login fails | Re-enable `PasswordAuthentication yes`, reload sshd |
 | Nginx hardening tweaks | Unexpected `4xx/5xx` | `nginx -t` + pre-smoke | `5xx` growth or key endpoint failure | Restore previous vhost config |
 | Upload size limit change | CSV import fails | Test representative CSV before/after | Upload errors in admin | Restore previous limit |
+| Lock `/order_updates.php` and selected `/scripts/*.php` paths | Legacy client path may fail | Search references, ensure active flow uses `/orders-sse.php` or `/ws-poll.php` | Order updates stop in UI | Remove only the failing `location` lock and reload Nginx |
+| Fix `opcache-status.php` auth include | Admin monitor page access behavior changes | Verify admin/owner login and page open before deploy | Admin loses required access | Revert file to previous commit and clear OPcache |
+| Harden `clear-cache.php` session init | Session behavior might change for cache-clear endpoint | Verify client cache clear and monitor server-scope clear | `clear-cache.php` fails or admin clear path breaks | Revert file and reload PHP-FPM (if needed) |
 
 ## Public Interface Impact
 
 - JSON/API contracts: unchanged.
 - Behavioral changes:
   - `GET /phpinfo.php` must return `404`.
+  - `GET /order_updates.php` must return `404`.
+  - `GET /scripts/api-metrics-report.php` and `GET /scripts/api-smoke-runner.php` must return `404`.
   - service ports become restricted by policy.
 - Menu/order business logic remains unchanged.
 

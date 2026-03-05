@@ -5,7 +5,17 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    $isHttps = !empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off';
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.cookie_httponly', '1');
+    ini_set('session.cookie_samesite', 'Strict');
+    ini_set('session.cookie_secure', $isHttps ? '1' : '0');
+    session_start([
+        'cookie_lifetime' => 7200,
+        'cookie_httponly' => true,
+        'cookie_samesite' => 'Strict',
+        'cookie_secure' => $isHttps,
+    ]);
 }
 
 $response = [

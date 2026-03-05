@@ -11,13 +11,22 @@ curl -sS -o /dev/null -w "%{http_code}\n" https://menu.labus.pro/api/v1/menu.php
 
 Expected: `200` for both.
 
-## 2) `phpinfo` exposure check
+## 2) Public endpoint exposure checks
 
 ```bash
-curl -sS -I https://menu.labus.pro/phpinfo.php | egrep -i "HTTP/|content-type|x-cache-status"
+for p in \
+  /phpinfo.php \
+  /db-indexes-optimizer.php \
+  /db-indexes-optimizer-v2.php \
+  /order_updates.php \
+  /scripts/api-metrics-report.php \
+  /scripts/api-smoke-runner.php
+do
+  echo "$p => $(curl -sS -o /dev/null -w "%{http_code}" "https://menu.labus.pro$p")"
+done
 ```
 
-Expected: `404`.
+Expected: `404` for all listed paths.
 
 ## 3) Security headers quick check
 
@@ -39,7 +48,18 @@ for i in {1..5}; do curl -sS -D - -o /dev/null https://menu.labus.pro/api/v1/men
 
 Expected: stable `cache-control` and no abnormal status behavior.
 
-## 5) Admin/business flow checks
+## 5) Session/cookie safety check for `clear-cache.php`
+
+```bash
+curl -sS -D - -o /dev/null https://menu.labus.pro/clear-cache.php | egrep -i "set-cookie|cache-control|pragma"
+```
+
+Expected:
+
+- `cache-control` and `pragma` are present.
+- if `Set-Cookie` exists, it should include `HttpOnly`, `SameSite=Strict`, and `Secure` (for HTTPS).
+
+## 6) Admin/business flow checks
 
 Manual checks:
 
@@ -48,7 +68,7 @@ Manual checks:
 3. Create one test order (site/API path), verify status endpoint.
 4. SSE/poll endpoint returns expected response.
 
-## 6) Error and latency snapshot
+## 7) Error and latency snapshot
 
 Capture and compare with baseline:
 

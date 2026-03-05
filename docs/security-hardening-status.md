@@ -20,10 +20,21 @@
   - `server_tokens off;`
   - `client_max_body_size 20m;`
   - `location = /phpinfo.php { return 404; }`
+  - `location = /db-indexes-optimizer.php { return 404; }`
+  - `location = /db-indexes-optimizer-v2.php { return 404; }`
+  - `location = /order_updates.php { return 404; }`
+  - `location = /scripts/api-metrics-report.php { return 404; }`
+  - `location = /scripts/api-smoke-runner.php { return 404; }`
+- Hardened PHP access/session points:
+  - `opcache-status.php` now uses `require_auth.php` with admin-role guard
+  - `clear-cache.php` session startup now enforces strict cookie flags
+- Extended smoke automation:
+  - `scripts/perf/security-smoke.sh` now validates locked endpoints and `clear-cache.php` header snapshot
+  - `docs/security-smoke-checklist.md` updated accordingly
 
 ## Requires manual server execution
 
-- Firewall and port policy (`3306`, `21`, `8080`, `8443`).
+- Firewall and port policy (`3306`, `21`, `8080`, `8443`) for menu-owned services only.
 - SSH staged hardening and fail2ban rollout.
 - Nginx/FastPanel production config apply + reload.
 - Post-change observation and metrics comparison.
@@ -32,11 +43,23 @@
 
 1. Deploy current commit to production.
 2. Apply Nginx config in FastPanel and reload safely (`nginx -t && systemctl reload nginx`).
-3. Run `docs/security-smoke-checklist.md` (or `bash scripts/perf/security-smoke.sh https://menu.labus.pro`).
-4. Start phase-by-phase server hardening from `docs/security-phase-commands.md`.
+3. Run `docs/security-smoke-checklist.md` (or `bash scripts/perf/security-smoke.sh https://menu.labus.pro`) and save output to `/root/security-smoke-<UTC>.log`.
+4. Verify admin flows (`clear-cache`, admin login, order updates via `/orders-sse.php`/`/ws-poll.php`).
+5. Continue phase-by-phase from `docs/security-phase-commands.md`.
 
 ## Scope lock after Phase 2
 
 - Confirmed by operations: do not modify Docker images/containers and network ports that belong to other sites/services on the shared host.
 - Therefore, host-level firewall tightening for non-menu ports is excluded from this project scope.
 - Continue with menu-only hardening steps (application/vhost level) to avoid cross-project impact.
+
+## Production snapshot before next rollout (curl audit, 2026-03-06)
+
+- `GET /order_updates.php` => `200`
+- `GET /scripts/api-metrics-report.php` => `200`
+- `GET /scripts/api-smoke-runner.php` => `200`
+- `GET /opcache-status.php` => `200` with body `{"isLoggedIn":false}`
+- `GET /clear-cache.php` => `200` with `Set-Cookie` observed without strict flags
+- method probe on `/menu.php`: `TRACE => 405`, `PUT/DELETE/OPTIONS => 200` (deferred intentionally to avoid functional regressions)
+
+Planned fix path: deploy current repository changes from this iteration, reload Nginx safely, run updated smoke, observe 30 minutes.

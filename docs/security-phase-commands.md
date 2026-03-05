@@ -75,6 +75,23 @@ bash scripts/perf/security-smoke.sh https://menu.labus.pro
 
 If script path is unavailable on server, run commands from `docs/security-smoke-checklist.md` manually.
 
+## Phase 4A - Menu-only exposure lock verification
+
+```bash
+for p in \
+  /phpinfo.php \
+  /db-indexes-optimizer.php \
+  /db-indexes-optimizer-v2.php \
+  /order_updates.php \
+  /scripts/api-metrics-report.php \
+  /scripts/api-smoke-runner.php
+do
+  echo "$p => $(curl -sS -o /dev/null -w "%{http_code}" "https://menu.labus.pro$p")"
+done
+```
+
+Expected: all paths return `404`.
+
 ## Rollback by commit
 
 ```bash

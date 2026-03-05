@@ -1,10 +1,7 @@
 <?php
 // opcache-status.php
-require_once 'check-auth.php';
-
-if ($_SESSION['user_role'] !== 'owner' && $_SESSION['user_role'] !== 'admin') {
-    die('Access denied');
-}
+$required_role = 'admin';
+require_once __DIR__ . '/require_auth.php';
 
 // Проверка доступности OPcache
 if (!extension_loaded('Zend OPcache')) {

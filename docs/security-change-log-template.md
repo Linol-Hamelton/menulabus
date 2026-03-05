@@ -110,3 +110,44 @@ Use one entry per production change step.
     - result: `Security smoke passed for https://menu.labus.pro`
     - core availability: `/menu.php` and `/api/v1/menu.php` returned `200`
     - exposure checks: `/phpinfo.php` and `/db-indexes-optimizer-v2.php` returned `404`
+
+---
+
+## Entry (draft, next menu-only hardening rollout)
+
+- Date (UTC): `<fill at deploy time>`
+- Environment: production (`menu.labus.pro`, shared host)
+- Step/Phase: Phase 4A (menu-only exposure lock)
+- Owner: ops/admin
+- Change objective (single objective): close remaining menu-only public diagnostic/legacy endpoints and align auth/session guards without touching host-wide ports/services
+- Commit hash: `<fill>`
+- Related config/file:
+  - `nginx-optimized.conf`
+  - `opcache-status.php`
+  - `clear-cache.php`
+  - `scripts/perf/security-smoke.sh`
+  - `docs/security-smoke-checklist.md`
+- Risk summary:
+  - potential break of legacy order update path if any client still calls `/order_updates.php`
+  - potential admin UX change around `opcache-status.php`/`clear-cache.php`
+- Preventive checks (pre):
+  - `nginx -t`
+  - grep/code-search for `order_updates.php` references in active frontend
+  - keep scope lock: no Docker/other-site port modifications
+- Deployment command(s):
+  - `runuser -u "$WEBUSER" -- git -C "$PROJECT" fetch --prune origin`
+  - `runuser -u "$WEBUSER" -- git -C "$PROJECT" checkout main`
+  - `runuser -u "$WEBUSER" -- git -C "$PROJECT" pull --ff-only origin main`
+  - `nginx -t && systemctl reload nginx`
+- Verification checks (post):
+  - `bash /var/www/labus_pro_usr/data/www/menu.labus.pro/scripts/perf/security-smoke.sh https://menu.labus.pro | tee "/root/security-smoke-$(date -u +%F-%H%M).log"`
+  - manual admin flow: login, clear-cache, CSV import, one order status update path
+- Metrics delta (`5xx`, p95, error-rate): `<fill>`
+- Observation window: `30m`
+- Result: `success` | `rolled_back`
+- Stop criteria triggered: `yes/no`
+- Rollback action performed:
+  - revert exact commit (`git checkout <prev_hash>`) and reload nginx
+  - if admin flow breaks, temporarily remove only failing location block and reload
+- Notes/next step:
+  - if stable, proceed to next menu-only hardening iteration
