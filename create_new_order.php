@@ -48,7 +48,7 @@ try {
         $allowedPaymentMethods = ['cash', 'online', 'sbp', 'tbank_sbp'];
         $tips = max(0.0, (float)($input['tips'] ?? 0));
 
-        if (!is_array($items) || empty($items) || $total <= 0) {
+        if (!is_array($items) || empty($items)) {
             $response['error'] = 'Неверные параметры заказа';
             http_response_code(400);
             echo json_encode($response, JSON_UNESCAPED_UNICODE);
@@ -101,6 +101,24 @@ try {
             }
         }
 
+        $sanitized = $db->sanitizeOrderItemsForCheckout($items);
+        $items = $sanitized['items'] ?? [];
+        $removedItems = $sanitized['removed_items'] ?? [];
+        $serverTotal = (float)($sanitized['server_total'] ?? 0);
+        $cartAdjusted = !empty($sanitized['cart_adjusted']);
+
+        if (empty($items) || $serverTotal <= 0) {
+            $response['error'] = 'Корзина пуста после актуализации меню';
+            $response['removed_items'] = $removedItems;
+            $response['server_total'] = $serverTotal;
+            $response['cart_adjusted'] = $cartAdjusted;
+            http_response_code(409);
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $total = $serverTotal;
+
         // Pre-check: verify payment gateway is configured BEFORE creating the order
         if ($paymentMethod === 'online' || $paymentMethod === 'sbp') {
             $ykShopId    = json_decode($db->getSetting('yookassa_shop_id')    ?? '""', true) ?? '';
@@ -108,6 +126,9 @@ try {
             $ykEnabled   = json_decode($db->getSetting('yookassa_enabled')    ?? '"false"', true) ?? 'false';
             if ($ykShopId === '' || $ykSecretKey === '' || $ykEnabled !== 'true') {
                 $response['error'] = 'Онлайн-оплата временно недоступна. Выберите другой способ оплаты.';
+                $response['removed_items'] = $removedItems;
+                $response['server_total'] = $serverTotal;
+                $response['cart_adjusted'] = $cartAdjusted;
                 http_response_code(200);
                 echo json_encode($response, JSON_UNESCAPED_UNICODE);
                 exit;
@@ -119,6 +140,9 @@ try {
             $tbOn   = json_decode($db->getSetting('tbank_enabled')      ?? '"false"', true) ?? 'false';
             if ($tbKey === '' || $tbPass === '' || $tbOn !== 'true') {
                 $response['error'] = 'СБП через Т-Банк временно недоступен. Выберите другой способ оплаты.';
+                $response['removed_items'] = $removedItems;
+                $response['server_total'] = $serverTotal;
+                $response['cart_adjusted'] = $cartAdjusted;
                 http_response_code(200);
                 echo json_encode($response, JSON_UNESCAPED_UNICODE);
                 exit;
@@ -128,6 +152,9 @@ try {
         $orderId = $db->createOrder((int)$_SESSION['user_id'], $items, $total, $deliveryType, $deliveryDetail, $tips);
         if (!$orderId) {
             $response['error'] = 'Ошибка при создании заказа';
+            $response['removed_items'] = $removedItems;
+            $response['server_total'] = $serverTotal;
+            $response['cart_adjusted'] = $cartAdjusted;
             http_response_code(500);
             echo json_encode($response, JSON_UNESCAPED_UNICODE);
             exit;
@@ -253,7 +280,12 @@ try {
         }
         // ─────────────────────────────────────────────────────────────────
 
-        $payload = ['orderId' => (int)$orderId];
+        $payload = [
+            'orderId' => (int)$orderId,
+            'removed_items' => $removedItems,
+            'server_total' => $serverTotal,
+            'cart_adjusted' => $cartAdjusted,
+        ];
         if ($paymentUrl) {
             $payload['paymentUrl'] = $paymentUrl;
         }
@@ -263,6 +295,9 @@ try {
 
         $response['success'] = true;
         $response['orderId'] = (int)$orderId;
+        $response['removed_items'] = $removedItems;
+        $response['server_total'] = $serverTotal;
+        $response['cart_adjusted'] = $cartAdjusted;
         if ($paymentUrl) {
             $response['paymentUrl'] = $paymentUrl;
         }

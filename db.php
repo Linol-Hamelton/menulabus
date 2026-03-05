@@ -176,6 +176,15 @@ class Database
     {
     }
 
+    private function generateMenuExternalId(string $prefix = 'manual'): string
+    {
+        try {
+            return $prefix . '-' . bin2hex(random_bytes(8));
+        } catch (Throwable $e) {
+            return $prefix . '-' . str_replace('.', '', uniqid('', true));
+        }
+    }
+
     private function ensureOrderItemsTable(): bool
     {
         static $checked = null;
@@ -321,8 +330,8 @@ class Database
         
         try {
             $stmt = $this->prepareCached(
-                "SELECT id, name, description, composition, price, image,
-                 calories, protein, fat, carbs, category, available
+                "SELECT id, external_id, name, description, composition, price, image,
+                 calories, protein, fat, carbs, category, available, archived_at
                  FROM menu_items WHERE id = :id"
             );
             $stmt->bindValue(':id', $id, PDO::PARAM_INT);
@@ -383,12 +392,17 @@ class Database
         }
 
         try {
-            $sql = "SELECT id, name, description, composition, price, image,
-                   calories, protein, fat, carbs, category, available
-                   FROM menu_items" . ($availableOnly ? " WHERE available = 1" : "");
+            $sql = "SELECT id, external_id, name, description, composition, price, image,
+                   calories, protein, fat, carbs, category, available, archived_at
+                   FROM menu_items
+                   WHERE archived_at IS NULL";
+
+            if ($availableOnly) {
+                $sql .= " AND available = 1";
+            }
 
             if ($category) {
-                $sql .= ($availableOnly ? " AND" : " WHERE") . " category = :category";
+                $sql .= " AND category = :category";
             }
             $sql .= " ORDER BY category, name";
 
@@ -406,6 +420,46 @@ class Database
             return $result;
         } catch (PDOException $e) {
             error_log("getMenuItems Error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getArchivedMenuItems($category = null): array
+    {
+        $cacheKey = 'menu_items_archived_' . ($category ?: 'all');
+
+        if ($this->redisCache) {
+            $cached = $this->redisCache->get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+
+        try {
+            $sql = "SELECT id, external_id, name, description, composition, price, image,
+                   calories, protein, fat, carbs, category, available, archived_at
+                   FROM menu_items
+                   WHERE archived_at IS NOT NULL";
+
+            if ($category) {
+                $sql .= " AND category = :category";
+            }
+            $sql .= " ORDER BY category, name";
+
+            $stmt = $this->prepareCached($sql);
+            if ($category) {
+                $stmt->bindValue(':category', $category, PDO::PARAM_STR);
+            }
+            $stmt->execute();
+            $result = $stmt->fetchAll();
+
+            if ($this->redisCache) {
+                $this->redisCache->set($cacheKey, $result, $this->menuCacheTtl);
+            }
+
+            return $result;
+        } catch (PDOException $e) {
+            error_log("getArchivedMenuItems Error: " . $e->getMessage());
             return [];
         }
     }
@@ -477,7 +531,10 @@ class Database
     {
         try {
             $stmt = $this->prepareCached(
-                "UPDATE menu_items SET available = NOT available WHERE id = :id"
+                "UPDATE menu_items
+                 SET available = NOT available
+                 WHERE id = :id
+                   AND archived_at IS NULL"
             );
             $stmt->execute([':id' => $id]);
 
@@ -508,6 +565,168 @@ class Database
             error_log("getMenuItemName Error: " . $e->getMessage());
             return null;
         }
+    }
+
+    public function restoreArchivedMenuItem(int $id): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE menu_items
+                SET archived_at = NULL,
+                    available = 1
+                WHERE id = :id
+                  AND archived_at IS NOT NULL
+            ");
+            $stmt->execute([':id' => $id]);
+            $ok = $stmt->rowCount() > 0;
+            if ($ok) {
+                $this->invalidateMenuCache();
+            }
+            return $ok;
+        } catch (PDOException $e) {
+            error_log("restoreArchivedMenuItem Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function sanitizeOrderItemsForCheckout(array $items): array
+    {
+        $removedItems = [];
+        $inputItems = [];
+        $itemIds = [];
+
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                $removedItems[] = [
+                    'id' => 0,
+                    'name' => null,
+                    'reason' => 'invalid_item',
+                ];
+                continue;
+            }
+
+            $itemId = (int)($item['id'] ?? 0);
+            if ($itemId <= 0) {
+                $removedItems[] = [
+                    'id' => $itemId,
+                    'name' => isset($item['name']) ? (string)$item['name'] : null,
+                    'reason' => 'invalid_id',
+                ];
+                continue;
+            }
+
+            $quantity = max(1, (int)($item['quantity'] ?? 1));
+            $inputItems[] = [
+                'raw' => $item,
+                'id' => $itemId,
+                'quantity' => $quantity,
+            ];
+            $itemIds[$itemId] = true;
+        }
+
+        if (empty($inputItems)) {
+            return [
+                'items' => [],
+                'removed_items' => $removedItems,
+                'server_total' => 0.0,
+                'cart_adjusted' => !empty($removedItems),
+            ];
+        }
+
+        $ids = array_keys($itemIds);
+        $params = [];
+        $placeholders = [];
+        foreach ($ids as $idx => $id) {
+            $key = ':id_' . $idx;
+            $placeholders[] = $key;
+            $params[$key] = (int)$id;
+        }
+
+        $menuItemsById = [];
+        try {
+            $sql = "
+                SELECT id, name, price, image, calories, protein, fat, carbs, available, archived_at
+                FROM menu_items
+                WHERE id IN (" . implode(',', $placeholders) . ")
+            ";
+            $stmt = $this->prepareCached($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll();
+            foreach ($rows as $row) {
+                $menuItemsById[(int)$row['id']] = $row;
+            }
+        } catch (PDOException $e) {
+            error_log("sanitizeOrderItemsForCheckout Error: " . $e->getMessage());
+            return [
+                'items' => [],
+                'removed_items' => array_merge($removedItems, [[
+                    'id' => 0,
+                    'name' => null,
+                    'reason' => 'db_error',
+                ]]),
+                'server_total' => 0.0,
+                'cart_adjusted' => true,
+            ];
+        }
+
+        $cleanItems = [];
+        $serverTotal = 0.0;
+
+        foreach ($inputItems as $entry) {
+            $itemId = $entry['id'];
+            $quantity = $entry['quantity'];
+            $raw = $entry['raw'];
+            $menuItem = $menuItemsById[$itemId] ?? null;
+
+            if (!$menuItem) {
+                $removedItems[] = [
+                    'id' => $itemId,
+                    'name' => isset($raw['name']) ? (string)$raw['name'] : null,
+                    'reason' => 'not_found',
+                ];
+                continue;
+            }
+
+            if (!empty($menuItem['archived_at'])) {
+                $removedItems[] = [
+                    'id' => $itemId,
+                    'name' => (string)$menuItem['name'],
+                    'reason' => 'archived',
+                ];
+                continue;
+            }
+
+            if ((int)$menuItem['available'] !== 1) {
+                $removedItems[] = [
+                    'id' => $itemId,
+                    'name' => (string)$menuItem['name'],
+                    'reason' => 'unavailable',
+                ];
+                continue;
+            }
+
+            $price = (float)$menuItem['price'];
+            $clean = $raw;
+            $clean['id'] = $itemId;
+            $clean['name'] = (string)$menuItem['name'];
+            $clean['price'] = $price;
+            $clean['image'] = (string)($menuItem['image'] ?? '');
+            $clean['quantity'] = $quantity;
+            $clean['calories'] = isset($menuItem['calories']) ? (int)$menuItem['calories'] : 0;
+            $clean['protein'] = isset($menuItem['protein']) ? (int)$menuItem['protein'] : 0;
+            $clean['fat'] = isset($menuItem['fat']) ? (int)$menuItem['fat'] : 0;
+            $clean['carbs'] = isset($menuItem['carbs']) ? (int)$menuItem['carbs'] : 0;
+
+            $cleanItems[] = $clean;
+            $serverTotal += $price * $quantity;
+        }
+
+        return [
+            'items' => $cleanItems,
+            'removed_items' => $removedItems,
+            'server_total' => round($serverTotal, 2),
+            'cart_adjusted' => !empty($removedItems),
+        ];
     }
 
     public function getActiveTableOrders(): array
@@ -636,7 +855,11 @@ class Database
         
         try {
             $stmt = $this->prepareCached(
-                "SELECT DISTINCT category FROM menu_items WHERE available = 1 ORDER BY category"
+                "SELECT DISTINCT category
+                 FROM menu_items
+                 WHERE available = 1
+                   AND archived_at IS NULL
+                 ORDER BY category"
             );
             $stmt->execute();
             $result = $stmt->fetchAll();
@@ -1037,11 +1260,12 @@ class Database
     public function addMenuItem($name, $description, $composition, $price, $image, $calories, $protein, $fat, $carbs, $category, $available = 1)
     {
         try {
-            $sql = "INSERT INTO menu_items (name, description, composition, price, image, 
-                    calories, protein, fat, carbs, category, available) 
-                    VALUES (:n, :d, :cmp, :p, :i, :cal, :prot, :fat, :carb, :c, :a)";
+            $sql = "INSERT INTO menu_items (external_id, name, description, composition, price, image, 
+                    calories, protein, fat, carbs, category, available, archived_at) 
+                    VALUES (:eid, :n, :d, :cmp, :p, :i, :cal, :prot, :fat, :carb, :c, :a, NULL)";
             $stmt = $this->prepareCached($sql);
             $result = $stmt->execute([
+                ':eid' => $this->generateMenuExternalId(),
                 ':n' => $name,
                 ':d' => $description,
                 ':cmp' => $composition,
@@ -1108,6 +1332,10 @@ class Database
 
     public function bulkUpdateMenu($csvHandle, string $delimiter = ';'): bool
     {
+        // Legacy entrypoint kept for backward compatibility with old callers.
+        $stats = $this->bulkSyncMenuFromCsv($csvHandle, $delimiter);
+        return is_array($stats);
+
         $this->connection->beginTransaction();
         try {
             $stmt = $this->prepareCached("
@@ -1183,6 +1411,237 @@ class Database
             $this->connection->rollBack();
             error_log("bulkUpdateMenu Error: " . $e->getMessage());
             $_SESSION['error'] = "РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё CSV: " . $e->getMessage();
+            return false;
+        }
+    }
+
+    public function bulkSyncMenuFromCsv($csvHandle, string $delimiter = ';')
+    {
+        $this->connection->beginTransaction();
+        try {
+            rewind($csvHandle);
+
+            $header = fgetcsv($csvHandle, 0, $delimiter, '"');
+            if ($header === false) {
+                throw new Exception('CSV файл пустой');
+            }
+
+            $normalizeHeader = static function ($value): string {
+                $value = (string)$value;
+                $value = preg_replace('/^\xEF\xBB\xBF/u', '', $value);
+                return strtolower(trim($value));
+            };
+            $normalizedHeader = array_map($normalizeHeader, $header);
+            $expectedHeader = [
+                'external_id',
+                'name',
+                'description',
+                'composition',
+                'price',
+                'image',
+                'calories',
+                'protein',
+                'fat',
+                'carbs',
+                'category',
+                'available',
+            ];
+            if (function_exists('mb_check_encoding')) {
+                foreach ($header as $headCell) {
+                    if (!mb_check_encoding((string)$headCell, 'UTF-8')) {
+                        throw new Exception('CSV должен быть в UTF-8');
+                    }
+                }
+            }
+            if ($normalizedHeader !== $expectedHeader) {
+                throw new Exception('Неверный заголовок CSV. Используйте новый шаблон с колонкой external_id');
+            }
+
+            $this->connection->exec("
+                CREATE TEMPORARY TABLE IF NOT EXISTS tmp_menu_sync (
+                    external_id VARCHAR(64) NOT NULL,
+                    name VARCHAR(255) NOT NULL,
+                    description TEXT NULL,
+                    composition TEXT NULL,
+                    price DECIMAL(10,2) NOT NULL,
+                    image VARCHAR(255) NULL,
+                    calories INT NULL,
+                    protein INT NULL,
+                    fat INT NULL,
+                    carbs INT NULL,
+                    category VARCHAR(50) NOT NULL,
+                    available TINYINT(1) NOT NULL DEFAULT 1,
+                    PRIMARY KEY (external_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            ");
+            $this->connection->exec("TRUNCATE TABLE tmp_menu_sync");
+
+            $insertTmpStmt = $this->prepareCached("
+                INSERT INTO tmp_menu_sync (
+                    external_id, name, description, composition, price, image,
+                    calories, protein, fat, carbs, category, available
+                ) VALUES (
+                    :external_id, :name, :description, :composition, :price, :image,
+                    :calories, :protein, :fat, :carbs, :category, :available
+                )
+            ");
+
+            $seenExternalIds = [];
+            $lineNo = 1;
+            $count = 0;
+            $errors = 0;
+
+            $toNullableInt = static function ($value): ?int {
+                $value = trim((string)$value);
+                if ($value === '') {
+                    return null;
+                }
+                if (!is_numeric($value)) {
+                    throw new Exception("Значение \"{$value}\" должно быть числом");
+                }
+                return (int)$value;
+            };
+
+            while (($row = fgetcsv($csvHandle, 0, $delimiter, '"')) !== false) {
+                $lineNo++;
+                if (count($row) === 1 && trim((string)$row[0]) === '') {
+                    continue;
+                }
+                if (count($row) !== 12) {
+                    throw new Exception("Строка {$lineNo}: ожидается 12 колонок");
+                }
+                if (function_exists('mb_check_encoding')) {
+                    foreach ($row as $cell) {
+                        if (!mb_check_encoding((string)$cell, 'UTF-8')) {
+                            throw new Exception("Строка {$lineNo}: CSV должен быть в UTF-8");
+                        }
+                    }
+                }
+
+                $externalId = trim((string)$row[0]);
+                if ($externalId === '') {
+                    throw new Exception("Строка {$lineNo}: external_id обязателен");
+                }
+                if (strlen($externalId) > 64) {
+                    throw new Exception("Строка {$lineNo}: external_id длиннее 64 символов");
+                }
+                if (isset($seenExternalIds[$externalId])) {
+                    throw new Exception("Строка {$lineNo}: duplicate external_id {$externalId}");
+                }
+                $seenExternalIds[$externalId] = true;
+
+                $name = trim((string)$row[1]);
+                if ($name === '') {
+                    throw new Exception("Строка {$lineNo}: name обязателен");
+                }
+
+                $composition = trim((string)$row[3]);
+                $composition = preg_replace('/([^\s])\s+([^\s])/', '$1, $2', $composition);
+                $composition = preg_replace('/,{2,}/', ',', (string)$composition);
+                $composition = trim((string)$composition, ', ');
+
+                $priceRaw = str_replace(',', '.', trim((string)$row[4]));
+                if ($priceRaw === '' || !is_numeric($priceRaw)) {
+                    throw new Exception("Строка {$lineNo}: price должен быть числом");
+                }
+                $price = (float)$priceRaw;
+
+                $category = trim((string)$row[10]);
+                if ($category === '') {
+                    throw new Exception("Строка {$lineNo}: category обязателен");
+                }
+
+                $availableRaw = strtolower(trim((string)$row[11]));
+                if ($availableRaw === '' || $availableRaw === '1' || $availableRaw === 'true' || $availableRaw === 'yes' || $availableRaw === 'да') {
+                    $available = 1;
+                } elseif ($availableRaw === '0' || $availableRaw === 'false' || $availableRaw === 'no' || $availableRaw === 'нет') {
+                    $available = 0;
+                } else {
+                    throw new Exception("Строка {$lineNo}: available должен быть 0 или 1");
+                }
+
+                $insertTmpStmt->execute([
+                    ':external_id' => $externalId,
+                    ':name' => $name,
+                    ':description' => trim((string)$row[2]),
+                    ':composition' => $composition,
+                    ':price' => $price,
+                    ':image' => trim((string)$row[5]),
+                    ':calories' => $toNullableInt($row[6]),
+                    ':protein' => $toNullableInt($row[7]),
+                    ':fat' => $toNullableInt($row[8]),
+                    ':carbs' => $toNullableInt($row[9]),
+                    ':category' => $category,
+                    ':available' => $available,
+                ]);
+                $count++;
+            }
+
+            if ($count === 0) {
+                throw new Exception('CSV файл не содержит данных для импорта');
+            }
+
+            $statsStmt = $this->connection->query("
+                SELECT
+                    SUM(CASE WHEN mi.id IS NULL THEN 1 ELSE 0 END) AS inserted,
+                    SUM(CASE WHEN mi.id IS NOT NULL THEN 1 ELSE 0 END) AS updated,
+                    SUM(CASE WHEN mi.id IS NOT NULL AND mi.archived_at IS NOT NULL THEN 1 ELSE 0 END) AS restored_from_archive
+                FROM tmp_menu_sync t
+                LEFT JOIN menu_items mi ON mi.external_id = t.external_id
+            ");
+            $statsRow = $statsStmt ? $statsStmt->fetch() : [];
+
+            $upsertStmt = $this->prepareCached("
+                INSERT INTO menu_items (
+                    external_id, name, description, composition, price, image,
+                    calories, protein, fat, carbs, category, available, archived_at
+                )
+                SELECT
+                    external_id, name, description, composition, price, image,
+                    calories, protein, fat, carbs, category, available, NULL
+                FROM tmp_menu_sync
+                ON DUPLICATE KEY UPDATE
+                    name = VALUES(name),
+                    description = VALUES(description),
+                    composition = VALUES(composition),
+                    price = VALUES(price),
+                    image = VALUES(image),
+                    calories = VALUES(calories),
+                    protein = VALUES(protein),
+                    fat = VALUES(fat),
+                    carbs = VALUES(carbs),
+                    category = VALUES(category),
+                    available = VALUES(available),
+                    archived_at = NULL
+            ");
+            $upsertStmt->execute();
+
+            $archiveMissingStmt = $this->prepareCached("
+                UPDATE menu_items mi
+                LEFT JOIN tmp_menu_sync t ON t.external_id = mi.external_id
+                SET mi.archived_at = NOW(),
+                    mi.available = 0
+                WHERE t.external_id IS NULL
+                  AND mi.archived_at IS NULL
+            ");
+            $archiveMissingStmt->execute();
+
+            $this->connection->commit();
+            $this->invalidateMenuCache();
+
+            return [
+                'inserted' => (int)($statsRow['inserted'] ?? 0),
+                'updated' => (int)($statsRow['updated'] ?? 0),
+                'restored_from_archive' => (int)($statsRow['restored_from_archive'] ?? 0),
+                'archived_missing' => (int)$archiveMissingStmt->rowCount(),
+                'errors' => $errors,
+            ];
+        } catch (Throwable $e) {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+            error_log("bulkSyncMenuFromCsv Error: " . $e->getMessage());
+            $_SESSION['error'] = "Ошибка загрузки CSV: " . $e->getMessage();
             return false;
         }
     }

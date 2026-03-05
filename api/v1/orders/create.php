@@ -11,7 +11,7 @@ $total = $input['total'] ?? null;
 $deliveryType = (string)($input['delivery_type'] ?? 'bar');
 $deliveryDetail = (string)($input['delivery_details'] ?? '');
 
-if (!is_array($items) || empty($items) || !is_numeric($total)) {
+if (!is_array($items) || empty($items)) {
     ApiResponse::error('Invalid order payload', 400);
 }
 if ($deliveryType === 'delivery' && trim($deliveryDetail) === '') {
@@ -25,7 +25,7 @@ $idempotencyKey = Idempotency::getHeaderKey();
 $requestHash = Idempotency::hashPayload([
     'user_id' => (int)$user['id'],
     'items' => $items,
-    'total' => (float)$total,
+    'total' => is_numeric($total) ? (float)$total : null,
     'delivery_type' => $deliveryType,
     'delivery_details' => $deliveryDetail,
 ]);
@@ -43,9 +43,27 @@ if ($idempotencyKey !== null) {
     }
 }
 
-$orderId = $db->createOrder((int)$user['id'], $items, (float)$total, $deliveryType, $deliveryDetail);
+$sanitized = $db->sanitizeOrderItemsForCheckout($items);
+$items = $sanitized['items'] ?? [];
+$removedItems = $sanitized['removed_items'] ?? [];
+$serverTotal = (float)($sanitized['server_total'] ?? 0);
+$cartAdjusted = !empty($sanitized['cart_adjusted']);
+
+if (empty($items) || $serverTotal <= 0) {
+    ApiResponse::error('Cart is empty after menu sync', 409, [
+        'removed_items' => $removedItems,
+        'server_total' => $serverTotal,
+        'cart_adjusted' => $cartAdjusted,
+    ]);
+}
+
+$orderId = $db->createOrder((int)$user['id'], $items, $serverTotal, $deliveryType, $deliveryDetail);
 if (!$orderId) {
-    ApiResponse::error('Failed to create order', 500);
+    ApiResponse::error('Failed to create order', 500, [
+        'removed_items' => $removedItems,
+        'server_total' => $serverTotal,
+        'cart_adjusted' => $cartAdjusted,
+    ]);
 }
 
 $createdOrder = $db->getOrderById((int)$orderId);
@@ -54,6 +72,9 @@ $createdStatus = (string)($createdOrder['status'] ?? '');
 $data = [
     'order_id' => (int)$orderId,
     'status' => $createdStatus,
+    'removed_items' => $removedItems,
+    'server_total' => $serverTotal,
+    'cart_adjusted' => $cartAdjusted,
 ];
 
 if ($idempotencyKey !== null) {

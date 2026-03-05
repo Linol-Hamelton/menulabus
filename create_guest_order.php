@@ -28,7 +28,7 @@ try {
     $deliveryType = (string)($input['delivery_type'] ?? 'bar');
     $deliveryDetail = (string)($input['delivery_details'] ?? '');
 
-    if (!is_array($items) || empty($items) || $total <= 0 || $phone === '') {
+    if (!is_array($items) || empty($items) || $phone === '') {
         $response['error'] = 'Неверные параметры заказа';
         http_response_code(400);
         echo json_encode($response, JSON_UNESCAPED_UNICODE);
@@ -78,21 +78,50 @@ try {
         }
     }
 
+    $sanitized = $db->sanitizeOrderItemsForCheckout($items);
+    $items = $sanitized['items'] ?? [];
+    $removedItems = $sanitized['removed_items'] ?? [];
+    $serverTotal = (float)($sanitized['server_total'] ?? 0);
+    $cartAdjusted = !empty($sanitized['cart_adjusted']);
+
+    if (empty($items) || $serverTotal <= 0) {
+        $response['error'] = 'Корзина пуста после актуализации меню';
+        $response['removed_items'] = $removedItems;
+        $response['server_total'] = $serverTotal;
+        $response['cart_adjusted'] = $cartAdjusted;
+        http_response_code(409);
+        echo json_encode($response, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $total = $serverTotal;
+
     $orderId = $db->createGuestOrder($items, $total, $deliveryType, $deliveryDetail);
     if (!$orderId) {
         $response['error'] = 'Ошибка при создании заказа';
+        $response['removed_items'] = $removedItems;
+        $response['server_total'] = $serverTotal;
+        $response['cart_adjusted'] = $cartAdjusted;
         http_response_code(500);
         echo json_encode($response, JSON_UNESCAPED_UNICODE);
         exit;
     }
 
-    $payload = ['orderId' => (int)$orderId];
+    $payload = [
+        'orderId' => (int)$orderId,
+        'removed_items' => $removedItems,
+        'server_total' => $serverTotal,
+        'cart_adjusted' => $cartAdjusted,
+    ];
     if ($idempotencyKey !== null) {
         Idempotency::store($db->getConnection(), 'guest_order_create', $idempotencyKey, $requestHash, $payload);
     }
 
     $response['success'] = true;
     $response['orderId'] = (int)$orderId;
+    $response['removed_items'] = $removedItems;
+    $response['server_total'] = $serverTotal;
+    $response['cart_adjusted'] = $cartAdjusted;
     http_response_code(200);
 } catch (Throwable $e) {
     error_log("Guest order processing error: " . $e->getMessage());
@@ -105,4 +134,3 @@ ob_end_clean();
 header('Content-Type: application/json; charset=utf-8');
 echo json_encode($response, JSON_UNESCAPED_UNICODE);
 exit;
-

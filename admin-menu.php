@@ -14,25 +14,39 @@ if (empty($scriptNonce) && isset($_SESSION['csp_nonce']['script'])) {
 
 $db = Database::getInstance();
 
-$items = $db->getMenuItems(null, false); // false = include unavailable (stop-list)
-$categories = array_unique(array_column($items, 'category'));
-
-if ($items === null) {
-    $items = $db->getMenuItems(null, false);
-}
+$menuView = (($_GET['view'] ?? 'active') === 'archived') ? 'archived' : 'active';
+$showArchived = $menuView === 'archived';
+$items = $showArchived
+    ? $db->getArchivedMenuItems()
+    : $db->getMenuItems(null, false);
 
 // Получаем уникальные категории
-$categories = [];
-if (!empty($items)) {
-    $categories = array_unique(array_column($items, 'category'));
-}
+$categories = !empty($items)
+    ? array_values(array_unique(array_column($items, 'category')))
+    : [];
 
 $errors = $success = null;
 
 /* --- CRUD logic --- */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     /* ---------- 1. Одиночное добавление / редактирование товара ---------- */
-    if (isset($_POST['name'])) {
+    if (isset($_POST['restore_archived'])) {
+        if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
+            $_SESSION['error'] = 'Ошибка безопасности';
+        } else {
+            $id = (int)($_POST['id'] ?? 0);
+            if ($id <= 0) {
+                $_SESSION['error'] = 'Некорректный ID';
+            } else {
+                $ok = $db->restoreArchivedMenuItem($id);
+                $_SESSION[$ok ? 'success' : 'error'] = $ok
+                    ? 'Блюдо восстановлено из архива'
+                    : 'Не удалось восстановить блюдо';
+            }
+        }
+        header('Location: admin-menu.php?view=archived');
+        exit;
+    } elseif (isset($_POST['name'])) {
         if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
             $_SESSION['error'] = 'Ошибка безопасности';
         } else {
@@ -107,27 +121,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['error'] = 'Ошибка загрузки файла';
             } else {
                 $fileContent = file_get_contents($_FILES['csv_file']['tmp_name']);
-                $lines = explode("\n", $fileContent);
-
-                // Определяем разделитель по первой строке
-                $delimiter = (strpos($lines[0], ',') !== false) ? ',' : ';';
-
-                // Создаем временный файл для обработки
-                $tempHandle = fopen('php://memory', 'r+');
-                fwrite($tempHandle, implode("\n", $lines));
-                rewind($tempHandle);
-
-                $header = fgetcsv($tempHandle, 0, $delimiter, '"');
-                if ($header === false || count($header) < 11) {
-                    $_SESSION['error'] = 'Неверный формат файла (меньше 11 колонок)';
+                if ($fileContent === false || trim($fileContent) === '') {
+                    $_SESSION['error'] = 'Файл пустой';
+                } elseif (function_exists('mb_check_encoding') && !mb_check_encoding($fileContent, 'UTF-8')) {
+                    $_SESSION['error'] = 'CSV должен быть в UTF-8';
                 } else {
-                    $ok = $db->bulkUpdateMenu($tempHandle, $delimiter);
-                    $_SESSION['success'] = $ok ? 'Меню обновлено' : 'Ошибка при обновлении';
+                    $firstLine = strtok($fileContent, "\r\n");
+                    $delimiter = (is_string($firstLine) && strpos($firstLine, ',') !== false) ? ',' : ';';
+
+                    $tempHandle = fopen('php://temp', 'r+');
+                    fwrite($tempHandle, $fileContent);
+                    rewind($tempHandle);
+
+                    $stats = $db->bulkSyncMenuFromCsv($tempHandle, $delimiter);
+                    if (is_array($stats)) {
+                        $_SESSION['success'] = sprintf(
+                            'Синхронизация завершена: добавлено %d, обновлено %d, восстановлено %d, архивировано %d.',
+                            (int)($stats['inserted'] ?? 0),
+                            (int)($stats['updated'] ?? 0),
+                            (int)($stats['restored_from_archive'] ?? 0),
+                            (int)($stats['archived_missing'] ?? 0)
+                        );
+                    } elseif (!isset($_SESSION['error'])) {
+                        $_SESSION['error'] = 'Ошибка при синхронизации CSV';
+                    }
+                    fclose($tempHandle);
                 }
-                fclose($tempHandle);
             }
         }
-        header('Location: admin-menu.php');
+        header('Location: admin-menu.php?view=active');
         exit;
     }
 }
@@ -302,7 +324,7 @@ if (!empty($_GET['edit'])) {
                         <input type="file" name="csv_file" accept=".csv" required>
                         <button type="submit" name="bulk_upload" class="checkout-btn">Загрузить</button>
                     </form>
-                    <small>UTF-8 CSV. Скачайте образец выше.</small>
+                    <small>UTF-8 CSV. Полная синхронизация: позиции вне файла будут архивированы. Формат: external_id;name;description;composition;price;image;calories;protein;fat;carbs;category;available</small>
                 </section>
 
                 <form method="POST">
@@ -403,6 +425,11 @@ if (!empty($_GET['edit'])) {
                 <?php endif; ?>
             </section>
 
+            <div class="form-actions" style="margin: 10px 0 14px;">
+                <a href="admin-menu.php?view=active" class="admin-checkout-btn<?= !$showArchived ? ' cancel' : '' ?>">Активные</a>
+                <a href="admin-menu.php?view=archived" class="admin-checkout-btn<?= $showArchived ? ' cancel' : '' ?>">Архив</a>
+            </div>
+
             <!-- DESKTOP TABLE -->
             <div class="desktop-table">
                 <table>
@@ -412,7 +439,7 @@ if (!empty($_GET['edit'])) {
                             <th>Название</th>
                             <th>Категория</th>
                             <th>Цена</th>
-                            <th>Стоп</th>
+                            <th><?= $showArchived ? 'Архивирован' : 'Стоп' ?></th>
                             <th class="last-col">Действия</th>
                         </tr>
                     </thead>
@@ -424,14 +451,26 @@ if (!empty($_GET['edit'])) {
                                 <td><?= htmlspecialchars($it['category']) ?></td>
                                 <td><?= number_format($it['price'], 2) ?> ₽</td>
                                 <td>
-                                    <button class="stop-btn <?= $it['available'] ? '' : 'stop-btn--active' ?>"
-                                        data-item-id="<?= (int)$it['id'] ?>"
-                                        title="<?= $it['available'] ? 'Снять с продажи' : 'Вернуть в продажу' ?>">
-                                        <?= $it['available'] ? 'СТОП' : 'Вернуть' ?>
-                                    </button>
+                                    <?php if ($showArchived): ?>
+                                        <?= htmlspecialchars((string)($it['archived_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+                                    <?php else: ?>
+                                        <button class="stop-btn <?= $it['available'] ? '' : 'stop-btn--active' ?>"
+                                            data-item-id="<?= (int)$it['id'] ?>"
+                                            title="<?= $it['available'] ? 'Снять с продажи' : 'Вернуть в продажу' ?>">
+                                            <?= $it['available'] ? 'СТОП' : 'Вернуть' ?>
+                                        </button>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
-                                    <a href="admin-menu.php?edit=<?= $it['id'] ?>" class="admin-checkout-btn">Редактировать</a>
+                                    <?php if ($showArchived): ?>
+                                        <form method="POST" style="display:inline;">
+                                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                            <input type="hidden" name="id" value="<?= (int)$it['id'] ?>">
+                                            <button type="submit" name="restore_archived" class="admin-checkout-btn">Восстановить</button>
+                                        </form>
+                                    <?php else: ?>
+                                        <a href="admin-menu.php?edit=<?= $it['id'] ?>" class="admin-checkout-btn">Редактировать</a>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -463,15 +502,31 @@ if (!empty($_GET['edit'])) {
                                 <span class="mobile-table-label">Цена:</span>
                                 <span class="mobile-table-value"><?= number_format($it['price'], 2) ?> ₽</span>
                             </div>
+                            <?php if ($showArchived): ?>
+                                <div class="mobile-table-row">
+                                    <span class="mobile-table-label">Архивирован:</span>
+                                    <span class="mobile-table-value"><?= htmlspecialchars((string)($it['archived_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                                </div>
+                            <?php endif; ?>
                             <div class="mobile-table-actions">
-                                <button class="stop-btn <?= $it['available'] ? '' : 'stop-btn--active' ?>"
-                                    data-item-id="<?= (int)$it['id'] ?>"
-                                    title="<?= $it['available'] ? 'Снять с продажи' : 'Вернуть в продажу' ?>">
-                                    <?= $it['available'] ? 'СТОП' : 'Вернуть' ?>
-                                </button>
-                                <a href="admin-menu.php?edit=<?= $it['id'] ?>" class="mobile-table-btn">
-                                    <i class="fas fa-edit"></i> Редактировать
-                                </a>
+                                <?php if ($showArchived): ?>
+                                    <form method="POST" style="display:inline;">
+                                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                        <input type="hidden" name="id" value="<?= (int)$it['id'] ?>">
+                                        <button type="submit" name="restore_archived" class="mobile-table-btn">
+                                            <i class="fas fa-undo"></i> Восстановить
+                                        </button>
+                                    </form>
+                                <?php else: ?>
+                                    <button class="stop-btn <?= $it['available'] ? '' : 'stop-btn--active' ?>"
+                                        data-item-id="<?= (int)$it['id'] ?>"
+                                        title="<?= $it['available'] ? 'Снять с продажи' : 'Вернуть в продажу' ?>">
+                                        <?= $it['available'] ? 'СТОП' : 'Вернуть' ?>
+                                    </button>
+                                    <a href="admin-menu.php?edit=<?= $it['id'] ?>" class="mobile-table-btn">
+                                        <i class="fas fa-edit"></i> Редактировать
+                                    </a>
+                                <?php endif; ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
