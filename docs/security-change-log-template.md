@@ -50,3 +50,28 @@ Use one entry per production change step.
 - Stop criteria triggered: `no`
 - Rollback action performed: not required
 - Notes/next step: start Phase 2 inventory (ports/services ownership) before any firewall changes; keep 2 active SSH sessions for subsequent hardening.
+
+---
+
+## Entry (2026-03-05, Phase 2 inventory completed)
+
+- Date (UTC): 2026-03-05 22:12
+- Environment: production (`menu.labus.pro`, shared host)
+- Step/Phase: Phase 2 (port/service inventory, read-only)
+- Owner: ops/admin
+- Change objective (single objective): identify exposed ports and ownership without mutating firewall/network policy
+- Commit hash: `5c64c1e` (runbook artifacts)
+- Related config/file: inventory run output (`ss`, `lsof`, `iptables/nft`, `docker ps`)
+- Risk summary: shared host has multiple non-menu services exposed; changes may affect other projects
+- Preventive checks (pre): no firewall changes applied, inventory-only mode respected
+- Deployment command(s): `bash scripts/perf/phase2-port-inventory.sh menu.labus.pro`
+- Verification checks (post):
+  - system MySQL `3306` bound to `127.0.0.1` (not exposed)
+  - external `3307` is open and mapped to non-menu docker MySQL
+  - external `96`, `3000`, `3001`, `3033`, `3282`, `9230`, `38080`, `7777`, `8888` are open and belong to other stack/panel services
+- Metrics delta (`5xx`, p95, error-rate): N/A (read-only phase)
+- Observation window: N/A
+- Result: `success`
+- Stop criteria triggered: `no`
+- Rollback action performed: not required
+- Notes/next step: **confirmed policy** — do not touch docker images/ports of other sites. Continue only menu-specific hardening steps.
