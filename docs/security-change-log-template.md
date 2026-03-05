@@ -74,4 +74,37 @@ Use one entry per production change step.
 - Result: `success`
 - Stop criteria triggered: `no`
 - Rollback action performed: not required
-- Notes/next step: **confirmed policy** — do not touch docker images/ports of other sites. Continue only menu-specific hardening steps.
+- Notes/next step: **confirmed policy** - do not touch docker images/ports of other sites. Continue only menu-specific hardening steps.
+
+---
+
+## Entry (2026-03-05, menu-only endpoint lock)
+
+- Date (UTC): 2026-03-05 22:46
+- Environment: production (`menu.labus.pro`, shared host)
+- Step/Phase: menu-only hardening (post-Phase 2)
+- Owner: ops/admin
+- Change objective (single objective): close public access to `db-indexes-optimizer-v2.php` at vhost level
+- Commit hash: `4e0b7f8`
+- Related config/file: `nginx-optimized.conf` (`location = /db-indexes-optimizer-v2.php { return 404; }`)
+- Risk summary: low risk, endpoint is diagnostic/admin-only and should never be public
+- Preventive checks (pre):
+  - `nginx -t` syntax check
+  - shared-host scope lock respected (no Docker/other-site ports touched)
+- Deployment command(s):
+  - `runuser -u "$WEBUSER" -- git -C "$PROJECT" fetch --prune origin`
+  - `runuser -u "$WEBUSER" -- git -C "$PROJECT" checkout main`
+  - `runuser -u "$WEBUSER" -- git -C "$PROJECT" pull --ff-only origin main`
+  - `nginx -t && systemctl reload nginx`
+- Verification checks (post):
+  - `curl -I https://menu.labus.pro/db-indexes-optimizer-v2.php` => `HTTP/2 404`
+  - repeated check => `HTTP/2 404`
+- Metrics delta (`5xx`, p95, error-rate): no degradation observed during post-change checks
+- Observation window: immediate post-deploy verification completed
+- Result: `success`
+- Stop criteria triggered: `no`
+- Rollback action performed: not required
+- Notes/next step:
+  - Run and archive smoke log on server:
+    - `bash /var/www/labus_pro_usr/data/www/menu.labus.pro/scripts/perf/security-smoke.sh https://menu.labus.pro | tee "/root/security-smoke-$(date -u +%F-%H%M).log"`
+  - Attach log path/output to this entry for audit completeness.
