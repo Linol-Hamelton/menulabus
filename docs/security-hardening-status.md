@@ -31,6 +31,12 @@
 - Extended smoke automation:
   - `scripts/perf/security-smoke.sh` now validates locked endpoints and `clear-cache.php` header snapshot
   - `docs/security-smoke-checklist.md` updated accordingly
+- Phase 1 reliability/conversion instrumentation implemented (pending prod rollout):
+  - daily smoke runner with retention: `scripts/perf/security-smoke-daily.sh`
+  - cron installer: `scripts/perf/install-security-smoke-cron.sh`
+  - checkout error top report: `scripts/perf/checkout-error-top.php`
+  - structured checkout error events: `lib/CheckoutErrorLog.php` + order-create endpoints
+  - OpenAPI gate on push to `main`: `.githooks/pre-push`
 
 ## Requires manual server execution
 

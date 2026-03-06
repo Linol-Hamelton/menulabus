@@ -93,20 +93,28 @@ runuser -u "$WEBUSER" -- git -C "$PROJECT" config core.hooksPath .githooks
 git checkout actual
 git pull --ff-only
 
-# 2) Commit
+# 2) Mandatory API contract gate before release
+npm run openapi:validate
+
+# 3) Commit
 git add -A
 git commit -m "release: <short description>"
 
-# 3) Move production branch forward
+# 4) Move production branch forward
 git checkout main
 git merge --ff-only actual
 
-# 4) Push
+# 5) Push
 git push origin main
 git push gitlab actual
 ```
 
 If both remotes use `main`, push `main` to both.
+
+Gate details:
+
+- `.githooks/pre-push` blocks pushes to `main` when `npm run openapi:validate` fails.
+- If validation fails, sync `docs/openapi.yaml` with actual `api/v1/**` endpoints first, then retry push.
 
 ## Server deploy commands
 

@@ -28,6 +28,40 @@ curl -sS -I https://menu.labus.pro/phpinfo.php
 
 Expected: `HTTP/2 404`.
 
+## Phase 1A - Daily smoke + retention (cron)
+
+Install/update daily cron entry (runs at `03:17` UTC by default):
+
+```bash
+cd /var/www/labus_pro_usr/data/www/menu.labus.pro
+bash scripts/perf/install-security-smoke-cron.sh
+```
+
+Manual test run:
+
+```bash
+BASE_URL="https://menu.labus.pro" \
+PROJECT_DIR="/var/www/labus_pro_usr/data/www/menu.labus.pro" \
+LOG_DIR="/root" \
+RETENTION_DAYS="14" \
+bash /var/www/labus_pro_usr/data/www/menu.labus.pro/scripts/perf/security-smoke-daily.sh
+```
+
+Expected:
+
+- log file `/root/security-smoke-<UTC>.log` is created
+- output contains `status=PASS` or `status=FAIL`
+- logs older than 14 days are deleted automatically
+
+Daily top-3 checkout error reasons (last 24h):
+
+```bash
+php /var/www/labus_pro_usr/data/www/menu.labus.pro/scripts/perf/checkout-error-top.php \
+  --log=/var/www/labus_pro_usr/data/logs/menu.labus.pro-php.error.log \
+  --hours=24 \
+  --top=3
+```
+
 ## Phase 2 - Port/service inventory (read-only)
 
 ```bash
