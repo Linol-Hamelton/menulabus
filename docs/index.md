@@ -5,6 +5,7 @@ This directory is the source of truth for project documentation.
 ## Start Here
 
 - [Project Reference](./project-reference.md)
+- [Project Improvement Roadmap](./project-improvement-roadmap.md)
 - [Deployment Workflow](./deployment-workflow.md)
 - [OpenAPI Contract](./openapi.yaml)
 - [API Smoke Checks](./api-smoke.md)
@@ -31,14 +32,7 @@ This directory is the source of truth for project documentation.
 - [VK OAuth Setup](./vk-oauth-setup.md)
 - [Yandex OAuth Setup](./yandex-oauth-setup.md)
 
-## Archive (Legacy, not source of truth)
-
-- [Product Roadmap (Legacy)](./archive/product-roadmap-legacy.md)
-- [Performance Roadmap (Legacy)](./archive/performance-roadmap-legacy.md)
-- [Before Porting Notes (Legacy)](./archive/before-porting-notes-legacy.md)
-
 ## Rules
 
 - Keep all project documentation under `docs/`.
-- Do not use archived docs as implementation source of truth.
 - API contract source of truth: `docs/openapi.yaml`.

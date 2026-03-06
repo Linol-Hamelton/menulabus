@@ -94,6 +94,7 @@ perf-results/
 
 # Codex / Playwright artifacts
 output/
+artifacts/
 playwright-report/
 test-results/
 

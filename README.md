@@ -23,6 +23,7 @@ Restaurant menu and ordering platform for `menu.labus.pro`.
 
 - Общая актуальная справка: [`docs/project-reference.md`](./docs/project-reference.md)
 - Карта документации: [`docs/index.md`](./docs/index.md)
+- План дальнейших улучшений: [`docs/project-improvement-roadmap.md`](./docs/project-improvement-roadmap.md)
 - API контракт (source of truth): [`docs/openapi.yaml`](./docs/openapi.yaml)
 - API smoke: [`docs/api-smoke.md`](./docs/api-smoke.md)
 - Deployment flow: [`docs/deployment-workflow.md`](./docs/deployment-workflow.md)
@@ -39,14 +40,14 @@ npm run openapi:validate
 
 - Shared-host scope lock: не трогать Docker/порты других сайтов в рамках menu-only изменений.
 - API contract source of truth: `docs/openapi.yaml`.
-- Legacy docs находятся в `docs/archive/` и не являются source of truth.
 
 ## EN: Quickstart for engineers/LLM
 
 1. Start with [`docs/index.md`](./docs/index.md) for the full docs map.
 2. Read [`docs/project-reference.md`](./docs/project-reference.md) for architecture and active flows.
-3. Treat [`docs/openapi.yaml`](./docs/openapi.yaml) as the API contract source of truth.
-4. Validate API spec with `npm run openapi:validate`.
-5. Use [`docs/deployment-workflow.md`](./docs/deployment-workflow.md) for server pull/reload flow.
-6. Use `docs/security-*` + `scripts/perf/security-smoke.sh` for hardening and smoke verification.
-7. Ignore `docs/archive/*` for implementation decisions (legacy only).
+3. Use [`docs/project-improvement-roadmap.md`](./docs/project-improvement-roadmap.md) as prioritized next-step plan.
+4. Treat [`docs/openapi.yaml`](./docs/openapi.yaml) as the API contract source of truth.
+5. Validate API spec with `npm run openapi:validate`.
+6. Use [`docs/deployment-workflow.md`](./docs/deployment-workflow.md) for server pull/reload flow.
+7. Use `docs/security-*` + `scripts/perf/security-smoke.sh` for hardening and smoke verification.
+8. Use only current docs under `docs/` as implementation source of truth.

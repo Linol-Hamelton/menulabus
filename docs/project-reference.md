@@ -128,11 +128,4 @@ Capacitor wrapper notes:
 ## 9. Documentation Policy
 
 - All project docs are kept under `docs/`.
-- Legacy strategy/performance notes are preserved under `docs/archive/`.
-- Do not use `docs/archive/*` as implementation source of truth.
-
-## 10. Legacy Archive
-
-- [`docs/archive/product-roadmap-legacy.md`](./archive/product-roadmap-legacy.md)
-- [`docs/archive/performance-roadmap-legacy.md`](./archive/performance-roadmap-legacy.md)
-- [`docs/archive/before-porting-notes-legacy.md`](./archive/before-porting-notes-legacy.md)
+- API contract source of truth: `docs/openapi.yaml`.
