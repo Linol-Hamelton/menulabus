@@ -28,7 +28,7 @@ Track baseline before each phase and compare after rollout:
 - Value: faster incident detection after deploys.
 - Change:
   - add daily server cron for `scripts/perf/security-smoke.sh`
-  - store logs under `/root/security-smoke-<UTC>.log` with 14-day retention
+  - store logs under `/var/www/labus_pro_usr/data/logs/security-smoke-<UTC>.log` with 14-day retention
 - Risk: low.
 - Done when: scheduled run exists, logs rotate, failures are visible to operator.
 

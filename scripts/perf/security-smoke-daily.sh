@@ -3,7 +3,7 @@ set -uo pipefail
 
 BASE_URL="${BASE_URL:-https://menu.labus.pro}"
 PROJECT_DIR="${PROJECT_DIR:-/var/www/labus_pro_usr/data/www/menu.labus.pro}"
-LOG_DIR="${LOG_DIR:-/root}"
+LOG_DIR="${LOG_DIR:-/var/www/labus_pro_usr/data/logs}"
 RETENTION_DAYS="${RETENTION_DAYS:-14}"
 
 SMOKE_SCRIPT="$PROJECT_DIR/scripts/perf/security-smoke.sh"

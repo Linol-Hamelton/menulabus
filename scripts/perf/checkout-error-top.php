@@ -12,6 +12,19 @@ $logPath = (string)($opts['log'] ?? '');
 $hours = max(1, (int)($opts['hours'] ?? 24));
 $top = max(1, (int)($opts['top'] ?? 3));
 
+if ($logPath === '') {
+    $defaultCandidates = [
+        '/var/www/labus_pro_usr/data/logs/menu.labus.pro-php.log',
+        dirname(__DIR__, 2) . '/data/logs/menu.labus.pro-php.log',
+    ];
+    foreach ($defaultCandidates as $candidate) {
+        if (is_file($candidate) && is_readable($candidate)) {
+            $logPath = $candidate;
+            break;
+        }
+    }
+}
+
 if ($logPath === '' || !is_file($logPath) || !is_readable($logPath)) {
     fwrite(STDERR, "Usage: php scripts/perf/checkout-error-top.php --log=/path/to/php-error.log [--hours=24] [--top=3]\n");
     exit(1);

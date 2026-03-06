@@ -4,7 +4,7 @@ set -euo pipefail
 CRON_EXPR="${CRON_EXPR:-17 3 * * *}"
 BASE_URL="${BASE_URL:-https://menu.labus.pro}"
 PROJECT_DIR="${PROJECT_DIR:-/var/www/labus_pro_usr/data/www/menu.labus.pro}"
-LOG_DIR="${LOG_DIR:-/root}"
+LOG_DIR="${LOG_DIR:-/var/www/labus_pro_usr/data/logs}"
 RETENTION_DAYS="${RETENTION_DAYS:-14}"
 SCRIPT_PATH="$PROJECT_DIR/scripts/perf/security-smoke-daily.sh"
 TAG="# menu-security-smoke-daily"

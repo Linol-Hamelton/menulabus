@@ -42,14 +42,14 @@ Manual test run:
 ```bash
 BASE_URL="https://menu.labus.pro" \
 PROJECT_DIR="/var/www/labus_pro_usr/data/www/menu.labus.pro" \
-LOG_DIR="/root" \
+LOG_DIR="/var/www/labus_pro_usr/data/logs" \
 RETENTION_DAYS="14" \
 bash /var/www/labus_pro_usr/data/www/menu.labus.pro/scripts/perf/security-smoke-daily.sh
 ```
 
 Expected:
 
-- log file `/root/security-smoke-<UTC>.log` is created
+- log file `/var/www/labus_pro_usr/data/logs/security-smoke-<UTC>.log` is created
 - output contains `status=PASS` or `status=FAIL`
 - logs older than 14 days are deleted automatically
 

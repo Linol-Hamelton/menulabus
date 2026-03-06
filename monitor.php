@@ -17,7 +17,7 @@ require_once 'db.php';
 // Обработка API запросов
 if (isset($_GET['api']) && $_GET['api'] == '1') {
     header('Content-Type: application/json');
-    echo json_encode(getPerformanceMetrics(), JSON_PRETTY_PRINT);
+    echo json_encode(getPerformanceMetrics(false), JSON_PRETTY_PRINT);
     exit;
 }
 
@@ -42,7 +42,7 @@ if (isset($_GET['action'])) {
             break;
             
         case 'get_metrics':
-            echo json_encode(getPerformanceMetrics(), JSON_PRETTY_PRINT);
+            echo json_encode(getPerformanceMetrics(false), JSON_PRETTY_PRINT);
             break;
             
         default:
@@ -57,14 +57,19 @@ if (isset($_GET['action'])) {
 /**
  * Получить все метрики производительности
  */
-function getPerformanceMetrics() {
+function getPerformanceMetrics(bool $includeExtended = false) {
     $metrics = [
         'timestamp' => date('Y-m-d H:i:s'),
         'server' => getServerMetrics(),
         'php' => getPhpMetrics(),
         'database' => getDatabaseMetrics(),
-        'performance' => getPerformanceMetricsData()
+        'performance' => getPerformanceMetricsData(),
     ];
+
+    if ($includeExtended) {
+        $metrics['security_smoke'] = getSecuritySmokeStatus();
+        $metrics['checkout_errors'] = getCheckoutErrorSummary(24, 3);
+    }
     
     return $metrics;
 }
@@ -234,6 +239,160 @@ function getPerformanceMetricsData() {
 }
 
 /**
+ * Latest security smoke run status from log files.
+ */
+function getSecuritySmokeStatus(): array
+{
+    $logDirs = [
+        '/var/www/labus_pro_usr/data/logs',
+        '/root',
+    ];
+
+    $latestFile = null;
+    $latestMtime = 0;
+
+    foreach ($logDirs as $dir) {
+        $pattern = rtrim($dir, '/') . '/security-smoke-*.log';
+        $files = @glob($pattern) ?: [];
+        foreach ($files as $file) {
+            if (!is_file($file) || !is_readable($file)) {
+                continue;
+            }
+            $mtime = @filemtime($file) ?: 0;
+            if ($mtime > $latestMtime) {
+                $latestMtime = $mtime;
+                $latestFile = $file;
+            }
+        }
+    }
+
+    if ($latestFile === null) {
+        return [
+            'available' => false,
+            'status' => 'UNKNOWN',
+            'message' => 'security-smoke log not found',
+        ];
+    }
+
+    $status = 'UNKNOWN';
+    $tsUtc = '';
+    $exitCode = null;
+
+    $fh = @fopen($latestFile, 'rb');
+    if ($fh !== false) {
+        while (($line = fgets($fh)) !== false) {
+            $line = trim($line);
+            if (strpos($line, 'ts_utc=') === 0) {
+                $tsUtc = substr($line, 7);
+            } elseif (strpos($line, 'status=') === 0) {
+                $status = strtoupper(substr($line, 7));
+            } elseif (strpos($line, 'exit_code=') === 0) {
+                $exitCode = (int)substr($line, 10);
+            }
+        }
+        fclose($fh);
+    }
+
+    return [
+        'available' => true,
+        'status' => $status,
+        'ts_utc' => $tsUtc,
+        'exit_code' => $exitCode,
+        'log_file' => $latestFile,
+        'log_mtime' => date('Y-m-d H:i:s', (int)$latestMtime),
+    ];
+}
+
+/**
+ * Aggregate checkout error categories/reasons from PHP log.
+ */
+function getCheckoutErrorSummary(int $hours = 24, int $top = 3): array
+{
+    $hours = max(1, $hours);
+    $top = max(1, $top);
+    $cutoff = time() - ($hours * 3600);
+
+    $candidates = [
+        '/var/www/labus_pro_usr/data/logs/menu.labus.pro-php.log',
+        __DIR__ . '/data/logs/menu.labus.pro-php.log',
+    ];
+
+    $logFile = null;
+    foreach ($candidates as $candidate) {
+        if (is_file($candidate) && is_readable($candidate)) {
+            $logFile = $candidate;
+            break;
+        }
+    }
+
+    if ($logFile === null) {
+        return [
+            'available' => false,
+            'message' => 'checkout log not found',
+            'total' => 0,
+            'top_reasons' => [],
+            'by_category' => [],
+        ];
+    }
+
+    $byReason = [];
+    $byCategory = [];
+    $total = 0;
+
+    $fh = @fopen($logFile, 'rb');
+    if ($fh !== false) {
+        while (($line = fgets($fh)) !== false) {
+            $markerPos = strpos($line, '[checkout-error] ');
+            if ($markerPos === false) {
+                continue;
+            }
+
+            $payloadJson = substr($line, $markerPos + strlen('[checkout-error] '));
+            $payload = json_decode(trim($payloadJson), true);
+            if (!is_array($payload)) {
+                continue;
+            }
+
+            $eventTs = strtotime((string)($payload['ts'] ?? ''));
+            if ($eventTs === false || $eventTs < $cutoff) {
+                continue;
+            }
+
+            $category = (string)($payload['category'] ?? 'unknown');
+            $reason = (string)($payload['reason'] ?? 'unknown');
+            $reasonKey = $category . ' / ' . $reason;
+
+            $byReason[$reasonKey] = ($byReason[$reasonKey] ?? 0) + 1;
+            $byCategory[$category] = ($byCategory[$category] ?? 0) + 1;
+            $total++;
+        }
+        fclose($fh);
+    }
+
+    arsort($byReason);
+    arsort($byCategory);
+
+    $topReasons = [];
+    $i = 0;
+    foreach ($byReason as $label => $count) {
+        $topReasons[] = ['label' => $label, 'count' => $count];
+        $i++;
+        if ($i >= $top) {
+            break;
+        }
+    }
+
+    return [
+        'available' => true,
+        'log_file' => $logFile,
+        'hours' => $hours,
+        'total' => $total,
+        'top_reasons' => $topReasons,
+        'by_category' => $byCategory,
+    ];
+}
+
+/**
  * Форматирование байтов
  */
 function formatBytes($bytes, $precision = 2) {
@@ -260,7 +419,7 @@ function formatPercentage($value, $goodThreshold = 90, $warningThreshold = 70) {
 }
 
 // Получаем метрики для отображения
-$metrics = getPerformanceMetrics();
+$metrics = getPerformanceMetrics(true);
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -823,6 +982,90 @@ $metrics = getPerformanceMetrics();
         </div>
         
         <!-- API информация -->
+        <?php
+            $smoke = $metrics['security_smoke'] ?? [];
+            $smokeStatus = strtoupper((string)($smoke['status'] ?? 'UNKNOWN'));
+            $smokeClass = $smokeStatus === 'PASS' ? 'status-good' : ($smokeStatus === 'FAIL' ? 'status-critical' : 'status-warning');
+            $checkout = $metrics['checkout_errors'] ?? ['available' => false, 'total' => 0, 'top_reasons' => [], 'by_category' => []];
+        ?>
+        <div class="dashboard">
+            <div class="card">
+                <h2>Security Smoke (Daily)</h2>
+                <?php if (!empty($smoke['available'])): ?>
+                    <div class="metric">
+                        <div class="metric-label">Последний статус</div>
+                        <div class="metric-value <?= $smokeClass ?>">
+                            <?= htmlspecialchars($smokeStatus, ENT_QUOTES, 'UTF-8') ?>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">UTC timestamp</div>
+                            <div class="stat-value"><?= htmlspecialchars((string)($smoke['ts_utc'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Exit code</div>
+                            <div class="stat-value"><?= htmlspecialchars((string)($smoke['exit_code'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></div>
+                        </div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Log file</div>
+                        <div class="progress-text" style="text-align:left;">
+                            <?= htmlspecialchars((string)($smoke['log_file'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div class="metric">
+                        <div class="metric-value status-warning">No smoke logs found</div>
+                        <p>Проверьте cron и путь логов security-smoke.</p>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <div class="card">
+                <h2>Checkout Errors (24h)</h2>
+                <?php if (!empty($checkout['available'])): ?>
+                    <div class="metric">
+                        <div class="metric-label">Всего событий</div>
+                        <div class="metric-value"><?= (int)($checkout['total'] ?? 0) ?></div>
+                    </div>
+
+                    <?php if (!empty($checkout['top_reasons'])): ?>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Причина</th>
+                                    <th>Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($checkout['top_reasons'] as $row): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars((string)($row['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                        <td><?= (int)($row['count'] ?? 0) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php else: ?>
+                        <p>За выбранный период событий нет.</p>
+                    <?php endif; ?>
+
+                    <div class="metric">
+                        <div class="metric-label">Log file</div>
+                        <div class="progress-text" style="text-align:left;">
+                            <?= htmlspecialchars((string)($checkout['log_file'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div class="metric">
+                        <div class="metric-value status-warning">Checkout log not found</div>
+                        <p>Ожидаемый лог: <code>/var/www/labus_pro_usr/data/logs/menu.labus.pro-php.log</code></p>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
         <div class="card hidden" id="apiSection">
             <h2>🔧 API Endpoint</h2>
             <p>Для получения метрик в формате JSON используйте:</p>

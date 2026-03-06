@@ -49,7 +49,7 @@
 
 1. Deploy current commit to production.
 2. Apply Nginx config in FastPanel and reload safely (`nginx -t && systemctl reload nginx`).
-3. Run `docs/security-smoke-checklist.md` (or `bash scripts/perf/security-smoke.sh https://menu.labus.pro`) and save output to `/root/security-smoke-<UTC>.log`.
+3. Run `docs/security-smoke-checklist.md` (or `bash scripts/perf/security-smoke.sh https://menu.labus.pro`) and save output to `/var/www/labus_pro_usr/data/logs/security-smoke-<UTC>.log`.
 4. Verify admin flows (`clear-cache`, admin login, order updates via `/orders-sse.php`/`/ws-poll.php`).
 5. Continue phase-by-phase from `docs/security-phase-commands.md`.
 
