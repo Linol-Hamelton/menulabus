@@ -175,15 +175,35 @@ switch ($report_type) {
         $report_title = 'Официанты';
         break;
     case 'bottlenecks':
-        $report_data = $db->getOrderFlowBottleneckReport($period);
+        $report_data = method_exists($db, 'getOrderFlowBottleneckReport')
+            ? (array)$db->getOrderFlowBottleneckReport($period)
+            : [];
         $report_title = 'Узкие места';
         break;
 }
 
 // Функция для определения, какие поля показывать в графиках
-$ownerKpi = $db->getOwnerKpiSnapshot();
-$topItemsToday = $db->getTopItemsSnapshot('day', 5);
-$topItemsWeek = $db->getTopItemsSnapshot('week', 5);
+$ownerKpi = [
+    'orders_today' => 0,
+    'paid_today' => 0,
+    'cancelled_today' => 0,
+    'aov_today' => 0.0,
+];
+$topItemsToday = [];
+$topItemsWeek = [];
+
+// Guard against stale OPcache/partial deploys where db.php may lag behind owner.php.
+try {
+    if (method_exists($db, 'getOwnerKpiSnapshot')) {
+        $ownerKpi = (array)$db->getOwnerKpiSnapshot();
+    }
+    if (method_exists($db, 'getTopItemsSnapshot')) {
+        $topItemsToday = (array)$db->getTopItemsSnapshot('day', 5);
+        $topItemsWeek = (array)$db->getTopItemsSnapshot('week', 5);
+    }
+} catch (Throwable $e) {
+    error_log('owner dashboard KPI fallback: ' . $e->getMessage());
+}
 
 function getChartFields($report_type, $period)
 {

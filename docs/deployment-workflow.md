@@ -129,8 +129,9 @@ runuser -u "$WEBUSER" -- git -C "$PROJECT" pull --ff-only origin main
 
 After pull:
 
-1. Run OPcache reset (your existing `monitor.php` flow).
-2. Smoke-check key pages and payment scenario.
+1. Run OPcache reset immediately (your existing `monitor.php` flow).
+2. For releases that add new PHP methods used across files (for example `owner.php` calling new methods from `db.php`), treat OPcache reset as mandatory before opening admin/owner pages.
+3. Smoke-check key pages and payment scenario.
 
 ## Safety rules
 

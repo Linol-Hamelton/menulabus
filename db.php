@@ -209,6 +209,24 @@ class Database
         return $checked;
     }
 
+    private function ensureOrderStatusHistoryTable(): bool
+    {
+        static $checked = null;
+        if ($checked !== null) {
+            return $checked;
+        }
+
+        try {
+            $stmt = $this->connection->query("SHOW TABLES LIKE 'order_status_history'");
+            $checked = (bool)($stmt && $stmt->fetchColumn());
+        } catch (Throwable $e) {
+            error_log("ensureOrderStatusHistoryTable check failed: " . $e->getMessage());
+            $checked = false;
+        }
+
+        return $checked;
+    }
+
     private function ensureCartItemsTable(): bool
     {
         static $checked = null;
@@ -1837,6 +1855,10 @@ class Database
 
     public function getTopItemsSnapshot(string $period = 'day', int $limit = 5): array
     {
+        if (!$this->ensureOrderItemsTable()) {
+            return [];
+        }
+
         $limit = max(1, min(20, $limit));
         $startExpr = ($period === 'week') ? 'DATE_SUB(CURDATE(), INTERVAL 6 DAY)' : 'CURDATE()';
 
@@ -1859,7 +1881,7 @@ class Database
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->execute();
             return $stmt->fetchAll();
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
             error_log("getTopItemsSnapshot Error: " . $e->getMessage());
             return [];
         }
@@ -2343,6 +2365,10 @@ class Database
 
     public function getOrderFlowBottleneckReport(string $period = 'day'): array
     {
+        if (!$this->ensureOrderStatusHistoryTable()) {
+            return [];
+        }
+
         $period = in_array($period, ['day', 'week', 'month', 'year'], true) ? $period : 'day';
 
         switch ($period) {
@@ -2439,7 +2465,7 @@ class Database
             $stmt = $this->prepareCached($sql);
             $stmt->execute();
             return $stmt->fetchAll();
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
             error_log("getOrderFlowBottleneckReport Error: " . $e->getMessage());
             return [];
         }
