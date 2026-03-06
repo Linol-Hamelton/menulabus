@@ -26,7 +26,7 @@ Track baseline before each phase and compare after rollout:
 - Phase 1.1 completed: daily smoke cron installed on production, 14-day retention enabled, `status=PASS` validated.
 - Phase 1.2 completed: OpenAPI validation gate is active on push to `main` (`.githooks/pre-push`).
 - Phase 1.3 completed: checkout failure observability is active in logs and visible in admin monitor (`Checkout Errors (24h)`).
-- Next planned step: Phase 2.4 owner KPI snapshot (menu-only, read-only queries, single-step rollout).
+- Phase 2.4 implementation in progress: owner KPI snapshot in `owner.php` (menu-only, read-only queries), pending production rollout and observation window.
 
 ## Phase 1 (1-2 weeks): Reliability and conversion quick wins
 

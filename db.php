@@ -1779,6 +1779,92 @@ class Database
         }
     }
 
+    public function getOwnerKpiSnapshot(): array
+    {
+        $snapshot = [
+            'orders_today' => 0,
+            'paid_today' => 0,
+            'cancelled_today' => 0,
+            'aov_today' => 0.0,
+        ];
+
+        try {
+            $sql = "
+                SELECT
+                    COUNT(*) AS orders_today,
+                    SUM(
+                        CASE
+                            WHEN (
+                                LOWER(COALESCE(payment_status, '')) REGEXP 'paid|succeed|success|complete|оплачен|заверш'
+                                OR LOWER(COALESCE(status, '')) REGEXP 'заверш|complete|done'
+                            ) THEN 1 ELSE 0
+                        END
+                    ) AS paid_today,
+                    SUM(
+                        CASE
+                            WHEN LOWER(COALESCE(status, '')) REGEXP 'cancel|cancell|отказ|отмен' THEN 1
+                            ELSE 0
+                        END
+                    ) AS cancelled_today,
+                    AVG(
+                        CASE
+                            WHEN LOWER(COALESCE(status, '')) REGEXP 'cancel|cancell|отказ|отмен' THEN NULL
+                            WHEN total > 0 THEN total
+                            ELSE NULL
+                        END
+                    ) AS aov_today
+                FROM orders
+                WHERE created_at >= CURDATE()
+                  AND created_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+            ";
+
+            $stmt = $this->prepareCached($sql);
+            $stmt->execute();
+            $row = $stmt->fetch();
+
+            if (is_array($row)) {
+                $snapshot['orders_today'] = (int)($row['orders_today'] ?? 0);
+                $snapshot['paid_today'] = (int)($row['paid_today'] ?? 0);
+                $snapshot['cancelled_today'] = (int)($row['cancelled_today'] ?? 0);
+                $snapshot['aov_today'] = round((float)($row['aov_today'] ?? 0), 2);
+            }
+        } catch (PDOException $e) {
+            error_log("getOwnerKpiSnapshot Error: " . $e->getMessage());
+        }
+
+        return $snapshot;
+    }
+
+    public function getTopItemsSnapshot(string $period = 'day', int $limit = 5): array
+    {
+        $limit = max(1, min(20, $limit));
+        $startExpr = ($period === 'week') ? 'DATE_SUB(CURDATE(), INTERVAL 6 DAY)' : 'CURDATE()';
+
+        $sql = "
+            SELECT
+                COALESCE(NULLIF(TRIM(oi.item_name), ''), CONCAT('Item #', oi.item_id)) AS item_name,
+                SUM(oi.quantity) AS total_qty,
+                ROUND(SUM(oi.quantity * oi.price), 2) AS total_revenue
+            FROM orders o
+            INNER JOIN order_items oi ON oi.order_id = o.id
+            WHERE o.created_at >= {$startExpr}
+              AND NOT (LOWER(COALESCE(o.status, '')) REGEXP 'cancel|cancell|отказ|отмен')
+            GROUP BY oi.item_id, oi.item_name
+            ORDER BY total_qty DESC, total_revenue DESC
+            LIMIT :limit
+        ";
+
+        try {
+            $stmt = $this->prepareCached($sql);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("getTopItemsSnapshot Error: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getSalesReport($period = 'day')
     {
         $intervals = [

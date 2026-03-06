@@ -173,6 +173,10 @@ switch ($report_type) {
 }
 
 // Функция для определения, какие поля показывать в графиках
+$ownerKpi = $db->getOwnerKpiSnapshot();
+$topItemsToday = $db->getTopItemsSnapshot('day', 5);
+$topItemsWeek = $db->getTopItemsSnapshot('week', 5);
+
 function getChartFields($report_type, $period)
 {
     switch ($report_type) {
@@ -321,6 +325,78 @@ if (!empty($report_data)) {
             <div class="admin-tab-pane <?= $tab === 'stats' ? 'active' : '' ?>" id="stats">
                 <h2>Аналитика - <?= htmlspecialchars($report_title) ?></h2>
 
+                <div class="owner-kpi-grid">
+                    <article class="owner-kpi-card">
+                        <div class="owner-kpi-label">Заказы сегодня</div>
+                        <div class="owner-kpi-value"><?= (int)($ownerKpi['orders_today'] ?? 0) ?></div>
+                    </article>
+                    <article class="owner-kpi-card">
+                        <div class="owner-kpi-label">Оплачено сегодня</div>
+                        <div class="owner-kpi-value"><?= (int)($ownerKpi['paid_today'] ?? 0) ?></div>
+                    </article>
+                    <article class="owner-kpi-card">
+                        <div class="owner-kpi-label">Отменено сегодня</div>
+                        <div class="owner-kpi-value"><?= (int)($ownerKpi['cancelled_today'] ?? 0) ?></div>
+                    </article>
+                    <article class="owner-kpi-card">
+                        <div class="owner-kpi-label">Средний чек (сегодня)</div>
+                        <div class="owner-kpi-value"><?= number_format((float)($ownerKpi['aov_today'] ?? 0), 2, '.', ' ') ?> ₽</div>
+                    </article>
+                </div>
+
+                <div class="owner-top-items-grid">
+                    <article class="owner-top-items-card">
+                        <h3>Топ позиций за день</h3>
+                        <?php if (empty($topItemsToday)): ?>
+                            <p class="owner-top-items-empty">Нет данных за текущий день.</p>
+                        <?php else: ?>
+                            <table class="owner-top-items-table">
+                                <thead>
+                                    <tr>
+                                        <th>Позиция</th>
+                                        <th>Кол-во</th>
+                                        <th>Выручка</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($topItemsToday as $item): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars((string)($item['item_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                            <td><?= (int)($item['total_qty'] ?? 0) ?></td>
+                                            <td><?= number_format((float)($item['total_revenue'] ?? 0), 2, '.', ' ') ?> ₽</td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        <?php endif; ?>
+                    </article>
+
+                    <article class="owner-top-items-card">
+                        <h3>Топ позиций за 7 дней</h3>
+                        <?php if (empty($topItemsWeek)): ?>
+                            <p class="owner-top-items-empty">Нет данных за последние 7 дней.</p>
+                        <?php else: ?>
+                            <table class="owner-top-items-table">
+                                <thead>
+                                    <tr>
+                                        <th>Позиция</th>
+                                        <th>Кол-во</th>
+                                        <th>Выручка</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($topItemsWeek as $item): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars((string)($item['item_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                            <td><?= (int)($item['total_qty'] ?? 0) ?></td>
+                                            <td><?= number_format((float)($item['total_revenue'] ?? 0), 2, '.', ' ') ?> ₽</td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        <?php endif; ?>
+                    </article>
+                </div>
                 <!-- Период и тип отчета -->
                 <div class="report-controls">
                     <form method="GET" class="report-filter-form">
@@ -550,3 +626,4 @@ if (!empty($report_data)) {
 </body>
 
 </html>
+
