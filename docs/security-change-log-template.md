@@ -152,3 +152,44 @@ Use one entry per production change step.
 - Rollback action performed: not required
 - Notes/next step:
   - proceed with next menu-only hardening iteration; keep host-wide port/Docker scope lock in place
+
+---
+
+## Entry (2026-03-06, Phase 1 observability rollout completed)
+
+- Date (UTC): 2026-03-06 01:10
+- Environment: production (`menu.labus.pro`, shared host)
+- Step/Phase: Phase 1 (reliability/conversion instrumentation rollout)
+- Owner: ops/admin
+- Change objective (single objective): enable daily smoke retention and expose checkout-failure diagnostics in admin monitor without changing runtime contracts
+- Commit hash: `26e3e82`
+- Related config/file:
+  - `monitor.php`
+  - `scripts/perf/security-smoke-daily.sh`
+  - `scripts/perf/install-security-smoke-cron.sh`
+  - `scripts/perf/checkout-error-top.php`
+  - `docs/security-phase-commands.md`, `docs/security-hardening-status.md`, `docs/project-improvement-roadmap.md`
+- Risk summary: low risk; monitoring/observability only, no API schema or business-flow behavior change
+- Preventive checks (pre):
+  - repository fast-forward update on server to `26e3e82`
+  - post-merge PHP lint hook passed
+- Deployment command(s):
+  - `runuser -u "$WEBUSER" -- git -C "$PROJECT" fetch --prune origin`
+  - `runuser -u "$WEBUSER" -- git -C "$PROJECT" checkout main`
+  - `runuser -u "$WEBUSER" -- git -C "$PROJECT" pull --ff-only origin main`
+  - `cd /var/www/labus_pro_usr/data/www/menu.labus.pro && bash scripts/perf/install-security-smoke-cron.sh`
+  - `php scripts/perf/checkout-error-top.php --hours=24 --top=3`
+- Verification checks (post):
+  - installed cron line includes `LOG_DIR=/var/www/labus_pro_usr/data/logs` and `RETENTION_DAYS=14`
+  - checkout report works without `--log` and resolves `/var/www/labus_pro_usr/data/logs/menu.labus.pro-php.log`
+  - monitor UI shows:
+    - `Security Smoke (Daily)`
+    - `Checkout Errors (24h)`
+  - current 24h top reason snapshot: `validation / invalid_order_payload => 1`
+- Metrics delta (`5xx`, p95, error-rate): no degradation reported during rollout checks; no runtime behavior change introduced
+- Observation window: rollout verification completed; continue passive daily observation via cron logs
+- Result: `success`
+- Stop criteria triggered: `no`
+- Rollback action performed: not required
+- Notes/next step:
+  - next step is Phase 2 item 4 (owner KPI snapshot, read-only queries only)

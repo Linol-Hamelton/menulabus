@@ -31,12 +31,17 @@
 - Extended smoke automation:
   - `scripts/perf/security-smoke.sh` now validates locked endpoints and `clear-cache.php` header snapshot
   - `docs/security-smoke-checklist.md` updated accordingly
-- Phase 1 reliability/conversion instrumentation implemented (pending prod rollout):
+- Phase 1 reliability/conversion instrumentation rolled out to production (2026-03-06):
   - daily smoke runner with retention: `scripts/perf/security-smoke-daily.sh`
   - cron installer: `scripts/perf/install-security-smoke-cron.sh`
   - checkout error top report: `scripts/perf/checkout-error-top.php`
   - structured checkout error events: `lib/CheckoutErrorLog.php` + order-create endpoints
   - OpenAPI gate on push to `main`: `.githooks/pre-push`
+  - admin monitor visibility: `monitor.php` now shows latest `Security Smoke (Daily)` and `Checkout Errors (24h)`
+  - production validation snapshot:
+    - cron installed with `LOG_DIR=/var/www/labus_pro_usr/data/logs` and `RETENTION_DAYS=14`
+    - manual daily run completed with `status=PASS`
+    - checkout summary works without `--log`, current top reason: `validation / invalid_order_payload` (1 event)
 
 ## Requires manual server execution
 
@@ -69,3 +74,10 @@
 - method probe on `/menu.php`: `TRACE => 405`, `PUT/DELETE/OPTIONS => 200` (deferred intentionally to avoid functional regressions)
 
 Planned fix path: deploy current repository changes from this iteration, reload Nginx safely, run updated smoke, observe 30 minutes.
+
+## Next menu-only step
+
+- Phase 2, item 4 from `docs/project-improvement-roadmap.md`:
+  - add owner KPI snapshot (read-only metrics in owner/admin area)
+  - no API contract changes and no host-level network changes
+  - release as one isolated step with smoke + 30-minute observation window
