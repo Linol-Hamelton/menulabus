@@ -9,6 +9,7 @@ servers:
 tags:
   - name: Auth
   - name: Menu
+  - name: Geo
   - name: Orders
   - name: Push
 
@@ -32,6 +33,37 @@ paths:
                 $ref: "#/components/schemas/MenuResponse"
         "500":
           $ref: "#/components/responses/ApiError500"
+
+  /api/v1/geocode.php:
+    get:
+      tags: [Geo]
+      summary: Reverse geocode coordinates via server-side proxy
+      parameters:
+        - in: query
+          name: lat
+          required: true
+          schema:
+            type: number
+            minimum: -90
+            maximum: 90
+        - in: query
+          name: lon
+          required: true
+          schema:
+            type: number
+            minimum: -180
+            maximum: 180
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeocodeResponse"
+        "400":
+          $ref: "#/components/responses/ApiError400"
+        "502":
+          $ref: "#/components/responses/ApiError502"
 
   /api/v1/auth/login.php:
     post:
@@ -333,6 +365,15 @@ components:
           examples:
             create_failed:
               value: { success: false, error: "Failed to create order", meta: {} }
+    ApiError502:
+      description: Bad Gateway
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          examples:
+            upstream_unavailable:
+              value: { success: false, error: "Geocoding service unavailable", meta: {} }
 
   schemas:
     ApiSuccess:
@@ -539,6 +580,22 @@ components:
                   type: array
                   items:
                     $ref: "#/components/schemas/MenuItem"
+
+    GeocodeResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiSuccess"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [display_name, city, road, house_number, lat, lon]
+              properties:
+                display_name: { type: string }
+                city: { type: string }
+                road: { type: string }
+                house_number: { type: string }
+                lat: { type: number }
+                lon: { type: number }
 
     OrderItemInput:
       type: object

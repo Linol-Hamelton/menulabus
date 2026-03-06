@@ -27,6 +27,13 @@ runuser -u "$WEBUSER" -- git -C "$PROJECT" pull --ff-only origin main
 - Deployment: `git pull` on server (in `main` only).
 - Everything else (validation and post-pull checks) is automated.
 
+## Related Documentation
+
+- Main docs map: `docs/index.md`
+- Project reference: `docs/project-reference.md`
+- API contract: `docs/openapi.yaml`
+- Security runbook set: `docs/security-*`
+
 ## Current production specifics (as configured)
 
 - Production path: `/var/www/labus_pro_usr/data/www/menu.labus.pro`
