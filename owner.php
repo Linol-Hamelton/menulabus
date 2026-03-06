@@ -31,7 +31,7 @@ $valid_periods = ['day', 'week', 'month', 'year'];
 $period = in_array($period, $valid_periods) ? $period : 'day';
 
 // Валидация типа отчета
-$valid_reports = ['sales', 'profit', 'efficiency', 'customers', 'dishes', 'load', 'employees'];
+$valid_reports = ['sales', 'profit', 'efficiency', 'customers', 'dishes', 'load', 'employees', 'bottlenecks'];
 $report_type = in_array($report_type, $valid_reports) ? $report_type : 'sales';
 
 function translateFieldName($fieldName)
@@ -65,6 +65,10 @@ function translateFieldName($fieldName)
         'processing_time' => 'Время (мин)',
         'abc'         => 'ABC',
         'revenue_pct' => '% выручки',
+        'stage' => 'Этап',
+        'avg_minutes' => 'Среднее (мин)',
+        'max_minutes' => 'Максимум (мин)',
+        'orders_count' => 'Заказов',
     ];
 
     return $translations[$fieldName] ?? ucfirst(str_replace('_', ' ', $fieldName));
@@ -170,6 +174,10 @@ switch ($report_type) {
         $report_data = array_values($unique_data);
         $report_title = 'Официанты';
         break;
+    case 'bottlenecks':
+        $report_data = $db->getOrderFlowBottleneckReport($period);
+        $report_title = 'Узкие места';
+        break;
 }
 
 // Функция для определения, какие поля показывать в графиках
@@ -210,6 +218,9 @@ function getChartFields($report_type, $period)
             $fields = $period === 'day'
                 ? ['processing_time', 'total_revenue', 'total_expenses', 'total_profit']
                 : ['order_count', 'total_revenue', 'avg_processing_time'];
+            break;
+        case 'bottlenecks':
+            $fields = ['avg_minutes', 'orders_count'];
             break;
         default:
             $fields = [];
@@ -259,6 +270,8 @@ if (!empty($report_data)) {
                 if ($period === 'day') {
                     if ($report_type === 'sales' && isset($row['order_id'])) {
                         $labels[] = $row['order_id'];
+                    } else if (isset($row['stage'])) {
+                        $labels[] = $row['stage'];
                     } else if ($report_type === 'customers' && isset($row['name'])) {
                         $labels[] = $row['name'];
                     } else if (isset($row['order_id'])) {
@@ -271,6 +284,8 @@ if (!empty($report_data)) {
                 } else {
                     if (isset($row['date'])) {
                         $labels[] = $row['date'];
+                    } else if (isset($row['stage'])) {
+                        $labels[] = $row['stage'];
                     } else if (isset($row['id'])) {
                         $labels[] = $row['id'];
                     } else {
@@ -610,6 +625,7 @@ if (!empty($report_data)) {
             <a href="?report=dishes&period=<?= $period ?>" class="tab-btn <?= $report_type === 'dishes' ? 'active' : '' ?>">Топ блюд</a>
             <a href="?report=load&period=<?= $period ?>" class="tab-btn <?= $report_type === 'load' ? 'active' : '' ?>">Загруженность</a>
             <a href="?report=employees&period=<?= $period ?>" class="tab-btn <?= $report_type === 'employees' ? 'active' : '' ?>">Официанты</a>
+            <a href="?report=bottlenecks&period=<?= $period ?>" class="tab-btn <?= $report_type === 'bottlenecks' ? 'active' : '' ?>">Узкие места</a>
         </div>
     </div>
 

@@ -2341,6 +2341,110 @@ class Database
         }
     }
 
+    public function getOrderFlowBottleneckReport(string $period = 'day'): array
+    {
+        $period = in_array($period, ['day', 'week', 'month', 'year'], true) ? $period : 'day';
+
+        switch ($period) {
+            case 'week':
+                $whereClause = "o.created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)";
+                break;
+            case 'month':
+                $whereClause = "MONTH(o.created_at) = MONTH(NOW()) AND YEAR(o.created_at) = YEAR(NOW())";
+                break;
+            case 'year':
+                $whereClause = "YEAR(o.created_at) = YEAR(NOW())";
+                break;
+            case 'day':
+            default:
+                $whereClause = "o.created_at >= CURDATE() AND o.created_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY)";
+                break;
+        }
+
+        $stageTimesSql = "
+            SELECT
+                o.id AS order_id,
+                o.created_at,
+                MIN(CASE
+                    WHEN LOWER(COALESCE(h.status, '')) LIKE '%при%'
+                      OR LOWER(COALESCE(h.status, '')) LIKE '%accept%'
+                    THEN h.changed_at END) AS accepted_at,
+                MIN(CASE
+                    WHEN LOWER(COALESCE(h.status, '')) LIKE '%готов%'
+                      OR LOWER(COALESCE(h.status, '')) LIKE '%cook%'
+                      OR LOWER(COALESCE(h.status, '')) LIKE '%prepar%'
+                    THEN h.changed_at END) AS cooking_at,
+                MIN(CASE
+                    WHEN LOWER(COALESCE(h.status, '')) LIKE '%достав%'
+                      OR LOWER(COALESCE(h.status, '')) LIKE '%deliver%'
+                      OR LOWER(COALESCE(h.status, '')) LIKE '%ready%'
+                    THEN h.changed_at END) AS delivering_at,
+                MIN(CASE
+                    WHEN LOWER(COALESCE(h.status, '')) LIKE '%заверш%'
+                      OR LOWER(COALESCE(h.status, '')) LIKE '%complete%'
+                      OR LOWER(COALESCE(h.status, '')) LIKE '%done%'
+                    THEN h.changed_at END) AS completed_at
+            FROM orders o
+            LEFT JOIN order_status_history h ON h.order_id = o.id
+            WHERE {$whereClause}
+            GROUP BY o.id, o.created_at
+        ";
+
+        $sql = "
+            SELECT
+                stage,
+                ROUND(AVG(minutes), 1) AS avg_minutes,
+                MAX(minutes) AS max_minutes,
+                COUNT(*) AS orders_count
+            FROM (
+                SELECT 1 AS stage_sort, 'Создан -> Приём' AS stage,
+                       TIMESTAMPDIFF(MINUTE, created_at, accepted_at) AS minutes
+                FROM ({$stageTimesSql}) st
+                WHERE accepted_at IS NOT NULL
+
+                UNION ALL
+
+                SELECT 2 AS stage_sort, 'Приём -> Готовим' AS stage,
+                       TIMESTAMPDIFF(MINUTE, accepted_at, cooking_at) AS minutes
+                FROM ({$stageTimesSql}) st
+                WHERE accepted_at IS NOT NULL AND cooking_at IS NOT NULL
+
+                UNION ALL
+
+                SELECT 3 AS stage_sort, 'Готовим -> Доставляем' AS stage,
+                       TIMESTAMPDIFF(MINUTE, cooking_at, delivering_at) AS minutes
+                FROM ({$stageTimesSql}) st
+                WHERE cooking_at IS NOT NULL AND delivering_at IS NOT NULL
+
+                UNION ALL
+
+                SELECT 4 AS stage_sort, 'Доставляем -> Завершён' AS stage,
+                       TIMESTAMPDIFF(MINUTE, delivering_at, completed_at) AS minutes
+                FROM ({$stageTimesSql}) st
+                WHERE delivering_at IS NOT NULL AND completed_at IS NOT NULL
+
+                UNION ALL
+
+                SELECT 5 AS stage_sort, 'Создан -> Завершён (итого)' AS stage,
+                       TIMESTAMPDIFF(MINUTE, created_at, completed_at) AS minutes
+                FROM ({$stageTimesSql}) st
+                WHERE completed_at IS NOT NULL
+            ) metrics
+            WHERE minutes IS NOT NULL AND minutes >= 0
+            GROUP BY stage_sort, stage
+            ORDER BY stage_sort ASC
+        ";
+
+        try {
+            $stmt = $this->prepareCached($sql);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("getOrderFlowBottleneckReport Error: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getSetting($key)
     {
         try {
