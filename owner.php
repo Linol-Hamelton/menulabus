@@ -90,16 +90,42 @@ function formatPhoneNumber($phone)
 {
     if (empty($phone)) return '';
 
-    // Убираем все нечисловые символы
+    // РЈР±РёСЂР°РµРј РІСЃРµ РЅРµС‡РёСЃР»РѕРІС‹Рµ СЃРёРјРІРѕР»С‹
     $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
 
-    // Форматируем номер в формате +7(903)498-16-42
+    // Р¤РѕСЂРјР°С‚РёСЂСѓРµРј РЅРѕРјРµСЂ РІ С„РѕСЂРјР°С‚Рµ +7(903)498-16-42
     if (strlen($cleanPhone) === 11 && $cleanPhone[0] === '7') {
         return '+7(' . substr($cleanPhone, 1, 3) . ')' . substr($cleanPhone, 4, 3) . '-' . substr($cleanPhone, 7, 2) . '-' . substr($cleanPhone, 9, 2);
     }
 
-    // Если номер не соответствует ожидаемому формату, возвращаем как есть
+    // Р•СЃР»Рё РЅРѕРјРµСЂ РЅРµ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓРµС‚ РѕР¶РёРґР°РµРјРѕРјСѓ С„РѕСЂРјР°С‚Сѓ, РІРѕР·РІСЂР°С‰Р°РµРј РєР°Рє РµСЃС‚СЊ
     return $phone;
+}
+
+function renderReportValue($key, $value)
+{
+    if ($key === 'abc') {
+        $cls = 'abc-' . strtolower((string)$value);
+        return '<span class="abc-badge ' . htmlspecialchars($cls, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8') . '</span>';
+    }
+
+    if ($key === 'delivery_type') {
+        return htmlspecialchars(translateDeliveryType($value), ENT_QUOTES, 'UTF-8');
+    }
+
+    if ($key === 'phone') {
+        return htmlspecialchars(formatPhoneNumber($value), ENT_QUOTES, 'UTF-8');
+    }
+
+    if (is_numeric($value) && $key !== 'avg_time_minutes' && $key !== 'avg_processing_time') {
+        if (strpos((string)$value, '.') !== false) {
+            return number_format((float)$value, 2);
+        }
+
+        return number_format((float)$value, 0);
+    }
+
+    return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 }
 
 // Получаем данные в зависимости от типа отчета
@@ -454,85 +480,57 @@ if (!empty($report_data)) {
                     <?php if (empty($report_data)): ?>
                         <p>Нет данных за выбранный период</p>
                     <?php else: ?>
+                        <?php $headers = array_keys($report_data[0]); ?>
 
-                        <!-- Desktop Table -->
-                        <div class="desktop-table">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <?php
-                                        $headers = array_keys($report_data[0]);
-                                        foreach ($headers as $header):
-                                        ?>
-                                            <th><?= htmlspecialchars(translateFieldName($header)) ?></th>
-                                        <?php endforeach; ?>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($report_data as $index => $row): ?>
+                        <article class="owner-top-items-card owner-report-table-card desktop-table">
+                            <div class="owner-report-card-head">
+                                <div>
+                                    <p class="owner-report-card-kicker">Отчёт</p>
+                                    <h3><?= htmlspecialchars($report_title, ENT_QUOTES, 'UTF-8') ?></h3>
+                                </div>
+                                <span class="owner-report-card-meta"><?= count($report_data) ?> строк</span>
+                            </div>
+                            <div class="owner-report-table-wrap">
+                                <table class="owner-top-items-table owner-report-table">
+                                    <thead>
                                         <tr>
-                                            <?php foreach ($row as $key => $value): ?>
-                                                <td>
-                                                    <?php
-                                                    if ($key === 'abc') {
-                                                        $cls = 'abc-' . strtolower($value);
-                                                        echo '<span class="abc-badge ' . htmlspecialchars($cls) . '">' . htmlspecialchars($value) . '</span>';
-                                                    } else if ($key === 'delivery_type') {
-                                                        echo htmlspecialchars(translateDeliveryType($value));
-                                                    } else if ($key === 'phone') {
-                                                        echo htmlspecialchars(formatPhoneNumber($value));
-                                                    } else if (is_numeric($value) && $key !== 'avg_time_minutes' && $key !== 'avg_processing_time') {
-                                                        // Форматируем числа, кроме времени (уже округлено в БД)
-                                                        if (strpos($value, '.') !== false) {
-                                                            echo number_format($value, 2);
-                                                        } else {
-                                                            echo number_format($value, 0);
-                                                        }
-                                                    } else {
-                                                        echo htmlspecialchars($value);
-                                                    }
-                                                    ?>
-                                                </td>
+                                            <?php foreach ($headers as $header): ?>
+                                                <th><?= htmlspecialchars(translateFieldName($header), ENT_QUOTES, 'UTF-8') ?></th>
                                             <?php endforeach; ?>
                                         </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($report_data as $row): ?>
+                                            <tr>
+                                                <?php foreach ($row as $key => $value): ?>
+                                                    <td><?= renderReportValue($key, $value) ?></td>
+                                                <?php endforeach; ?>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </article>
 
-                        <!-- Mobile Table -->
-                        <div class="mobile-table-container">
-                            <div class="mobile-table">
-                                <?php foreach ($report_data as $row): ?>
-                                    <div class="mobile-table-item">
+                        <div class="owner-report-mobile-grid mobile-table-container">
+                            <?php foreach ($report_data as $rowIndex => $row): ?>
+                                <article class="owner-top-items-card owner-report-mobile-card mobile-table-item">
+                                    <div class="owner-report-card-head owner-report-card-head-mobile">
+                                        <div>
+                                            <p class="owner-report-card-kicker">Запись <?= $rowIndex + 1 ?></p>
+                                            <h3><?= htmlspecialchars($report_title, ENT_QUOTES, 'UTF-8') ?></h3>
+                                        </div>
+                                    </div>
+                                    <div class="mobile-table owner-report-mobile-table">
                                         <?php foreach ($row as $key => $value): ?>
-                                            <div class="mobile-table-row">
-                                                <span class="mobile-table-label"><?= htmlspecialchars(translateFieldName($key)) ?>:</span>
-                                                <span class="mobile-table-value">
-                                                    <?php
-                                                    if ($key === 'abc') {
-                                                        $cls = 'abc-' . strtolower($value);
-                                                        echo '<span class="abc-badge ' . htmlspecialchars($cls) . '">' . htmlspecialchars($value) . '</span>';
-                                                    } else if ($key === 'delivery_type') {
-                                                        echo htmlspecialchars(translateDeliveryType($value));
-                                                    } else if ($key === 'phone') {
-                                                        echo htmlspecialchars(formatPhoneNumber($value));
-                                                    } else if (is_numeric($value) && $key !== 'avg_time_minutes' && $key !== 'avg_processing_time') {
-                                                        if (strpos($value, '.') !== false) {
-                                                            echo number_format($value, 2);
-                                                        } else {
-                                                            echo number_format($value, 0);
-                                                        }
-                                                    } else {
-                                                        echo htmlspecialchars($value);
-                                                    }
-                                                    ?>
-                                                </span>
+                                            <div class="mobile-table-row owner-report-mobile-row">
+                                                <span class="mobile-table-label owner-report-mobile-label"><?= htmlspecialchars(translateFieldName($key), ENT_QUOTES, 'UTF-8') ?></span>
+                                                <span class="mobile-table-value owner-report-mobile-value"><?= renderReportValue($key, $value) ?></span>
                                             </div>
                                         <?php endforeach; ?>
                                     </div>
-                                <?php endforeach; ?>
-                            </div>
+                                </article>
+                            <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
                 </div>
