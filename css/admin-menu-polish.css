@@ -345,7 +345,6 @@ body.owner-page .mobile-table-item {
 }
 body.owner-page .mobile-table-row {
   border-bottom: 1px solid var(--bg-light);
-  padding: 10px 0;
 }
 body.owner-page .mobile-table-row:last-child {
   border-bottom: none;
@@ -434,6 +433,7 @@ body.owner-page .chart-bar-value {
   font-size: 13px;
   font-weight: 700;
   padding: 4px 10px;
+  margin: 5px 0;
 }
 
 body.owner-page .chart-bar-label {

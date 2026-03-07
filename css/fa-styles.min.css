@@ -1041,7 +1041,6 @@ a {
   display: block;
   overflow-x: auto;
   width: 100%;
-  margin-bottom: 100px;
   -webkit-overflow-scrolling: touch;
 }
 .mobile-table table {
@@ -1248,7 +1247,7 @@ a {
   justify-content: space-between;
   min-height: 72px;
   margin: auto;
-  padding: clamp(84px, 9vw, 104px) 8% 0;
+  padding: clamp(9vw, 9vw, 104px) 8% 0;
   position: relative;
   height: auto;
 }
@@ -1652,7 +1651,7 @@ a {
 
 .menu-item-quantity > span {
   cursor: default;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   min-width: 20px;
   text-align: center;
