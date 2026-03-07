@@ -1,4 +1,3 @@
-<!-- menu-content-info.php LOADED -->
 <?php
 if (!defined('PUBLIC_MENU')) {
     require_once __DIR__ . '/session_init.php';
@@ -13,23 +12,22 @@ if (!isset($categories)) {
     $categories = $db->getUniqueCategories();
 }
 $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
-
 ?>
+<?php if ($includeMenuCss): ?>
 <!DOCTYPE html>
 <html lang="ru">
 
 <head>
     <meta charset="UTF-8">
     <title>Альтернативное меню</title>
-    <?php if ($includeMenuCss): ?>
-        <link rel="stylesheet" href="/css/fa-styles.css" nonce="<?= $styleNonce ?>">
-        <link rel="stylesheet" href="css/fa-purged.css" nonce="<?= $styleNonce ?>">
-        <link rel="stylesheet" href="css/menu-alt.css" nonce="<?= $styleNonce ?>">
-        <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion ?? $_SESSION['app_version'] ?? '1.0.0') ?>" nonce="<?= $styleNonce ?>">
-    <?php endif; ?>
+    <link rel="stylesheet" href="/css/fa-styles.min.css">
+    <link rel="stylesheet" href="/css/fa-purged.min.css">
+    <link rel="stylesheet" href="/css/menu-alt.min.css">
+    <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion ?? $_SESSION['app_version'] ?? '1.0.0') ?>">
 </head>
 
 <body>
+<?php endif; ?>
     <section id="menu" class="section menu info">
         <div class="container">
             <div class="section-header-menu">
@@ -67,7 +65,7 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
                                 <p><?= htmlspecialchars($item['description']) ?></p>
                                 <span class="price"><?= number_format($item['price'], 0, '.', '') ?> ₽</span>
                                 <?php if ($unavail): ?>
-                                    <span class="menu-item__stopbadge">Нет в наличии</span>
+                                    <span class="menu-item__stopbadge">Снято</span>
                                 <?php else: ?>
                                 <span class="buy"
                                     data-product-id="<?= $item['id'] ?>"
@@ -94,6 +92,8 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
             </div>
         </div>
     </section>
+<?php if ($includeMenuCss): ?>
 </body>
 
 </html>
+<?php endif; ?>

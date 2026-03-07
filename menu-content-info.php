@@ -13,18 +13,22 @@ if (!isset($categories)) {
     $categories = $db->getUniqueCategories();
 }
 $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
-
 ?>
+<?php if ($includeMenuCss): ?>
 <!DOCTYPE html>
 <html lang="ru">
 
 <head>
     <meta charset="UTF-8">
     <title>Альтернативное меню</title>
+    <link rel="stylesheet" href="/css/fa-styles.min.css">
+    <link rel="stylesheet" href="/css/fa-purged.min.css">
+    <link rel="stylesheet" href="/css/menu-alt.min.css">
+    <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion ?? $_SESSION['app_version'] ?? '1.0.0') ?>">
 </head>
 
 <body>
-    <!-- ========  Модальное окно «Состав»  ======== -->
+<?php endif; ?>
     <div id="compositionModal" class="delivery-modal">
         <div class="delivery-modal-content">
             <div>
@@ -94,7 +98,7 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
                                 <p><?= htmlspecialchars($item['description']) ?></p>
                                 <span class="price"><?= number_format($item['price'], 0, '.', '') ?> ₽</span>
                                 <?php if ($unavail): ?>
-                                    <span class="menu-item__stopbadge">Нет в наличии</span>
+                                    <span class="menu-item__stopbadge">Снято</span>
                                 <?php else: ?>
                                 <span class="buy"
                                     data-product-id="<?= $item['id'] ?>"
@@ -121,12 +125,8 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
             </div>
         </div>
     </section>
-    <?php if ($includeMenuCss): ?>
-        <link rel="stylesheet" href="/css/fa-styles.min.css" nonce="<?= $styleNonce ?>">
-        <link rel="stylesheet" href="css/fa-purged.min.css" nonce="<?= $styleNonce ?>">
-        <link rel="stylesheet" href="css/menu-alt.min.css" nonce="<?= $styleNonce ?>">
-        <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion ?? $_SESSION['app_version'] ?? '1.0.0') ?>" nonce="<?= $styleNonce ?>">
-    <?php endif; ?>
+<?php if ($includeMenuCss): ?>
 </body>
 
 </html>
+<?php endif; ?>

@@ -14,16 +14,21 @@ if (!isset($categories)) {
 $activeCategory = $_COOKIE['activeMenuCategory'] ?? ($categories[0]['category'] ?? '');
 $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
 ?>
+<?php if ($includeMenuCss): ?>
 <!DOCTYPE html>
 <html lang="ru">
 
 <head>
     <meta charset="UTF-8">
     <title>Альтернативное меню</title>
+    <link rel="stylesheet" href="/css/fa-styles.min.css">
+    <link rel="stylesheet" href="/css/fa-purged.min.css">
+    <link rel="stylesheet" href="/css/menu-alt.min.css">
+    <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion ?? $_SESSION['app_version'] ?? '1.0.0') ?>">
 </head>
 
 <body>
-    <!-- ========  Модальное окно «Состав»  ======== -->
+<?php endif; ?>
     <div id="compositionModal" class="delivery-modal">
         <div class="delivery-modal-content">
             <div>
@@ -98,7 +103,7 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
 
                                 <div class="menu-item-quantity">
                                     <?php if ($unavail): ?>
-                                        <span class="menu-item__stopbadge">Нет в наличии</span>
+                                        <span class="menu-item__stopbadge">Снято</span>
                                     <?php else: ?>
                                     <div class="buy"
                                         data-product-id="<?= $item['id'] ?>"
@@ -128,12 +133,8 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
             </div>
         </div>
     </section>
-    <?php if ($includeMenuCss): ?>
-        <link rel="stylesheet" href="/css/fa-styles.min.css">
-        <link rel="stylesheet" href="/css/fa-purged.min.css">
-        <link rel="stylesheet" href="/css/menu-alt.min.css">
-        <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion ?? $_SESSION['app_version'] ?? '1.0.0') ?>">
-    <?php endif; ?>
+<?php if ($includeMenuCss): ?>
 </body>
 
 </html>
+<?php endif; ?>
