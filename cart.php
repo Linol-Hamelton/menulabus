@@ -51,6 +51,22 @@ $sbpVisible = $tbankActive || $paymentEnabled;
         .scan-btn svg{flex-shrink:0}
         /* Location button */
         .detect-location-btn{line-height:0;display:flex;align-items:center;justify-content:center}
+        /* Cart empty state */
+        .checkout-btn-secondary{background:var(--ui-surface);border-color:var(--ui-border);color:var(--ui-text)}
+        .checkout-btn-secondary:hover{background:var(--ui-surface-muted);color:var(--ui-text)}
+        .menu-content-empty{max-width:840px}
+        .empty-cart-shell{align-items:center;display:flex;justify-content:center}
+        .empty-cart-card{background:linear-gradient(180deg,var(--ui-surface) 0%,var(--white) 100%);border:1px solid var(--ui-border);border-radius:28px;box-shadow:var(--ui-shadow-soft);max-width:640px;padding:36px 32px}
+        .empty-cart-icon{align-items:center;background:linear-gradient(135deg,rgba(205,23,25,.12),rgba(205,23,25,.04));border:1px solid rgba(205,23,25,.16);border-radius:18px;color:var(--ui-accent);display:inline-flex;height:68px;justify-content:center;margin-bottom:18px;width:68px}
+        .empty-cart h3{color:var(--ui-text);font-size:30px;line-height:1.1;margin:0 0 12px}
+        .empty-cart-actions{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:24px}
+        .empty-cart-actions .checkout-btn{min-width:200px;padding:12px 18px;text-decoration:none}
+        .clear-cart-container{gap:12px}
+        .clear-cart-container #clear-cart-btn{background:var(--ui-surface);border-color:var(--ui-border);color:var(--ui-text)}
+        .clear-cart-container #clear-cart-btn:hover{background:var(--ui-surface-muted);color:var(--ui-text)}
+        .clear-cart-container #checkout-btn{box-shadow:var(--ui-shadow-soft)}
+        .clear-cart-container.is-empty,.cart-total.is-empty,.cart-summary-container.is-empty{display:none}
+        @media(max-width:768px){.empty-cart{padding:24px 0 8px}.empty-cart-card{border-radius:22px;padding:24px 18px}.empty-cart h3{font-size:24px}.empty-cart-actions{flex-direction:column}.empty-cart-actions .checkout-btn{min-width:0;width:100%}}
     </style>
 </head>
 
@@ -69,20 +85,32 @@ $sbpVisible = $tbankActive || $paymentEnabled;
                 <h2>Заказ</h2>
                 <a href="menu.php" class="back-to-menu-btn">В меню</a>
             </div>
-            <div id="cart-items-container" class="menu-content">
-                <div class="empty-cart">
-                    <p>Ваша корзина пуста</p>
+            <div id="cart-items-container" class="menu-content menu-content-empty">
+                <div class="empty-cart empty-cart-shell">
+                    <div class="empty-cart-card">
+                        <div class="empty-cart-icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 256 256" fill="currentColor">
+                                <path d="M96,216a16,16,0,1,1-16-16A16,16,0,0,1,96,216Zm80-16a16,16,0,1,0,16,16A16,16,0,0,0,176,200ZM223.85,69.12l-21.67,92A24,24,0,0,1,178.82,180H84.38A24,24,0,0,1,61,161.26L39.2,64H16a8,8,0,0,1,0-16H45.58a16,16,0,0,1,15.61,12.51L66.28,84H216a8,8,0,0,1,7.79,9.84ZM206,100H69.86l6.75,30H199Z"/>
+                            </svg>
+                        </div>
+                        <h3>&#1050;&#1086;&#1088;&#1079;&#1080;&#1085;&#1072; &#1087;&#1086;&#1082;&#1072; &#1087;&#1091;&#1089;&#1090;&#1072;&#1103;</h3>
+                        <p>&#1044;&#1086;&#1073;&#1072;&#1074;&#1100;&#1090;&#1077; &#1073;&#1083;&#1102;&#1076;&#1072; &#1074; &#1079;&#1072;&#1082;&#1072;&#1079;, &#1072; &#1077;&#1089;&#1083;&#1080; &#1093;&#1086;&#1090;&#1080;&#1090;&#1077; &#1089;&#1085;&#1072;&#1095;&#1072;&#1083;&#1072; &#1087;&#1086;&#1089;&#1084;&#1086;&#1090;&#1088;&#1077;&#1090;&#1100; &#1087;&#1086;&#1076;&#1073;&#1086;&#1088;&#1082;&#1091;, &#1086;&#1090;&#1082;&#1088;&#1086;&#1081;&#1090;&#1077; &#1093;&#1080;&#1090;&#1099; &#1080; &#1072;&#1082;&#1094;&#1080;&#1080;.</p>
+                        <div class="empty-cart-actions">
+                            <a href="menu.php" class="checkout-btn">&#1042;&#1077;&#1088;&#1085;&#1091;&#1090;&#1100;&#1089;&#1103; &#1074; &#1084;&#1077;&#1085;&#1102;</a>
+                            <a href="index.php" class="checkout-btn checkout-btn-secondary">&#1061;&#1080;&#1090;&#1099; &#1080; &#1072;&#1082;&#1094;&#1080;&#1080;</a>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="clear-cart-container">
+            <div class="clear-cart-container is-empty">
                 <button id="clear-cart-btn" class="checkout-btn">Очистить</button>
                 <button id="checkout-btn" class="checkout-btn" disabled>Заказать</button>
             </div>
-            <div id="cart-total" class="cart-total">
+            <div id="cart-total" class="cart-total is-empty">
                 Итого: 0 ₽
             </div>
-            <div class="cart-summary-container">
+            <div class="cart-summary-container is-empty">
                 <div id="nutrition-summary" class="nutrition-summary"></div>
             </div>
         </div>
