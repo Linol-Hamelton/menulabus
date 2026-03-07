@@ -103,6 +103,7 @@ $quickCategories = array_slice($categories, 0, 4);
     </div>
 
     <?php
+    $GLOBALS['menu_css_in_head'] = true;
     switch ($menuView) {
         case 'alt':
             require_once __DIR__ . '/menu-content.php';
