@@ -1,4 +1,4 @@
-﻿# Documentation Index
+# Documentation Index
 
 This directory is the source of truth for project documentation.
 
@@ -6,6 +6,7 @@ This directory is the source of truth for project documentation.
 
 - [Project Reference](./project-reference.md)
 - [Project Improvement Roadmap](./project-improvement-roadmap.md)
+- [UX/UI Improvement Roadmap](./ux-ui-improvement-roadmap.md)
 - [Deployment Workflow](./deployment-workflow.md)
 - [OpenAPI Contract](./openapi.yaml)
 - [API Smoke Checks](./api-smoke.md)
@@ -36,3 +37,4 @@ This directory is the source of truth for project documentation.
 
 - Keep all project documentation under `docs/`.
 - API contract source of truth: `docs/openapi.yaml`.
+
