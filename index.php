@@ -26,13 +26,14 @@ $appVer    = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= $appVer ?>">
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= $appVer ?>">
+    <link rel="stylesheet" href="/css/index-landing.css?v=<?= $appVer ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= $appVer ?>">
     <title><?= $siteName ?> | <?= $siteDesc !== '' ? $siteDesc : $tagline ?></title>
 
     <!-- Preloader - мгновенная загрузка -->
 </head>
 
-<body>
+<body class="index-landing-page">
   <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
 
   <section class="hero">
@@ -56,9 +57,37 @@ $appVer    = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
     </picture>
   </div>
     <div class="hero-content">
+      <span class="hero-eyebrow">Digital dining flow</span>
       <h1><?= $siteName ?></h1>
       <p><?= $tagline ?></p>
-      <a href="#reservation" class="btn">Забронировать</a>
+      <div class="hero-actions">
+        <a href="/menu.php" class="btn hero-btn-primary">Открыть меню</a>
+        <a href="#reservation" class="btn hero-btn-secondary">Забронировать</a>
+      </div>
+      <div class="hero-quick-points" aria-label="Быстрые преимущества">
+        <span>QR-меню без лишних шагов</span>
+        <span>Быстрый переход к заказу</span>
+        <span>Бронирование и консультация</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="landing-entry-strip" aria-label="Основные сценарии">
+    <div class="container">
+      <div class="landing-entry-grid">
+        <article class="landing-entry-card">
+          <p class="landing-entry-kicker">Основной сценарий</p>
+          <h2>Открыть меню и сразу перейти к выбору блюд</h2>
+          <p>Традиционный каталог остаётся на отдельной странице, без лишнего маркетингового шума.</p>
+          <a href="/menu.php" class="landing-entry-link">Перейти в меню</a>
+        </article>
+        <article class="landing-entry-card landing-entry-card-muted">
+          <p class="landing-entry-kicker">До заказа</p>
+          <h2>Узнать о сервисе, форматах работы и оставить заявку</h2>
+          <p>Лендинг помогает быстро понять продукт, а не подменяет собой сам каталог.</p>
+          <a href="#reservation" class="landing-entry-link">Оставить заявку</a>
+        </article>
+      </div>
     </div>
   </section>
 

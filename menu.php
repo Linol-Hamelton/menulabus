@@ -25,10 +25,11 @@ if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/menu-alt.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/menu-content-info.min.css?v=<?= htmlspecialchars($appVersion) ?>">
+    <link rel="stylesheet" href="/css/menu-discovery.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion) ?>">
 </head>
 
-<body id="body">
+<body id="body" class="menu-catalog-page">
     <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     <?php
     // РџРѕР»СѓС‡Р°РµРј Р°РєС‚СѓР°Р»СЊРЅС‹Рµ РґР°РЅРЅС‹Рµ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РёР· Р‘Р”
@@ -55,17 +56,50 @@ if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['
     }
 
     $GLOBALS['menu_css_in_head'] = true;
-    switch ($menuView) {
-        case 'alt':
-            require_once __DIR__ . '/menu-content.php';
-            break;
-        case 'info':
-            require_once __DIR__ . '/menu-content-info.php';
-            break;
-        default:
-            require_once __DIR__ . '/menu-alt.php';
-            break;
-    } ?>
+    $quickCategories = array_slice($categories, 0, 4);
+    ?>
+
+    <section class="menu-discovery-strip">
+        <div class="container">
+            <div class="menu-discovery-head">
+                <div>
+                    <p class="menu-discovery-kicker">Быстрый старт</p>
+                    <h1>Откройте нужную категорию и сразу добавляйте блюда в заказ</h1>
+                    <p class="menu-discovery-copy">Каталог остается привычным. Мы усиливаем только навигацию по разделам и быстрый переход к нужным позициям.</p>
+                </div>
+                <a href="/cart.php" class="menu-discovery-cart-link">Перейти к заказу</a>
+            </div>
+
+            <div class="menu-discovery-toolbar">
+                <label class="menu-discovery-search" for="menuQuickSearch">
+                    <span class="menu-discovery-search-label">Поиск по активной категории</span>
+                    <input
+                        id="menuQuickSearch"
+                        class="menu-discovery-search-input"
+                        type="search"
+                        placeholder="Например, пицца, кофе или ролл"
+                        autocomplete="off">
+                </label>
+                <div class="menu-discovery-meta">
+                    <span class="menu-discovery-current" id="menuActiveCategoryLabel"><?= htmlspecialchars((string)$activeCategory) ?></span>
+                    <span class="menu-discovery-count" id="menuActiveCategoryMeta">Подбираем позиции...</span>
+                </div>
+            </div>
+
+            <?php if ($quickCategories): ?>
+                <div class="menu-discovery-quickcats" aria-label="Быстрый переход по разделам">
+                    <?php foreach ($quickCategories as $category): ?>
+                        <button
+                            type="button"
+                            class="menu-quickcat-btn"
+                            data-tab-target="<?= htmlspecialchars($category['category']) ?>">
+                            <?= htmlspecialchars($category['category']) ?>
+                        </button>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+    </section>
 
     <div class="menu-tabs-container">
         <div class="menu-tabs">
@@ -78,6 +112,19 @@ if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['
         </div>
     </div>
 
+    <?php
+    switch ($menuView) {
+        case 'alt':
+            require_once __DIR__ . '/menu-content.php';
+            break;
+        case 'info':
+            require_once __DIR__ . '/menu-content-info.php';
+            break;
+        default:
+            require_once __DIR__ . '/menu-alt.php';
+            break;
+    } ?>
+
     <div class="footer-bottom">
         <p>&copy; <?= date('Y') ?> «<?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?>». Все права защищены.</p>
     </div>
@@ -85,6 +132,7 @@ if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['
     <script src="/js/cart.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/menu-modifiers.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/menu-discovery.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
 </body>
 
 </html>

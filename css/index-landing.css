@@ -1,0 +1,202 @@
+.index-landing-page .hero-content {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 760px;
+}
+
+.index-landing-page .hero-eyebrow {
+  align-self: center;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.88);
+  font-family: "Georgia", serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.24em;
+  padding: 10px 16px;
+  text-transform: uppercase;
+}
+
+.index-landing-page .hero-content h1 {
+  margin-bottom: 0;
+}
+
+.index-landing-page .hero-content p {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 1.15rem;
+  line-height: 1.75;
+  margin: 0 auto;
+  max-width: 560px;
+}
+
+.index-landing-page .hero-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: center;
+}
+
+.index-landing-page .hero-btn-primary,
+.index-landing-page .hero-btn-secondary {
+  min-width: 220px;
+}
+
+.index-landing-page .hero-btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: none;
+  color: #fff;
+}
+
+.index-landing-page .hero-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.index-landing-page .hero-quick-points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.index-landing-page .hero-quick-points span {
+  background: rgba(10, 10, 10, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.95rem;
+  padding: 10px 14px;
+}
+
+.landing-entry-strip {
+  background:
+    radial-gradient(circle at top left, rgba(205, 23, 25, 0.14), transparent 40%),
+    linear-gradient(180deg, #fff 0%, #f5f1ed 100%);
+  padding: 28px 0 12px;
+}
+
+.landing-entry-grid {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.landing-entry-card {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(18, 18, 18, 0.08);
+  border-radius: 28px;
+  box-shadow: 0 22px 50px rgba(18, 18, 18, 0.08);
+  padding: 30px 30px 26px;
+}
+
+.landing-entry-card h2 {
+  color: #121212;
+  font-size: 1.9rem;
+  line-height: 1.15;
+  margin: 0 0 12px;
+}
+
+.landing-entry-card p {
+  color: #4e4741;
+  margin: 0;
+}
+
+.landing-entry-card-muted {
+  background: linear-gradient(180deg, rgba(18, 18, 18, 0.98), rgba(35, 35, 35, 0.96));
+}
+
+.landing-entry-card-muted h2,
+.landing-entry-card-muted p {
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.landing-entry-kicker {
+  color: #cd1719;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+}
+
+.landing-entry-card-muted .landing-entry-kicker {
+  color: #ff9e90;
+}
+
+.landing-entry-link {
+  color: #121212;
+  display: inline-flex;
+  font-size: 0.98rem;
+  font-weight: 700;
+  margin-top: 20px;
+  text-decoration: none;
+}
+
+.landing-entry-link::after {
+  content: "->";
+  margin-left: 8px;
+}
+
+.landing-entry-card-muted .landing-entry-link {
+  color: #fff;
+}
+
+@media (max-width: 992px) {
+  .landing-entry-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-entry-card {
+    padding: 24px 24px 22px;
+  }
+
+  .landing-entry-card h2 {
+    font-size: 1.55rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .index-landing-page .hero-content {
+    gap: 18px;
+  }
+
+  .index-landing-page .hero-eyebrow {
+    font-size: 0.74rem;
+    letter-spacing: 0.18em;
+    padding: 9px 12px;
+  }
+
+  .index-landing-page .hero-content p {
+    font-size: 1rem;
+    line-height: 1.6;
+    max-width: 320px;
+  }
+
+  .index-landing-page .hero-actions {
+    flex-direction: column;
+  }
+
+  .index-landing-page .hero-btn-primary,
+  .index-landing-page .hero-btn-secondary {
+    min-width: 0;
+    width: min(280px, 100%);
+  }
+
+  .index-landing-page .hero-quick-points {
+    align-items: stretch;
+    flex-direction: column;
+    margin: 0 auto;
+    max-width: 300px;
+    width: 100%;
+  }
+
+  .index-landing-page .hero-quick-points span {
+    border-radius: 18px;
+    text-align: center;
+  }
+
+  .landing-entry-strip {
+    padding-top: 20px;
+  }
+}
