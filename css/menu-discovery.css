@@ -86,7 +86,14 @@ body.menu-search-mode .menu-content .tab-pane {
 }
 
 body.menu-search-mode .menu-content .tab-pane.menu-search-pane-active {
-  display: block !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 992px) {
+  body.menu-search-mode .menu-content .tab-pane.menu-search-pane-active {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 768px) {
@@ -96,5 +103,9 @@ body.menu-search-mode .menu-content .tab-pane.menu-search-pane-active {
 
   .menu-catalog-page .menu-discovery-strip .container {
     padding-inline: 14px;
+  }
+
+  body.menu-search-mode .menu-content .tab-pane.menu-search-pane-active {
+    grid-template-columns: repeat(1, 1fr);
   }
 }
