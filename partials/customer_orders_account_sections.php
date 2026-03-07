@@ -108,9 +108,9 @@ $renderOrderCard = static function (array $order, bool $isHistory) use ($getDeli
                 </div>
             </div>
 
-            <button type="button" class="customer-order-expand" data-toggle-order aria-controls="<?= htmlspecialchars($detailsId) ?>">
+            <button type="button" class="customer-order-expand" data-toggle-order aria-controls="<?= htmlspecialchars($detailsId) ?>" aria-expanded="false">
                 <span class="customer-order-expand-text">Состав и детали</span>
-                <span class="order-toggle-icon fa-chevron-down" aria-hidden="true"></span>
+                <span class="order-toggle-icon" aria-hidden="true"></span>
             </button>
 
             <div class="order-items customer-order-details" id="<?= htmlspecialchars($detailsId) ?>">

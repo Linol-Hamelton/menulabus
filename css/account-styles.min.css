@@ -791,14 +791,20 @@ body.customer_orders-page .order-toggle-icon {
   color: var(--ui-text-muted);
   display: inline-flex;
   font-size: 12px;
+  font-family: inherit !important;
   line-height: 1;
   min-width: 18px;
 }
 body.customer_orders-page .order-toggle-icon::before {
   content: "▾";
 }
+body.customer_orders-page .order-toggle-icon.fa-chevron-down::before {
+  content: "▾";
+  font-family: inherit !important;
+}
 body.customer_orders-page .order-toggle-icon.fa-chevron-up::before {
   content: "▴";
+  font-family: inherit !important;
 }
 body.customer_orders-page .customer-order-details {
   background: rgba(18, 18, 18, 0.015);

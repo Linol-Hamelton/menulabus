@@ -173,6 +173,13 @@ if (($_GET['partial'] ?? '') === 'account-sections') {
         document.addEventListener('click', function (event) {
             var button = event.target.closest('[data-order-view]');
             if (!button) {
+                var toggleButton = event.target.closest('[data-toggle-order]');
+                if (!toggleButton) {
+                    return;
+                }
+                window.requestAnimationFrame(function () {
+                    toggleButton.setAttribute('aria-expanded', toggleButton.classList.contains('active') ? 'true' : 'false');
+                });
                 return;
             }
             event.preventDefault();
