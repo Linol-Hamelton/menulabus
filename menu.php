@@ -1,22 +1,19 @@
-<?php
+﻿<?php
 header('Cache-Control: public, max-age=600, s-maxage=600');
 require_once __DIR__ . '/session_init.php';
 
 $appVersion = $_SESSION['app_version'] ?? '1.0.0';
 $db = Database::getInstance();
 $categories = $db->getUniqueCategories();
-$activeCategory = $_COOKIE['activeMenuCategory'] ?? $categories[0]['category'];
+$activeCategory = $_COOKIE['activeMenuCategory'] ?? ($categories[0]['category'] ?? '');
 
-// Feature #10: capture table number from QR URL and store in session
 if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['table'] > 0) {
     $_SESSION['qr_table'] = min((int)$_GET['table'], 999);
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="ru">
-
-<head>  
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="/manifest.php?v=<?= htmlspecialchars($appVersion) ?>">
@@ -28,11 +25,9 @@ if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['
     <link rel="stylesheet" href="/css/menu-discovery.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion) ?>">
 </head>
-
 <body id="body" class="menu-catalog-page">
     <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     <?php
-    // РџРѕР»СѓС‡Р°РµРј Р°РєС‚СѓР°Р»СЊРЅС‹Рµ РґР°РЅРЅС‹Рµ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РёР· Р‘Р”
     $now = time();
     $user = $_SESSION['user'] ?? null;
     $userSyncInterval = 300;
@@ -46,8 +41,8 @@ if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['
             }
         }
     }
-    $menuView = $user['menu_view'] ?? 'default';
 
+    $menuView = $user['menu_view'] ?? 'default';
     $csrfToken = $_SESSION['csrf_token'] ?? ($GLOBALS['csrfToken'] ?? '');
     $GLOBALS['menu_request_ts'] = $now;
 
@@ -56,7 +51,7 @@ if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['
     }
 
     $GLOBALS['menu_css_in_head'] = true;
-    $quickCategories = array_slice($categories, 0, 4);
+    $quickCategories = $categories;
     ?>
 
     <section class="menu-discovery-strip">
@@ -65,14 +60,14 @@ if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['
                 <div>
                     <p class="menu-discovery-kicker">Быстрый старт</p>
                     <h1>Откройте нужную категорию и сразу добавляйте блюда в заказ</h1>
-                    <p class="menu-discovery-copy">Каталог остается привычным. Мы усиливаем только навигацию по разделам и быстрый переход к нужным позициям.</p>
+                    <p class="menu-discovery-copy">Каталог остаётся привычным. Мы усиливаем навигацию, поиск и быстрый переход к нужным позициям, не ломая сам сценарий заказа.</p>
                 </div>
                 <a href="/cart.php" class="menu-discovery-cart-link">Перейти к заказу</a>
             </div>
 
             <div class="menu-discovery-toolbar">
                 <label class="menu-discovery-search" for="menuQuickSearch">
-                    <span class="menu-discovery-search-label">Поиск по активной категории</span>
+                    <span class="menu-discovery-search-label">Поиск по всему меню</span>
                     <input
                         id="menuQuickSearch"
                         class="menu-discovery-search-input"
@@ -82,7 +77,7 @@ if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['
                 </label>
                 <div class="menu-discovery-meta">
                     <span class="menu-discovery-current" id="menuActiveCategoryLabel"><?= htmlspecialchars((string)$activeCategory) ?></span>
-                    <span class="menu-discovery-count" id="menuActiveCategoryMeta">Подбираем позиции...</span>
+                    <span class="menu-discovery-count" id="menuActiveCategoryMeta">Ищем по всем разделам...</span>
                 </div>
             </div>
 
@@ -98,12 +93,16 @@ if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
+
+            <div class="menu-discovery-global-empty" id="menuGlobalNoResults" hidden>
+                По этому запросу ничего не найдено ни в одной категории. Попробуйте другое название блюда или раздела.
+            </div>
         </div>
     </section>
 
     <div class="menu-tabs-container">
         <div class="menu-tabs">
-            <?php foreach ($categories as $index => $category): ?>
+            <?php foreach ($categories as $category): ?>
                 <button class="tab-btn <?= $category['category'] === $activeCategory ? 'active' : '' ?>"
                     data-tab="<?= htmlspecialchars($category['category']) ?>">
                     <?= htmlspecialchars($category['category']) ?>
@@ -123,7 +122,8 @@ if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['
         default:
             require_once __DIR__ . '/menu-alt.php';
             break;
-    } ?>
+    }
+    ?>
 
     <div class="footer-bottom">
         <p>&copy; <?= date('Y') ?> «<?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?>». Все права защищены.</p>
@@ -134,5 +134,4 @@ if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['
     <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/menu-discovery.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
 </body>
-
 </html>
