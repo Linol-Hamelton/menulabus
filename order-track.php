@@ -35,7 +35,11 @@ $done     = ($step === 3);
 $deliveryType = $order['delivery_type'] ?? 'takeaway';
 
 // Step 2 label changes by delivery type
-$step2Label = in_array($deliveryType, ['delivery']) ? 'Доставляем' : 'Готов к выдаче';
+$step2Label = match ($deliveryType) {
+    'delivery' => 'Доставляем',
+    'table' => 'Подаём к столу',
+    default => 'Готов к выдаче',
+};
 // Phosphor SVG icons (20×20, fill="currentColor" inherits CSS color)
 $si = fn(string $path, int $sz = 20) =>
     '<svg xmlns="http://www.w3.org/2000/svg" width="' . $sz . '" height="' . $sz .
@@ -49,6 +53,60 @@ $svgStar  = $si('M234.29,114.85l-45,38.83L203,211a16,16,0,0,1-23.84,17.71L128,19
 $step2Icon  = in_array($deliveryType, ['delivery']) ? $svgTruck : $svgCheck;
 
 $avgMinutes = $db->getAvgCompletionMinutes($deliveryType);
+
+$trackStatusCopy = (function (string $normalizedStatus, string $mode): array {
+    if ($normalizedStatus === 'отказ') {
+        return [
+            'badge' => 'Заказ отменён',
+            'title' => 'Заказ не будет выполнен',
+            'note' => 'Свяжитесь с заведением, если нужно уточнить причину отмены или оформить заказ повторно.',
+        ];
+    }
+    if ($normalizedStatus === 'завершён') {
+        return [
+            'badge' => 'Заказ получен',
+            'title' => 'Заказ уже завершён',
+            'note' => 'Спасибо за заказ. Если что-то пошло не так, свяжитесь с заведением и назовите номер заказа.',
+        ];
+    }
+    if ($normalizedStatus === 'доставляем') {
+        if ($mode === 'delivery') {
+            return [
+                'badge' => 'Курьер в пути',
+                'title' => 'Заказ уже едет к вам',
+                'note' => 'Время зависит от маршрута и трафика. Если курьер задерживается, оценка может сдвигаться.',
+            ];
+        }
+        if ($mode === 'table') {
+            return [
+                'badge' => 'Подаём к столу',
+                'title' => 'Заказ уже несут к вашему столу',
+                'note' => 'Оставайтесь на месте: следующий шаг — заказ будет передан вам.',
+            ];
+        }
+        return [
+            'badge' => 'Готов к выдаче',
+            'title' => 'Заказ уже можно забрать',
+            'note' => 'Подойдите к стойке выдачи и назовите номер заказа, чтобы получить его быстрее.',
+        ];
+    }
+    if ($normalizedStatus === 'готовим') {
+        return [
+            'badge' => 'Готовим',
+            'title' => 'Заказ уже в работе',
+            'note' => $mode === 'delivery'
+                ? 'Следующий шаг — передадим заказ курьеру и обновим статус автоматически.'
+                : 'Следующий шаг — сообщим, когда заказ будет готов к выдаче или подаче.',
+        ];
+    }
+    return [
+        'badge' => 'Принят',
+        'title' => 'Мы приняли заказ и передали его в работу',
+        'note' => $mode === 'delivery'
+            ? 'Когда заказ будет готов, сразу передадим его курьеру.'
+            : 'Покажем здесь следующий шаг, как только начнётся приготовление.',
+    ];
+})($status, $deliveryType);
 
 // Delivery-type display (16×16 icons for the small badge)
 $deliveryLabels = [
@@ -111,6 +169,29 @@ $appVersion = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
         </div>
     </div>
 
+    <section class="track-status-panel<?= $done ? ' track-status-panel--done' : ($rejected ? ' track-status-panel--error' : '') ?>" id="statusPanel">
+        <div class="track-status-copy">
+            <div class="track-status-kicker">Сейчас</div>
+            <div class="track-status-badge" id="statusBadge"><?= htmlspecialchars($trackStatusCopy['badge']) ?></div>
+            <h2 class="track-status-title" id="statusTitle"><?= htmlspecialchars($trackStatusCopy['title']) ?></h2>
+            <p class="track-status-note" id="statusNote"><?= htmlspecialchars($trackStatusCopy['note']) ?></p>
+        </div>
+
+        <div class="track-time-box" id="timeBox">
+            <?php if ($done): ?>
+                <div class="time-label">Статус</div>
+                <div class="time-value done">Заказ получен</div>
+            <?php elseif ($rejected): ?>
+                <div class="time-label">Статус</div>
+                <div class="time-value error">Заказ отменён</div>
+            <?php else: ?>
+                <div class="time-label">Оценка времени</div>
+                <div class="time-value" id="timeValue">~<?= $avgMinutes ?> мин</div>
+                <div class="time-subtext" id="timeSubtext">Оценка обновляется автоматически и может меняться в часы пик.</div>
+            <?php endif; ?>
+        </div>
+    </section>
+
     <!-- Rejected banner -->
     <div class="track-rejected-banner <?= $rejected ? 'track-rejected-banner--visible' : '' ?>" id="rejectedBanner">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31l-66.34,66.35a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/><path d="M232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg>
@@ -138,23 +219,12 @@ $appVersion = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
             <div class="track-step-label"
                  data-label-default="<?= htmlspecialchars($s['label']) ?>"
                  data-label-step2-delivery="Доставляем"
-                 data-label-step2-pickup="Готов к выдаче">
+                 data-label-step2-pickup="Готов к выдаче"
+                 data-label-step2-table="Подаём к столу">
                 <?= htmlspecialchars($s['label']) ?>
             </div>
         </div>
         <?php endforeach; ?>
-    </div>
-
-    <!-- Estimated time -->
-    <div class="track-time-box" id="timeBox">
-        <?php if ($done): ?>
-            <div class="time-value done">Заказ получен!</div>
-        <?php elseif ($rejected): ?>
-            <div class="time-value error">Заказ отменён</div>
-        <?php else: ?>
-            <div class="time-label">Примерное время</div>
-            <div class="time-value" id="timeValue">~<?= $avgMinutes ?> мин</div>
-        <?php endif; ?>
     </div>
 
     <!-- Order items -->
@@ -214,6 +284,75 @@ $appVersion = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
 
     if (done || rejected) return; // nothing to poll
 
+    function getStatusPresentation(step, mode, isRejected, isDone) {
+        if (isRejected) {
+            return {
+                badge: 'Заказ отменён',
+                title: 'Заказ не будет выполнен',
+                note: 'Свяжитесь с заведением, если нужно уточнить причину отмены или оформить заказ повторно.'
+            };
+        }
+        if (isDone) {
+            return {
+                badge: 'Заказ получен',
+                title: 'Заказ уже завершён',
+                note: 'Спасибо за заказ. Если что-то пошло не так, свяжитесь с заведением и назовите номер заказа.'
+            };
+        }
+        if (step === 2) {
+            if (mode === 'delivery') {
+                return {
+                    badge: 'Курьер в пути',
+                    title: 'Заказ уже едет к вам',
+                    note: 'Время зависит от маршрута и трафика. Если курьер задерживается, оценка может сдвигаться.'
+                };
+            }
+            if (mode === 'table') {
+                return {
+                    badge: 'Подаём к столу',
+                    title: 'Заказ уже несут к вашему столу',
+                    note: 'Оставайтесь на месте: следующий шаг — заказ будет передан вам.'
+                };
+            }
+            return {
+                badge: 'Готов к выдаче',
+                title: 'Заказ уже можно забрать',
+                note: 'Подойдите к стойке выдачи и назовите номер заказа, чтобы получить его быстрее.'
+            };
+        }
+        if (step === 1) {
+            return {
+                badge: 'Готовим',
+                title: 'Заказ уже в работе',
+                note: mode === 'delivery'
+                    ? 'Следующий шаг — передадим заказ курьеру и обновим статус автоматически.'
+                    : 'Следующий шаг — сообщим, когда заказ будет готов к выдаче или подаче.'
+            };
+        }
+        return {
+            badge: 'Принят',
+            title: 'Мы приняли заказ и передали его в работу',
+            note: mode === 'delivery'
+                ? 'Когда заказ будет готов, сразу передадим его курьеру.'
+                : 'Покажем здесь следующий шаг, как только начнётся приготовление.'
+        };
+    }
+
+    function applyStatusPresentation(step, mode, isRejected, isDone) {
+        var statusPanel = document.getElementById('statusPanel');
+        var statusBadge = document.getElementById('statusBadge');
+        var statusTitle = document.getElementById('statusTitle');
+        var statusNote = document.getElementById('statusNote');
+        var content = getStatusPresentation(step, mode, isRejected, isDone);
+        if (statusBadge) statusBadge.textContent = content.badge;
+        if (statusTitle) statusTitle.textContent = content.title;
+        if (statusNote) statusNote.textContent = content.note;
+        if (statusPanel) {
+            statusPanel.classList.toggle('track-status-panel--done', isDone);
+            statusPanel.classList.toggle('track-status-panel--error', isRejected);
+        }
+    }
+
     function stepClass(stepEl, i, step, rej) {
         stepEl.classList.remove('done', 'active', 'rejected');
         if (rej) {
@@ -237,6 +376,9 @@ $appVersion = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
             if (data.delivery_type === 'delivery') {
                 step2El.textContent = step2El.dataset.labelStep2Delivery;
                 if (step2Circle) step2Circle.innerHTML = SVG_TRUCK;
+            } else if (data.delivery_type === 'table') {
+                step2El.textContent = step2El.dataset.labelStep2Table;
+                if (step2Circle) step2Circle.innerHTML = SVG_CHECK;
             } else {
                 step2El.textContent = step2El.dataset.labelStep2Pickup;
                 if (step2Circle) step2Circle.innerHTML = SVG_CHECK;
@@ -251,11 +393,11 @@ $appVersion = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
         // Time box
         var timeBox = document.getElementById('timeBox');
         if (newDone) {
-            timeBox.innerHTML = '<div class="time-value done">Заказ получен!</div>';
+            timeBox.innerHTML = '<div class="time-label">Статус</div><div class="time-value done">Заказ получен</div>';
             launchConfetti();
             clearInterval(pollTimer);
         } else if (newRej) {
-            timeBox.innerHTML = '<div class="time-value error">Заказ отменён</div>';
+            timeBox.innerHTML = '<div class="time-label">Статус</div><div class="time-value error">Заказ отменён</div>';
             document.getElementById('rejectedBanner').classList.add('track-rejected-banner--visible');
             clearInterval(pollTimer);
         } else {
@@ -264,6 +406,8 @@ $appVersion = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
             document.getElementById('timeValue') &&
                 (document.getElementById('timeValue').textContent = '~' + remaining + ' мин');
         }
+
+        applyStatusPresentation(newStep, data.delivery_type, newRej, newDone);
 
         currentStep = newStep;
         done = newDone;

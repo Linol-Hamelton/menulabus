@@ -64,6 +64,79 @@
     gap: 6px;
 }
 
+/* ── Status summary ── */
+.track-status-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(220px, .9fr);
+    gap: 18px;
+    align-items: stretch;
+    margin: 0 0 22px;
+    padding: 18px;
+    border-radius: 18px;
+    background:
+        linear-gradient(180deg, rgba(205,23,25,.06) 0%, rgba(205,23,25,.02) 100%),
+        #fff;
+    border: 1px solid rgba(205,23,25,.12);
+}
+.track-status-panel--done {
+    background:
+        linear-gradient(180deg, rgba(76,175,80,.10) 0%, rgba(76,175,80,.03) 100%),
+        #fff;
+    border-color: rgba(76,175,80,.20);
+}
+.track-status-panel--error {
+    background:
+        linear-gradient(180deg, rgba(229,57,53,.10) 0%, rgba(229,57,53,.03) 100%),
+        #fff;
+    border-color: rgba(229,57,53,.20);
+}
+.track-status-copy {
+    min-width: 0;
+}
+.track-status-kicker {
+    margin: 0 0 10px;
+    font-size: 11px;
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--light-text);
+}
+.track-status-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(205,23,25,.10);
+    color: var(--primary-color);
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+.track-status-panel--done .track-status-badge {
+    background: rgba(76,175,80,.12);
+    color: var(--agree);
+}
+.track-status-panel--error .track-status-badge {
+    background: rgba(229,57,53,.12);
+    color: #c62828;
+}
+.track-status-title {
+    margin: 0 0 10px;
+    font-size: clamp(24px, 3vw, 30px);
+    line-height: 1.1;
+    font-weight: 800;
+    color: var(--secondary-color);
+}
+.track-status-note {
+    margin: 0;
+    max-width: 56ch;
+    color: var(--light-text);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
 /* ── Progress stepper ── */
 .track-steps {
     display: flex;
@@ -167,24 +240,39 @@
 
 /* ── Estimated time ── */
 .track-time-box {
-    text-align: center;
-    margin: 4px 0 20px;
-    min-height: 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 18px 16px;
+    min-height: 100%;
+    border-radius: 16px;
+    text-align: left;
+    background: rgba(18,18,18,.03);
+    border: 1px solid rgba(18,18,18,.08);
 }
 .track-time-box .time-label {
-    font-size: 13px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
     color: var(--light-text);
-    margin-bottom: 4px;
+    margin-bottom: 10px;
 }
 .track-time-box .time-value {
-    font-size: 28px;
+    font-size: clamp(28px, 3vw, 34px);
     font-weight: 700;
     color: var(--secondary-color);
-    line-height: 1.1;
+    line-height: 1;
     transition: color .4s;
 }
 .track-time-box .time-value.done  { color: var(--agree); }
 .track-time-box .time-value.error { color: #e53935; }
+.time-subtext {
+    margin-top: 10px;
+    color: var(--light-text);
+    font-size: 13px;
+    line-height: 1.5;
+}
 
 /* ── Rejected banner ── */
 .track-rejected-banner {
@@ -280,6 +368,22 @@
     .track-step-circle { width: 30px; height: 30px; font-size: 13px; }
     .track-steps::before { top: 15px; }
     .track-step::after   { top: 15px; }
+}
+
+@media (max-width: 720px) {
+    .track-status-panel {
+        grid-template-columns: 1fr;
+        gap: 14px;
+        padding: 16px;
+    }
+
+    .track-status-title {
+        font-size: 24px;
+    }
+
+    .track-time-box {
+        padding: 16px 14px;
+    }
 }
 
 /* rejected banner SVG — prevent icon from shrinking on narrow viewports */
