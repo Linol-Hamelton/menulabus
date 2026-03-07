@@ -3,6 +3,7 @@
     radial-gradient(circle at top left, rgba(205, 23, 25, 0.12), transparent 38%),
     linear-gradient(180deg, #fbfaf8 0%, #f1ece6 100%);
   border-bottom: 1px solid rgba(18, 18, 18, 0.08);
+  margin-top: 60px;
   padding: 18px 0 18px;
 }
 
