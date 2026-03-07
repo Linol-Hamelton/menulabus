@@ -91,10 +91,10 @@ if (
 
 // Получаем заказы пользователя
 $orders = $db->getUserOrders($_SESSION['user_id']);
-$allowedOrderTabs = ['Приём', 'готовим', 'доставляем', 'завершён', 'отказ'];
-$activeTab = $_COOKIE['activeOrderTab'] ?? 'Приём';
-if (!in_array($activeTab, $allowedOrderTabs, true)) {
-    $activeTab = 'Приём';
+$allowedOrderViews = ['active', 'history'];
+$orderView = $_COOKIE['customerOrdersView'] ?? 'active';
+if (!in_array($orderView, $allowedOrderViews, true)) {
+    $orderView = 'active';
 }
 
 // Partial fetch for SSE refresh (reduces HTML size and prevents UI freezes on low-end devices).
@@ -138,17 +138,54 @@ if (($_GET['partial'] ?? '') === 'account-sections') {
         <?php endif; ?>
 
         <?php require __DIR__ . '/partials/customer_orders_account_sections.php'; ?>
-
-        <div class="menu-tabs-container">
-            <div class="menu-tabs">
-                <button class="tab-btn <?= $activeTab === 'Приём' ? 'active' : '' ?>" data-tab="Приём">Приём</button>
-                <button class="tab-btn <?= $activeTab === 'готовим' ? 'active' : '' ?>" data-tab="готовим">Готовим</button>
-                <button class="tab-btn <?= $activeTab === 'доставляем' ? 'active' : '' ?>" data-tab="доставляем">Доставляем</button>
-                <button class="tab-btn <?= $activeTab === 'завершён' ? 'active' : '' ?>" data-tab="завершён">Завершено</button>
-                <button class="tab-btn <?= $activeTab === 'отказ' ? 'active' : '' ?>" data-tab="отказ">Отказ</button>
-            </div>
-        </div>
     </div>
+    <script nonce="<?= $scriptNonce ?>">
+    (function () {
+        var VIEW_KEY = 'customerOrdersView';
+
+        function getCookie(name) {
+            var match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[$()*+./?[\\\]^{|}-]/g, '\\$&') + '=([^;]*)'));
+            return match ? decodeURIComponent(match[1]) : '';
+        }
+
+        function getCurrentView() {
+            var saved = getCookie(VIEW_KEY) || localStorage.getItem(VIEW_KEY) || 'active';
+            return saved === 'history' ? 'history' : 'active';
+        }
+
+        function applyView(view) {
+            document.querySelectorAll('[data-order-view]').forEach(function (button) {
+                var active = button.dataset.orderView === view;
+                button.classList.toggle('active', active);
+                button.setAttribute('aria-pressed', active ? 'true' : 'false');
+            });
+
+            document.querySelectorAll('[data-orders-view]').forEach(function (section) {
+                section.classList.toggle('active', section.dataset.ordersView === view);
+            });
+        }
+
+        function saveView(view) {
+            localStorage.setItem(VIEW_KEY, view);
+            document.cookie = VIEW_KEY + '=' + encodeURIComponent(view) + '; path=/; max-age=31536000';
+        }
+
+        document.addEventListener('click', function (event) {
+            var button = event.target.closest('[data-order-view]');
+            if (!button) {
+                return;
+            }
+            event.preventDefault();
+            var view = button.dataset.orderView === 'history' ? 'history' : 'active';
+            saveView(view);
+            applyView(view);
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            applyView(getCurrentView());
+        });
+    })();
+    </script>
     <script src="/js/security.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/cart.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>

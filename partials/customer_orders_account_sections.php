@@ -1,113 +1,218 @@
 <?php
 // Partial for customer_orders.php: renders only the <div class="account-sections"> block.
-// Expects: $db (Database instance), $_SESSION['user_id'], $_SESSION['csrf_token'], $activeTab.
+// Expects: $db (Database instance), $_SESSION['user_id'], $_SESSION['csrf_token'], $orderView.
+
+$orders = $db->getUserOrders($_SESSION['user_id']);
+$orderView = ($orderView ?? 'active') === 'history' ? 'history' : 'active';
+
+$activeStatuses = ['Приём', 'готовим', 'доставляем'];
+$historyStatuses = ['завершён', 'отказ'];
+
+$deliveryTypeLabels = [
+    'takeaway' => 'Самовывоз',
+    'delivery' => 'Доставка',
+    'table' => 'На стол',
+    'bar' => 'К стойке бара',
+];
+
+$statusTitles = [
+    'Приём' => 'Принят',
+    'готовим' => 'Готовим',
+    'доставляем' => 'В пути',
+    'завершён' => 'Завершён',
+    'отказ' => 'Отказ',
+];
+
+$statusToneMap = [
+    'Приём' => 'is-intake',
+    'готовим' => 'is-cooking',
+    'доставляем' => 'is-delivery',
+    'завершён' => 'is-done',
+    'отказ' => 'is-cancelled',
+];
+
+$activeOrders = array_values(array_filter($orders, static fn($order) => in_array($order['status'], $activeStatuses, true)));
+$historyOrders = array_values(array_filter($orders, static fn($order) => in_array($order['status'], $historyStatuses, true)));
+
+$getDeliveryTitle = static function (array $order) use ($deliveryTypeLabels): string {
+    $type = (string)($order['delivery_type'] ?? '');
+    return $deliveryTypeLabels[$type] ?? ucfirst($type ?: 'Заказ');
+};
+
+$getDeliveryDetail = static function (array $order): string {
+    $type = (string)($order['delivery_type'] ?? '');
+    $raw = trim((string)($order['delivery_details'] ?? ''));
+    if ($type === 'table' && $raw !== '') {
+        return 'Стол ' . $raw;
+    }
+    if ($type === 'bar') {
+        return 'Выдача у барной стойки';
+    }
+    if ($type === 'takeaway') {
+        return 'Заберите заказ в заведении в удобное время';
+    }
+    if ($raw !== '') {
+        return $raw;
+    }
+    return $type === 'delivery'
+        ? 'Адрес доставки уточняется'
+        : 'Детали выдачи появятся после обновления статуса';
+};
+
+$renderOrderCard = static function (array $order, bool $isHistory) use ($getDeliveryTitle, $getDeliveryDetail, $statusTitles, $statusToneMap): void {
+    $status = (string)($order['status'] ?? '');
+    $statusTitle = $statusTitles[$status] ?? $status;
+    $statusTone = $statusToneMap[$status] ?? '';
+    $deliveryTitle = $getDeliveryTitle($order);
+    $deliveryDetail = $getDeliveryDetail($order);
+    $createdAt = date('d.m H:i', strtotime((string)($order['created_at'] ?? 'now')));
+    $total = number_format((float)($order['total'] ?? 0), 0, '.', ' ') . ' ₽';
+    $detailsId = 'order-items-' . (int)$order['id'];
+    ?>
+    <article class="order-item order-item--customer <?= $isHistory ? 'order-item--history' : 'order-item--active' ?>"
+             data-order-id="<?= (int)$order['id'] ?>"
+             data-status="<?= htmlspecialchars($status) ?>">
+        <div class="customer-order-card">
+            <div class="customer-order-summary">
+                <div class="customer-order-primary">
+                    <div class="customer-order-topline">
+                        <span class="order-id">#<?= (int)$order['id'] ?></span>
+                        <span class="order-status-chip <?= htmlspecialchars($statusTone) ?>"><?= htmlspecialchars($statusTitle) ?></span>
+                    </div>
+                    <div class="customer-order-meta">
+                        <span class="order-date"><?= htmlspecialchars($createdAt) ?></span>
+                        <span class="order-total"><?= htmlspecialchars($total) ?></span>
+                    </div>
+                    <div class="customer-order-delivery">
+                        <span class="customer-order-delivery-type"><?= htmlspecialchars($deliveryTitle) ?></span>
+                        <span class="customer-order-delivery-detail"><?= htmlspecialchars($deliveryDetail) ?></span>
+                    </div>
+                </div>
+                <div class="customer-order-actions-top">
+                    <?php if ($isHistory): ?>
+                        <form class="repeat-order-form" data-order-id="<?= (int)$order['id'] ?>">
+                            <input type="hidden" name="action" value="repeat_order">
+                            <input type="hidden" name="order_id" value="<?= (int)$order['id'] ?>">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                            <button type="submit" class="checkout-btn customer-order-action"
+                                    title="Добавить все товары из этого заказа в корзину">
+                                Повторить
+                            </button>
+                        </form>
+                    <?php else: ?>
+                        <a href="order-track.php?id=<?= (int)$order['id'] ?>" class="checkout-btn customer-order-action"
+                           title="Отследить статус заказа">
+                            Отследить
+                        </a>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <button type="button" class="customer-order-expand" data-toggle-order aria-controls="<?= htmlspecialchars($detailsId) ?>">
+                <span class="customer-order-expand-text">Состав и детали</span>
+                <span class="order-toggle-icon fa-chevron-down" aria-hidden="true"></span>
+            </button>
+
+            <div class="order-items customer-order-details" id="<?= htmlspecialchars($detailsId) ?>">
+                <?php if (!empty($order['user_phone'])): ?>
+                    <div class="customer-order-detail-line">
+                        <span class="customer-order-detail-label">Контакт</span>
+                        <span class="customer-order-detail-value"><?= htmlspecialchars((string)$order['user_phone']) ?></span>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($order['updater_name'])): ?>
+                    <div class="customer-order-detail-line">
+                        <span class="customer-order-detail-label">Последнее обновление</span>
+                        <span class="customer-order-detail-value"><?= htmlspecialchars((string)$order['updater_name']) ?></span>
+                    </div>
+                <?php endif; ?>
+
+                <div class="customer-order-products">
+                    <?php foreach (($order['items'] ?? []) as $item): ?>
+                        <div class="order-product">
+                            <span class="product-name"><?= htmlspecialchars((string)($item['name'] ?? 'Блюдо')) ?></span>
+                            <span class="product-quantity"><?= (int)($item['quantity'] ?? 1) ?> × <?= htmlspecialchars((string)($item['price'] ?? '0')) ?> ₽</span>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+    </article>
+    <?php
+};
 ?>
 
 <div class="account-sections">
-    <section class="account-section">
-        <h3>Ваши заказы</h3>
-        <?php
-        $orders   = $db->getUserOrders($_SESSION['user_id']);
-        $statuses = [
-            ['status' => 'Приём'],
-            ['status' => 'готовим'],
-            ['status' => 'доставляем'],
-            ['status' => 'завершён'],
-            ['status' => 'отказ']
-        ];
+    <section class="account-section customer-orders-section">
+        <div class="customer-orders-header">
+            <div class="customer-orders-heading">
+                <h3>Ваши заказы</h3>
+                <p class="customer-orders-subtitle">Активные заказы вынесены наверх, история оставлена отдельно, чтобы быстрее находить нужное действие.</p>
+            </div>
 
-        if (empty($orders)): ?>
-            <p>Нет активных заказов</p>
+            <div class="customer-orders-switch" role="tablist" aria-label="Переключение списка заказов">
+                <button type="button"
+                        class="customer-orders-switch-btn <?= $orderView === 'active' ? 'active' : '' ?>"
+                        data-order-view="active"
+                        aria-pressed="<?= $orderView === 'active' ? 'true' : 'false' ?>">
+                    Активные
+                    <span class="customer-orders-switch-count"><?= count($activeOrders) ?></span>
+                </button>
+                <button type="button"
+                        class="customer-orders-switch-btn <?= $orderView === 'history' ? 'active' : '' ?>"
+                        data-order-view="history"
+                        aria-pressed="<?= $orderView === 'history' ? 'true' : 'false' ?>">
+                    История
+                    <span class="customer-orders-switch-count"><?= count($historyOrders) ?></span>
+                </button>
+            </div>
+        </div>
+
+        <?php if (empty($orders)): ?>
+            <div class="customer-orders-empty">
+                <h4>Заказов пока нет</h4>
+                <p>Когда появится первый заказ, здесь можно будет быстро отследить статус или повторить удачный сценарий.</p>
+                <a href="menu.php" class="checkout-btn customer-order-action">Открыть меню</a>
+            </div>
         <?php else: ?>
-            <?php foreach ($statuses as $s): ?>
-                <div class="orders-list tab-content <?= $s['status'] === $activeTab ? 'active' : '' ?>"
-                     id="<?= htmlspecialchars($s['status']) ?>">
-                    <?php
-                    $filtered = array_values(array_filter($orders, fn($o) => $o['status'] === $s['status']));
-                    if (empty($filtered)): ?>
-                        <p>Нет заказов со статусом «<?= htmlspecialchars($s['status']) ?>»</p>
-                    <?php else: ?>
-                        <?php foreach ($filtered as $o): ?>
-                            <div class="order-item" data-order-id="<?= $o['id'] ?>" data-status="<?= htmlspecialchars($o['status']) ?>">
-                                <div class="order-header" data-toggle-order>
-                                    <span class="order-id">#<?= $o['id'] ?></span>
-                                    <span class="order-status <?= strtolower($o['status']) ?>"><?= $o['status'] ?></span>
-                                    <span class="order-date"><?= date('d.m H:i', strtotime($o['created_at'])) ?></span>
-                                    <span class="order-total"><?= number_format($o['total'], 0, '.', ' ') ?> ₽</span>
-                                    <i class="fas fa-chevron-down employee-toggle-icon"></i>
-                                    <span class="employee-toggle-icon">Состав</span>
-                                </div>
-                                <hr class="divider">
-
-                                <div class="order-customer-info">
-                                    <span><i class="fas fa-user"></i> <?= htmlspecialchars($o['user_name']) ?></span>
-                                    <?php if ($o['user_phone']): ?>
-                                        <span><i class="fas fa-phone"></i> <?= htmlspecialchars($o['user_phone']) ?></span>
-                                    <?php endif; ?>
-                                </div>
-                                <hr class="divider">
-                                <div class="order-customer-info">
-                                    <div class="delivery-meta">
-                                        <span class="delivery-icon-text">
-                                            <?php
-                                            $iconMap = [
-                                                'takeaway' => 'fa-walking',
-                                                'delivery' => 'fa-motorcycle',
-                                                'table'    => 'fa-store',
-                                                'bar'      => 'fa-glass-cheers'
-                                            ];
-                                            $type   = $o['delivery_type'] ?? 'Не указано';
-                                            $icon   = $iconMap[$type] ?? 'fa-question-circle';
-                                            ?>
-                                            <i class="fas <?= $icon ?>"></i>
-                                            <?= htmlspecialchars($type) ?>
-                                        </span>
-
-                                        <?php if (!empty($o['delivery_details'])): ?>
-                                            <span class="delivery-details">
-                                                <?= htmlspecialchars($o['delivery_details']) ?>
-                                            </span>
-                                        <?php endif; ?>
-                                    </div>
-                                    <?php if ($o['updater_name']): ?>
-                                        <span><i class="fas fa-user-edit"></i> Обновил: <?= htmlspecialchars($o['updater_name']) ?></span>
-                                    <?php endif; ?>
-                                </div>
-
-                                <div class="order-items">
-                                    <hr class="divider">
-                                    <?php foreach ($o['items'] as $item): ?>
-                                        <div class="order-product">
-                                            <span class="product-name"><?= htmlspecialchars($item['name']) ?></span>
-                                            <span class="product-quantity"><?= $item['quantity'] ?> × <?= $item['price'] ?> ₽</span>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-
-                                <div class="order-actions">
-                                    <?php if (in_array($o['status'], ['Приём', 'готовим', 'доставляем'], true)): ?>
-                                        <a href="order-track.php?id=<?= $o['id'] ?>" class="checkout-btn"
-                                           title="Отследить статус заказа">
-                                            <i class="fas fa-map-marker-alt"></i> Отследить
-                                        </a>
-                                    <?php endif; ?>
-                                    <?php if ($o['status'] === 'завершён' || $o['status'] === 'отказ'): ?>
-                                        <form class="repeat-order-form" data-order-id="<?= $o['id'] ?>">
-                                            <input type="hidden" name="action" value="repeat_order">
-                                            <input type="hidden" name="order_id" value="<?= $o['id'] ?>">
-                                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                                            <button type="submit" class="checkout-btn"
-                                                    title="Добавить все товары из этого заказа в корзину">
-                                                <i class="fas fa-redo"></i> Повторить
-                                            </button>
-                                        </form>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+            <div class="customer-orders-view <?= $orderView === 'active' ? 'active' : '' ?>" data-orders-view="active">
+                <div class="customer-orders-group-head">
+                    <h4>Активные заказы</h4>
+                    <p>Здесь собраны заказы, по которым ещё нужно действие или ожидание.</p>
                 </div>
-            <?php endforeach; ?>
+
+                <?php if (empty($activeOrders)): ?>
+                    <div class="customer-orders-empty customer-orders-empty--compact">
+                        <p>Сейчас нет активных заказов. Все текущие заказы уже завершены или отменены.</p>
+                    </div>
+                <?php else: ?>
+                    <div class="customer-orders-list customer-orders-list--active">
+                        <?php foreach ($activeOrders as $order): ?>
+                            <?php $renderOrderCard($order, false); ?>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <div class="customer-orders-view <?= $orderView === 'history' ? 'active' : '' ?>" data-orders-view="history">
+                <div class="customer-orders-group-head">
+                    <h4>История заказов</h4>
+                    <p>Завершённые и отменённые заказы хранятся отдельно, чтобы можно было быстро повторить удачный заказ.</p>
+                </div>
+
+                <?php if (empty($historyOrders)): ?>
+                    <div class="customer-orders-empty customer-orders-empty--compact">
+                        <p>История заказов пока пуста.</p>
+                    </div>
+                <?php else: ?>
+                    <div class="customer-orders-list customer-orders-list--history">
+                        <?php foreach ($historyOrders as $order): ?>
+                            <?php $renderOrderCard($order, true); ?>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
         <?php endif; ?>
     </section>
 </div>
