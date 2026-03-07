@@ -7,6 +7,11 @@
   const tabButtons = Array.from(document.querySelectorAll(".menu-tabs-container .tab-btn"));
   const panes = Array.from(document.querySelectorAll(".menu-content .tab-pane"));
   const itemSelectors = [".cart-item", ".menu-item"];
+  const searchState = {
+    targetCategory: null,
+    matchedCategories: new Set(),
+    matchedItemsByCategory: new Map(),
+  };
 
   if (!searchInput || !categoryLabel || !categoryMeta || !panes.length || !tabButtons.length) {
     return;
@@ -43,8 +48,33 @@
     return emptyState;
   }
 
+  function persistActiveCategory(category) {
+    try {
+      localStorage.setItem("activeMenuCategory", category);
+    } catch (error) {
+      // ignore storage issues
+    }
+    document.cookie = `activeMenuCategory=${encodeURIComponent(category)}; path=/; max-age=31536000`;
+  }
+
   function getActiveTabButton() {
     return document.querySelector(".menu-tabs-container .tab-btn.active") || tabButtons[0];
+  }
+
+  function activateCategory(category, persist = true) {
+    tabButtons.forEach((button) => {
+      button.classList.toggle("active", button.dataset.tab === category);
+    });
+
+    panes.forEach((pane) => {
+      pane.classList.toggle("active", pane.id === category);
+      pane.classList.toggle("menu-search-pane-active", pane.id === category && document.body.classList.contains("menu-search-mode"));
+      pane.dataset.searchTitle = pane.id || "";
+    });
+
+    if (persist) {
+      persistActiveCategory(category);
+    }
   }
 
   function updateQuickButtons(activeCategory, matchedCategories) {
@@ -55,18 +85,24 @@
     });
   }
 
-  function resetSearchMode() {
-    document.body.classList.remove("menu-search-mode");
-
+  function clearAllItemVisibility() {
     panes.forEach((pane) => {
-      pane.classList.remove("menu-search-pane-active");
-      pane.removeAttribute("data-search-title");
       getPaneItems(pane).forEach((item) => {
         item.style.display = "";
       });
-      const emptyState = ensurePaneEmptyNode(pane);
-      emptyState.hidden = true;
+      ensurePaneEmptyNode(pane).hidden = true;
+      pane.classList.remove("menu-search-pane-active");
+      pane.removeAttribute("data-search-title");
     });
+  }
+
+  function resetSearchMode() {
+    document.body.classList.remove("menu-search-mode");
+    searchState.targetCategory = null;
+    searchState.matchedCategories = new Set();
+    searchState.matchedItemsByCategory = new Map();
+
+    clearAllItemVisibility();
 
     if (globalEmpty) {
       globalEmpty.hidden = true;
@@ -82,7 +118,17 @@
     updateQuickButtons(activeCategory, new Set());
   }
 
-  function applyGlobalSearch() {
+  function formatResultMeta(activeCount, matchedCount) {
+    if (matchedCount <= 1) {
+      return `${activeCount} позиций по запросу`;
+    }
+
+    const extra = matchedCount - 1;
+    const suffix = extra === 1 ? "разделе" : (extra >= 2 && extra <= 4 ? "разделах" : "разделах");
+    return `${activeCount} позиций в разделе · ещё ${extra} в других ${suffix}`;
+  }
+
+  function applyGlobalSearch(preferredCategory = null) {
     const query = searchInput.value.trim().toLowerCase();
     if (query === "") {
       resetSearchMode();
@@ -90,80 +136,129 @@
     }
 
     document.body.classList.add("menu-search-mode");
+    searchState.matchedCategories = new Set();
+    searchState.matchedItemsByCategory = new Map();
 
     let totalMatches = 0;
-    let matchedPaneCount = 0;
-    const matchedCategories = new Set();
 
     panes.forEach((pane) => {
       const items = getPaneItems(pane);
-      const paneTitle = pane.id || "Раздел";
-      let paneMatches = 0;
+      const matchedItems = items.filter((item) => getItemText(item).includes(query));
+      if (matchedItems.length > 0) {
+        searchState.matchedCategories.add(pane.id);
+        searchState.matchedItemsByCategory.set(pane.id, matchedItems);
+        totalMatches += matchedItems.length;
+      }
+      ensurePaneEmptyNode(pane).hidden = true;
+    });
 
-      items.forEach((item) => {
-        const matches = getItemText(item).includes(query);
-        item.style.display = matches ? "" : "none";
-        if (matches) {
-          paneMatches += 1;
-          totalMatches += 1;
+    const matchedCategories = Array.from(searchState.matchedCategories);
+    const currentActiveCategory = getActiveTabButton()?.dataset.tab || panes[0].id;
+
+    if (matchedCategories.length === 0) {
+      panes.forEach((pane) => {
+        getPaneItems(pane).forEach((item) => {
+          item.style.display = "none";
+        });
+        pane.classList.remove("menu-search-pane-active");
+      });
+
+      if (globalEmpty) {
+        globalEmpty.hidden = false;
+      }
+
+      categoryLabel.textContent = "Ничего не найдено";
+      categoryMeta.textContent = "Попробуйте другое название блюда, напитка или раздела";
+      updateQuickButtons("", new Set());
+      return;
+    }
+
+    const activeCategory =
+      (preferredCategory && searchState.matchedCategories.has(preferredCategory) && preferredCategory) ||
+      (searchState.targetCategory && searchState.matchedCategories.has(searchState.targetCategory) && searchState.targetCategory) ||
+      (searchState.matchedCategories.has(currentActiveCategory) ? currentActiveCategory : matchedCategories[0]);
+
+    searchState.targetCategory = activeCategory;
+    activateCategory(activeCategory, false);
+
+    panes.forEach((pane) => {
+      const paneItems = getPaneItems(pane);
+      const isActivePane = pane.id === activeCategory;
+      const matchedItems = searchState.matchedItemsByCategory.get(pane.id) || [];
+
+      pane.classList.toggle("menu-search-pane-active", isActivePane);
+      pane.dataset.searchTitle = pane.id || "";
+
+      paneItems.forEach((item) => {
+        if (!isActivePane) {
+          item.style.display = "";
+          return;
         }
+
+        item.style.display = matchedItems.includes(item) ? "" : "none";
       });
 
       const emptyState = ensurePaneEmptyNode(pane);
-      const paneHasMatches = paneMatches > 0;
-      pane.classList.toggle("menu-search-pane-active", paneHasMatches);
-      pane.dataset.searchTitle = paneTitle;
-      emptyState.hidden = paneHasMatches;
-
-      if (paneHasMatches) {
-        matchedPaneCount += 1;
-        matchedCategories.add(paneTitle);
-      }
+      emptyState.hidden = !isActivePane || matchedItems.length !== 0;
     });
 
-    categoryLabel.textContent = totalMatches > 0 ? "Результаты поиска" : "Ничего не найдено";
-    categoryMeta.textContent =
-      totalMatches > 0
-        ? `${totalMatches} позиций в ${matchedPaneCount} разделах`
-        : "Попробуйте другое название блюда, напитка или раздела";
-
     if (globalEmpty) {
-      globalEmpty.hidden = totalMatches !== 0;
+      globalEmpty.hidden = true;
     }
 
-    updateQuickButtons("", matchedCategories);
-  }
-
-  function clearSearchAndSync() {
-    if (searchInput.value.trim() !== "") {
-      searchInput.value = "";
-    }
-    window.requestAnimationFrame(resetSearchMode);
+    categoryLabel.textContent = activeCategory;
+    categoryMeta.textContent = formatResultMeta(
+      searchState.matchedItemsByCategory.get(activeCategory)?.length || 0,
+      matchedCategories.length
+    );
+    updateQuickButtons(activeCategory, searchState.matchedCategories);
   }
 
   quickButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const targetTab = button.dataset.tabTarget;
-      const actualTabButton = tabButtons.find((tabButton) => tabButton.dataset.tab === targetTab);
+      if (searchInput.value.trim() !== "") {
+        if (searchState.matchedCategories.has(targetTab)) {
+          searchState.targetCategory = targetTab;
+          applyGlobalSearch(targetTab);
+          return;
+        }
 
-      if (actualTabButton) {
-        clearSearchAndSync();
-        actualTabButton.click();
+        searchInput.value = "";
+        resetSearchMode();
       }
+
+      activateCategory(targetTab, true);
+      resetSearchMode();
     });
   });
 
   tabButtons.forEach((button) => {
     button.addEventListener("click", () => {
+      const targetTab = button.dataset.tab || "";
+
       if (searchInput.value.trim() !== "") {
-        clearSearchAndSync();
-      } else {
-        window.requestAnimationFrame(resetSearchMode);
+        if (searchState.matchedCategories.has(targetTab)) {
+          searchState.targetCategory = targetTab;
+          applyGlobalSearch(targetTab);
+          return;
+        }
+
+        searchInput.value = "";
+        activateCategory(targetTab, true);
+        resetSearchMode();
+        return;
       }
+
+      activateCategory(targetTab, true);
+      window.requestAnimationFrame(resetSearchMode);
     });
   });
 
-  searchInput.addEventListener("input", applyGlobalSearch);
+  searchInput.addEventListener("input", () => {
+    searchState.targetCategory = null;
+    applyGlobalSearch();
+  });
 
   resetSearchMode();
 });
