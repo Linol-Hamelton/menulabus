@@ -1,9 +1,6 @@
-﻿document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
   const searchInput = document.getElementById("menuQuickSearch");
-  const categoryLabel = document.getElementById("menuActiveCategoryLabel");
-  const categoryMeta = document.getElementById("menuActiveCategoryMeta");
   const globalEmpty = document.getElementById("menuGlobalNoResults");
-  const quickButtons = Array.from(document.querySelectorAll(".menu-quickcat-btn"));
   const tabButtons = Array.from(document.querySelectorAll(".menu-tabs-container .tab-btn"));
   const panes = Array.from(document.querySelectorAll(".menu-content .tab-pane"));
   const itemSelectors = [".cart-item", ".menu-item"];
@@ -13,7 +10,7 @@
     matchedItemsByCategory: new Map(),
   };
 
-  if (!searchInput || !categoryLabel || !categoryMeta || !panes.length || !tabButtons.length) {
+  if (!searchInput || !panes.length || !tabButtons.length) {
     return;
   }
 
@@ -23,15 +20,8 @@
 
   function getItemText(item) {
     const category = item.closest(".tab-pane")?.id || "";
-    const title =
-      item.querySelector(".cart-item-title")?.textContent ||
-      item.querySelector("h3")?.textContent ||
-      "";
-    const description =
-      item.querySelector("p")?.textContent ||
-      item.querySelector(".cart-item-price")?.textContent ||
-      "";
-
+    const title = item.querySelector(".cart-item-title")?.textContent || item.querySelector("h3")?.textContent || "";
+    const description = item.querySelector("p")?.textContent || item.querySelector(".cart-item-price")?.textContent || "";
     return `${category} ${title} ${description}`.trim().toLowerCase();
   }
 
@@ -44,7 +34,6 @@
       emptyState.textContent = "В этом разделе сейчас нет позиций по вашему запросу.";
       pane.appendChild(emptyState);
     }
-
     return emptyState;
   }
 
@@ -67,9 +56,9 @@
     });
 
     panes.forEach((pane) => {
-      pane.classList.toggle("active", pane.id === category);
-      pane.classList.toggle("menu-search-pane-active", pane.id === category && document.body.classList.contains("menu-search-mode"));
-      pane.dataset.searchTitle = pane.id || "";
+      const isActive = pane.id === category;
+      pane.classList.toggle("active", isActive);
+      pane.classList.toggle("menu-search-pane-active", isActive && document.body.classList.contains("menu-search-mode"));
     });
 
     if (persist) {
@@ -77,11 +66,10 @@
     }
   }
 
-  function updateQuickButtons(activeCategory, matchedCategories) {
-    quickButtons.forEach((button) => {
-      const category = button.dataset.tabTarget || "";
-      button.classList.toggle("is-active", activeCategory !== "" && category === activeCategory);
-      button.classList.toggle("is-match", matchedCategories.has(category));
+  function updateTabMatches(activeCategory, matchedCategories) {
+    tabButtons.forEach((button) => {
+      const category = button.dataset.tab || "";
+      button.classList.toggle("is-match", matchedCategories.has(category) && category !== activeCategory);
     });
   }
 
@@ -92,7 +80,6 @@
       });
       ensurePaneEmptyNode(pane).hidden = true;
       pane.classList.remove("menu-search-pane-active");
-      pane.removeAttribute("data-search-title");
     });
   }
 
@@ -108,24 +95,8 @@
       globalEmpty.hidden = true;
     }
 
-    const activeButton = getActiveTabButton();
-    const activePane = document.querySelector(".menu-content .tab-pane.active") || panes[0];
-    const visibleCount = getPaneItems(activePane).length;
-    const activeCategory = activeButton?.dataset.tab || activeButton?.textContent?.trim() || "Категория";
-
-    categoryLabel.textContent = activeCategory;
-    categoryMeta.textContent = `${visibleCount} позиций в текущем разделе`;
-    updateQuickButtons(activeCategory, new Set());
-  }
-
-  function formatResultMeta(activeCount, matchedCount) {
-    if (matchedCount <= 1) {
-      return `${activeCount} позиций по запросу`;
-    }
-
-    const extra = matchedCount - 1;
-    const suffix = extra === 1 ? "разделе" : (extra >= 2 && extra <= 4 ? "разделах" : "разделах");
-    return `${activeCount} позиций в разделе · ещё ${extra} в других ${suffix}`;
+    const activeCategory = getActiveTabButton()?.dataset.tab || panes[0].id;
+    updateTabMatches(activeCategory, new Set());
   }
 
   function applyGlobalSearch(preferredCategory = null) {
@@ -139,15 +110,12 @@
     searchState.matchedCategories = new Set();
     searchState.matchedItemsByCategory = new Map();
 
-    let totalMatches = 0;
-
     panes.forEach((pane) => {
       const items = getPaneItems(pane);
       const matchedItems = items.filter((item) => getItemText(item).includes(query));
       if (matchedItems.length > 0) {
         searchState.matchedCategories.add(pane.id);
         searchState.matchedItemsByCategory.set(pane.id, matchedItems);
-        totalMatches += matchedItems.length;
       }
       ensurePaneEmptyNode(pane).hidden = true;
     });
@@ -167,9 +135,7 @@
         globalEmpty.hidden = false;
       }
 
-      categoryLabel.textContent = "Ничего не найдено";
-      categoryMeta.textContent = "Попробуйте другое название блюда, напитка или раздела";
-      updateQuickButtons("", new Set());
+      updateTabMatches("", new Set());
       return;
     }
 
@@ -187,7 +153,6 @@
       const matchedItems = searchState.matchedItemsByCategory.get(pane.id) || [];
 
       pane.classList.toggle("menu-search-pane-active", isActivePane);
-      pane.dataset.searchTitle = pane.id || "";
 
       paneItems.forEach((item) => {
         if (!isActivePane) {
@@ -198,40 +163,15 @@
         item.style.display = matchedItems.includes(item) ? "" : "none";
       });
 
-      const emptyState = ensurePaneEmptyNode(pane);
-      emptyState.hidden = !isActivePane || matchedItems.length !== 0;
+      ensurePaneEmptyNode(pane).hidden = !isActivePane || matchedItems.length !== 0;
     });
 
     if (globalEmpty) {
       globalEmpty.hidden = true;
     }
 
-    categoryLabel.textContent = activeCategory;
-    categoryMeta.textContent = formatResultMeta(
-      searchState.matchedItemsByCategory.get(activeCategory)?.length || 0,
-      matchedCategories.length
-    );
-    updateQuickButtons(activeCategory, searchState.matchedCategories);
+    updateTabMatches(activeCategory, searchState.matchedCategories);
   }
-
-  quickButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const targetTab = button.dataset.tabTarget;
-      if (searchInput.value.trim() !== "") {
-        if (searchState.matchedCategories.has(targetTab)) {
-          searchState.targetCategory = targetTab;
-          applyGlobalSearch(targetTab);
-          return;
-        }
-
-        searchInput.value = "";
-        resetSearchMode();
-      }
-
-      activateCategory(targetTab, true);
-      resetSearchMode();
-    });
-  });
 
   tabButtons.forEach((button) => {
     button.addEventListener("click", () => {

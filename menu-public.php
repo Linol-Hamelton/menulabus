@@ -29,7 +29,6 @@ $categories = $db->getUniqueCategories();
 $activeCategory = $_COOKIE['activeMenuCategory'] ?? ($categories[0]['category'] ?? '');
 $menuView = 'default';
 $csrfToken = bin2hex(random_bytes(16));
-$quickCategories = $categories;
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -49,15 +48,6 @@ $quickCategories = $categories;
 
     <section class="menu-discovery-strip">
         <div class="container">
-            <div class="menu-discovery-head">
-                <div>
-                    <p class="menu-discovery-kicker">Быстрый старт</p>
-                    <h1>Откройте нужную категорию и сразу добавляйте блюда в заказ</h1>
-                    <p class="menu-discovery-copy">Каталог остаётся привычным. Мы усиливаем навигацию, поиск и быстрый переход к нужным позициям, не ломая сам сценарий заказа.</p>
-                </div>
-                <a href="/cart.php" class="menu-discovery-cart-link">Перейти к заказу</a>
-            </div>
-
             <div class="menu-discovery-toolbar">
                 <label class="menu-discovery-search" for="menuQuickSearch">
                     <span class="menu-discovery-search-label">Поиск по всему меню</span>
@@ -68,24 +58,7 @@ $quickCategories = $categories;
                         placeholder="Например, пицца, кофе или ролл"
                         autocomplete="off">
                 </label>
-                <div class="menu-discovery-meta">
-                    <span class="menu-discovery-current" id="menuActiveCategoryLabel"><?= htmlspecialchars((string)$activeCategory) ?></span>
-                    <span class="menu-discovery-count" id="menuActiveCategoryMeta">Ищем по всем разделам...</span>
-                </div>
             </div>
-
-            <?php if ($quickCategories): ?>
-                <div class="menu-discovery-quickcats" aria-label="Быстрый переход по разделам">
-                    <?php foreach ($quickCategories as $category): ?>
-                        <button
-                            type="button"
-                            class="menu-quickcat-btn"
-                            data-tab-target="<?= htmlspecialchars($category['category']) ?>">
-                            <?= htmlspecialchars($category['category']) ?>
-                        </button>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
 
             <div class="menu-discovery-global-empty" id="menuGlobalNoResults" hidden>
                 По этому запросу ничего не найдено ни в одной категории. Попробуйте другое название блюда или раздела.
