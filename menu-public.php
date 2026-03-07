@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 header('Cache-Control: public, max-age=600, s-maxage=600');
 header('Content-Type: text/html; charset=utf-8');
 
@@ -65,17 +65,6 @@ $csrfToken = bin2hex(random_bytes(16));
             </div>
         </div>
     </section>
-
-    <div class="menu-tabs-container">
-        <div class="menu-tabs">
-            <?php foreach ($categories as $category): ?>
-                <button class="tab-btn <?= $category['category'] === $activeCategory ? 'active' : '' ?>"
-                    data-tab="<?= htmlspecialchars($category['category']) ?>">
-                    <?= htmlspecialchars($category['category']) ?>
-                </button>
-            <?php endforeach; ?>
-        </div>
-    </div>
 
     <?php
     $GLOBALS['menu_css_in_head'] = true;

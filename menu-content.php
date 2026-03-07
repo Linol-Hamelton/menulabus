@@ -38,6 +38,17 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
                 </a>
             </div>
 
+            <div class="menu-tabs-container">
+                <div class="menu-tabs">
+                    <?php foreach ($categories as $category): ?>
+                        <button class="tab-btn <?= $category['category'] === $activeCategory ? 'active' : '' ?>"
+                            data-tab="<?= htmlspecialchars($category['category']) ?>">
+                            <?= htmlspecialchars($category['category']) ?>
+                        </button>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
             <div class="menu-content">
                 <?php foreach ($categories as $index => $category):
                     $items = $db->getMenuItems($category['category'], false);
@@ -97,3 +108,4 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
 
 </html>
 <?php endif; ?>
+

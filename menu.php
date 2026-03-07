@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 header('Cache-Control: public, max-age=600, s-maxage=600');
 require_once __DIR__ . '/session_init.php';
 
@@ -72,17 +72,6 @@ if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['
             </div>
         </div>
     </section>
-
-    <div class="menu-tabs-container">
-        <div class="menu-tabs">
-            <?php foreach ($categories as $category): ?>
-                <button class="tab-btn <?= $category['category'] === $activeCategory ? 'active' : '' ?>"
-                    data-tab="<?= htmlspecialchars($category['category']) ?>">
-                    <?= htmlspecialchars($category['category']) ?>
-                </button>
-            <?php endforeach; ?>
-        </div>
-    </div>
 
     <?php
     switch ($menuView) {
