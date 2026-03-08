@@ -1,8 +1,29 @@
 .index-landing-page .hero-content {
+.index-landing-page .hero {
+  align-items: center;
+  display: grid;
+  min-height: 100svh;
+  padding: 108px 0 88px;
+  position: relative;
+}
+
+.index-landing-page .hero:before {
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, rgba(8, 8, 8, 0.58) 48%, rgba(14, 10, 10, 0.82) 100%);
+}
+
+.index-landing-page .hero-content {
+  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(10, 10, 10, 0.52), rgba(10, 10, 10, 0.32));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 32px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  max-width: 760px;
+  gap: 18px;
+  margin: 0 auto;
+  max-width: 700px;
+  padding: clamp(28px, 4vw, 40px);
+  text-align: center;
 }
 
 .index-landing-page .hero-eyebrow {
@@ -18,7 +39,10 @@
 }
 
 .index-landing-page .hero-content h1 {
+  font-size: clamp(3.9rem, 8.2vw, 7rem);
+  height: auto;
   margin-bottom: 0;
+  text-wrap: balance;
 }
 
 .index-landing-page .hero-content p {
@@ -39,6 +63,8 @@
 
 .index-landing-page .hero-btn-primary,
 .index-landing-page .hero-btn-secondary {
+  border-radius: 18px;
+  min-height: 52px;
   min-width: 220px;
 }
 
@@ -73,10 +99,14 @@
   background:
     radial-gradient(circle at top left, rgba(205, 23, 25, 0.14), transparent 40%),
     linear-gradient(180deg, #fff 0%, #f5f1ed 100%);
-  padding: 28px 0 12px;
+  margin-top: -72px;
+  padding: 0 0 28px;
+  position: relative;
+  z-index: 2;
 }
 
 .landing-entry-grid {
+  align-items: stretch;
   display: grid;
   gap: 22px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -87,7 +117,11 @@
   border: 1px solid rgba(18, 18, 18, 0.08);
   border-radius: 28px;
   box-shadow: 0 22px 50px rgba(18, 18, 18, 0.08);
-  padding: 30px 30px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100%;
+  padding: 28px 28px 24px;
 }
 
 .landing-entry-card h2 {
@@ -129,7 +163,7 @@
   display: inline-flex;
   font-size: 0.98rem;
   font-weight: 700;
-  margin-top: 20px;
+  margin-top: auto;
   text-decoration: none;
 }
 
@@ -142,9 +176,154 @@
   color: #fff;
 }
 
+.index-landing-page #about {
+  background: linear-gradient(180deg, #f7f3ef 0%, #fff 100%);
+  padding: 64px 0 48px;
+}
+
+.index-landing-page .section-header {
+  margin: 0 0 32px;
+  text-align: center;
+}
+
+.index-landing-page .section-header h2 {
+  margin-bottom: 10px;
+}
+
+.index-landing-page .section-header p {
+  color: #6b625a;
+  margin: 0;
+}
+
+.index-landing-page .about-content {
+  align-items: stretch;
+  display: grid;
+  gap: 28px;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.75fr);
+}
+
+.index-landing-page .about-text {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(18, 18, 18, 0.08);
+  border-radius: 28px;
+  box-shadow: 0 18px 40px rgba(18, 18, 18, 0.06);
+  padding: 30px 30px 12px;
+}
+
+.index-landing-page .about-text p {
+  color: #423932;
+  font-size: 1rem;
+  line-height: 1.8;
+  margin: 0 0 18px;
+}
+
+.index-landing-page .about-image {
+  align-items: center;
+  background:
+    radial-gradient(circle at top left, rgba(205, 23, 25, 0.12), transparent 45%),
+    linear-gradient(180deg, #ffffff 0%, #f3eee9 100%);
+  border: 1px solid rgba(18, 18, 18, 0.08);
+  border-radius: 28px;
+  box-shadow: 0 18px 40px rgba(18, 18, 18, 0.06);
+  display: flex;
+  min-height: 100%;
+  overflow: hidden;
+  padding: 16px;
+}
+
+.index-landing-page .about-image img {
+  border-radius: 20px;
+  display: block;
+  height: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.index-landing-page .reservation-inner {
+  background:
+    radial-gradient(circle at top right, rgba(205, 23, 25, 0.08), transparent 40%),
+    linear-gradient(180deg, #f8f4f0 0%, #f1ebe5 100%);
+  padding: 24px 0 60px;
+}
+
+.index-landing-page .form-content {
+  padding: 0;
+}
+
+.index-landing-page .reservation-form {
+  border: 1px solid rgba(18, 18, 18, 0.08);
+  border-radius: 28px;
+  box-shadow: 0 20px 44px rgba(18, 18, 18, 0.08);
+  max-width: 440px;
+  padding: 28px 24px 24px;
+  width: min(100%, 440px);
+}
+
+.index-landing-page .reservation-form form,
+.index-landing-page #formMessage {
+  width: 100%;
+}
+
+.index-landing-page .reservation-form h2 {
+  margin: 0;
+  padding: 0 0 18px;
+  text-align: center;
+}
+
+.index-landing-page .form-group {
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.index-landing-page .form-group input {
+  background: #fbfaf8;
+}
+
+.index-landing-page .btn-form {
+  margin-top: 8px;
+  min-height: 48px;
+  width: 100%;
+}
+
+.index-landing-page .footer {
+  padding-top: 52px;
+}
+
+.index-landing-page .footer-inner {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.index-landing-page .footer-col {
+  margin: 0;
+}
+
+.index-landing-page .footer-col p {
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.7;
+}
+
+.index-landing-page .social-links {
+  padding-top: 12px;
+}
+
 @media (max-width: 992px) {
+  .index-landing-page .hero {
+    padding: 96px 0 72px;
+  }
+
+  .index-landing-page .hero-content {
+    max-width: 640px;
+  }
+
   .landing-entry-grid {
     grid-template-columns: 1fr;
+  }
+
+  .landing-entry-strip {
+    margin-top: -48px;
   }
 
   .landing-entry-card {
@@ -154,11 +333,27 @@
   .landing-entry-card h2 {
     font-size: 1.55rem;
   }
+
+  .index-landing-page .about-content {
+    grid-template-columns: 1fr;
+  }
+
+  .index-landing-page .footer-inner {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 768px) {
+  .index-landing-page .hero {
+    min-height: auto;
+    padding: 84px 0 44px;
+  }
+
   .index-landing-page .hero-content {
+    border-radius: 24px;
     gap: 18px;
+    max-width: 100%;
+    padding: 22px 18px;
   }
 
   .index-landing-page .hero-eyebrow {
@@ -171,6 +366,11 @@
     font-size: 1rem;
     line-height: 1.6;
     max-width: 320px;
+  }
+
+  .index-landing-page .hero-content h1 {
+    font-size: clamp(2.9rem, 15vw, 4.1rem);
+    line-height: 0.95;
   }
 
   .index-landing-page .hero-actions {
@@ -193,10 +393,47 @@
 
   .index-landing-page .hero-quick-points span {
     border-radius: 18px;
+    font-size: 0.9rem;
     text-align: center;
   }
 
   .landing-entry-strip {
+    margin-top: 0;
     padding-top: 20px;
+  }
+
+  .index-landing-page #about {
+    padding: 42px 0 28px;
+  }
+
+  .index-landing-page .about-text {
+    padding: 22px 18px 10px;
+  }
+
+  .index-landing-page .about-text p {
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+
+  .index-landing-page .about-image {
+    min-height: 240px;
+  }
+
+  .index-landing-page .reservation-inner {
+    padding: 16px 0 44px;
+  }
+
+  .index-landing-page .reservation-form {
+    border-radius: 24px;
+    padding: 22px 16px 18px;
+  }
+
+  .index-landing-page .footer {
+    padding-top: 40px;
+  }
+
+  .index-landing-page .footer-inner {
+    grid-template-columns: 1fr;
+    gap: 18px;
   }
 }
