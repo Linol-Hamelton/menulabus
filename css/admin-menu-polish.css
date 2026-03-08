@@ -1758,3 +1758,99 @@ body.auth-page :is(.tab-btn, .checkout-btn, .back-to-menu-btn, .save-role-btn, .
 .mod-new-group-row input[type=text]{flex:2;min-width:120px}
 /* Modifier modal group */
 .mod-modal-group{margin-bottom:14px}
+
+/* admin-menu.php follow-up overrides after shared employee rules */
+body.employee-page.admin-menu-page .account-form-container {
+    display: grid;
+    gap: 22px;
+}
+
+body.employee-page.admin-menu-page .admin-dishes-pane {
+    display: grid;
+    gap: 22px;
+}
+
+body.employee-page.admin-menu-page .admin-dishes-workspace {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+}
+
+body.employee-page.admin-menu-page .admin-catalog-toolbar {
+    display: grid;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+body.employee-page.admin-menu-page .menu-view-switch {
+    justify-content: flex-start;
+    margin: 0;
+}
+
+body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories {
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: 18px;
+    border-top: 1px solid var(--ui-border);
+    bottom: auto;
+    box-shadow: none;
+    left: auto;
+    overflow-x: auto;
+    padding: 0 10px;
+    position: static;
+    right: auto;
+    width: 100%;
+    z-index: auto;
+}
+
+body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    gap: 0;
+    justify-content: flex-start;
+    min-width: max-content;
+    padding: 10px 0;
+}
+
+body.employee-page.admin-menu-page .mobile-table-actions {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.employee-page.admin-menu-page .mobile-table-actions .inline-action-form {
+    display: block;
+    width: 100%;
+}
+
+body.employee-page.admin-menu-page .mobile-table-btn,
+body.employee-page.admin-menu-page .stop-btn {
+    align-items: center;
+    display: inline-flex;
+    justify-content: center;
+    width: 100%;
+}
+
+@media (max-width: 992px) {
+    body.employee-page.admin-menu-page .admin-dishes-workspace {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories {
+        padding: 0 8px;
+    }
+
+    body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs {
+        gap: 8px;
+    }
+
+    body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .tab-btn {
+        margin: 0;
+    }
+
+    body.employee-page.admin-menu-page .mobile-table-actions {
+        grid-template-columns: 1fr;
+    }
+}
