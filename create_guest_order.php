@@ -121,7 +121,7 @@ try {
 
     $total = $serverTotal;
 
-    $orderId = $db->createGuestOrder($items, $total, $deliveryType, $deliveryDetail);
+    $orderId = $db->createGuestOrder($items, $total, $deliveryType, $deliveryDetail, 'cash', 'pending');
     if (!$orderId) {
         guest_order_fail('db', 'create_order_failed', 500, [
             'items_count' => is_array($items) ? count($items) : 0,

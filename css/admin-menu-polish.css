@@ -1463,10 +1463,10 @@ body.auth-page :is(.tab-btn, .checkout-btn, .back-to-menu-btn, .save-role-btn, .
 /* Pay-link button icon alignment */
 .pay-link-btn svg { vertical-align: middle; }
 
-/* Initially-hidden modal sub-sections (JS toggles display via element.style) */
-#payLinkContent,
-#payLinkCopyMsg,
-#payLinkError { display: none; }
+/* Initially-hidden modal sub-sections (employee-payments.js toggles [hidden]) */
+#payLinkContent[hidden],
+#payLinkCopyMsg[hidden],
+#payLinkError[hidden] { display: none; }
 
 /* ── Pay-link modal (employee.php) ── */
 #payLinkModal {

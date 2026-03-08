@@ -1812,10 +1812,10 @@ class Database
                     COUNT(*) AS orders_today,
                     SUM(
                         CASE
-                            WHEN (
-                                LOWER(COALESCE(payment_status, '')) REGEXP 'paid|succeed|success|complete|оплачен|заверш'
-                                OR LOWER(COALESCE(status, '')) REGEXP 'заверш|complete|done'
-                            ) THEN 1 ELSE 0
+                            WHEN LOWER(COALESCE(payment_status, '')) REGEXP 'paid|succeed|success|complete|оплачен|заверш' THEN 1
+                            WHEN LOWER(COALESCE(payment_status, '')) REGEXP '^$|not_required'
+                                 AND LOWER(COALESCE(status, '')) REGEXP 'заверш|complete|done' THEN 1
+                            ELSE 0
                         END
                     ) AS paid_today,
                     SUM(
@@ -2548,7 +2548,7 @@ class Database
         return $this->prepareCached($sql);
     }
 
-    public function createGuestOrder($items, $total, $deliveryType = 'bar', $deliveryDetail = '')
+    public function createGuestOrder($items, $total, $deliveryType = 'bar', $deliveryDetail = '', string $paymentMethod = 'cash', string $paymentStatus = 'pending')
     {
         try {
             $this->connection->beginTransaction();
@@ -2561,8 +2561,8 @@ class Database
 
             $stmt = $this->prepareCached("
                 INSERT INTO orders
-                (user_id, items, total, status, delivery_type, delivery_details, created_at, updated_at)
-                VALUES (:user_id, :items, :total, :initial_status, :delivery_type, :delivery_details, NOW(), NOW())
+                (user_id, items, total, status, delivery_type, delivery_details, payment_method, payment_status, created_at, updated_at)
+                VALUES (:user_id, :items, :total, :initial_status, :delivery_type, :delivery_details, :payment_method, :payment_status, NOW(), NOW())
             ");
 
             $itemsJson = json_encode($items, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
@@ -2577,6 +2577,8 @@ class Database
                 ':initial_status' => $initialStatus,
                 ':delivery_type' => $deliveryType,
                 ':delivery_details' => $deliveryDetail,
+                ':payment_method' => $paymentMethod,
+                ':payment_status' => $paymentStatus,
             ];
 
             $stmt->execute($params);
@@ -2610,7 +2612,7 @@ class Database
         }
     }
 
-    public function createOrder($userId, $items, $total, $deliveryType = 'bar', $deliveryDetail = '', $tips = 0.0)
+    public function createOrder($userId, $items, $total, $deliveryType = 'bar', $deliveryDetail = '', $tips = 0.0, string $paymentMethod = 'cash', string $paymentStatus = 'pending')
     {
         try {
             $this->connection->beginTransaction();
@@ -2618,8 +2620,8 @@ class Database
 
             $stmt = $this->prepareCached("
                 INSERT INTO orders
-                (user_id, items, total, tips, status, delivery_type, delivery_details, created_at, updated_at)
-                VALUES (:user_id, :items, :total, :tips, :initial_status, :delivery_type, :delivery_details, NOW(), NOW())
+                (user_id, items, total, tips, status, delivery_type, delivery_details, payment_method, payment_status, created_at, updated_at)
+                VALUES (:user_id, :items, :total, :tips, :initial_status, :delivery_type, :delivery_details, :payment_method, :payment_status, NOW(), NOW())
             ");
 
             $itemsJson = json_encode($items, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
@@ -2635,6 +2637,8 @@ class Database
                 ':initial_status' => $initialStatus,
                 ':delivery_type' => $deliveryType,
                 ':delivery_details' => $deliveryDetail,
+                ':payment_method' => $paymentMethod,
+                ':payment_status' => $paymentStatus,
             ];
 
             $stmt->execute($params);
@@ -2675,14 +2679,65 @@ class Database
                 $stmt = $this->prepareCached(
                     "UPDATE orders SET payment_id = :pid, payment_status = :pstatus, payment_method = :pmethod, updated_at = NOW() WHERE id = :id"
                 );
-                return $stmt->execute([':pid' => $paymentId, ':pstatus' => $paymentStatus, ':pmethod' => $paymentMethod, ':id' => $orderId]);
+                $success = $stmt->execute([':pid' => $paymentId, ':pstatus' => $paymentStatus, ':pmethod' => $paymentMethod, ':id' => $orderId]);
+                if ($success) {
+                    $this->invalidateOrderCache($orderId);
+                    $this->touchOrdersLastUpdate();
+                }
+                return $success;
             }
             $stmt = $this->prepareCached(
                 "UPDATE orders SET payment_id = :pid, payment_status = :pstatus, updated_at = NOW() WHERE id = :id"
             );
-            return $stmt->execute([':pid' => $paymentId, ':pstatus' => $paymentStatus, ':id' => $orderId]);
+            $success = $stmt->execute([':pid' => $paymentId, ':pstatus' => $paymentStatus, ':id' => $orderId]);
+            if ($success) {
+                $this->invalidateOrderCache($orderId);
+                $this->touchOrdersLastUpdate();
+            }
+            return $success;
         } catch (PDOException $e) {
             error_log("updateOrderPayment error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function setOrderPaymentStatus(int $orderId, string $paymentStatus): bool
+    {
+        try {
+            $stmt = $this->prepareCached(
+                "UPDATE orders SET payment_status = :pstatus, updated_at = NOW() WHERE id = :id"
+            );
+            $success = $stmt->execute([':pstatus' => $paymentStatus, ':id' => $orderId]);
+            if ($success) {
+                $this->invalidateOrderCache($orderId);
+                $this->touchOrdersLastUpdate();
+            }
+            return $success;
+        } catch (PDOException $e) {
+            error_log("setOrderPaymentStatus error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function confirmCashPayment(int $orderId): bool
+    {
+        try {
+            $stmt = $this->prepareCached(
+                "UPDATE orders
+                 SET payment_status = 'paid', updated_at = NOW()
+                 WHERE id = :id
+                   AND payment_method = 'cash'
+                   AND payment_status <> 'paid'"
+            );
+            $stmt->execute([':id' => $orderId]);
+            $success = $stmt->rowCount() > 0;
+            if ($success) {
+                $this->invalidateOrderCache($orderId);
+                $this->touchOrdersLastUpdate();
+            }
+            return $success;
+        } catch (PDOException $e) {
+            error_log("confirmCashPayment error: " . $e->getMessage());
             return false;
         }
     }

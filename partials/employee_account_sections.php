@@ -75,6 +75,28 @@ $getAgeTone = static function (string $status, int $ageMinutes): string {
 
     return 'fresh';
 };
+
+$formatPaymentMethodLabel = static function (?string $method): string {
+    return match (trim((string)$method)) {
+        'cash' => 'Наличные',
+        'online' => 'Карта',
+        'sbp', 'tbank_sbp' => 'СБП',
+        default => 'Оплата',
+    };
+};
+
+$formatPaymentState = static function (?string $method, ?string $status) use ($formatPaymentMethodLabel): array {
+    $paymentMethod = trim((string)$method);
+    $paymentStatus = trim((string)$status);
+    $methodLabel = $formatPaymentMethodLabel($paymentMethod);
+
+    return match ($paymentStatus) {
+        'paid' => ['text' => $methodLabel . ' · оплачено', 'tone' => 'paid'],
+        'failed', 'cancelled' => ['text' => $methodLabel . ' · не оплачено', 'tone' => 'failed'],
+        'pending' => ['text' => $paymentMethod === 'cash' ? $methodLabel . ' · ждём подтверждение' : $methodLabel . ' · ждём оплату', 'tone' => 'pending'],
+        default => ['text' => $methodLabel . ' · legacy', 'tone' => 'quiet'],
+    };
+};
 ?>
 
 <div class="account-sections">
@@ -188,6 +210,9 @@ $getAgeTone = static function (string $status, int $ageMinutes): string {
                             $ageMinutes = $getOrderAgeMinutes($o['created_at'] ?? null);
                             $ageLabel = $formatOrderAge($ageMinutes);
                             $ageTone = $getAgeTone($o['status'], $ageMinutes);
+                            $paymentMethod = trim((string)($o['payment_method'] ?? 'cash'));
+                            $paymentStatus = trim((string)($o['payment_status'] ?? 'not_required'));
+                            $paymentState = $formatPaymentState($paymentMethod, $paymentStatus);
                             $searchBlob = implode(' ', array_filter([
                                 '#' . $o['id'],
                                 $o['user_name'] ?? '',
@@ -195,6 +220,7 @@ $getAgeTone = static function (string $status, int $ageMinutes): string {
                                 $deliveryLabel,
                                 $o['delivery_details'] ?? '',
                                 $itemNames,
+                                $paymentState['text'],
                             ]));
                             ?>
                             <article class="order-item employee-order-card"
@@ -229,6 +255,9 @@ $getAgeTone = static function (string $status, int $ageMinutes): string {
                                 <div class="employee-order-glance">
                                     <span class="employee-order-glance__item">
                                         <strong>Тип:</strong> <?= htmlspecialchars($deliveryLabel) ?>
+                                    </span>
+                                    <span class="employee-order-glance__item employee-order-glance__item--payment employee-order-glance__item--payment-<?= htmlspecialchars($paymentState['tone']) ?>">
+                                        <strong>Оплата:</strong> <?= htmlspecialchars($paymentState['text']) ?>
                                     </span>
                                     <?php if (!empty($o['delivery_details'])): ?>
                                         <span class="employee-order-glance__item employee-order-glance__item--details">
@@ -275,18 +304,23 @@ $getAgeTone = static function (string $status, int $ageMinutes): string {
                                             </button>
                                         <?php endif; ?>
                                     </form>
-                                    <?php
-                                    $pStatus = $o['payment_status'] ?? 'not_required';
-                                    if (!in_array($o['status'], ['завершён', 'отказ'])
-                                        && $pStatus !== 'paid'
-                                        && ($paymentEnabled ?? false)):
-                                    ?>
-                                    <button type="button"
-                                            class="status-btn pay-link-btn"
-                                            data-order-id="<?= (int)$o['id'] ?>">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,104a8,8,0,0,1-16,0V59.32l-82.34,82.34a8,8,0,0,1-11.32-11.32L196.68,48H152a8,8,0,0,1,0-16h64a8,8,0,0,1,8,8Zm-40,24a8,8,0,0,0-8,8v72H48V80h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,80V208a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V136A8,8,0,0,0,184,128Z"/></svg>
-                                        Оплата
-                                    </button>
+                                    <?php if (!in_array($o['status'], ['завершён', 'отказ'], true) && $paymentStatus !== 'paid'): ?>
+                                        <?php if ($paymentMethod === 'cash'): ?>
+                                            <button type="button"
+                                                    class="pay-link-btn confirm-cash-btn"
+                                                    data-order-id="<?= (int)$o['id'] ?>"
+                                                    data-payment-action="confirm-cash">
+                                                Подтвердить наличные
+                                            </button>
+                                        <?php elseif ($paymentEnabled ?? false): ?>
+                                            <button type="button"
+                                                    class="pay-link-btn"
+                                                    data-order-id="<?= (int)$o['id'] ?>"
+                                                    data-payment-action="generate-link">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,104a8,8,0,0,1-16,0V59.32l-82.34,82.34a8,8,0,0,1-11.32-11.32L196.68,48H152a8,8,0,0,1,0-16h64a8,8,0,0,1,8,8Zm-40,24a8,8,0,0,0-8,8v72H48V80h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,80V208a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V136A8,8,0,0,0,184,128Z"/></svg>
+                                                Оплата
+                                            </button>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             </article>

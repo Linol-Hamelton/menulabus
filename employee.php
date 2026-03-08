@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
 </head>
 
-<body class="employee-page">
+<body class="employee-page" data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
     <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     <?php require_once __DIR__ . '/account-header.php'; ?>
 
@@ -151,17 +151,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="/js/account.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/employee-status-fix.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/employee-triage.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/employee-payments.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/ws-orders.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/push-notifications.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
 
 <?php if ($paymentEnabled): ?>
 <!-- Модальное окно: ссылка на оплату от сотрудника -->
-<div id="payLinkModal">
+<div id="payLinkModal" data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
     <div class="modal-box">
         <button id="payLinkClose" class="btn-close-modal" aria-label="Закрыть">&times;</button>
         <h3>Ссылка на оплату</h3>
         <div id="payLinkSpinner" class="modal-spinner">Создаём ссылку…</div>
-        <div id="payLinkContent">
+        <div id="payLinkContent" hidden>
             <p class="modal-hint">Покажите QR-код гостю или отправьте ссылку:</p>
             <div class="modal-qr">
                 <img id="payLinkQr" src="" alt="QR код оплаты">
@@ -170,94 +171,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input id="payLinkUrl" type="text" readonly>
                 <button id="payLinkCopy" class="btn-copy">Копировать</button>
             </div>
-            <div id="payLinkCopyMsg" class="modal-copy-msg">Скопировано!</div>
+            <div id="payLinkCopyMsg" class="modal-copy-msg" hidden>Скопировано!</div>
         </div>
-        <div id="payLinkError" class="modal-error"></div>
+        <div id="payLinkError" class="modal-error" hidden></div>
     </div>
 </div>
 
-<script nonce="<?= $scriptNonce ?>">
-(function () {
-    var modal     = document.getElementById('payLinkModal');
-    var spinner   = document.getElementById('payLinkSpinner');
-    var content   = document.getElementById('payLinkContent');
-    var errorEl   = document.getElementById('payLinkError');
-    var qrImg     = document.getElementById('payLinkQr');
-    var urlInput  = document.getElementById('payLinkUrl');
-    var copyBtn   = document.getElementById('payLinkCopy');
-    var copyMsg   = document.getElementById('payLinkCopyMsg');
-    var closeBtn  = document.getElementById('payLinkClose');
-    var csrfToken = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>';
-
-    function showModal() {
-        spinner.style.display  = 'block';
-        content.style.display  = 'none';
-        errorEl.style.display  = 'none';
-        copyMsg.style.display  = 'none';
-        modal.style.display    = 'flex';
-    }
-
-    function hideModal() { modal.style.display = 'none'; }
-
-    function showError(msg) {
-        spinner.style.display = 'none';
-        content.style.display = 'none';
-        errorEl.textContent   = msg;
-        errorEl.style.display = 'block';
-    }
-
-    function showLink(url) {
-        spinner.style.display = 'none';
-        urlInput.value        = url;
-        qrImg.src             = '/qr.php?url=' + encodeURIComponent(url);
-        content.style.display = 'block';
-    }
-
-    // Event delegation — работает и после SSE-обновления DOM
-    document.addEventListener('click', function (e) {
-        var btn = e.target.closest('.pay-link-btn');
-        if (!btn) return;
-        var orderId = parseInt(btn.getAttribute('data-order-id'), 10);
-        if (!orderId) return;
-
-        showModal();
-
-        fetch('/generate-payment-link.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-            body: JSON.stringify({ order_id: orderId })
-        })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-            if (data.success && data.paymentUrl) {
-                showLink(data.paymentUrl);
-            } else {
-                showError(data.error || 'Не удалось создать ссылку');
-            }
-        })
-        .catch(function () { showError('Ошибка сети. Попробуйте ещё раз.'); });
-    });
-
-    closeBtn.addEventListener('click', hideModal);
-    modal.addEventListener('click', function (e) { if (e.target === modal) hideModal(); });
-
-    copyBtn.addEventListener('click', function () {
-        var url = urlInput.value;
-        if (!url) return;
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(url).then(function () {
-                copyMsg.style.display = 'block';
-                setTimeout(function () { copyMsg.style.display = 'none'; }, 2000);
-            });
-        } else {
-            urlInput.select();
-            document.execCommand('copy');
-            copyMsg.style.display = 'block';
-            setTimeout(function () { copyMsg.style.display = 'none'; }, 2000);
-        }
-    });
-})();
-</script>
 <?php endif; ?>
 </body>
 

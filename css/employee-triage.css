@@ -313,6 +313,30 @@ body.employee-page .employee-order-glance__item--action {
   color: #7f1112;
 }
 
+body.employee-page .employee-order-glance__item--payment {
+  font-weight: 600;
+}
+
+body.employee-page .employee-order-glance__item--payment-pending {
+  background: rgba(255, 147, 33, 0.14);
+  color: #8b4c00;
+}
+
+body.employee-page .employee-order-glance__item--payment-paid {
+  background: rgba(76, 175, 80, 0.14);
+  color: #29682d;
+}
+
+body.employee-page .employee-order-glance__item--payment-failed {
+  background: rgba(205, 23, 25, 0.14);
+  color: #9f1012;
+}
+
+body.employee-page .employee-order-glance__item--payment-quiet {
+  background: rgba(18, 18, 18, 0.04);
+  color: rgba(18, 18, 18, 0.7);
+}
+
 body.employee-page .employee-order-card .order-product {
   background: rgba(18, 18, 18, 0.035);
   border: 1px solid rgba(18, 18, 18, 0.05);
@@ -346,9 +370,39 @@ body.employee-page .employee-order-card .update-order-form {
 body.employee-page .employee-order-card .status-btn,
 body.employee-page .employee-order-card .status-btn-r,
 body.employee-page .employee-order-card .pay-link-btn {
+  align-items: center;
+  border: none;
   border-radius: 14px;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 8px;
+  justify-content: center;
   min-height: 44px;
   padding: 0 16px;
+}
+
+body.employee-page .employee-order-card .pay-link-btn {
+  background: #121212;
+  box-shadow: 0 10px 24px rgba(18, 18, 18, 0.14);
+}
+
+body.employee-page .employee-order-card .pay-link-btn:hover {
+  background: #232323;
+}
+
+body.employee-page .employee-order-card .pay-link-btn.confirm-cash-btn {
+  background: #2f8f47;
+  box-shadow: 0 10px 24px rgba(47, 143, 71, 0.18);
+}
+
+body.employee-page .employee-order-card .pay-link-btn.confirm-cash-btn:hover {
+  background: #26763a;
+}
+
+body.employee-page .employee-order-card .pay-link-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 body.employee-page .employee-order-card .status-btn {

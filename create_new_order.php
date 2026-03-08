@@ -184,7 +184,7 @@ try {
             }
         }
 
-        $orderId = $db->createOrder((int)$_SESSION['user_id'], $items, $total, $deliveryType, $deliveryDetail, $tips);
+        $orderId = $db->createOrder((int)$_SESSION['user_id'], $items, $total, $deliveryType, $deliveryDetail, $tips, $paymentMethod, 'pending');
         if (!$orderId) {
             web_order_fail('db', 'create_order_failed', 500, [
                 'delivery_type' => $deliveryType,
@@ -274,6 +274,7 @@ try {
                         $db->updateOrderPayment((int)$orderId, $ykId, 'pending', $paymentMethod);
                     }
                     if ($paymentUrl === null || $paymentUrl === '') {
+                        $db->setOrderPaymentStatus((int)$orderId, 'failed');
                         $db->updateOrderStatus((int)$orderId, 'отказ');
                         $response['error'] = 'Не удалось создать ссылку для оплаты. Попробуйте позже или выберите «Оплата на месте».';
                         http_response_code(200);
@@ -282,6 +283,7 @@ try {
                     }
                 } else {
                     error_log("ЮKassa create payment failed: code=$ykCode body=$ykResult");
+                    $db->setOrderPaymentStatus((int)$orderId, 'failed');
                     $db->updateOrderStatus((int)$orderId, 'отказ');
                     $response['error'] = 'Не удалось создать ссылку для оплаты. Попробуйте позже или выберите «Оплата на месте».';
                     http_response_code(200);
@@ -311,6 +313,7 @@ try {
             } else {
                 $tbErr = $tbResult['Message'] ?? ($tbResult['Details'] ?? 'Ошибка Т-Банк');
                 error_log("T-Bank Init failed for order $orderId: " . json_encode($tbResult));
+                $db->setOrderPaymentStatus((int)$orderId, 'failed');
                 $db->updateOrderStatus((int)$orderId, 'отказ');
                 $response['error'] = 'Не удалось создать СБП-ссылку. Попробуйте позже или выберите «Оплата на месте».';
                 http_response_code(200);
