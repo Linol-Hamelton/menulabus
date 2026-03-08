@@ -1,8 +1,15 @@
+.index-landing-page .container {
+  max-width: 1180px;
+  padding-bottom: 0;
+  width: min(1180px, calc(100% - 48px));
+}
+
 .index-landing-page .hero {
   align-items: center;
   display: grid;
-  min-height: 100svh;
-  padding: 108px 0 88px;
+  height: auto;
+  min-height: clamp(680px, 84svh, 860px);
+  padding: 92px 0 56px;
   position: relative;
 }
 
@@ -18,9 +25,9 @@
   border-radius: 32px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   margin: 0 auto;
-  max-width: 700px;
+  max-width: 620px;
   padding: clamp(28px, 4vw, 40px);
   text-align: center;
 }
@@ -99,15 +106,21 @@
     radial-gradient(circle at top left, rgba(205, 23, 25, 0.14), transparent 40%),
     linear-gradient(180deg, #fff 0%, #f5f1ed 100%);
   margin-top: -72px;
-  padding: 0 0 28px;
+  padding: 0 0 8px;
   position: relative;
   z-index: 2;
+}
+
+.landing-entry-strip .container,
+.index-landing-page #about .container,
+.index-landing-page #reservation .container {
+  padding-bottom: 0;
 }
 
 .landing-entry-grid {
   align-items: stretch;
   display: grid;
-  gap: 22px;
+  gap: 18px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -118,9 +131,9 @@
   box-shadow: 0 22px 50px rgba(18, 18, 18, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   min-height: 100%;
-  padding: 28px 28px 24px;
+  padding: 24px 24px 20px;
 }
 
 .landing-entry-card h2 {
@@ -177,11 +190,11 @@
 
 .index-landing-page #about {
   background: linear-gradient(180deg, #f7f3ef 0%, #fff 100%);
-  padding: 64px 0 48px;
+  padding: 28px 0 20px;
 }
 
 .index-landing-page .section-header {
-  margin: 0 0 32px;
+  margin: 0 0 16px;
   text-align: center;
 }
 
@@ -197,7 +210,7 @@
 .index-landing-page .about-content {
   align-items: stretch;
   display: grid;
-  gap: 28px;
+  gap: 16px;
   grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.75fr);
 }
 
@@ -206,7 +219,7 @@
   border: 1px solid rgba(18, 18, 18, 0.08);
   border-radius: 28px;
   box-shadow: 0 18px 40px rgba(18, 18, 18, 0.06);
-  padding: 30px 30px 12px;
+  padding: 26px 26px 10px;
 }
 
 .index-landing-page .about-text p {
@@ -227,7 +240,7 @@
   display: flex;
   min-height: 100%;
   overflow: hidden;
-  padding: 16px;
+  padding: 14px;
 }
 
 .index-landing-page .about-image img {
@@ -243,10 +256,11 @@
   background:
     radial-gradient(circle at top right, rgba(205, 23, 25, 0.08), transparent 40%),
     linear-gradient(180deg, #f8f4f0 0%, #f1ebe5 100%);
-  padding: 24px 0 60px;
+  padding: 4px 0 40px;
 }
 
 .index-landing-page .form-content {
+  justify-content: center;
   padding: 0;
 }
 
@@ -255,7 +269,8 @@
   border-radius: 28px;
   box-shadow: 0 20px 44px rgba(18, 18, 18, 0.08);
   max-width: 440px;
-  padding: 28px 24px 24px;
+  margin: 0 auto;
+  padding: 24px 22px 20px;
   width: min(100%, 440px);
 }
 
@@ -266,7 +281,7 @@
 
 .index-landing-page .reservation-form h2 {
   margin: 0;
-  padding: 0 0 18px;
+  padding: 0 0 14px;
   text-align: center;
 }
 
@@ -280,6 +295,7 @@
 }
 
 .index-landing-page .btn-form {
+  display: block;
   margin-top: 8px;
   min-height: 48px;
   width: 100%;
@@ -309,8 +325,13 @@
 }
 
 @media (max-width: 992px) {
+  .index-landing-page .container {
+    width: min(1180px, calc(100% - 36px));
+  }
+
   .index-landing-page .hero {
-    padding: 96px 0 72px;
+    min-height: clamp(640px, 80svh, 820px);
+    padding: 84px 0 48px;
   }
 
   .index-landing-page .hero-content {
@@ -322,7 +343,7 @@
   }
 
   .landing-entry-strip {
-    margin-top: -48px;
+    margin-top: -44px;
   }
 
   .landing-entry-card {
@@ -343,9 +364,13 @@
 }
 
 @media (max-width: 768px) {
+  .index-landing-page .container {
+    width: min(1180px, calc(100% - 24px));
+  }
+
   .index-landing-page .hero {
     min-height: auto;
-    padding: 84px 0 44px;
+    padding: 72px 0 28px;
   }
 
   .index-landing-page .hero-content {
@@ -398,11 +423,11 @@
 
   .landing-entry-strip {
     margin-top: 0;
-    padding-top: 20px;
+    padding-top: 10px;
   }
 
   .index-landing-page #about {
-    padding: 42px 0 28px;
+    padding: 20px 0 16px;
   }
 
   .index-landing-page .about-text {
@@ -419,12 +444,12 @@
   }
 
   .index-landing-page .reservation-inner {
-    padding: 16px 0 44px;
+    padding: 0 0 24px;
   }
 
   .index-landing-page .reservation-form {
     border-radius: 24px;
-    padding: 22px 16px 18px;
+    padding: 20px 14px 16px;
   }
 
   .index-landing-page .footer {
