@@ -13,6 +13,9 @@ if (empty($scriptNonce) && isset($_SESSION['csp_nonce']['script'])) {
 }
 
 $db = Database::getInstance();
+$appVersion = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
+$adminMenuCssVersion = @filemtime(__DIR__ . '/css/admin-menu-polish.css');
+$adminMenuCssVersion = $adminMenuCssVersion ? (string)$adminMenuCssVersion : ($appVersion ?: '1.0.0');
 
 $menuView = (($_GET['view'] ?? 'active') === 'archived') ? 'archived' : 'active';
 $showArchived = $menuView === 'archived';
@@ -168,11 +171,11 @@ if (!empty($_GET['edit'])) {
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="/manifest.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
-    <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
-    <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
-    <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
-    <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="manifest" href="/manifest.php?v=<?= $appVersion ?>">
+    <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= $appVersion ?>">
+    <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= $appVersion ?>">
+    <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($adminMenuCssVersion, ENT_QUOTES, 'UTF-8') ?>">
+    <link rel="stylesheet" href="/auto-fonts.php?v=<?= $appVersion ?>">
     <style nonce="<?= $styleNonce ?>">
         .brand-fields {
             display: flex;
