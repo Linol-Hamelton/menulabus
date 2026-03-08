@@ -158,9 +158,9 @@ $formatPaymentState = static function (?string $method, ?string $status) use ($f
                 $visibleSummary = count($filtered) . ' заказ' . (count($filtered) === 1 ? '' : (count($filtered) < 5 ? 'а' : 'ов'));
                 ?>
                 <div class="orders-list tab-content <?= $s['status'] === $activeTab ? 'active' : '' ?>"
-                     id="<?= htmlspecialchars($s['status']) ?>"
-                     data-employee-board
-                     data-status-name="<?= htmlspecialchars($s['status']) ?>">
+                    id="<?= htmlspecialchars($s['status']) ?>"
+                    data-employee-board
+                    data-status-name="<?= htmlspecialchars($s['status']) ?>">
                     <?php if (empty($filtered)): ?>
                         <p>Нет заказов со статусом «<?= htmlspecialchars($s['status']) ?>»</p>
                     <?php else: ?>
@@ -185,8 +185,8 @@ $formatPaymentState = static function (?string $method, ?string $status) use ($f
                                 <button type="button" class="employee-filter-chip active" data-filter-type="all">Все</button>
                                 <?php foreach ($deliveryBuckets as $deliveryType => $count): ?>
                                     <button type="button"
-                                            class="employee-filter-chip"
-                                            data-filter-type="<?= htmlspecialchars($deliveryType) ?>">
+                                        class="employee-filter-chip"
+                                        data-filter-type="<?= htmlspecialchars($deliveryType) ?>">
                                         <?= htmlspecialchars($formatDeliveryLabel($deliveryType)) ?>
                                         <span class="employee-filter-chip__count"><?= (int)$count ?></span>
                                     </button>
@@ -224,10 +224,10 @@ $formatPaymentState = static function (?string $method, ?string $status) use ($f
                             ]));
                             ?>
                             <article class="order-item employee-order-card"
-                                     data-order-id="<?= $o['id'] ?>"
-                                     data-status="<?= htmlspecialchars($o['status']) ?>"
-                                     data-delivery-type="<?= htmlspecialchars($deliveryType) ?>"
-                                     data-order-search="<?= htmlspecialchars(mb_strtolower($searchBlob, 'UTF-8')) ?>">
+                                data-order-id="<?= $o['id'] ?>"
+                                data-status="<?= htmlspecialchars($o['status']) ?>"
+                                data-delivery-type="<?= htmlspecialchars($deliveryType) ?>"
+                                data-order-search="<?= htmlspecialchars(mb_strtolower($searchBlob, 'UTF-8')) ?>">
                                 <div class="order-header" data-toggle-order>
                                     <div class="employee-order-main">
                                         <div class="employee-order-primary">
@@ -292,36 +292,38 @@ $formatPaymentState = static function (?string $method, ?string $status) use ($f
                                         <input type="hidden" name="order_id" value="<?= $o['id'] ?>">
                                         <?php if (!in_array($o['status'], ['завершён', 'отказ'])): ?>
                                             <button type="button" class="status-btn"
-                                                    data-action="update_status"
-                                                    data-order-id="<?= $o['id'] ?>"
-                                                    data-current-status="<?= $o['status'] ?>">
+                                                data-action="update_status"
+                                                data-order-id="<?= $o['id'] ?>"
+                                                data-current-status="<?= $o['status'] ?>">
                                                 <?= htmlspecialchars($getNextActionLabel($o['status'])) ?>
                                             </button>
                                             <button type="button" class="status-btn-r"
-                                                    data-action="reject"
-                                                    data-order-id="<?= $o['id'] ?>">
+                                                data-action="reject"
+                                                data-order-id="<?= $o['id'] ?>">
                                                 Отказ
                                             </button>
                                         <?php endif; ?>
-                                    </form>
-                                    <?php if (!in_array($o['status'], ['завершён', 'отказ'], true) && $paymentStatus !== 'paid'): ?>
-                                        <?php if ($paymentMethod === 'cash'): ?>
-                                            <button type="button"
+                                        <?php if (!in_array($o['status'], ['завершён', 'отказ'], true) && $paymentStatus !== 'paid'): ?>
+                                            <?php if ($paymentMethod === 'cash'): ?>
+                                                <button type="button"
                                                     class="pay-link-btn confirm-cash-btn"
                                                     data-order-id="<?= (int)$o['id'] ?>"
                                                     data-payment-action="confirm-cash">
-                                                Подтвердить наличные
-                                            </button>
-                                        <?php elseif ($paymentEnabled ?? false): ?>
-                                            <button type="button"
+                                                    Подтвердить наличные
+                                                </button>
+                                            <?php elseif ($paymentEnabled ?? false): ?>
+                                                <button type="button"
                                                     class="pay-link-btn"
                                                     data-order-id="<?= (int)$o['id'] ?>"
                                                     data-payment-action="generate-link">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,104a8,8,0,0,1-16,0V59.32l-82.34,82.34a8,8,0,0,1-11.32-11.32L196.68,48H152a8,8,0,0,1,0-16h64a8,8,0,0,1,8,8Zm-40,24a8,8,0,0,0-8,8v72H48V80h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,80V208a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V136A8,8,0,0,0,184,128Z"/></svg>
-                                                Оплата
-                                            </button>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+                                                        <path d="M224,104a8,8,0,0,1-16,0V59.32l-82.34,82.34a8,8,0,0,1-11.32-11.32L196.68,48H152a8,8,0,0,1,0-16h64a8,8,0,0,1,8,8Zm-40,24a8,8,0,0,0-8,8v72H48V80h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,80V208a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V136A8,8,0,0,0,184,128Z" />
+                                                    </svg>
+                                                    Оплата
+                                                </button>
+                                            <?php endif; ?>
                                         <?php endif; ?>
-                                    <?php endif; ?>
+                                    </form>
                                 </div>
                             </article>
                         <?php endforeach; ?>
@@ -348,11 +350,11 @@ $formatPaymentState = static function (?string $method, ?string $status) use ($f
                     </thead>
                     <tbody>
                         <?php foreach ($tableOrders as $row): ?>
-                        <tr>
-                            <td>Стол <?= htmlspecialchars($row['table_num']) ?></td>
-                            <td><?= (int)$row['order_count'] ?></td>
-                            <td><?= number_format((float)$row['total_sum'], 0, '.', ' ') ?> ₽</td>
-                        </tr>
+                            <tr>
+                                <td>Стол <?= htmlspecialchars($row['table_num']) ?></td>
+                                <td><?= (int)$row['order_count'] ?></td>
+                                <td><?= number_format((float)$row['total_sum'], 0, '.', ' ') ?> ₽</td>
+                            </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
