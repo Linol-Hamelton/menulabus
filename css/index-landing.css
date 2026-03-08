@@ -8,8 +8,8 @@
   align-items: center;
   display: grid;
   height: auto;
-  min-height: clamp(680px, 84svh, 860px);
-  padding: 92px 0 56px;
+  min-height: clamp(640px, 80svh, 820px);
+  padding: 88px 0 48px;
   position: relative;
 }
 
@@ -27,8 +27,8 @@
   flex-direction: column;
   gap: 16px;
   margin: 0 auto;
-  max-width: 620px;
-  padding: clamp(28px, 4vw, 40px);
+  max-width: 600px;
+  padding: clamp(26px, 4vw, 38px);
   text-align: center;
 }
 
@@ -105,8 +105,8 @@
   background:
     radial-gradient(circle at top left, rgba(205, 23, 25, 0.14), transparent 40%),
     linear-gradient(180deg, #fff 0%, #f5f1ed 100%);
-  margin-top: -72px;
-  padding: 0 0 8px;
+  margin-top: -64px;
+  padding: 0;
   position: relative;
   z-index: 2;
 }
@@ -127,20 +127,20 @@
 .landing-entry-card {
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(18, 18, 18, 0.08);
-  border-radius: 28px;
+  border-radius: 26px;
   box-shadow: 0 22px 50px rgba(18, 18, 18, 0.08);
   display: flex;
   flex-direction: column;
   gap: 10px;
   min-height: 100%;
-  padding: 24px 24px 20px;
+  padding: 26px 26px 22px;
 }
 
 .landing-entry-card h2 {
   color: #121212;
-  font-size: 1.9rem;
+  font-size: 1.78rem;
   line-height: 1.15;
-  margin: 0 0 12px;
+  margin: 0 0 10px;
 }
 
 .landing-entry-card p {
@@ -190,7 +190,7 @@
 
 .index-landing-page #about {
   background: linear-gradient(180deg, #f7f3ef 0%, #fff 100%);
-  padding: 28px 0 20px;
+  padding: 24px 0 18px;
 }
 
 .index-landing-page .section-header {
@@ -208,7 +208,7 @@
 }
 
 .index-landing-page .about-content {
-  align-items: stretch;
+  align-items: start;
   display: grid;
   gap: 16px;
   grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.75fr);
@@ -217,7 +217,7 @@
 .index-landing-page .about-text {
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(18, 18, 18, 0.08);
-  border-radius: 28px;
+  border-radius: 24px;
   box-shadow: 0 18px 40px rgba(18, 18, 18, 0.06);
   padding: 26px 26px 10px;
 }
@@ -235,12 +235,12 @@
     radial-gradient(circle at top left, rgba(205, 23, 25, 0.12), transparent 45%),
     linear-gradient(180deg, #ffffff 0%, #f3eee9 100%);
   border: 1px solid rgba(18, 18, 18, 0.08);
-  border-radius: 28px;
+  border-radius: 24px;
   box-shadow: 0 18px 40px rgba(18, 18, 18, 0.06);
   display: flex;
   min-height: 100%;
   overflow: hidden;
-  padding: 14px;
+  padding: 12px;
 }
 
 .index-landing-page .about-image img {
@@ -256,7 +256,7 @@
   background:
     radial-gradient(circle at top right, rgba(205, 23, 25, 0.08), transparent 40%),
     linear-gradient(180deg, #f8f4f0 0%, #f1ebe5 100%);
-  padding: 4px 0 40px;
+  padding: 0 0 32px;
 }
 
 .index-landing-page .form-content {
@@ -266,12 +266,12 @@
 
 .index-landing-page .reservation-form {
   border: 1px solid rgba(18, 18, 18, 0.08);
-  border-radius: 28px;
+  border-radius: 26px;
   box-shadow: 0 20px 44px rgba(18, 18, 18, 0.08);
-  max-width: 440px;
+  max-width: 500px;
   margin: 0 auto;
   padding: 24px 22px 20px;
-  width: min(100%, 440px);
+  width: min(100%, 500px);
 }
 
 .index-landing-page .reservation-form form,
@@ -302,7 +302,7 @@
 }
 
 .index-landing-page .footer {
-  padding-top: 52px;
+  padding-top: 40px;
 }
 
 .index-landing-page .footer-inner {
@@ -331,7 +331,7 @@
 
   .index-landing-page .hero {
     min-height: clamp(640px, 80svh, 820px);
-    padding: 84px 0 48px;
+    padding: 82px 0 44px;
   }
 
   .index-landing-page .hero-content {
@@ -343,7 +343,7 @@
   }
 
   .landing-entry-strip {
-    margin-top: -44px;
+    margin-top: -36px;
   }
 
   .landing-entry-card {
@@ -370,7 +370,7 @@
 
   .index-landing-page .hero {
     min-height: auto;
-    padding: 72px 0 28px;
+    padding: 70px 0 24px;
   }
 
   .index-landing-page .hero-content {
@@ -423,11 +423,11 @@
 
   .landing-entry-strip {
     margin-top: 0;
-    padding-top: 10px;
+    padding-top: 8px;
   }
 
   .index-landing-page #about {
-    padding: 20px 0 16px;
+    padding: 18px 0 14px;
   }
 
   .index-landing-page .about-text {
@@ -444,7 +444,7 @@
   }
 
   .index-landing-page .reservation-inner {
-    padding: 0 0 24px;
+    padding: 0 0 20px;
   }
 
   .index-landing-page .reservation-form {
@@ -453,11 +453,15 @@
   }
 
   .index-landing-page .footer {
-    padding-top: 40px;
+    padding-top: 28px;
   }
 
   .index-landing-page .footer-inner {
-    grid-template-columns: 1fr;
-    gap: 18px;
+    gap: 14px 18px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .index-landing-page .footer-col:last-child {
+    grid-column: 1 / -1;
   }
 }
