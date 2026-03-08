@@ -25,7 +25,7 @@ $items = $showArchived
     ? $db->getArchivedMenuItems()
     : $db->getMenuItems(null, false);
 
-// РџРѕР»СѓС‡Р°РµРј СѓРЅРёРєР°Р»СЊРЅС‹Рµ РєР°С‚РµРіРѕСЂРёРё
+// Получаем уникальные категории
 $categories = !empty($items)
     ? array_values(array_unique(array_column($items, 'category')))
     : [];
@@ -34,26 +34,26 @@ $errors = $success = null;
 
 /* --- CRUD logic --- */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    /* ---------- 1. РћРґРёРЅРѕС‡РЅРѕРµ РґРѕР±Р°РІР»РµРЅРёРµ / СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ С‚РѕРІР°СЂР° ---------- */
+    /* ---------- 1. Одиночное добавление / редактирование товара ---------- */
     if (isset($_POST['restore_archived'])) {
         if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
-            $_SESSION['error'] = 'РћС€РёР±РєР° Р±РµР·РѕРїР°СЃРЅРѕСЃС‚Рё';
+            $_SESSION['error'] = 'Ошибка безопасности';
         } else {
             $id = (int)($_POST['id'] ?? 0);
             if ($id <= 0) {
-                $_SESSION['error'] = 'РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID';
+                $_SESSION['error'] = 'Некорректный ID';
             } else {
                 $ok = $db->restoreArchivedMenuItem($id);
                 $_SESSION[$ok ? 'success' : 'error'] = $ok
-                    ? 'Р‘Р»СЋРґРѕ РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРѕ РёР· Р°СЂС…РёРІР°'
-                    : 'РќРµ СѓРґР°Р»РѕСЃСЊ РІРѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ Р±Р»СЋРґРѕ';
+                    ? 'Блюдо восстановлено из архива'
+                    : 'Не удалось восстановить блюдо';
             }
         }
         header('Location: admin-menu.php?view=archived');
         exit;
     } elseif (isset($_POST['name'])) {
         if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
-            $_SESSION['error'] = 'РћС€РёР±РєР° Р±РµР·РѕРїР°СЃРЅРѕСЃС‚Рё';
+            $_SESSION['error'] = 'Ошибка безопасности';
         } else {
             $id = (int)($_POST['id'] ?? 0);
             $name = trim($_POST['name'] ?? '');
@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $category = trim($_POST['category'] ?? '');
             $available = isset($_POST['available']) ? 1 : 0;
 
-            // РћР±СЂР°Р±РѕС‚РєР° РїРѕР»СЏ composition
+            // Обработка поля composition
             $composition = trim($_POST['composition'] ?? '');
             $composition = preg_replace('/([^\s])\s+([^\s])/', '$1, $2', $composition);
             $composition = preg_replace('/,{2,}/', ',', $composition);
@@ -90,11 +90,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $available
                 );
                 if ($ok) {
-                    $_SESSION['success'] = 'РўРѕРІР°СЂ РѕР±РЅРѕРІР»С‘РЅ!';
+                    $_SESSION['success'] = 'Товар обновлён!';
                     header('Location: admin-menu.php?edit=' . $id);
                     exit;
                 }
-                $_SESSION['error'] = 'РћС€РёР±РєР° РїСЂРё РѕР±РЅРѕРІР»РµРЅРёРё';
+                $_SESSION['error'] = 'Ошибка при обновлении';
             } else {
                 $ok = $db->addMenuItem(
                     $name,
@@ -110,26 +110,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $available
                 );
                 if ($ok) {
-                    $_SESSION['success'] = 'РўРѕРІР°СЂ РґРѕР±Р°РІР»РµРЅ!';
+                    $_SESSION['success'] = 'Товар добавлен!';
                     header('Location: admin-menu.php');
                     exit;
                 }
-                $_SESSION['error'] = 'РћС€РёР±РєР° РїСЂРё РґРѕР±Р°РІР»РµРЅРёРё';
+                $_SESSION['error'] = 'Ошибка при добавлении';
             }
         }
     }
-    /* ---------- 2. РњР°СЃСЃРѕРІР°СЏ Р·Р°РіСЂСѓР·РєР° CSV ---------- */ elseif (isset($_POST['bulk_upload'])) {
+    /* ---------- 2. Массовая загрузка CSV ---------- */ elseif (isset($_POST['bulk_upload'])) {
         if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
-            $_SESSION['error'] = 'РћС€РёР±РєР° Р±РµР·РѕРїР°СЃРЅРѕСЃС‚Рё';
+            $_SESSION['error'] = 'Ошибка безопасности';
         } else {
             if (!isset($_FILES['csv_file']) || $_FILES['csv_file']['error'] !== UPLOAD_ERR_OK) {
-                $_SESSION['error'] = 'РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё С„Р°Р№Р»Р°';
+                $_SESSION['error'] = 'Ошибка загрузки файла';
             } else {
                 $fileContent = file_get_contents($_FILES['csv_file']['tmp_name']);
                 if ($fileContent === false || trim($fileContent) === '') {
-                    $_SESSION['error'] = 'Р¤Р°Р№Р» РїСѓСЃС‚РѕР№';
+                    $_SESSION['error'] = 'Файл пустой';
                 } elseif (function_exists('mb_check_encoding') && !mb_check_encoding($fileContent, 'UTF-8')) {
-                    $_SESSION['error'] = 'CSV РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РІ UTF-8';
+                    $_SESSION['error'] = 'CSV должен быть в UTF-8';
                 } else {
                     $firstLine = strtok($fileContent, "\r\n");
                     $delimiter = (is_string($firstLine) && strpos($firstLine, ',') !== false) ? ',' : ';';
@@ -141,14 +141,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stats = $db->bulkSyncMenuFromCsv($tempHandle, $delimiter);
                     if (is_array($stats)) {
                         $_SESSION['success'] = sprintf(
-                            'РЎРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ Р·Р°РІРµСЂС€РµРЅР°: РґРѕР±Р°РІР»РµРЅРѕ %d, РѕР±РЅРѕРІР»РµРЅРѕ %d, РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРѕ %d, Р°СЂС…РёРІРёСЂРѕРІР°РЅРѕ %d.',
+                            'Синхронизация завершена: добавлено %d, обновлено %d, восстановлено %d, архивировано %d.',
                             (int)($stats['inserted'] ?? 0),
                             (int)($stats['updated'] ?? 0),
                             (int)($stats['restored_from_archive'] ?? 0),
                             (int)($stats['archived_missing'] ?? 0)
                         );
                     } elseif (!isset($_SESSION['error'])) {
-                        $_SESSION['error'] = 'РћС€РёР±РєР° РїСЂРё СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё CSV';
+                        $_SESSION['error'] = 'Ошибка при синхронизации CSV';
                     }
                     fclose($tempHandle);
                 }
@@ -188,10 +188,9 @@ $savedDbFontsJson = htmlspecialchars(
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($adminMenuCssVersion, ENT_QUOTES, 'UTF-8') ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= $appVersion ?>">
+    <title>Блюда | <?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?></title>
 
-    <title>Р‘Р»СЋРґР° | <?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?></title>
-
-    <!-- Preloader - РјРіРЅРѕРІРµРЅРЅР°СЏ Р·Р°РіСЂСѓР·РєР° -->
+    <!-- Preloader - мгновенная загрузка -->
 
 </head>
 
@@ -202,11 +201,11 @@ $savedDbFontsJson = htmlspecialchars(
     <!-- Admin Tabs -->
     <div class="admin-tabs-container">
         <div class="admin-tabs">
-            <button type="button" class="admin-tab-btn active" data-tab="dishes">Р‘Р»СЋРґР°</button>
-            <button type="button" class="admin-tab-btn" data-tab="design">Р”РёР·Р°Р№РЅ</button>
+            <button type="button" class="admin-tab-btn active" data-tab="dishes">Блюда</button>
+            <button type="button" class="admin-tab-btn" data-tab="design">Дизайн</button>
             <?php if (in_array($_SESSION['user_role'] ?? '', ['admin', 'owner'])): ?>
-                <button type="button" class="admin-tab-btn" data-tab="payment">РћРїР»Р°С‚Р°</button>
-                <button type="button" class="admin-tab-btn" data-tab="system">РЎРёСЃС‚РµРјР°</button>
+                <button type="button" class="admin-tab-btn" data-tab="payment">Оплата</button>
+                <button type="button" class="admin-tab-btn" data-tab="system">Система</button>
             <?php endif; ?>
         </div>
     </div>
@@ -228,23 +227,23 @@ $savedDbFontsJson = htmlspecialchars(
             <section class="admin-form-container admin-section-card">
                 <div class="admin-pane-header">
                     <div class="admin-pane-header-copy">
-                        <p class="admin-pane-kicker">РљР°С‚Р°Р»РѕРі Рё РЅР°РїРѕР»РЅРµРЅРёРµ</p>
-                        <p class="admin-pane-caption">Р—Р°РіСЂСѓР·РєР°, СЂСѓС‡РЅРѕРµ СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ Рё СѓРїСЂР°РІР»РµРЅРёРµ С‚РµРєСѓС‰РёРј РєР°С‚Р°Р»РѕРіРѕРј СЃРѕР±СЂР°РЅС‹ РІ РѕРґРЅРѕРј СЂР°Р±РѕС‡РµРј РїСЂРѕСЃС‚СЂР°РЅСЃС‚РІРµ.</p>
+                        <p class="admin-pane-kicker">Каталог и наполнение</p>
+                        <p class="admin-pane-caption">Загрузка, ручное редактирование и управление текущим каталогом собраны в одном рабочем пространстве.</p>
                     </div>
                 </div>
                 <div class="admin-dishes-workspace">
-                <h2><?= $editItem ? 'Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ' : 'РћР±РЅРѕРІР»РµРЅРёРµ' ?></h2>
+                <h2><?= $editItem ? 'Редактировать' : 'Обновление' ?></h2>
 
                 <!-- Bulk upload -->
                 <section class="admin-form-group admin-subsection-card">
-                    <h3>РР· CSV</h3>
+                    <h3>Из CSV</h3>
                     <form method="POST" enctype="multipart/form-data">
                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                        <a href="download-sample.php" download="Update.csv" class="download-button-container">РћР±СЂР°Р·РµС†</a>
+                        <a href="download-sample.php" download="Update.csv" class="download-button-container">Образец</a>
                         <input type="file" name="csv_file" accept=".csv" required>
-                        <button type="submit" name="bulk_upload" class="checkout-btn">Р—Р°РіСЂСѓР·РёС‚СЊ</button>
+                        <button type="submit" name="bulk_upload" class="checkout-btn">Загрузить</button>
                     </form>
-                    <small>UTF-8 CSV. РџРѕР»РЅР°СЏ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ: РїРѕР·РёС†РёРё РІРЅРµ С„Р°Р№Р»Р° Р±СѓРґСѓС‚ Р°СЂС…РёРІРёСЂРѕРІР°РЅС‹. Р¤РѕСЂРјР°С‚: external_id;name;description;composition;price;image;calories;protein;fat;carbs;category;available</small>
+                    <small>UTF-8 CSV. Полная синхронизация: позиции вне файла будут архивированы. Формат: external_id;name;description;composition;price;image;calories;protein;fat;carbs;category;available</small>
                 </section>
 
                 <div class="admin-subsection-card">
@@ -253,55 +252,55 @@ $savedDbFontsJson = htmlspecialchars(
                     <input type="hidden" name="id" value="<?= $editItem['id'] ?? '' ?>">
 
                     <div class="admin-form-group">
-                        <h3>Р’СЂСѓС‡РЅСѓСЋ</h3>
-                        <label>РќР°Р·РІР°РЅРёРµ</label>
+                        <h3>Вручную</h3>
+                        <label>Название</label>
                         <input type="text" name="name" value="<?= htmlspecialchars($editItem['name'] ?? '') ?>" required>
                     </div>
 
                     <div class="admin-form-group">
-                        <label>РћРїРёСЃР°РЅРёРµ</label>
+                        <label>Описание</label>
                         <textarea name="description" rows="3"><?= htmlspecialchars($editItem['description'] ?? '') ?></textarea>
                     </div>
 
                     <div class="admin-form-group">
-                        <label>РЎРѕСЃС‚Р°РІ</label>
+                        <label>Состав</label>
                         <textarea name="composition" rows="2"><?= htmlspecialchars($editItem['composition'] ?? '') ?></textarea>
-                        <small>Р Р°Р·РґРµР»СЏР№С‚Рµ РёРЅРіСЂРµРґРёРµРЅС‚С‹ Р·Р°РїСЏС‚С‹РјРё (РЅР°РїСЂРёРјРµСЂ: "СЏР№С†Рѕ, РјСѓРєР°, РјРѕР»РѕРєРѕ")</small>
+                        <small>Разделяйте ингредиенты запятыми (например: "яйцо, мука, молоко")</small>
                     </div>
 
-                    <!-- РљР°Р»РѕСЂРёР№РЅРѕСЃС‚СЊ Рё Р‘Р–РЈ -->
+                    <!-- Калорийность и БЖУ -->
                     <div class="admin-form-group">
-                        <label>РљР°Р»РѕСЂРёР№РЅРѕСЃС‚СЊ (РєРєР°Р»)</label>
+                        <label>Калорийность (ккал)</label>
                         <input type="number" name="calories" value="<?= $editItem['calories'] ?? '' ?>">
                     </div>
 
                     <div class="admin-form-group">
-                        <label>Р‘РµР»РєРё (Рі)</label>
+                        <label>Белки (г)</label>
                         <input type="number" name="protein" value="<?= $editItem['protein'] ?? '' ?>">
                     </div>
 
                     <div class="admin-form-group">
-                        <label>Р–РёСЂС‹ (Рі)</label>
+                        <label>Жиры (г)</label>
                         <input type="number" name="fat" value="<?= $editItem['fat'] ?? '' ?>">
                     </div>
 
                     <div class="admin-form-group">
-                        <label>РЈРіР»РµРІРѕРґС‹ (Рі)</label>
+                        <label>Углеводы (г)</label>
                         <input type="number" name="carbs" value="<?= $editItem['carbs'] ?? '' ?>">
                     </div>
 
                     <div class="admin-form-group">
-                        <label>Р¦РµРЅР° (в‚Ѕ)</label>
+                        <label>Цена (₽)</label>
                         <input type="number" step="0.01" name="price" value="<?= $editItem['price'] ?? '' ?>" required>
                     </div>
 
                     <div class="admin-form-group">
-                        <label>РР·РѕР±СЂР°Р¶РµРЅРёРµ (./dir/name.jpg)</label>
+                        <label>Изображение (./dir/name.jpg)</label>
                         <input type="text" name="image" value="<?= htmlspecialchars($editItem['image'] ?? '') ?>">
                     </div>
 
                     <div class="admin-form-group">
-                        <label>РљР°С‚РµРіРѕСЂРёСЏ</label>
+                        <label>Категория</label>
                         <input type="text" name="category" list="cats" value="<?= htmlspecialchars($editItem['category'] ?? '') ?>" required>
                         <datalist id="cats">
                             <?php foreach ($categories as $c): ?>
@@ -313,14 +312,14 @@ $savedDbFontsJson = htmlspecialchars(
                     <div class="admin-form-group">
                         <label>
                             <input type="checkbox" name="available" <?= isset($editItem['available']) && $editItem['available'] ? 'checked' : 'checked' ?>>
-                            Р”РѕСЃС‚СѓРїРµРЅ
+                            Доступен
                         </label>
                     </div>
 
                     <div class="form-actions">
-                        <button type="submit" class="checkout-btn"><?= $editItem ? 'РЎРѕС…СЂР°РЅРёС‚СЊ' : 'Р”РѕР±Р°РІРёС‚СЊ' ?></button>
+                        <button type="submit" class="checkout-btn"><?= $editItem ? 'Сохранить' : 'Добавить' ?></button>
                         <?php if ($editItem): ?>
-                            <a href="admin-menu.php" class="admin-checkout-btn cancel">РћС‚РјРµРЅР°</a>
+                            <a href="admin-menu.php" class="admin-checkout-btn cancel">Отмена</a>
                         <?php endif; ?>
                     </div>
                 </form>
@@ -328,21 +327,21 @@ $savedDbFontsJson = htmlspecialchars(
                 </div>
 
                 <?php if ($editItem): ?>
-                    <!-- в”Ђв”Ђ РњРѕРґРёС„РёРєР°С‚РѕСЂС‹ (С‚РѕР»СЊРєРѕ РїСЂРё СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёРё) в”Ђв”Ђ -->
+                    <!-- ── Модификаторы (только при редактировании) ── -->
                     <section class="admin-form-group admin-subsection-card" id="modifiersSection" data-item-id="<?= (int)$editItem['id'] ?>">
-                        <h3>РњРѕРґРёС„РёРєР°С‚РѕСЂС‹ (РІР°СЂРёР°РЅС‚С‹ Р±Р»СЋРґР°)</h3>
-                        <p class="yk-desc">РќР°РїСЂРёРјРµСЂ: В«РЎС‚РµРїРµРЅСЊ РїСЂРѕР¶Р°СЂРєРёВ» СЃ РІР°СЂРёР°РЅС‚Р°РјРё Medium / Well-done, РёР»Рё В«Р”РѕР±Р°РІРєРёВ» СЃ РЅРµСЃРєРѕР»СЊРєРёРјРё РІР°СЂРёР°РЅС‚Р°РјРё.</p>
+                        <h3>Модификаторы (варианты блюда)</h3>
+                        <p class="yk-desc">Например: «Степень прожарки» с вариантами Medium / Well-done, или «Добавки» с несколькими вариантами.</p>
                         <div id="modifierGroupList"></div>
                         <div class="mod-new-group-row">
-                            <input type="text" id="newGroupName" placeholder="РќР°Р·РІР°РЅРёРµ РіСЂСѓРїРїС‹" maxlength="100">
+                            <input type="text" id="newGroupName" placeholder="Название группы" maxlength="100">
                             <select id="newGroupType">
-                                <option value="radio">РћРґРёРЅ РІР°СЂРёР°РЅС‚ (radio)</option>
-                                <option value="checkbox">РќРµСЃРєРѕР»СЊРєРѕ (checkbox)</option>
+                                <option value="radio">Один вариант (radio)</option>
+                                <option value="checkbox">Несколько (checkbox)</option>
                             </select>
                             <label>
-                                <input type="checkbox" id="newGroupRequired"> РћР±СЏР·Р°С‚РµР»СЊРЅРѕ
+                                <input type="checkbox" id="newGroupRequired"> Обязательно
                             </label>
-                            <button id="addModifierGroupBtn" class="checkout-btn">+ Р“СЂСѓРїРїР°</button>
+                            <button id="addModifierGroupBtn" class="checkout-btn">+ Группа</button>
                         </div>
                     </section>
                 <?php endif; ?>
@@ -351,8 +350,8 @@ $savedDbFontsJson = htmlspecialchars(
             <section class="admin-form-container admin-section-card admin-catalog-card">
             <div class="admin-catalog-toolbar">
                 <div class="form-actions menu-view-switch">
-                <a href="admin-menu.php?view=active" class="admin-checkout-btn<?= !$showArchived ? ' cancel' : '' ?>">РђРєС‚РёРІРЅС‹Рµ</a>
-                <a href="admin-menu.php?view=archived" class="admin-checkout-btn<?= $showArchived ? ' cancel' : '' ?>">РђСЂС…РёРІ</a>
+                <a href="admin-menu.php?view=active" class="admin-checkout-btn<?= !$showArchived ? ' cancel' : '' ?>">Активные</a>
+                <a href="admin-menu.php?view=archived" class="admin-checkout-btn<?= $showArchived ? ' cancel' : '' ?>">Архив</a>
                 </div>
                 <div class="menu-tabs-container admin-menu-categories">
                     <div class="menu-tabs">
@@ -371,11 +370,11 @@ $savedDbFontsJson = htmlspecialchars(
                     <thead>
                         <tr>
                             <th class="first-col">ID</th>
-                            <th>РќР°Р·РІР°РЅРёРµ</th>
-                            <th>РљР°С‚РµРіРѕСЂРёСЏ</th>
-                            <th>Р¦РµРЅР°</th>
-                            <th><?= $showArchived ? 'РђСЂС…РёРІРёСЂРѕРІР°РЅ' : 'РЎС‚РѕРї' ?></th>
-                            <th class="last-col">Р”РµР№СЃС‚РІРёСЏ</th>
+                            <th>Название</th>
+                            <th>Категория</th>
+                            <th>Цена</th>
+                            <th><?= $showArchived ? 'Архивирован' : 'Стоп' ?></th>
+                            <th class="last-col">Действия</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -384,15 +383,15 @@ $savedDbFontsJson = htmlspecialchars(
                                 <td><?= $it['id'] ?></td>
                                 <td><?= htmlspecialchars($it['name']) ?></td>
                                 <td><?= htmlspecialchars($it['category']) ?></td>
-                                <td><?= number_format($it['price'], 2) ?> в‚Ѕ</td>
+                                <td><?= number_format($it['price'], 2) ?> ₽</td>
                                 <td>
                                     <?php if ($showArchived): ?>
                                         <?= htmlspecialchars((string)($it['archived_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
                                     <?php else: ?>
                                         <button class="stop-btn <?= $it['available'] ? '' : 'stop-btn--active' ?>"
                                             data-item-id="<?= (int)$it['id'] ?>"
-                                            title="<?= $it['available'] ? 'РЎРЅСЏС‚СЊ СЃ РїСЂРѕРґР°Р¶Рё' : 'Р’РµСЂРЅСѓС‚СЊ РІ РїСЂРѕРґР°Р¶Сѓ' ?>">
-                                            <?= $it['available'] ? 'РЎРўРћРџ' : 'Р’РµСЂРЅСѓС‚СЊ' ?>
+                                            title="<?= $it['available'] ? 'Снять с продажи' : 'Вернуть в продажу' ?>">
+                                            <?= $it['available'] ? 'СТОП' : 'Вернуть' ?>
                                         </button>
                                     <?php endif; ?>
                                 </td>
@@ -401,10 +400,10 @@ $savedDbFontsJson = htmlspecialchars(
                                         <form method="POST" class="inline-action-form">
                                             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                                             <input type="hidden" name="id" value="<?= (int)$it['id'] ?>">
-                                            <button type="submit" name="restore_archived" class="admin-checkout-btn">Р’РѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ</button>
+                                            <button type="submit" name="restore_archived" class="admin-checkout-btn">Восстановить</button>
                                         </form>
                                     <?php else: ?>
-                                        <a href="admin-menu.php?edit=<?= $it['id'] ?>" class="admin-checkout-btn">Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ</a>
+                                        <a href="admin-menu.php?edit=<?= $it['id'] ?>" class="admin-checkout-btn">Редактировать</a>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -426,20 +425,20 @@ $savedDbFontsJson = htmlspecialchars(
                                 <span class="mobile-table-value"><?= $it['id'] ?></span>
                             </div>
                             <div class="mobile-table-row">
-                                <span class="mobile-table-label">РќР°Р·РІР°РЅРёРµ:</span>
+                                <span class="mobile-table-label">Название:</span>
                                 <span class="mobile-table-value"><?= htmlspecialchars($it['name']) ?></span>
                             </div>
                             <div class="mobile-table-row">
-                                <span class="mobile-table-label">РљР°С‚РµРіРѕСЂРёСЏ:</span>
+                                <span class="mobile-table-label">Категория:</span>
                                 <span class="mobile-table-value"><?= htmlspecialchars($it['category']) ?></span>
                             </div>
                             <div class="mobile-table-row">
-                                <span class="mobile-table-label">Р¦РµРЅР°:</span>
-                                <span class="mobile-table-value"><?= number_format($it['price'], 2) ?> в‚Ѕ</span>
+                                <span class="mobile-table-label">Цена:</span>
+                                <span class="mobile-table-value"><?= number_format($it['price'], 2) ?> ₽</span>
                             </div>
                             <?php if ($showArchived): ?>
                                 <div class="mobile-table-row">
-                                    <span class="mobile-table-label">РђСЂС…РёРІРёСЂРѕРІР°РЅ:</span>
+                                    <span class="mobile-table-label">Архивирован:</span>
                                     <span class="mobile-table-value"><?= htmlspecialchars((string)($it['archived_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
                                 </div>
                             <?php endif; ?>
@@ -449,17 +448,17 @@ $savedDbFontsJson = htmlspecialchars(
                                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                                         <input type="hidden" name="id" value="<?= (int)$it['id'] ?>">
                                         <button type="submit" name="restore_archived" class="mobile-table-btn">
-                                            Р’РѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ
+                                            Восстановить
                                         </button>
                                     </form>
                                 <?php else: ?>
                                     <button class="stop-btn <?= $it['available'] ? '' : 'stop-btn--active' ?>"
                                         data-item-id="<?= (int)$it['id'] ?>"
-                                        title="<?= $it['available'] ? 'РЎРЅСЏС‚СЊ СЃ РїСЂРѕРґР°Р¶Рё' : 'Р’РµСЂРЅСѓС‚СЊ РІ РїСЂРѕРґР°Р¶Сѓ' ?>">
-                                        <?= $it['available'] ? 'РЎРўРћРџ' : 'Р’РµСЂРЅСѓС‚СЊ' ?>
+                                        title="<?= $it['available'] ? 'Снять с продажи' : 'Вернуть в продажу' ?>">
+                                        <?= $it['available'] ? 'СТОП' : 'Вернуть' ?>
                                     </button>
                                     <a href="admin-menu.php?edit=<?= $it['id'] ?>" class="mobile-table-btn">
-                                        Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ
+                                        Редактировать
                                     </a>
                                 <?php endif; ?>
                             </div>
@@ -481,19 +480,19 @@ $savedDbFontsJson = htmlspecialchars(
                         <p class="admin-pane-caption">Файлы, бренд, шрифты и цвета собраны в одном рабочем пространстве, чтобы white-label настройки было проще проверять и менять.</p>
                     </div>
                 </div>
-                <h2>РЈРїСЂР°РІР»РµРЅРёРµ С„Р°Р№Р»Р°РјРё Рё РґРёР·Р°Р№РЅРѕРј</h2>
+                <h2>Управление файлами и дизайном</h2>
 
-                <!-- РќР°Р·РІР°РЅРёРµ РїСЂРѕРµРєС‚Р° -->
+                <!-- Название проекта -->
                 <div class="admin-form-group">
-                    <h3>РќР°Р·РІР°РЅРёРµ РїСЂРѕРµРєС‚Р°</h3>
+                    <h3>Название проекта</h3>
                     <div class="project-name-control">
                         <input type="text" id="projectName" value="labus">
-                        <button type="button" class="checkout-btn" id="saveProjectNameBtn">РЎРѕС…СЂР°РЅРёС‚СЊ РЅР°Р·РІР°РЅРёРµ</button>
+                        <button type="button" class="checkout-btn" id="saveProjectNameBtn">Сохранить название</button>
                     </div>
                 </div>
-                <!-- РЈРїСЂР°РІР»РµРЅРёРµ С„Р°Р№Р»Р°РјРё -->
+                <!-- Управление файлами -->
                 <div class="admin-form-group">
-                    <h3>Р¤Р°Р№Р»С‹</h3>
+                    <h3>Файлы</h3>
                     <div class="file-manager-buttons">
                         <button type="button" class="checkout-btn" id="browseImages">Images</button>
                         <button type="button" class="checkout-btn" id="browseFonts">Fonts</button>
@@ -502,20 +501,20 @@ $savedDbFontsJson = htmlspecialchars(
 
                     <div id="fileBrowser" class="file-browser">
                         <div class="file-navigation">
-                            <span class="current-folder">РўРµРєСѓС‰Р°СЏ РїР°РїРєР°: <span id="currentFolder"></span></span>
-                            <button type="button" class="checkout-btn" id="goBackBtn">в†ђ РќР°Р·Р°Рґ</button>
+                            <span class="current-folder">Текущая папка: <span id="currentFolder"></span></span>
+                            <button type="button" class="checkout-btn" id="goBackBtn">← Назад</button>
                         </div>
 
                         <div class="folder-actions">
-                            <button type="button" class="checkout-btn" id="createFolderBtn">РЎРѕР·РґР°С‚СЊ РїР°РїРєСѓ</button>
+                            <button type="button" class="checkout-btn" id="createFolderBtn">Создать папку</button>
                         </div>
 
                         <div id="fileList" class="file-list-container"></div>
 
                         <div class="admin-form-group file-upload-group">
-                            <label>Р—Р°РіСЂСѓР·РёС‚СЊ С„Р°Р№Р»С‹:</label>
+                            <label>Загрузить файлы:</label>
                             <input type="file" id="fileUpload" multiple>
-                            <button type="button" class="checkout-btn" id="uploadFileBtn">Р—Р°РіСЂСѓР·РёС‚СЊ</button>
+                            <button type="button" class="checkout-btn" id="uploadFileBtn">Загрузить</button>
                         </div>
                         <div class="upload-progress">
                             <div class="progress-bar">
@@ -526,7 +525,7 @@ $savedDbFontsJson = htmlspecialchars(
                     </div>
                 </div>
 
-                <!-- в”Ђв”Ђ Р‘СЂРµРЅРґ в”Ђв”Ђ -->
+                <!-- ── Бренд ── -->
                 <?php
                 // Settings.value is a JSON column; decode before displaying
                 $bs = static function (string $key, string $default = '') use ($db): string {
@@ -535,59 +534,59 @@ $savedDbFontsJson = htmlspecialchars(
                 };
                 ?>
                 <div class="admin-form-group" id="brandSettings">
-                    <h3>Р‘СЂРµРЅРґ</h3>
+                    <h3>Бренд</h3>
                     <div class="brand-fields">
                         <label class="admin-label">
-                            РќР°Р·РІР°РЅРёРµ (СЂРµСЃС‚РѕСЂР°РЅ / РїСЂРёР»РѕР¶РµРЅРёРµ)
+                            Название (ресторан / приложение)
                             <input type="text" id="brandName" class="admin-input"
                                 value="<?= htmlspecialchars($bs('app_name', 'labus')) ?>"
                                 maxlength="200" placeholder="labus">
                         </label>
                         <label class="admin-label">
-                            РЎР»РѕРіР°РЅ
+                            Слоган
                             <input type="text" id="brandTagline" class="admin-input"
                                 value="<?= htmlspecialchars($bs('app_tagline')) ?>"
-                                maxlength="200" placeholder="РњРµРЅСЋ СЂРµСЃС‚РѕСЂР°РЅР°">
+                                maxlength="200" placeholder="Меню ресторана">
                         </label>
                         <label class="admin-label">
-                            РћРїРёСЃР°РЅРёРµ (meta / PWA)
+                            Описание (meta / PWA)
                             <textarea id="brandDesc" class="admin-input brand-desc-area" rows="2"
-                                maxlength="200" placeholder="Р¦РёС„СЂРѕРІРѕРµ РјРµРЅСЋ СЂРµСЃС‚РѕСЂР°РЅР°"><?= htmlspecialchars($bs('app_description')) ?></textarea>
+                                maxlength="200" placeholder="Цифровое меню ресторана"><?= htmlspecialchars($bs('app_description')) ?></textarea>
                         </label>
                         <label class="admin-label">
-                            РўРµР»РµС„РѕРЅ
+                            Телефон
                             <input type="text" id="brandPhone" class="admin-input"
                                 value="<?= htmlspecialchars($bs('contact_phone')) ?>"
                                 maxlength="200" placeholder="+79000000000">
                         </label>
                         <label class="admin-label">
-                            РђРґСЂРµСЃ (СЃСЃС‹Р»РєР° РЅР° РєР°СЂС‚Сѓ)
+                            Адрес (ссылка на карту)
                             <input type="text" id="brandAddress" class="admin-input"
                                 value="<?= htmlspecialchars($bs('contact_address')) ?>"
                                 maxlength="200" placeholder="https://yandex.ru/maps/...">
                         </label>
                         <label class="admin-label">
-                            Telegram (СЃСЃС‹Р»РєР°)
+                            Telegram (ссылка)
                             <input type="url" id="brandTg" class="admin-input"
                                 value="<?= htmlspecialchars($bs('social_tg')) ?>"
                                 maxlength="200" placeholder="https://t.me/...">
                         </label>
                         <label class="admin-label">
-                            VK (СЃСЃС‹Р»РєР°)
+                            VK (ссылка)
                             <input type="url" id="brandVk" class="admin-input"
                                 value="<?= htmlspecialchars($bs('social_vk')) ?>"
                                 maxlength="200" placeholder="https://vk.com/...">
                         </label>
                         <?php $logoUrl = $bs('logo_url'); ?>
                         <label class="admin-label">
-                            URL Р»РѕРіРѕС‚РёРїР°
-                            <small class="brand-logo-hint">Р—Р°РіСЂСѓР·РёС‚Рµ PNG С‡РµСЂРµР· С„Р°Р№Р»-РјРµРЅРµРґР¶РµСЂ Рё РІСЃС‚Р°РІСЊС‚Рµ РїСѓС‚СЊ</small>
+                            URL логотипа
+                            <small class="brand-logo-hint">Загрузите PNG через файл-менеджер и вставьте путь</small>
                             <input type="text" id="brandLogoUrl" class="admin-input"
                                 value="<?= htmlspecialchars($logoUrl) ?>"
                                 maxlength="200" placeholder="/images/logo.png">
                             <img id="brandLogoPreview"
                                 src="<?= htmlspecialchars($logoUrl) ?>"
-                                alt="РџСЂРµРІСЊСЋ Р»РѕРіРѕС‚РёРїР°"
+                                alt="Превью логотипа"
                                 class="brand-logo-preview<?= $logoUrl ? '' : ' brand-logo-preview--hidden' ?>">
                         </label>
                         <label class="admin-label">
@@ -597,85 +596,85 @@ $savedDbFontsJson = htmlspecialchars(
                                 maxlength="200" placeholder="/icons/favicon.ico">
                         </label>
                         <label class="admin-label">
-                            РЎРѕР±СЃС‚РІРµРЅРЅС‹Р№ РґРѕРјРµРЅ (White Label)
+                            Собственный домен (White Label)
                             <input type="text" id="brandCustomDomain" class="admin-input"
                                 value="<?= htmlspecialchars($bs('custom_domain')) ?>"
                                 maxlength="253" placeholder="menu.myrestaurant.ru">
                             <small class="brand-logo-hint">
-                                Р”РѕР±Р°РІСЊС‚Рµ CNAME-Р·Р°РїРёСЃСЊ: <strong><?= htmlspecialchars($bs('custom_domain') ?: 'menu.myrestaurant.ru') ?></strong> в†’ <strong>menu.labus.pro</strong>,
-                                Р·Р°С‚РµРј СѓРІРµРґРѕРјРёС‚Рµ РїРѕРґРґРµСЂР¶РєСѓ РґР»СЏ РІС‹РїСѓСЃРєР° SSL-СЃРµСЂС‚РёС„РёРєР°С‚Р°.
+                                Добавьте CNAME-запись: <strong><?= htmlspecialchars($bs('custom_domain') ?: 'menu.myrestaurant.ru') ?></strong> → <strong>menu.labus.pro</strong>,
+                                затем уведомите поддержку для выпуска SSL-сертификата.
                             </small>
                         </label>
                         <label class="admin-label" id="hideBrandingLabel">
                             <input type="checkbox" id="brandHideBranding" <?= $bs('hide_labus_branding') === 'true' ? ' checked' : '' ?>>
-                            РЎРєСЂС‹С‚СЊ СѓРїРѕРјРёРЅР°РЅРёРµ Labus РІ РїСѓР±Р»РёС‡РЅС‹С… СЃС‚СЂР°РЅРёС†Р°С…
+                            Скрыть упоминание Labus в публичных страницах
                         </label>
                         <div class="brand-save-row">
-                            <button id="saveBrandBtn" class="btn-save-colors">РЎРѕС…СЂР°РЅРёС‚СЊ Р±СЂРµРЅРґ</button>
+                            <button id="saveBrandBtn" class="btn-save-colors">Сохранить бренд</button>
                             <span id="brandStatus" class="brand-status"></span>
                         </div>
                     </div>
                 </div>
 
-                <!-- РЈРїСЂР°РІР»РµРЅРёРµ С€СЂРёС„С‚Р°РјРё -->
+                <!-- Управление шрифтами -->
                 <div class="admin-form-group">
-                    <h3>РЁСЂРёС„С‚С‹</h3>
+                    <h3>Шрифты</h3>
 
                     <div class="font-controls">
                         <div class="font-control">
                             <label>
                                 <input type="checkbox" id="fontLogoOverride" class="font-override-checkbox">
-                                РР·РјРµРЅРёС‚СЊ С€СЂРёС„С‚ Р»РѕРіРѕС‚РёРїР°
+                                Изменить шрифт логотипа
                             </label>
                             <select id="fontLogo" class="font-selector" disabled>
-                                <option value="'Magistral', serif">Magistral (РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ)</option>
-                                <!-- РЁСЂРёС„С‚С‹ Р±СѓРґСѓС‚ РґРѕР±Р°РІР»РµРЅС‹ РґРёРЅР°РјРёС‡РµСЃРєРё -->
+                                <option value="'Magistral', serif">Magistral (по умолчанию)</option>
+                                <!-- Шрифты будут добавлены динамически -->
                             </select>
                         </div>
 
                         <div class="font-control">
                             <label>
                                 <input type="checkbox" id="fontTextOverride" class="font-override-checkbox">
-                                РР·РјРµРЅРёС‚СЊ С€СЂРёС„С‚ С‚РµРєСЃС‚Р°
+                                Изменить шрифт текста
                             </label>
                             <select id="fontText" class="font-selector" disabled>
-                                <option value="'proxima-nova', sans-serif">Proxima-nova (РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ)</option>
-                                <!-- РЁСЂРёС„С‚С‹ Р±СѓРґСѓС‚ РґРѕР±Р°РІР»РµРЅС‹ РґРёРЅР°РјРёС‡РµСЃРєРё -->
+                                <option value="'proxima-nova', sans-serif">Proxima-nova (по умолчанию)</option>
+                                <!-- Шрифты будут добавлены динамически -->
                             </select>
                         </div>
 
                         <div class="font-control">
                             <label>
                                 <input type="checkbox" id="fontHeadingOverride" class="font-override-checkbox">
-                                РР·РјРµРЅРёС‚СЊ С€СЂРёС„С‚ Р·Р°РіРѕР»РѕРІРєРѕРІ
+                                Изменить шрифт заголовков
                             </label>
                             <select id="fontHeading" class="font-selector" disabled>
-                                <option value="'Inter', sans-serif">Inter (РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ)</option>
-                                <!-- РЁСЂРёС„С‚С‹ Р±СѓРґСѓС‚ РґРѕР±Р°РІР»РµРЅС‹ РґРёРЅР°РјРёС‡РµСЃРєРё -->
+                                <option value="'Inter', sans-serif">Inter (по умолчанию)</option>
+                                <!-- Шрифты будут добавлены динамически -->
                             </select>
                         </div>
                     </div>
                 </div>
 
-                <!-- РЈРїСЂР°РІР»РµРЅРёРµ С†РІРµС‚Р°РјРё -->
+                <!-- Управление цветами -->
                 <div class="admin-form-group">
-                    <h3>Р¦РІРµС‚Р°</h3>
+                    <h3>Цвета</h3>
 
                     <div class="color-controls">
                         <?php
                         $colorVariables = [
-                            'primary-color' => ['#cd1719', 'РћСЃРЅРѕРІРЅРѕР№ С†РІРµС‚'],
-                            'secondary-color' => ['#121212', 'Р’С‚РѕСЂРёС‡РЅС‹Р№ С†РІРµС‚'],
-                            'primary-dark' => ['#000000', 'РўС‘РјРЅС‹Р№ РѕСЃРЅРѕРІРЅРѕР№'],
-                            'accent-color' => ['#db3a34', 'РђРєС†РµРЅС‚РЅС‹Р№ С†РІРµС‚'],
-                            'text-color' => ['#333333', 'Р¦РІРµС‚ С‚РµРєСЃС‚Р°'],
-                            'acception' => ['#2c83c2', 'Р¦РІРµС‚ РїСЂРёРЅСЏС‚РёСЏ'],
-                            'light-text' => ['#555555', 'РЎРІРµС‚Р»С‹Р№ С‚РµРєСЃС‚'],
-                            'bg-light' => ['#f9f9f9', 'РЎРІРµС‚Р»С‹Р№ С„РѕРЅ'],
-                            'white' => ['#ffffff', 'Р‘РµР»С‹Р№'],
-                            'agree' => ['#4CAF50', 'Р¦РІРµС‚ СЃРѕРіР»Р°СЃРёСЏ'],
-                            'procces' => ['#ff9321', 'Р¦РІРµС‚ РїСЂРѕС†РµСЃСЃР°'],
-                            'brown' => ['#712121', 'РљРѕСЂРёС‡РЅРµРІС‹Р№']
+                            'primary-color' => ['#cd1719', 'Основной цвет'],
+                            'secondary-color' => ['#121212', 'Вторичный цвет'],
+                            'primary-dark' => ['#000000', 'Тёмный основной'],
+                            'accent-color' => ['#db3a34', 'Акцентный цвет'],
+                            'text-color' => ['#333333', 'Цвет текста'],
+                            'acception' => ['#2c83c2', 'Цвет принятия'],
+                            'light-text' => ['#555555', 'Светлый текст'],
+                            'bg-light' => ['#f9f9f9', 'Светлый фон'],
+                            'white' => ['#ffffff', 'Белый'],
+                            'agree' => ['#4CAF50', 'Цвет согласия'],
+                            'procces' => ['#ff9321', 'Цвет процесса'],
+                            'brown' => ['#712121', 'Коричневый']
                         ];
 
                         foreach ($colorVariables as $varName => $data):
@@ -693,11 +692,11 @@ $savedDbFontsJson = htmlspecialchars(
                     </div>
                 </div>
 
-                <!-- РљРЅРѕРїРєРё СЃРѕС…СЂР°РЅРµРЅРёСЏ -->
+                <!-- Кнопки сохранения -->
                 <div class="design-buttons">
-                    <button type="button" class="checkout-btn" id="saveFontsBtn">РЎРѕС…СЂР°РЅРёС‚СЊ С€СЂРёС„С‚С‹</button>
-                    <button type="button" class="checkout-btn" id="saveColorsBtn">РЎРѕС…СЂР°РЅРёС‚СЊ С†РІРµС‚Р°</button>
-                    <button type="button" class="checkout-btn cancel" id="resetDesignBtn">РЎР±СЂРѕСЃРёС‚СЊ РІСЃС‘</button>
+                    <button type="button" class="checkout-btn" id="saveFontsBtn">Сохранить шрифты</button>
+                    <button type="button" class="checkout-btn" id="saveColorsBtn">Сохранить цвета</button>
+                    <button type="button" class="checkout-btn cancel" id="resetDesignBtn">Сбросить всё</button>
                 </div>
             </section>
         </div>
@@ -722,19 +721,19 @@ $savedDbFontsJson = htmlspecialchars(
                             <p class="admin-pane-caption">ЮKassa и интеграция Т-Банка вынесены по отдельным карточкам, чтобы настройки каждого провайдера было проще проверить, а не искать между ними.</p>
                         </div>
                     </div>
-                    <h2>РћРЅР»Р°Р№РЅ-РѕРїР»Р°С‚Р°</h2>
+                    <h2>Онлайн-оплата</h2>
 
                     <div class="admin-form-group">
-                        <h3>Р®Kassa</h3>
+                        <h3>ЮKassa</h3>
                         <p class="yk-desc">
-                            РџРѕРґРєР»СЋС‡РёС‚Рµ Р®Kassa РґР»СЏ РїСЂРёС‘РјР° РѕРЅР»Р°Р№РЅ-РїР»Р°С‚РµР¶РµР№ (РєР°СЂС‚Р°, РЎР‘Рџ, Р®Money).<br>
+                            Подключите ЮKassa для приёма онлайн-платежей (карта, СБП, ЮMoney).<br>
                             Webhook URL: <code><?= htmlspecialchars(
                                                     (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? '')
                                                 ) ?>/payment-webhook.php</code>
                         </p>
 
                         <div class="project-name-control yk-toggle-row">
-                            <label class="yk-toggle-label">Р’РєР»СЋС‡РёС‚СЊ РѕРЅР»Р°Р№РЅ-РѕРїР»Р°С‚Сѓ</label>
+                            <label class="yk-toggle-label">Включить онлайн-оплату</label>
                             <input type="checkbox" id="ykEnabled" <?= $ykEnabled === 'true' ? 'checked' : '' ?>
                                 class="yk-toggle-input">
                         </div>
@@ -747,7 +746,7 @@ $savedDbFontsJson = htmlspecialchars(
                         </div>
 
                         <div class="project-name-control">
-                            <label for="ykSecretKey">РЎРµРєСЂРµС‚РЅС‹Р№ РєР»СЋС‡</label>
+                            <label for="ykSecretKey">Секретный ключ</label>
                             <input type="password" id="ykSecretKey" class="form-group"
                                 value="<?= htmlspecialchars($ykSecretKey) ?>"
                                 placeholder="test_XXXXXXXXXXXXXXXXXXXXXXXX" autocomplete="new-password">
@@ -755,26 +754,26 @@ $savedDbFontsJson = htmlspecialchars(
 
                         <div class="yk-save-row">
                             <button type="button" id="savePaymentBtn" class="checkout-btn">
-                                РЎРѕС…СЂР°РЅРёС‚СЊ
+                                Сохранить
                             </button>
                             <span id="paymentStatus" class="yk-status"></span>
                         </div>
 
                         <p class="yk-note">
-                            РўРµСЃС‚РѕРІС‹Рµ РєР»СЋС‡Рё: shop_id РЅР°С‡РёРЅР°РµС‚СЃСЏ СЃ <code>test_</code>. РџСЂРѕРґСѓРєС‚РёРІРЅС‹Рµ &mdash; Р±РµР· РїСЂРµС„РёРєСЃР°.<br>
-                            Р¤Р—-54: РєРІРёС‚Р°РЅС†РёРё С„РѕСЂРјРёСЂСѓСЋС‚СЃСЏ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё С‡РµСЂРµР· Р®Kassa РћР¤Р”.
+                            Тестовые ключи: shop_id начинается с <code>test_</code>. Продуктивные &mdash; без префикса.<br>
+                            ФЗ-54: квитанции формируются автоматически через ЮKassa ОФД.
                         </p>
                     </div>
 
                     <div class="admin-form-group">
-                        <h3>РЎР‘Рџ С‡РµСЂРµР· Рў-Р‘Р°РЅРє</h3>
+                        <h3>СБП через Т-Банк</h3>
                         <p class="yk-desc">
-                            РџРѕРґРєР»СЋС‡РёС‚Рµ Рў-Р‘Р°РЅРє СЌРєРІР°Р№СЂРёРЅРі РґР»СЏ РЎР‘Рџ-РїР»Р°С‚РµР¶РµР№ РЅР°РїСЂСЏРјСѓСЋ.<br>
+                            Подключите Т-Банк эквайринг для СБП-платежей напрямую.<br>
                             Webhook URL: <code><?= htmlspecialchars($webhookBase) ?>/payment-webhook.php</code>
                         </p>
 
                         <div class="project-name-control yk-toggle-row">
-                            <label class="yk-toggle-label">Р’РєР»СЋС‡РёС‚СЊ РЎР‘Рџ С‡РµСЂРµР· Рў-Р‘Р°РЅРє</label>
+                            <label class="yk-toggle-label">Включить СБП через Т-Банк</label>
                             <input type="checkbox" id="tbEnabled" <?= $tbEnabled === 'true' ? 'checked' : '' ?>
                                 class="yk-toggle-input">
                         </div>
@@ -787,20 +786,20 @@ $savedDbFontsJson = htmlspecialchars(
                         </div>
 
                         <div class="project-name-control">
-                            <label for="tbPassword">РџР°СЂРѕР»СЊ</label>
+                            <label for="tbPassword">Пароль</label>
                             <input type="password" id="tbPassword" class="form-group"
                                 value="<?= htmlspecialchars($tbPassword) ?>"
                                 placeholder="TinkoffBankTest" autocomplete="new-password">
                         </div>
 
                         <div class="yk-save-row">
-                            <button type="button" id="saveTBankBtn" class="checkout-btn">РЎРѕС…СЂР°РЅРёС‚СЊ</button>
+                            <button type="button" id="saveTBankBtn" class="checkout-btn">Сохранить</button>
                             <span id="tbankStatus" class="yk-status"></span>
                         </div>
 
                         <p class="yk-note">
-                            РўРµСЃС‚РѕРІС‹Рµ РєР»СЋС‡Рё: Terminal Key = <code>TinkoffBankTest</code>, РџР°СЂРѕР»СЊ = <code>TinkoffBankTest</code>.<br>
-                            Р•СЃР»Рё Рў-Р‘Р°РЅРє РІРєР»СЋС‡С‘РЅ вЂ” РєРЅРѕРїРєР° В«РЎР‘РџВ» РІ РєРѕСЂР·РёРЅРµ РјР°СЂС€СЂСѓС‚РёР·РёСЂСѓРµС‚ РїР»Р°С‚РµР¶Рё С‡РµСЂРµР· РЅРµРіРѕ.
+                            Тестовые ключи: Terminal Key = <code>TinkoffBankTest</code>, Пароль = <code>TinkoffBankTest</code>.<br>
+                            Если Т-Банк включён — кнопка «СБП» в корзине маршрутизирует платежи через него.
                         </p>
                     </div>
                 </section>
@@ -815,12 +814,12 @@ $savedDbFontsJson = htmlspecialchars(
                             <p class="admin-pane-caption">Уведомления и служебные инструменты сгруппированы в отдельные карточки, чтобы ключевые ссылки были под рукой и не спорили с платёжными настройками.</p>
                         </div>
                     </div>
-                    <h2>РЎРёСЃС‚РµРјР°</h2>
+                    <h2>Система</h2>
                     <div class="admin-form-group">
-                        <h3>Telegram-СѓРІРµРґРѕРјР»РµРЅРёСЏ</h3>
+                        <h3>Telegram-уведомления</h3>
                         <p class="yk-desc">
-                            РџРѕР»СѓС‡Р°Р№С‚Рµ СѓРІРµРґРѕРјР»РµРЅРёСЏ Рѕ РЅРѕРІС‹С… Р·Р°РєР°Р·Р°С… РІ Telegram СЃ РєРЅРѕРїРєР°РјРё В«РџСЂРёРЅСЏС‚СЊВ» Рё В«РћС‚РєР°Р·Р°С‚СЊВ».<br>
-                            Webhook URL РґР»СЏ Р±РѕС‚Р°: <code><?= htmlspecialchars(
+                            Получайте уведомления о новых заказах в Telegram с кнопками «Принять» и «Отказать».<br>
+                            Webhook URL для бота: <code><?= htmlspecialchars(
                                                             (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? '')
                                                         ) ?>/telegram-webhook.php</code>
                         </p>
@@ -831,14 +830,14 @@ $savedDbFontsJson = htmlspecialchars(
                                 placeholder="-1001234567890">
                         </div>
                         <div class="yk-save-row">
-                            <button type="button" id="saveTgChatIdBtn" class="checkout-btn">РЎРѕС…СЂР°РЅРёС‚СЊ</button>
+                            <button type="button" id="saveTgChatIdBtn" class="checkout-btn">Сохранить</button>
                             <span id="tgChatIdStatus" class="yk-status"></span>
                         </div>
                     </div>
                     <div class="admin-form-group">
-                        <h3>РРЅСЃС‚СЂСѓРјРµРЅС‚С‹</h3>
+                        <h3>Инструменты</h3>
                         <div class="form-actions">
-                            <a href="monitor.php" class="checkout-btn">Р”РёР°РіРЅРѕСЃС‚РёРєР°</a>
+                            <a href="monitor.php" class="checkout-btn">Диагностика</a>
                         </div>
                     </div>
                 </section>
