@@ -284,7 +284,7 @@ if (!empty($_GET['edit'])) {
 
 </head>
 
-<body class="employee-page">
+<body class="employee-page admin-menu-page">
     <?php require_once __DIR__ . '/header.php'; ?>
     <?php require_once __DIR__ . '/account-header.php'; ?>
 
@@ -313,11 +313,19 @@ if (!empty($_GET['edit'])) {
 
         <!-- Dishes Tab -->
         <div class="admin-tab-pane active" id="dishes">
-            <section class="admin-form-container">
+            <div class="admin-dishes-pane">
+            <section class="admin-form-container admin-section-card">
+                <div class="admin-pane-header">
+                    <div class="admin-pane-header-copy">
+                        <p class="admin-pane-kicker">Каталог и наполнение</p>
+                        <p class="admin-pane-caption">Загрузка, ручное редактирование и управление текущим каталогом собраны в одном рабочем пространстве.</p>
+                    </div>
+                </div>
+                <div class="admin-dishes-workspace">
                 <h2><?= $editItem ? 'Редактировать' : 'Обновление' ?></h2>
 
                 <!-- Bulk upload -->
-                <section class="admin-form-group">
+                <section class="admin-form-group admin-subsection-card">
                     <h3>Из CSV</h3>
                     <form method="POST" enctype="multipart/form-data">
                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
@@ -328,6 +336,7 @@ if (!empty($_GET['edit'])) {
                     <small>UTF-8 CSV. Полная синхронизация: позиции вне файла будут архивированы. Формат: external_id;name;description;composition;price;image;calories;protein;fat;carbs;category;available</small>
                 </section>
 
+                <div class="admin-subsection-card">
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                     <input type="hidden" name="id" value="<?= $editItem['id'] ?? '' ?>">
@@ -404,10 +413,12 @@ if (!empty($_GET['edit'])) {
                         <?php endif; ?>
                     </div>
                 </form>
+                </div>
+                </div>
 
                 <?php if ($editItem): ?>
                     <!-- ── Модификаторы (только при редактировании) ── -->
-                    <section class="admin-form-group" id="modifiersSection" data-item-id="<?= (int)$editItem['id'] ?>">
+                    <section class="admin-form-group admin-subsection-card" id="modifiersSection" data-item-id="<?= (int)$editItem['id'] ?>">
                         <h3>Модификаторы (варианты блюда)</h3>
                         <p class="yk-desc">Например: «Степень прожарки» с вариантами Medium / Well-done, или «Добавки» с несколькими вариантами.</p>
                         <div id="modifierGroupList"></div>
@@ -426,9 +437,21 @@ if (!empty($_GET['edit'])) {
                 <?php endif; ?>
             </section>
 
-            <div class="form-actions menu-view-switch">
+            <section class="admin-form-container admin-section-card admin-catalog-card">
+            <div class="admin-catalog-toolbar">
+                <div class="form-actions menu-view-switch">
                 <a href="admin-menu.php?view=active" class="admin-checkout-btn<?= !$showArchived ? ' cancel' : '' ?>">Активные</a>
                 <a href="admin-menu.php?view=archived" class="admin-checkout-btn<?= $showArchived ? ' cancel' : '' ?>">Архив</a>
+                </div>
+                <div class="menu-tabs-container admin-menu-categories">
+                    <div class="menu-tabs">
+                        <?php foreach ($categories as $i => $c): ?>
+                            <button class="tab-btn <?= $i === 0 ? 'active' : '' ?>" data-tab="<?= htmlspecialchars($c) ?>">
+                                <?= htmlspecialchars($c) ?>
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
             </div>
 
             <!-- DESKTOP TABLE -->
@@ -515,7 +538,7 @@ if (!empty($_GET['edit'])) {
                                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                                         <input type="hidden" name="id" value="<?= (int)$it['id'] ?>">
                                         <button type="submit" name="restore_archived" class="mobile-table-btn">
-                                            <i class="fas fa-undo"></i> Восстановить
+                                            Восстановить
                                         </button>
                                     </form>
                                 <?php else: ?>
@@ -525,13 +548,15 @@ if (!empty($_GET['edit'])) {
                                         <?= $it['available'] ? 'СТОП' : 'Вернуть' ?>
                                     </button>
                                     <a href="admin-menu.php?edit=<?= $it['id'] ?>" class="mobile-table-btn">
-                                        <i class="fas fa-edit"></i> Редактировать
+                                        Редактировать
                                     </a>
                                 <?php endif; ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
+            </div>
+            </section>
             </div>
         </div>
 
@@ -889,16 +914,6 @@ if (!empty($_GET['edit'])) {
         <?php endif; ?>
     </div>
 
-    <!-- TAB-BAR (bottom) -->
-    <div class="menu-tabs-container">
-        <div class="menu-tabs">
-            <?php foreach ($categories as $i => $c): ?>
-                <button class="tab-btn <?= $i === 0 ? 'active' : '' ?>" data-tab="<?= htmlspecialchars($c) ?>">
-                    <?= htmlspecialchars($c) ?>
-                </button>
-            <?php endforeach; ?>
-        </div>
-    </div>
     <?php
     $savedDbFonts = [
         'logo'    => ($v = $db->getSetting('font_logo'))    ? json_decode($v, true) : null,
