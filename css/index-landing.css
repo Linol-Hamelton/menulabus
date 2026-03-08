@@ -45,8 +45,9 @@
 }
 
 .index-landing-page .hero-content h1 {
-  font-size: clamp(3.9rem, 8.2vw, 7rem);
+  font-size: clamp(3.6rem, 7.8vw, 6.6rem);
   height: auto;
+  line-height: 0.94;
   margin-bottom: 0;
   text-wrap: balance;
 }
@@ -69,9 +70,18 @@
 
 .index-landing-page .hero-btn-primary,
 .index-landing-page .hero-btn-secondary {
+  align-items: center;
   border-radius: 18px;
+  display: inline-flex;
+  justify-content: center;
+  margin: 0;
   min-height: 52px;
   min-width: 220px;
+}
+
+.index-landing-page .hero-actions {
+  margin: 0 auto;
+  width: fit-content;
 }
 
 .index-landing-page .hero-btn-secondary {
@@ -204,6 +214,9 @@
 
 .index-landing-page .section-header p {
   color: #6b625a;
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   margin: 0;
 }
 
@@ -245,7 +258,14 @@
   padding: 12px;
 }
 
+.index-landing-page .about-image picture {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
 .index-landing-page .about-image img {
+  background: linear-gradient(135deg, #f6eee8 0%, #eed9cc 100%);
   border-radius: 20px;
   display: block;
   height: 100%;
@@ -399,8 +419,8 @@
   }
 
   .index-landing-page .hero-content h1 {
-    font-size: clamp(2.9rem, 15vw, 4.1rem);
-    line-height: 0.95;
+    font-size: clamp(2.9rem, 15vw, 4rem);
+    line-height: 0.92;
   }
 
   .index-landing-page .hero-actions {
