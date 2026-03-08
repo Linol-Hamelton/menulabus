@@ -362,6 +362,265 @@ body.employee-page .font-control {
   }
 }
 
+body.admin-menu-page .admin-pane-title {
+  color: var(--ui-text, #121212);
+  font-size: clamp(26px, 2.8vw, 34px);
+  line-height: 1.08;
+  margin: 0;
+}
+
+body.admin-menu-page .admin-design-panel,
+body.admin-menu-page .admin-payment-panel,
+body.admin-menu-page .admin-system-panel {
+  display: grid;
+  gap: 18px;
+}
+
+body.admin-menu-page .admin-design-panel > h2,
+body.admin-menu-page .admin-payment-panel > h2,
+body.admin-menu-page .admin-system-panel > h2 {
+  display: none;
+}
+
+body.admin-menu-page .admin-design-panel {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+body.admin-menu-page .admin-design-panel .admin-pane-header,
+body.admin-menu-page .admin-design-panel .design-buttons {
+  grid-column: 1 / -1;
+}
+
+body.admin-menu-page .admin-design-panel > .admin-form-group {
+  background: var(--ui-surface-muted);
+  border: 1px solid var(--ui-border);
+  border-radius: 18px;
+  margin: 0;
+  padding: 18px;
+}
+
+body.admin-menu-page .admin-design-panel > .admin-form-group:nth-of-type(1) {
+  grid-column: span 4;
+}
+
+body.admin-menu-page .admin-design-panel > .admin-form-group:nth-of-type(2) {
+  grid-column: span 8;
+}
+
+body.admin-menu-page .admin-design-panel > .admin-form-group:nth-of-type(3) {
+  grid-column: span 6;
+}
+
+body.admin-menu-page .admin-design-panel > .admin-form-group:nth-of-type(4) {
+  grid-column: span 6;
+}
+
+body.admin-menu-page .admin-design-panel > .admin-form-group:nth-of-type(5) {
+  grid-column: 1 / -1;
+}
+
+body.admin-menu-page .admin-design-panel .design-buttons {
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+body.admin-menu-page .brand-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+body.admin-menu-page .brand-desc-area {
+  resize: vertical;
+}
+
+body.admin-menu-page .brand-logo-hint {
+  color: var(--light-text);
+  display: block;
+}
+
+body.admin-menu-page .brand-logo-preview {
+  border-radius: 6px;
+  margin-top: 8px;
+  max-height: 60px;
+}
+
+body.admin-menu-page .brand-logo-preview--hidden {
+  display: none;
+}
+
+body.admin-menu-page .brand-save-row,
+body.admin-menu-page .yk-save-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+body.admin-menu-page .brand-status,
+body.admin-menu-page .yk-status {
+  align-items: center;
+  color: var(--light-text);
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 8px;
+}
+
+body.admin-menu-page .brand-status.is-success,
+body.admin-menu-page .yk-status.is-success {
+  color: var(--agree, #4caf50);
+}
+
+body.admin-menu-page .brand-status.is-error,
+body.admin-menu-page .yk-status.is-error {
+  color: var(--primary-color, #cd1719);
+}
+
+body.admin-menu-page .brand-status.is-loading,
+body.admin-menu-page .yk-status.is-loading {
+  color: var(--ui-text-muted, #667085);
+}
+
+body.admin-menu-page .yk-desc,
+body.admin-menu-page .yk-note {
+  color: var(--light-text, #777);
+}
+
+body.admin-menu-page .yk-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+body.admin-menu-page .yk-note {
+  font-size: 12px;
+  line-height: 1.6;
+  margin-top: 16px;
+}
+
+body.admin-menu-page .yk-toggle-row {
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+body.admin-menu-page .yk-toggle-label {
+  font-weight: 600;
+}
+
+body.admin-menu-page .yk-toggle-input {
+  cursor: pointer;
+  height: 20px;
+  width: 20px;
+}
+
+body.admin-menu-page .admin-payment-panel,
+body.admin-menu-page .admin-system-panel {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.admin-menu-page .admin-payment-panel .admin-pane-header,
+body.admin-menu-page .admin-system-panel .admin-pane-header {
+  grid-column: 1 / -1;
+}
+
+body.admin-menu-page .admin-payment-panel > .admin-form-group,
+body.admin-menu-page .admin-system-panel > .admin-form-group {
+  background: var(--ui-surface-muted);
+  border: 1px solid var(--ui-border);
+  border-radius: 18px;
+  margin: 0;
+  padding: 18px;
+}
+
+body.admin-menu-page .admin-system-panel .form-actions {
+  justify-content: flex-start;
+}
+
+body.admin-menu-page .stop-btn {
+  background: transparent;
+  border: 1.5px solid var(--primary-color, #cd1719);
+  border-radius: 6px;
+  color: var(--primary-color, #cd1719);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+body.admin-menu-page .stop-btn:hover {
+  background: var(--primary-color, #cd1719);
+  color: #fff;
+}
+
+body.admin-menu-page .stop-btn--active {
+  background: var(--primary-color, #cd1719);
+  color: #fff;
+}
+
+body.admin-menu-page .stop-btn--active:hover {
+  background: var(--agree, #4caf50);
+  border-color: var(--agree, #4caf50);
+}
+
+body.admin-menu-page .admin-item-row--paused {
+  opacity: 0.52;
+}
+
+body.admin-menu-page .admin-subsection-card h3,
+body.admin-menu-page .admin-design-panel > .admin-form-group > h3,
+body.admin-menu-page .admin-payment-panel > .admin-form-group > h3,
+body.admin-menu-page .admin-system-panel > .admin-form-group > h3 {
+  margin-top: 0;
+}
+
+@media (max-width: 992px) {
+  body.admin-menu-page .admin-design-panel,
+  body.admin-menu-page .admin-payment-panel,
+  body.admin-menu-page .admin-system-panel {
+    grid-template-columns: 1fr;
+  }
+
+  body.admin-menu-page .admin-design-panel > .admin-form-group:nth-of-type(1),
+  body.admin-menu-page .admin-design-panel > .admin-form-group:nth-of-type(2),
+  body.admin-menu-page .admin-design-panel > .admin-form-group:nth-of-type(3),
+  body.admin-menu-page .admin-design-panel > .admin-form-group:nth-of-type(4),
+  body.admin-menu-page .admin-design-panel > .admin-form-group:nth-of-type(5) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 768px) {
+  body.admin-menu-page .admin-pane-title {
+    font-size: 24px;
+  }
+
+  body.admin-menu-page .admin-design-panel > .admin-form-group,
+  body.admin-menu-page .admin-payment-panel > .admin-form-group,
+  body.admin-menu-page .admin-system-panel > .admin-form-group {
+    padding: 16px;
+  }
+
+  body.admin-menu-page .brand-save-row,
+  body.admin-menu-page .yk-save-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  body.admin-menu-page .brand-save-row > .checkout-btn,
+  body.admin-menu-page .brand-save-row > .btn-save-colors,
+  body.admin-menu-page .yk-save-row > .checkout-btn {
+    width: 100%;
+  }
+}
+
 /* owner.php visual alignment pass */
 
 body.owner-page .account-container {
