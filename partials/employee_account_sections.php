@@ -40,6 +40,26 @@ $getOrderAgeMinutes = static function (?string $createdAt): int {
     return max(0, (int) floor((time() - $timestamp) / 60));
 };
 
+$formatOrderAge = static function (int $ageMinutes): string {
+    if ($ageMinutes < 60) {
+        return $ageMinutes . ' мин';
+    }
+
+    $days = intdiv($ageMinutes, 1440);
+    $hours = intdiv($ageMinutes % 1440, 60);
+    $minutes = $ageMinutes % 60;
+
+    if ($days > 0) {
+        return $days . ' д ' . $hours . ' ч';
+    }
+
+    if ($hours > 0 && $minutes > 0) {
+        return $hours . ' ч ' . $minutes . ' мин';
+    }
+
+    return $hours . ' ч';
+};
+
 $getAgeTone = static function (string $status, int $ageMinutes): string {
     if (in_array($status, ['завершён', 'отказ'], true)) {
         return 'quiet';
@@ -166,6 +186,7 @@ $getAgeTone = static function (string $status, int $ageMinutes): string {
                                 $o['items'] ?? []
                             ));
                             $ageMinutes = $getOrderAgeMinutes($o['created_at'] ?? null);
+                            $ageLabel = $formatOrderAge($ageMinutes);
                             $ageTone = $getAgeTone($o['status'], $ageMinutes);
                             $searchBlob = implode(' ', array_filter([
                                 '#' . $o['id'],
@@ -198,7 +219,7 @@ $getAgeTone = static function (string $status, int $ageMinutes): string {
 
                                     <div class="employee-order-meta">
                                         <span class="order-date"><?= date('d.m H:i', strtotime($o['created_at'])) ?></span>
-                                        <span class="employee-order-age employee-order-age--<?= htmlspecialchars($ageTone) ?>"><?= $ageMinutes ?> мин</span>
+                                        <span class="employee-order-age employee-order-age--<?= htmlspecialchars($ageTone) ?>" title="<?= $ageMinutes ?> мин"><?= htmlspecialchars($ageLabel) ?></span>
                                         <span class="employee-order-items-count"><?= $itemsCount ?> поз.</span>
                                         <span class="order-total"><?= number_format($o['total'], 0, '.', ' ') ?> ₽</span>
                                         <span class="employee-toggle-icon">Состав</span>
