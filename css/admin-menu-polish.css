@@ -236,7 +236,7 @@ body.employee-page .project-name-control {
   align-items: center;
   display: grid;
   gap: 10px;
-  grid-template-columns: minmax(260px, 1fr) auto;
+  grid-template-columns: minmax(150px, 1fr) auto;
 }
 
 body.employee-page .file-manager-buttons,
@@ -764,6 +764,567 @@ body.owner-page .mobile-table-item {
   margin: 0 0 12px;
   padding: 16px 18px;
 }
+
+/* admin-menu.php final visual pass */
+
+body.employee-page.admin-menu-page {
+  --admin-shell-max: min(1480px, calc(100vw - 48px));
+  --admin-card-gap: 20px;
+  --admin-card-pad: 24px;
+  --admin-soft-border: 1px solid rgba(15, 23, 42, 0.08);
+  --admin-soft-shadow: 0 18px 44px rgba(15, 23, 42, 0.06);
+}
+
+body.employee-page.admin-menu-page .account-header-bar .container,
+body.employee-page.admin-menu-page .admin-tabs-container,
+body.employee-page.admin-menu-page .account-form-container {
+  margin-inline: auto;
+  max-width: var(--admin-shell-max);
+  width: 100%;
+}
+
+body.employee-page.admin-menu-page .account-header-bar {
+  margin-bottom: 16px;
+}
+
+body.employee-page.admin-menu-page .account-header-bar .container {
+  padding-inline: 24px;
+}
+
+body.employee-page.admin-menu-page .account-header-bar .section-header-menu {
+  align-items: center;
+  gap: 12px;
+  min-height: auto;
+  padding-block: 4px 2px;
+}
+
+body.employee-page.admin-menu-page .section-header-quick-actions,
+body.employee-page.admin-menu-page .section-header-nav-actions {
+  gap: 8px;
+}
+
+body.employee-page.admin-menu-page .section-header-quick-actions a,
+body.employee-page.admin-menu-page .section-header-nav-actions .back-to-menu-btn {
+  min-height: 38px;
+}
+
+body.employee-page.admin-menu-page .section-header-nav-actions .back-to-menu-btn {
+  background: var(--ui-surface-muted);
+  border-color: rgba(15, 23, 42, 0.08);
+  color: var(--ui-text-muted);
+}
+
+body.employee-page.admin-menu-page .section-header-nav-actions .back-to-menu-btn:hover,
+body.employee-page.admin-menu-page .section-header-nav-actions .back-to-menu-btn:focus-visible {
+  border-color: var(--primary-color);
+  color: var(--ui-text);
+}
+
+body.employee-page.admin-menu-page .admin-tabs-container {
+  margin: 0 auto 22px;
+  padding-inline: 24px;
+}
+
+body.employee-page.admin-menu-page .admin-tabs {
+  gap: 12px;
+}
+
+body.employee-page.admin-menu-page .admin-tab-btn {
+  min-width: 162px;
+}
+
+body.employee-page.admin-menu-page .account-form-container {
+  gap: 24px;
+  max-width: var(--admin-shell-max);
+  padding: 0 24px 32px;
+}
+
+body.employee-page.admin-menu-page .admin-tab-pane {
+  min-width: 0;
+  width: 100%;
+}
+
+body.employee-page.admin-menu-page .admin-section-card {
+  border: var(--admin-soft-border);
+  border-radius: 26px;
+  box-shadow: var(--admin-soft-shadow);
+  margin: 0;
+  padding: var(--admin-card-pad);
+}
+
+body.employee-page.admin-menu-page .admin-section-card + .admin-section-card {
+  margin-top: 0;
+}
+
+body.employee-page.admin-menu-page .admin-pane-header {
+  margin-bottom: var(--admin-card-gap);
+}
+
+body.employee-page.admin-menu-page .admin-pane-header-copy {
+  gap: 10px;
+  max-width: 78ch;
+}
+
+body.employee-page.admin-menu-page .admin-pane-title {
+  font-size: clamp(28px, 2.7vw, 36px);
+}
+
+body.employee-page.admin-menu-page .admin-pane-caption {
+  max-width: 72ch;
+}
+
+body.employee-page.admin-menu-page .admin-form-group {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+}
+
+body.employee-page.admin-menu-page .admin-form-group > h3 {
+  margin-bottom: 2px;
+}
+
+body.employee-page.admin-menu-page .admin-form-group input,
+body.employee-page.admin-menu-page .admin-form-group textarea,
+body.employee-page.admin-menu-page .admin-form-group select,
+body.employee-page.admin-menu-page .admin-form-group .form-group {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+body.employee-page.admin-menu-page .admin-dishes-pane {
+  gap: 24px;
+}
+
+body.employee-page.admin-menu-page .admin-dishes-workspace {
+  align-items: start;
+  gap: 18px 20px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+}
+
+body.employee-page.admin-menu-page .admin-dishes-workspace > h2 {
+  grid-column: 1 / -1;
+  margin: 0 0 2px;
+}
+
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-form-group.admin-subsection-card:first-of-type {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: start;
+}
+
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-subsection-card:last-of-type {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-subsection-card form {
+  display: grid;
+  gap: 12px 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-subsection-card form > .admin-form-group:nth-of-type(1),
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-subsection-card form > .admin-form-group:nth-of-type(2),
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-subsection-card form > .admin-form-group:nth-of-type(3),
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-subsection-card form > .admin-form-group:nth-of-type(11),
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-subsection-card form > .form-actions {
+  grid-column: 1 / -1;
+}
+
+body.employee-page.admin-menu-page #modifiersSection {
+  max-width: 100%;
+}
+
+body.employee-page.admin-menu-page .admin-catalog-card {
+  overflow: hidden;
+}
+
+body.employee-page.admin-menu-page .admin-catalog-toolbar {
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+body.employee-page.admin-menu-page .desktop-table {
+  display: block;
+  overflow-x: auto;
+}
+
+body.employee-page.admin-menu-page .desktop-table table {
+  min-width: 760px;
+}
+
+body.employee-page.admin-menu-page .mobile-table-container {
+  display: none;
+}
+
+body.employee-page.admin-menu-page .admin-catalog-card .mobile-table {
+  display: grid;
+  gap: 12px;
+}
+
+body.employee-page.admin-menu-page .mobile-table-item {
+  min-width: 0;
+  overflow: hidden;
+}
+
+body.employee-page.admin-menu-page .mobile-table-row {
+  gap: 10px;
+  grid-template-columns: minmax(82px, 96px) minmax(0, 1fr);
+}
+
+body.employee-page.admin-menu-page .mobile-table-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+body.employee-page.admin-menu-page .mobile-table-actions {
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.employee-page.admin-menu-page .mobile-table-actions .mobile-table-btn,
+body.employee-page.admin-menu-page .mobile-table-actions .stop-btn,
+body.employee-page.admin-menu-page .mobile-table-actions .inline-action-form {
+  min-width: 0;
+  width: 100%;
+}
+
+body.employee-page.admin-menu-page .admin-design-panel,
+body.employee-page.admin-menu-page .admin-payment-panel,
+body.employee-page.admin-menu-page .admin-system-panel {
+  gap: 20px;
+}
+
+body.employee-page.admin-menu-page .admin-design-panel {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+body.employee-page.admin-menu-page .admin-design-panel .admin-pane-header,
+body.employee-page.admin-menu-page .admin-design-panel .design-buttons {
+  grid-column: 1 / -1;
+}
+
+body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#projectName) {
+  grid-column: span 4;
+}
+
+body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#browseImages) {
+  grid-column: span 8;
+}
+
+body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#brandName) {
+  grid-column: 1 / -1;
+}
+
+body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#fontLogoOverride) {
+  grid-column: span 4;
+}
+
+body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(.color-controls) {
+  grid-column: span 8;
+}
+
+body.employee-page.admin-menu-page .admin-design-panel .design-buttons {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-start;
+}
+
+body.employee-page.admin-menu-page .file-manager-buttons {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+body.employee-page.admin-menu-page .file-navigation {
+  align-items: start;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+body.employee-page.admin-menu-page .current-folder {
+  min-width: 0;
+}
+
+body.employee-page.admin-menu-page .brand-fields {
+  display: grid;
+  gap: 14px 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.employee-page.admin-menu-page .brand-fields .admin-label:has(#brandDesc),
+body.employee-page.admin-menu-page .brand-fields .admin-label:has(#brandLogoUrl),
+body.employee-page.admin-menu-page .brand-fields .admin-label:has(#brandCustomDomain) {
+  grid-column: 1 / -1;
+}
+
+body.employee-page.admin-menu-page .brand-fields .admin-label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+body.employee-page.admin-menu-page .brand-logo-preview {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  max-height: 72px;
+  object-fit: contain;
+  padding: 8px;
+}
+
+body.employee-page.admin-menu-page .font-controls {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+body.employee-page.admin-menu-page .font-control {
+  align-content: start;
+  border: 1px solid var(--ui-border);
+  border-radius: 16px;
+  display: grid;
+  gap: 12px;
+  min-height: 100%;
+  padding: 16px;
+}
+
+body.employee-page.admin-menu-page .font-control label {
+  display: grid;
+  gap: 8px;
+}
+
+body.employee-page.admin-menu-page .color-controls {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+body.employee-page.admin-menu-page .color-control {
+  background: var(--white);
+  border: 1px solid var(--ui-border);
+  border-radius: 16px;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+}
+
+body.employee-page.admin-menu-page .color-control label {
+  font-weight: 600;
+}
+
+body.employee-page.admin-menu-page .color-value {
+  color: var(--ui-text-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+body.employee-page.admin-menu-page .admin-payment-panel {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.employee-page.admin-menu-page .admin-payment-panel .admin-pane-header {
+  grid-column: 1 / -1;
+}
+
+body.employee-page.admin-menu-page .admin-payment-panel > .admin-form-group:has(#ykShopId),
+body.employee-page.admin-menu-page .admin-payment-panel > .admin-form-group:has(#tbTerminalKey) {
+  align-content: start;
+  display: grid;
+  gap: 14px;
+  min-height: 100%;
+}
+
+body.employee-page.admin-menu-page .admin-payment-panel .project-name-control,
+body.employee-page.admin-menu-page .admin-system-panel .project-name-control {
+  align-items: start;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr;
+}
+
+body.employee-page.admin-menu-page .admin-payment-panel .yk-toggle-row,
+body.employee-page.admin-menu-page .admin-system-panel .yk-toggle-row {
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+body.employee-page.admin-menu-page .admin-payment-panel .yk-desc,
+body.employee-page.admin-menu-page .admin-system-panel .yk-desc {
+  margin: 0;
+  max-width: 62ch;
+}
+
+body.employee-page.admin-menu-page .admin-payment-panel .yk-note,
+body.employee-page.admin-menu-page .admin-system-panel .yk-note {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: 14px;
+  margin: 0;
+  max-width: 68ch;
+  padding: 14px 16px;
+}
+
+body.employee-page.admin-menu-page .yk-save-row {
+  align-items: center;
+  gap: 12px;
+  justify-content: flex-start;
+  margin-top: 2px;
+}
+
+body.employee-page.admin-menu-page .yk-save-row .checkout-btn {
+  flex: 0 0 auto;
+}
+
+body.employee-page.admin-menu-page .admin-system-panel {
+  align-items: start;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+}
+
+body.employee-page.admin-menu-page .admin-system-panel .admin-pane-header {
+  grid-column: 1 / -1;
+}
+
+body.employee-page.admin-menu-page .admin-system-panel > .admin-form-group:has(#tgChatId) {
+  display: grid;
+  gap: 14px;
+}
+
+body.employee-page.admin-menu-page .admin-system-panel > .admin-form-group:has(a[href="monitor.php"]) {
+  align-content: start;
+  display: grid;
+  gap: 14px;
+  min-height: auto;
+}
+
+body.employee-page.admin-menu-page .admin-system-panel > .admin-form-group:has(a[href="monitor.php"]) .form-actions {
+  justify-content: flex-start;
+  margin-top: 0;
+}
+
+body.employee-page.admin-menu-page .admin-system-panel > .admin-form-group:has(a[href="monitor.php"]) .checkout-btn {
+  width: auto;
+}
+
+body.employee-page.admin-menu-page .brand-save-row,
+body.employee-page.admin-menu-page .yk-save-row {
+  margin-top: 2px;
+}
+
+@media (max-width: 1199px) {
+  body.employee-page.admin-menu-page {
+    --admin-shell-max: min(1120px, calc(100vw - 32px));
+  }
+
+  body.employee-page.admin-menu-page .account-header-bar .container,
+  body.employee-page.admin-menu-page .admin-tabs-container,
+  body.employee-page.admin-menu-page .account-form-container {
+    padding-inline: 18px;
+  }
+
+  body.employee-page.admin-menu-page .admin-dishes-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-form-group.admin-subsection-card:first-of-type,
+  body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-subsection-card:last-of-type {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  body.employee-page.admin-menu-page .admin-design-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#projectName),
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#browseImages),
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#brandName),
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#fontLogoOverride),
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(.color-controls) {
+    grid-column: auto;
+  }
+
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#brandName),
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(.color-controls) {
+    grid-column: 1 / -1;
+  }
+
+  body.employee-page.admin-menu-page .font-controls {
+    grid-template-columns: 1fr;
+  }
+
+  body.employee-page.admin-menu-page .admin-payment-panel,
+  body.employee-page.admin-menu-page .admin-system-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  body.employee-page.admin-menu-page {
+    --admin-shell-max: calc(100vw - 24px);
+    --admin-card-pad: 18px;
+    --admin-card-gap: 16px;
+  }
+
+  body.employee-page.admin-menu-page .account-header-bar .container,
+  body.employee-page.admin-menu-page .admin-tabs-container,
+  body.employee-page.admin-menu-page .account-form-container {
+    padding-inline: 12px;
+  }
+
+  body.employee-page.admin-menu-page .admin-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.employee-page.admin-menu-page .admin-tab-btn {
+    min-width: 0;
+    width: 100%;
+  }
+
+  body.employee-page.admin-menu-page .admin-pane-title {
+    font-size: 24px;
+  }
+
+  body.employee-page.admin-menu-page .file-manager-buttons,
+  body.employee-page.admin-menu-page .brand-fields,
+  body.employee-page.admin-menu-page .font-controls,
+  body.employee-page.admin-menu-page .color-controls {
+    grid-template-columns: 1fr;
+  }
+
+  body.employee-page.admin-menu-page .desktop-table {
+    display: none;
+  }
+
+  body.employee-page.admin-menu-page .mobile-table-container {
+    display: block;
+  }
+
+  body.employee-page.admin-menu-page .mobile-table-actions {
+    grid-template-columns: 1fr;
+  }
+
+  body.employee-page.admin-menu-page .mobile-table-item {
+    width: 100%;
+  }
+
+  body.employee-page.admin-menu-page .admin-system-panel > .admin-form-group:has(a[href="monitor.php"]) .checkout-btn,
+  body.employee-page.admin-menu-page .brand-save-row > .checkout-btn,
+  body.employee-page.admin-menu-page .brand-save-row > .btn-save-colors,
+  body.employee-page.admin-menu-page .yk-save-row > .checkout-btn {
+    width: 100%;
+  }
+}
 body.owner-page .mobile-table-row {
   border-bottom: 1px solid var(--bg-light);
 }
@@ -1188,7 +1749,7 @@ body.employee-page .checkout-btn {
   padding: 7px 12px;
 }
 
-/* admin-menu mobile card actions — uniform row with consistent sizing */
+/* admin-menu mobile card actions вЂ” uniform row with consistent sizing */
 body.employee-page .mobile-table-actions {
   align-items: center;
   gap: 10px;
@@ -1862,9 +2423,9 @@ body.auth-page .auth-separator {
   }
 }
 
-/* ═══════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    Phosphor icon colour helpers (CSP-safe: no inline style=)
-   ═══════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 .ph-ok  { color: var(--agree, #4caf50); vertical-align: middle; }
 .ph-err { color: var(--ui-danger);      vertical-align: middle; }
 
@@ -1889,7 +2450,7 @@ body.auth-page :is(.tab-btn, .checkout-btn, .back-to-menu-btn, .save-role-btn, .
 #payLinkCopyMsg[hidden],
 #payLinkError[hidden] { display: none; }
 
-/* ── Pay-link modal (employee.php) ── */
+/* в”Ђв”Ђ Pay-link modal (employee.php) в”Ђв”Ђ */
 #payLinkModal {
     display: none;
     position: fixed;
@@ -1994,7 +2555,7 @@ body.auth-page :is(.tab-btn, .checkout-btn, .back-to-menu-btn, .save-role-btn, .
     #payLinkModal .modal-qr img { width: 160px; height: 160px; }
 }
 
-/* ── ABC-анализ блюд ── */
+/* в”Ђв”Ђ ABC-Р°РЅР°Р»РёР· Р±Р»СЋРґ в”Ђв”Ђ */
 .abc-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-weight:700;font-size:.75rem;color:#fff;flex-shrink:0}
 .abc-a{background:#4caf50}
 .abc-b{background:#ff9800}
@@ -2112,4 +2673,541 @@ body.employee-page.admin-menu-page .stop-btn {
     body.employee-page.admin-menu-page .mobile-table-actions {
         grid-template-columns: 1fr;
     }
+}
+
+/* admin-menu.php final visual pass: terminal overrides */
+body.employee-page.admin-menu-page {
+  --admin-shell-max: min(1480px, calc(100vw - 48px));
+  --admin-card-gap: 20px;
+  --admin-card-pad: 24px;
+  --admin-soft-border: 1px solid rgba(15, 23, 42, 0.08);
+  --admin-soft-shadow: 0 18px 44px rgba(15, 23, 42, 0.06);
+}
+
+body.employee-page.admin-menu-page .account-header-bar .container,
+body.employee-page.admin-menu-page .admin-tabs-container,
+body.employee-page.admin-menu-page .account-form-container {
+  margin-inline: auto;
+  max-width: var(--admin-shell-max);
+  width: 100%;
+}
+
+body.employee-page.admin-menu-page .account-header-bar { margin-bottom: 16px; }
+body.employee-page.admin-menu-page .account-header-bar .container,
+body.employee-page.admin-menu-page .admin-tabs-container,
+body.employee-page.admin-menu-page .account-form-container { padding-inline: 24px; }
+body.employee-page.admin-menu-page .account-form-container { gap: 24px; padding-bottom: 32px; }
+body.employee-page.admin-menu-page .account-header-bar .section-header-menu { align-items: center; gap: 12px; min-height: auto; padding-block: 4px 2px; }
+body.employee-page.admin-menu-page .section-header-quick-actions,
+body.employee-page.admin-menu-page .section-header-nav-actions { gap: 8px; }
+body.employee-page.admin-menu-page .section-header-quick-actions a,
+body.employee-page.admin-menu-page .section-header-nav-actions .back-to-menu-btn { min-height: 38px; }
+body.employee-page.admin-menu-page .section-header-nav-actions .back-to-menu-btn { background: var(--ui-surface-muted); border-color: rgba(15, 23, 42, 0.08); color: var(--ui-text-muted); }
+body.employee-page.admin-menu-page .section-header-nav-actions .back-to-menu-btn:hover,
+body.employee-page.admin-menu-page .section-header-nav-actions .back-to-menu-btn:focus-visible { border-color: var(--primary-color); color: var(--ui-text); }
+body.employee-page.admin-menu-page .admin-tabs-container { margin: 0 auto 22px; }
+body.employee-page.admin-menu-page .admin-tabs { gap: 12px; }
+body.employee-page.admin-menu-page .admin-tab-btn { min-width: 162px; }
+body.employee-page.admin-menu-page .admin-tab-pane { min-width: 0; width: 100%; }
+body.employee-page.admin-menu-page .admin-section-card { border: var(--admin-soft-border); border-radius: 26px; box-shadow: var(--admin-soft-shadow); margin: 0; padding: var(--admin-card-pad); }
+body.employee-page.admin-menu-page .admin-pane-header { margin-bottom: var(--admin-card-gap); }
+body.employee-page.admin-menu-page .admin-pane-header-copy { gap: 10px; max-width: 78ch; }
+body.employee-page.admin-menu-page .admin-pane-title { font-size: clamp(28px, 2.7vw, 36px); }
+body.employee-page.admin-menu-page .admin-pane-caption { max-width: 72ch; }
+body.employee-page.admin-menu-page .admin-form-group { display: grid; gap: 8px; margin: 0; min-width: 0; }
+body.employee-page.admin-menu-page .admin-form-group > h3 { margin-bottom: 2px; }
+body.employee-page.admin-menu-page .admin-form-group input,
+body.employee-page.admin-menu-page .admin-form-group textarea,
+body.employee-page.admin-menu-page .admin-form-group select,
+body.employee-page.admin-menu-page .admin-form-group .form-group { box-sizing: border-box; max-width: 100%; min-width: 0; width: 100%; }
+
+body.employee-page.admin-menu-page .admin-dishes-pane { gap: 24px; }
+body.employee-page.admin-menu-page .admin-dishes-workspace { align-items: start; gap: 18px 20px; grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr); }
+body.employee-page.admin-menu-page .admin-dishes-workspace > h2 { grid-column: 1 / -1; margin: 0 0 2px; }
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-form-group.admin-subsection-card:first-of-type { align-self: start; grid-column: 2; grid-row: 2; }
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-subsection-card:last-of-type { grid-column: 1; grid-row: 2; }
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-subsection-card form { display: grid; gap: 12px 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-subsection-card form > .admin-form-group:nth-of-type(1),
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-subsection-card form > .admin-form-group:nth-of-type(2),
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-subsection-card form > .admin-form-group:nth-of-type(3),
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-subsection-card form > .admin-form-group:nth-of-type(11),
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-subsection-card form > .form-actions { grid-column: 1 / -1; }
+body.employee-page.admin-menu-page #modifiersSection { max-width: 100%; }
+body.employee-page.admin-menu-page .admin-catalog-card { overflow: hidden; }
+body.employee-page.admin-menu-page .admin-catalog-toolbar { gap: 16px; margin-bottom: 18px; }
+body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories { max-width: 100%; overflow-x: auto; }
+body.employee-page.admin-menu-page .desktop-table { display: block; overflow-x: auto; }
+body.employee-page.admin-menu-page .desktop-table table { min-width: 760px; }
+body.employee-page.admin-menu-page .mobile-table-container { display: none; }
+body.employee-page.admin-menu-page .admin-catalog-card .mobile-table { display: grid; gap: 12px; }
+body.employee-page.admin-menu-page .mobile-table-item { min-width: 0; overflow: hidden; width: 100%; }
+body.employee-page.admin-menu-page .mobile-table-row { gap: 10px; grid-template-columns: minmax(82px, 96px) minmax(0, 1fr); }
+body.employee-page.admin-menu-page .mobile-table-value { min-width: 0; overflow-wrap: anywhere; }
+body.employee-page.admin-menu-page .mobile-table-actions { gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body.employee-page.admin-menu-page .mobile-table-actions .mobile-table-btn,
+body.employee-page.admin-menu-page .mobile-table-actions .stop-btn,
+body.employee-page.admin-menu-page .mobile-table-actions .inline-action-form { min-width: 0; width: 100%; }
+
+body.employee-page.admin-menu-page .admin-design-panel,
+body.employee-page.admin-menu-page .admin-payment-panel,
+body.employee-page.admin-menu-page .admin-system-panel { gap: 20px; }
+body.employee-page.admin-menu-page .admin-design-panel { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+body.employee-page.admin-menu-page .admin-design-panel .admin-pane-header,
+body.employee-page.admin-menu-page .admin-design-panel .design-buttons { grid-column: 1 / -1; }
+body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#projectName) { grid-column: span 4; }
+body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#browseImages) { grid-column: span 8; }
+body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#brandName) { grid-column: 1 / -1; }
+body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#fontLogoOverride) { grid-column: span 4; }
+body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(.color-controls) { grid-column: span 8; }
+body.employee-page.admin-menu-page .admin-design-panel .design-buttons { align-items: center; display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-start; }
+body.employee-page.admin-menu-page .file-manager-buttons { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+body.employee-page.admin-menu-page .file-navigation { align-items: start; gap: 12px; grid-template-columns: minmax(0, 1fr) auto; }
+body.employee-page.admin-menu-page .current-folder { min-width: 0; }
+body.employee-page.admin-menu-page .brand-fields { display: grid; gap: 14px 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body.employee-page.admin-menu-page .brand-fields .admin-label:has(#brandDesc),
+body.employee-page.admin-menu-page .brand-fields .admin-label:has(#brandLogoUrl),
+body.employee-page.admin-menu-page .brand-fields .admin-label:has(#brandCustomDomain) { grid-column: 1 / -1; }
+body.employee-page.admin-menu-page .brand-fields .admin-label { display: grid; gap: 8px; min-width: 0; }
+body.employee-page.admin-menu-page .brand-logo-preview { background: var(--ui-surface); border: 1px solid var(--ui-border); max-height: 72px; object-fit: contain; padding: 8px; }
+body.employee-page.admin-menu-page .font-controls { display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+body.employee-page.admin-menu-page .font-control { align-content: start; border: 1px solid var(--ui-border); border-radius: 16px; display: grid; gap: 12px; min-height: 100%; padding: 16px; }
+body.employee-page.admin-menu-page .font-control label { display: grid; gap: 8px; }
+body.employee-page.admin-menu-page .color-controls { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+body.employee-page.admin-menu-page .color-control { background: var(--white); border: 1px solid var(--ui-border); border-radius: 16px; display: grid; gap: 10px; min-width: 0; padding: 14px; }
+body.employee-page.admin-menu-page .color-control label { font-weight: 600; }
+body.employee-page.admin-menu-page .color-value { color: var(--ui-text-muted); font-size: 12px; overflow-wrap: anywhere; }
+
+body.employee-page.admin-menu-page .admin-payment-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body.employee-page.admin-menu-page .admin-payment-panel .admin-pane-header,
+body.employee-page.admin-menu-page .admin-system-panel .admin-pane-header { grid-column: 1 / -1; }
+body.employee-page.admin-menu-page .admin-payment-panel > .admin-form-group:has(#ykShopId),
+body.employee-page.admin-menu-page .admin-payment-panel > .admin-form-group:has(#tbTerminalKey) { align-content: start; display: grid; gap: 14px; min-height: 100%; }
+body.employee-page.admin-menu-page .admin-payment-panel .project-name-control,
+body.employee-page.admin-menu-page .admin-system-panel .project-name-control { align-items: start; display: grid; gap: 8px; grid-template-columns: 1fr; }
+body.employee-page.admin-menu-page .admin-payment-panel .yk-toggle-row,
+body.employee-page.admin-menu-page .admin-system-panel .yk-toggle-row { align-items: center; grid-template-columns: minmax(0, 1fr) auto; }
+body.employee-page.admin-menu-page .admin-payment-panel .yk-desc,
+body.employee-page.admin-menu-page .admin-system-panel .yk-desc { margin: 0; max-width: 62ch; }
+body.employee-page.admin-menu-page .admin-payment-panel .yk-note,
+body.employee-page.admin-menu-page .admin-system-panel .yk-note { background: var(--ui-surface); border: 1px solid var(--ui-border); border-radius: 14px; margin: 0; max-width: 68ch; padding: 14px 16px; }
+body.employee-page.admin-menu-page .yk-save-row { align-items: center; gap: 12px; justify-content: flex-start; margin-top: 2px; }
+body.employee-page.admin-menu-page .yk-save-row .checkout-btn { flex: 0 0 auto; }
+
+body.employee-page.admin-menu-page .admin-system-panel { align-items: start; grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr); }
+body.employee-page.admin-menu-page .admin-system-panel > .admin-form-group:has(#tgChatId) { display: grid; gap: 14px; }
+body.employee-page.admin-menu-page .admin-system-panel > .admin-form-group:has(a[href="monitor.php"]) { align-content: start; display: grid; gap: 14px; min-height: auto; }
+body.employee-page.admin-menu-page .admin-system-panel > .admin-form-group:has(a[href="monitor.php"]) .form-actions { justify-content: flex-start; margin-top: 0; }
+body.employee-page.admin-menu-page .admin-system-panel > .admin-form-group:has(a[href="monitor.php"]) .checkout-btn { width: auto; }
+
+@media (max-width: 1199px) {
+  body.employee-page.admin-menu-page { --admin-shell-max: min(1120px, calc(100vw - 32px)); }
+  body.employee-page.admin-menu-page .account-header-bar .container,
+  body.employee-page.admin-menu-page .admin-tabs-container,
+  body.employee-page.admin-menu-page .account-form-container { padding-inline: 18px; }
+  body.employee-page.admin-menu-page .admin-dishes-workspace { grid-template-columns: 1fr; }
+  body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-form-group.admin-subsection-card:first-of-type,
+  body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-subsection-card:last-of-type { grid-column: 1; grid-row: auto; }
+  body.employee-page.admin-menu-page .admin-design-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#projectName),
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#browseImages),
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#brandName),
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#fontLogoOverride),
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(.color-controls) { grid-column: auto; }
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#brandName),
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(.color-controls) { grid-column: 1 / -1; }
+  body.employee-page.admin-menu-page .font-controls,
+  body.employee-page.admin-menu-page .admin-payment-panel,
+  body.employee-page.admin-menu-page .admin-system-panel { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  body.employee-page.admin-menu-page { --admin-shell-max: calc(100vw - 24px); --admin-card-pad: 18px; --admin-card-gap: 16px; }
+  body.employee-page.admin-menu-page .account-header-bar .container,
+  body.employee-page.admin-menu-page .admin-tabs-container,
+  body.employee-page.admin-menu-page .account-form-container { padding-inline: 12px; }
+  body.employee-page.admin-menu-page .admin-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body.employee-page.admin-menu-page .admin-tab-btn { min-width: 0; width: 100%; }
+  body.employee-page.admin-menu-page .admin-pane-title { font-size: 24px; }
+  body.employee-page.admin-menu-page .file-manager-buttons,
+  body.employee-page.admin-menu-page .brand-fields,
+  body.employee-page.admin-menu-page .font-controls,
+  body.employee-page.admin-menu-page .color-controls { grid-template-columns: 1fr; }
+  body.employee-page.admin-menu-page .desktop-table { display: none; }
+  body.employee-page.admin-menu-page .mobile-table-container { display: block; }
+  body.employee-page.admin-menu-page .mobile-table-actions { grid-template-columns: 1fr; }
+  body.employee-page.admin-menu-page .admin-system-panel > .admin-form-group:has(a[href="monitor.php"]) .checkout-btn,
+  body.employee-page.admin-menu-page .brand-save-row > .checkout-btn,
+  body.employee-page.admin-menu-page .brand-save-row > .btn-save-colors,
+  body.employee-page.admin-menu-page .yk-save-row > .checkout-btn { width: 100%; }
+}
+/* admin-menu.php final visual pass: mobile overflow and design hardening */
+body.employee-page.admin-menu-page .admin-tab-pane,
+body.employee-page.admin-menu-page .admin-dishes-pane,
+body.employee-page.admin-menu-page .admin-form-container,
+body.employee-page.admin-menu-page .admin-section-card,
+body.employee-page.admin-menu-page .admin-catalog-card,
+body.employee-page.admin-menu-page .admin-catalog-toolbar,
+body.employee-page.admin-menu-page .menu-view-switch,
+body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories {
+  min-width: 0;
+}
+
+body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(.color-controls) {
+  display: grid;
+  gap: 14px;
+}
+
+body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(.color-controls) .color-controls {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+@media (max-width: 768px) {
+  body.employee-page.admin-menu-page .menu-view-switch {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  body.employee-page.admin-menu-page .menu-view-switch .admin-checkout-btn {
+    min-width: 0;
+    width: 100%;
+  }
+
+  body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories {
+    max-width: 100%;
+    overflow-x: auto;
+    width: 100%;
+  }
+
+  body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs {
+    display: inline-flex;
+    min-width: max-content;
+    width: max-content;
+  }
+}
+/* admin-menu.php final visual pass: class-based layout stabilization */
+body.employee-page.admin-menu-page .admin-design-panel > .admin-block--project { grid-column: span 4; }
+body.employee-page.admin-menu-page .admin-design-panel > .admin-block--files { grid-column: span 8; }
+body.employee-page.admin-menu-page .admin-design-panel > .admin-block--brand { grid-column: 1 / -1; }
+body.employee-page.admin-menu-page .admin-design-panel > .admin-block--fonts { grid-column: span 4; }
+body.employee-page.admin-menu-page .admin-design-panel > .admin-block--colors { display: grid; gap: 14px; grid-column: span 8; }
+body.employee-page.admin-menu-page .admin-design-panel > .admin-block--design-actions { grid-column: 1 / -1; }
+body.employee-page.admin-menu-page .admin-payment-panel > .admin-block--provider { align-content: start; display: grid; gap: 14px; min-height: 100%; }
+body.employee-page.admin-menu-page .admin-system-panel > .admin-block--telegram { display: grid; gap: 14px; }
+body.employee-page.admin-menu-page .admin-system-panel > .admin-block--tools { align-content: start; display: grid; gap: 14px; min-height: auto; }
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-form-group.admin-subsection-card small { overflow-wrap: anywhere; }
+body.employee-page.admin-menu-page .admin-dishes-workspace input[type="file"] { max-width: 100%; min-width: 0; width: 100%; }
+
+@media (max-width: 1199px) {
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--project,
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--files,
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--fonts,
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--colors { grid-column: auto; }
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--brand,
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--colors,
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--design-actions { grid-column: 1 / -1; }
+}
+/* admin-menu.php final visual pass: csv help text wrap */
+body.employee-page.admin-menu-page .admin-dishes-workspace .admin-form-group.admin-subsection-card small {
+  display: block;
+  font-size: 12px;
+  line-height: 1.55;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* admin-menu.php final visual pass: shell normalization and semantic grid */
+body.employee-page.admin-menu-page {
+  margin: 0 !important;
+  max-width: none !important;
+  min-width: 100% !important;
+  width: 100% !important;
+  --admin-shell-max: min(1320px, calc(100vw - 56px));
+  --admin-card-gap: 22px;
+  --admin-card-pad: 26px;
+}
+
+body.employee-page.admin-menu-page .account-header-bar .container,
+body.employee-page.admin-menu-page .admin-tabs-container,
+body.employee-page.admin-menu-page .account-form-container {
+  margin-inline: auto;
+  max-width: var(--admin-shell-max);
+  width: min(var(--admin-shell-max), calc(100vw - 56px));
+}
+
+body.employee-page.admin-menu-page .account-form-container {
+  align-content: start;
+  justify-items: stretch;
+}
+
+body.employee-page.admin-menu-page .admin-tab-pane,
+body.employee-page.admin-menu-page .admin-dishes-pane,
+body.employee-page.admin-menu-page .admin-section-card,
+body.employee-page.admin-menu-page .admin-dishes-editor,
+body.employee-page.admin-menu-page .admin-catalog-card,
+body.employee-page.admin-menu-page .admin-design-panel,
+body.employee-page.admin-menu-page .admin-payment-panel,
+body.employee-page.admin-menu-page .admin-system-panel {
+  max-width: 100%;
+  width: 100%;
+}
+
+body.employee-page.admin-menu-page .admin-pane-header-copy {
+  max-width: 70ch;
+}
+
+body.employee-page.admin-menu-page .admin-pane-caption {
+  line-height: 1.55;
+  max-width: 64ch;
+}
+
+body.employee-page.admin-menu-page .admin-tabs {
+  justify-content: center;
+}
+
+body.employee-page.admin-menu-page .admin-tab-btn {
+  min-height: 50px;
+  padding-inline: 28px;
+}
+
+body.employee-page.admin-menu-page .admin-dishes-editor {
+  display: grid;
+  gap: var(--admin-card-gap);
+}
+
+body.employee-page.admin-menu-page .admin-dishes-workspace {
+  align-items: start;
+  gap: 20px 24px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+}
+
+body.employee-page.admin-menu-page .admin-block--manual {
+  min-width: 0;
+}
+
+body.employee-page.admin-menu-page .admin-block--manual form {
+  display: grid;
+  gap: 14px 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.employee-page.admin-menu-page .admin-block--manual form > .admin-form-group:nth-of-type(1),
+body.employee-page.admin-menu-page .admin-block--manual form > .admin-form-group:nth-of-type(2),
+body.employee-page.admin-menu-page .admin-block--manual form > .admin-form-group:nth-of-type(3),
+body.employee-page.admin-menu-page .admin-block--manual form > .admin-form-group:nth-of-type(11),
+body.employee-page.admin-menu-page .admin-block--manual form > .form-actions {
+  grid-column: 1 / -1;
+}
+
+body.employee-page.admin-menu-page .admin-block--csv {
+  align-content: start;
+  display: grid;
+  gap: 12px;
+}
+
+body.employee-page.admin-menu-page .admin-block--csv form {
+  align-items: start;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+body.employee-page.admin-menu-page .admin-block--csv .download-button-container,
+body.employee-page.admin-menu-page .admin-block--csv .checkout-btn {
+  min-width: 120px;
+}
+
+body.employee-page.admin-menu-page .admin-block--modifiers {
+  margin-top: 2px;
+}
+
+body.employee-page.admin-menu-page .admin-catalog-toolbar {
+  gap: 14px;
+}
+
+body.employee-page.admin-menu-page .menu-view-switch {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+body.employee-page.admin-menu-page .menu-view-switch .admin-checkout-btn {
+  min-width: 108px;
+}
+
+body.employee-page.admin-menu-page .admin-design-panel {
+  align-items: start;
+  gap: 20px 22px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+body.employee-page.admin-menu-page .admin-design-panel > .admin-block--project {
+  grid-column: span 3;
+}
+
+body.employee-page.admin-menu-page .admin-design-panel > .admin-block--files {
+  grid-column: span 9;
+}
+
+body.employee-page.admin-menu-page .admin-design-panel > .admin-block--brand {
+  grid-column: 1 / -1;
+}
+
+body.employee-page.admin-menu-page .admin-design-panel > .admin-block--fonts {
+  grid-column: span 5;
+}
+
+body.employee-page.admin-menu-page .admin-design-panel > .admin-block--colors {
+  grid-column: span 7;
+}
+
+body.employee-page.admin-menu-page .admin-design-panel > .admin-block--design-actions {
+  grid-column: 1 / -1;
+}
+
+body.employee-page.admin-menu-page .file-manager-buttons {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+body.employee-page.admin-menu-page .font-controls {
+  grid-template-columns: 1fr;
+}
+
+body.employee-page.admin-menu-page .color-controls {
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+body.employee-page.admin-menu-page .admin-payment-panel {
+  align-items: start;
+  gap: 20px 22px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.employee-page.admin-menu-page .admin-block--provider {
+  align-content: start;
+  display: grid;
+  gap: 14px;
+}
+
+body.employee-page.admin-menu-page .project-name-control {
+  align-items: start;
+  grid-template-columns: 1fr;
+}
+
+body.employee-page.admin-menu-page .yk-save-row,
+body.employee-page.admin-menu-page .brand-save-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+body.employee-page.admin-menu-page .admin-system-panel {
+  align-items: start;
+  gap: 20px 22px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+}
+
+body.employee-page.admin-menu-page .admin-block--telegram,
+body.employee-page.admin-menu-page .admin-block--tools {
+  align-content: start;
+  display: grid;
+  gap: 14px;
+}
+
+body.employee-page.admin-menu-page .admin-block--tools {
+  min-height: auto;
+}
+
+body.employee-page.admin-menu-page .admin-block--tools .form-actions {
+  justify-content: flex-start;
+  margin-top: 0;
+}
+
+body.employee-page.admin-menu-page .admin-block--tools .checkout-btn {
+  width: auto;
+}
+
+@media (max-width: 1199px) {
+  body.employee-page.admin-menu-page {
+    --admin-shell-max: min(1088px, calc(100vw - 40px));
+    --admin-card-pad: 22px;
+  }
+
+  body.employee-page.admin-menu-page .account-header-bar .container,
+  body.employee-page.admin-menu-page .admin-tabs-container,
+  body.employee-page.admin-menu-page .account-form-container {
+    width: min(var(--admin-shell-max), calc(100vw - 40px));
+  }
+
+  body.employee-page.admin-menu-page .admin-dishes-workspace,
+  body.employee-page.admin-menu-page .admin-payment-panel,
+  body.employee-page.admin-menu-page .admin-system-panel {
+    grid-template-columns: 1fr;
+  }
+
+  body.employee-page.admin-menu-page .admin-design-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--project,
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--files,
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--fonts,
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--colors {
+    grid-column: auto;
+  }
+
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--brand,
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--colors,
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--design-actions {
+    grid-column: 1 / -1;
+  }
+
+  body.employee-page.admin-menu-page .file-manager-buttons {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  body.employee-page.admin-menu-page {
+    --admin-shell-max: calc(100vw - 24px);
+    --admin-card-pad: 18px;
+    --admin-card-gap: 16px;
+  }
+
+  body.employee-page.admin-menu-page .account-header-bar .container,
+  body.employee-page.admin-menu-page .admin-tabs-container,
+  body.employee-page.admin-menu-page .account-form-container {
+    width: var(--admin-shell-max);
+  }
+
+  body.employee-page.admin-menu-page .admin-tab-btn {
+    min-height: 48px;
+    padding-inline: 16px;
+  }
+
+  body.employee-page.admin-menu-page .admin-block--manual form,
+  body.employee-page.admin-menu-page .admin-block--csv form,
+  body.employee-page.admin-menu-page .brand-fields,
+  body.employee-page.admin-menu-page .file-manager-buttons,
+  body.employee-page.admin-menu-page .color-controls {
+    grid-template-columns: 1fr;
+  }
+
+  body.employee-page.admin-menu-page .admin-block--csv .download-button-container,
+  body.employee-page.admin-menu-page .admin-block--csv .checkout-btn,
+  body.employee-page.admin-menu-page .admin-block--tools .checkout-btn,
+  body.employee-page.admin-menu-page .brand-save-row > .checkout-btn,
+  body.employee-page.admin-menu-page .brand-save-row > .btn-save-colors,
+  body.employee-page.admin-menu-page .yk-save-row > .checkout-btn {
+    min-width: 0;
+    width: 100%;
+  }
+
+  body.employee-page.admin-menu-page .admin-pane-caption {
+    max-width: none;
+  }
 }

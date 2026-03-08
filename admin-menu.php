@@ -224,7 +224,7 @@ $savedDbFontsJson = htmlspecialchars(
         <!-- Dishes Tab -->
         <div class="admin-tab-pane active" id="dishes">
             <div class="admin-dishes-pane">
-            <section class="admin-form-container admin-section-card">
+            <section class="admin-form-container admin-section-card admin-dishes-editor">
                 <div class="admin-pane-header">
                     <div class="admin-pane-header-copy">
                         <p class="admin-pane-kicker">Каталог и наполнение</p>
@@ -235,7 +235,7 @@ $savedDbFontsJson = htmlspecialchars(
                 <h2><?= $editItem ? 'Редактировать' : 'Обновление' ?></h2>
 
                 <!-- Bulk upload -->
-                <section class="admin-form-group admin-subsection-card">
+                <section class="admin-form-group admin-subsection-card admin-block admin-block--csv">
                     <h3>Из CSV</h3>
                     <form method="POST" enctype="multipart/form-data">
                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
@@ -246,7 +246,7 @@ $savedDbFontsJson = htmlspecialchars(
                     <small>UTF-8 CSV. Полная синхронизация: позиции вне файла будут архивированы. Формат: external_id;name;description;composition;price;image;calories;protein;fat;carbs;category;available</small>
                 </section>
 
-                <div class="admin-subsection-card">
+                <div class="admin-subsection-card admin-block admin-block--manual">
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                     <input type="hidden" name="id" value="<?= $editItem['id'] ?? '' ?>">
@@ -328,7 +328,7 @@ $savedDbFontsJson = htmlspecialchars(
 
                 <?php if ($editItem): ?>
                     <!-- ── Модификаторы (только при редактировании) ── -->
-                    <section class="admin-form-group admin-subsection-card" id="modifiersSection" data-item-id="<?= (int)$editItem['id'] ?>">
+                    <section class="admin-form-group admin-subsection-card admin-block admin-block--modifiers" id="modifiersSection" data-item-id="<?= (int)$editItem['id'] ?>">
                         <h3>Модификаторы (варианты блюда)</h3>
                         <p class="yk-desc">Например: «Степень прожарки» с вариантами Medium / Well-done, или «Добавки» с несколькими вариантами.</p>
                         <div id="modifierGroupList"></div>
@@ -347,7 +347,7 @@ $savedDbFontsJson = htmlspecialchars(
                 <?php endif; ?>
             </section>
 
-            <section class="admin-form-container admin-section-card admin-catalog-card">
+            <section class="admin-form-container admin-section-card admin-catalog-card admin-block admin-block--catalog">
             <div class="admin-catalog-toolbar">
                 <div class="form-actions menu-view-switch">
                 <a href="admin-menu.php?view=active" class="admin-checkout-btn<?= !$showArchived ? ' cancel' : '' ?>">Активные</a>
@@ -483,7 +483,7 @@ $savedDbFontsJson = htmlspecialchars(
                 <h2>Управление файлами и дизайном</h2>
 
                 <!-- Название проекта -->
-                <div class="admin-form-group">
+                <div class="admin-form-group admin-block admin-block--project">
                     <h3>Название проекта</h3>
                     <div class="project-name-control">
                         <input type="text" id="projectName" value="labus">
@@ -491,7 +491,7 @@ $savedDbFontsJson = htmlspecialchars(
                     </div>
                 </div>
                 <!-- Управление файлами -->
-                <div class="admin-form-group">
+                <div class="admin-form-group admin-block admin-block--files">
                     <h3>Файлы</h3>
                     <div class="file-manager-buttons">
                         <button type="button" class="checkout-btn" id="browseImages">Images</button>
@@ -533,7 +533,7 @@ $savedDbFontsJson = htmlspecialchars(
                     return $raw !== null ? (json_decode($raw, true) ?? $default) : $default;
                 };
                 ?>
-                <div class="admin-form-group" id="brandSettings">
+                <div class="admin-form-group admin-block admin-block--brand" id="brandSettings">
                     <h3>Бренд</h3>
                     <div class="brand-fields">
                         <label class="admin-label">
@@ -617,7 +617,7 @@ $savedDbFontsJson = htmlspecialchars(
                 </div>
 
                 <!-- Управление шрифтами -->
-                <div class="admin-form-group">
+                <div class="admin-form-group admin-block admin-block--fonts">
                     <h3>Шрифты</h3>
 
                     <div class="font-controls">
@@ -657,7 +657,7 @@ $savedDbFontsJson = htmlspecialchars(
                 </div>
 
                 <!-- Управление цветами -->
-                <div class="admin-form-group">
+                <div class="admin-form-group admin-block admin-block--colors">
                     <h3>Цвета</h3>
 
                     <div class="color-controls">
@@ -693,7 +693,7 @@ $savedDbFontsJson = htmlspecialchars(
                 </div>
 
                 <!-- Кнопки сохранения -->
-                <div class="design-buttons">
+                <div class="design-buttons admin-block admin-block--design-actions">
                     <button type="button" class="checkout-btn" id="saveFontsBtn">Сохранить шрифты</button>
                     <button type="button" class="checkout-btn" id="saveColorsBtn">Сохранить цвета</button>
                     <button type="button" class="checkout-btn cancel" id="resetDesignBtn">Сбросить всё</button>
@@ -723,7 +723,7 @@ $savedDbFontsJson = htmlspecialchars(
                     </div>
                     <h2>Онлайн-оплата</h2>
 
-                    <div class="admin-form-group">
+                    <div class="admin-form-group admin-block admin-block--provider admin-block--provider-yk">
                         <h3>ЮKassa</h3>
                         <p class="yk-desc">
                             Подключите ЮKassa для приёма онлайн-платежей (карта, СБП, ЮMoney).<br>
@@ -765,7 +765,7 @@ $savedDbFontsJson = htmlspecialchars(
                         </p>
                     </div>
 
-                    <div class="admin-form-group">
+                    <div class="admin-form-group admin-block admin-block--provider admin-block--provider-tbank">
                         <h3>СБП через Т-Банк</h3>
                         <p class="yk-desc">
                             Подключите Т-Банк эквайринг для СБП-платежей напрямую.<br>
@@ -815,7 +815,7 @@ $savedDbFontsJson = htmlspecialchars(
                         </div>
                     </div>
                     <h2>Система</h2>
-                    <div class="admin-form-group">
+                    <div class="admin-form-group admin-block admin-block--telegram">
                         <h3>Telegram-уведомления</h3>
                         <p class="yk-desc">
                             Получайте уведомления о новых заказах в Telegram с кнопками «Принять» и «Отказать».<br>
@@ -834,7 +834,7 @@ $savedDbFontsJson = htmlspecialchars(
                             <span id="tgChatIdStatus" class="yk-status"></span>
                         </div>
                     </div>
-                    <div class="admin-form-group">
+                    <div class="admin-form-group admin-block admin-block--tools">
                         <h3>Инструменты</h3>
                         <div class="form-actions">
                             <a href="monitor.php" class="checkout-btn">Диагностика</a>
