@@ -9,7 +9,6 @@
   display: grid;
   height: auto;
   min-height: clamp(640px, 80svh, 820px);
-  padding: 88px 0 48px;
   position: relative;
 }
 
@@ -142,8 +141,9 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  min-height: 100%;
-  padding: 26px 26px 22px;
+  padding: 22px 22px 20px;
+  margin: 30px auto;
+  width: 100%;
 }
 
 .landing-entry-card h2 {
@@ -299,6 +299,7 @@
 .index-landing-page .reservation-form form,
 .index-landing-page #formMessage {
   width: 100%;
+  justify-items: center;
 }
 
 .index-landing-page .reservation-form h2 {
@@ -320,7 +321,7 @@
   display: block;
   margin-top: 8px;
   min-height: 48px;
-  width: 100%;
+  width: 80%;
 }
 
 .index-landing-page .footer {
@@ -369,7 +370,7 @@
   }
 
   .landing-entry-card {
-    padding: 24px 24px 22px;
+    padding: 20px 20px 18px;
   }
 
   .landing-entry-card h2 {

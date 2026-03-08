@@ -1247,7 +1247,7 @@ a {
   justify-content: space-between;
   min-height: 72px;
   margin: auto;
-  padding: clamp(9vw, 9vw, 104px) 8% 0;
+  padding: clamp(50px, 50px, 104px) 8% 0;
   position: relative;
   height: auto;
 }
