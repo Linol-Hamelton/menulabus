@@ -291,7 +291,7 @@
   border-radius: 26px;
   box-shadow: 0 20px 44px rgba(18, 18, 18, 0.08);
   max-width: 500px;
-  margin: 0 auto;
+  margin: 30px auto;
   padding: 24px 22px 20px;
   width: min(100%, 500px);
 }
@@ -319,9 +319,8 @@
 
 .index-landing-page .btn-form {
   display: block;
-  margin-top: 8px;
+  margin-bottom: 10px;
   min-height: 48px;
-  width: 80%;
 }
 
 .index-landing-page .footer {
