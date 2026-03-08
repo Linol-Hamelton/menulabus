@@ -30,6 +30,31 @@ $getNextActionLabel = static function (string $status): string {
         default => $status,
     };
 };
+
+$getOrderAgeMinutes = static function (?string $createdAt): int {
+    $timestamp = $createdAt ? strtotime($createdAt) : false;
+    if ($timestamp === false) {
+        return 0;
+    }
+
+    return max(0, (int) floor((time() - $timestamp) / 60));
+};
+
+$getAgeTone = static function (string $status, int $ageMinutes): string {
+    if (in_array($status, ['завершён', 'отказ'], true)) {
+        return 'quiet';
+    }
+
+    if ($ageMinutes >= 45) {
+        return 'critical';
+    }
+
+    if ($ageMinutes >= 20) {
+        return 'warning';
+    }
+
+    return 'fresh';
+};
 ?>
 
 <div class="account-sections">
@@ -76,6 +101,13 @@ $getNextActionLabel = static function (string $status): string {
             <?php foreach ($statuses as $s): ?>
                 <?php
                 $filtered = array_values(array_filter($orders, fn($o) => $o['status'] === $s['status']));
+                usort($filtered, static function (array $left, array $right) use ($s): int {
+                    $leftTs = strtotime((string)($left['created_at'] ?? '')) ?: 0;
+                    $rightTs = strtotime((string)($right['created_at'] ?? '')) ?: 0;
+                    $isClosedBoard = in_array($s['status'], ['завершён', 'отказ'], true);
+
+                    return $isClosedBoard ? ($rightTs <=> $leftTs) : ($leftTs <=> $rightTs);
+                });
                 $deliveryBuckets = [];
                 foreach ($filtered as $order) {
                     $deliveryKey = $normalizeDeliveryType($order['delivery_type'] ?? null);
@@ -98,7 +130,7 @@ $getNextActionLabel = static function (string $status): string {
                                         id="employee-search-<?= md5($s['status']) ?>"
                                         type="search"
                                         class="employee-triage-search__input"
-                                        placeholder="№ заказа, имя, телефон, адрес"
+                                        placeholder="№ заказа, имя, телефон, блюдо"
                                         data-employee-search>
                                 </label>
                                 <div class="employee-triage-summary">
@@ -129,12 +161,19 @@ $getNextActionLabel = static function (string $status): string {
                             $deliveryType = $normalizeDeliveryType($o['delivery_type'] ?? null);
                             $deliveryLabel = $formatDeliveryLabel($o['delivery_type'] ?? null);
                             $itemsCount = array_reduce($o['items'], static fn($sum, $item) => $sum + (int)($item['quantity'] ?? 0), 0);
+                            $itemNames = implode(' ', array_map(
+                                static fn($item) => trim((string)($item['name'] ?? '')),
+                                $o['items'] ?? []
+                            ));
+                            $ageMinutes = $getOrderAgeMinutes($o['created_at'] ?? null);
+                            $ageTone = $getAgeTone($o['status'], $ageMinutes);
                             $searchBlob = implode(' ', array_filter([
                                 '#' . $o['id'],
                                 $o['user_name'] ?? '',
                                 $o['user_phone'] ?? '',
                                 $deliveryLabel,
                                 $o['delivery_details'] ?? '',
+                                $itemNames,
                             ]));
                             ?>
                             <article class="order-item employee-order-card"
@@ -159,6 +198,7 @@ $getNextActionLabel = static function (string $status): string {
 
                                     <div class="employee-order-meta">
                                         <span class="order-date"><?= date('d.m H:i', strtotime($o['created_at'])) ?></span>
+                                        <span class="employee-order-age employee-order-age--<?= htmlspecialchars($ageTone) ?>"><?= $ageMinutes ?> мин</span>
                                         <span class="employee-order-items-count"><?= $itemsCount ?> поз.</span>
                                         <span class="order-total"><?= number_format($o['total'], 0, '.', ' ') ?> ₽</span>
                                         <span class="employee-toggle-icon">Состав</span>
@@ -179,44 +219,15 @@ $getNextActionLabel = static function (string $status): string {
                                             <strong>Обновил:</strong> <?= htmlspecialchars($o['updater_name']) ?>
                                         </span>
                                     <?php endif; ?>
-                                </div>
-
-                                <div class="order-customer-info">
-                                    <span><i class="fas fa-user"></i> <?= htmlspecialchars($o['user_name']) ?></span>
-                                    <?php if ($o['user_phone']): ?>
-                                        <span><i class="fas fa-phone"></i> <?= htmlspecialchars($o['user_phone']) ?></span>
-                                    <?php endif; ?>
-                                </div>
-                                <hr class="divider">
-                                <div class="order-customer-info">
-                                    <div class="delivery-meta">
-                                        <span class="delivery-icon-text">
-                                            <?php
-                                            $iconMap = [
-                                                'takeaway' => 'fa-walking',
-                                                'delivery' => 'fa-motorcycle',
-                                                'table'    => 'fa-store',
-                                                'bar'      => 'fa-glass-cheers',
-                                            ];
-                                            $rawType = $o['delivery_type'] ?? 'Не указано';
-                                            $icon = $iconMap[$rawType] ?? 'fa-question-circle';
-                                            ?>
-                                            <i class="fas <?= $icon ?>"></i>
-                                            <?= htmlspecialchars($deliveryLabel) ?>
+                                    <?php if (!in_array($o['status'], ['завершён', 'отказ'], true)): ?>
+                                        <span class="employee-order-glance__item employee-order-glance__item--action">
+                                            <strong>Следующий шаг:</strong> <?= htmlspecialchars($getNextActionLabel($o['status'])) ?>
                                         </span>
-
-                                        <?php if (!empty($o['delivery_details'])): ?>
-                                            <span class="delivery-details">
-                                                <?= htmlspecialchars($o['delivery_details']) ?>
-                                            </span>
-                                        <?php endif; ?>
-                                    </div>
-                                    <?php if ($o['updater_name']): ?>
-                                        <span><i class="fas fa-user-edit"></i> Обновил: <?= htmlspecialchars($o['updater_name']) ?></span>
                                     <?php endif; ?>
                                 </div>
-                                <hr class="divider">
+
                                 <div class="order-items">
+                                    <div class="employee-order-items-head">Состав заказа</div>
                                     <?php foreach ($o['items'] as $item): ?>
                                         <div class="order-product">
                                             <span class="product-name"><?= htmlspecialchars($item['name']) ?></span>

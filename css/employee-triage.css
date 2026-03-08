@@ -1,4 +1,8 @@
-﻿body.employee-page .employee-queue-overview {
+body.employee-page .menu-tabs-container {
+  margin: 0 0 22px;
+}
+
+body.employee-page .employee-queue-overview {
   display: grid;
   gap: 14px;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -157,6 +161,7 @@ body.employee-page .employee-order-card .order-header {
   align-items: flex-start;
   background: transparent;
   border-radius: 0;
+  cursor: pointer;
   display: flex;
   gap: 16px;
   justify-content: space-between;
@@ -195,6 +200,7 @@ body.employee-page .employee-order-phone {
 }
 
 body.employee-page .employee-order-delivery,
+body.employee-page .employee-order-age,
 body.employee-page .employee-order-items-count {
   background: rgba(18, 18, 18, 0.06);
   border-radius: 999px;
@@ -218,6 +224,26 @@ body.employee-page .employee-order-delivery--table,
 body.employee-page .employee-order-delivery--bar {
   background: rgba(76, 175, 80, 0.14);
   color: #29682d;
+}
+
+body.employee-page .employee-order-age--fresh {
+  background: rgba(76, 175, 80, 0.14);
+  color: #29682d;
+}
+
+body.employee-page .employee-order-age--warning {
+  background: rgba(255, 147, 33, 0.14);
+  color: #8b4c00;
+}
+
+body.employee-page .employee-order-age--critical {
+  background: rgba(205, 23, 25, 0.14);
+  color: #9f1012;
+}
+
+body.employee-page .employee-order-age--quiet {
+  background: rgba(18, 18, 18, 0.05);
+  color: rgba(18, 18, 18, 0.62);
 }
 
 body.employee-page .employee-order-meta {
@@ -249,15 +275,28 @@ body.employee-page .employee-order-glance__item--details {
   flex: 1 1 280px;
 }
 
-body.employee-page .employee-order-card .order-customer-info,
+body.employee-page .employee-order-glance__item--action {
+  background: rgba(205, 23, 25, 0.08);
+  color: #7f1112;
+}
+
 body.employee-page .employee-order-card .order-product {
   background: rgba(18, 18, 18, 0.035);
   border: 1px solid rgba(18, 18, 18, 0.05);
   border-radius: 14px;
 }
 
-body.employee-page .employee-order-card .divider {
-  margin: 12px 0;
+body.employee-page .employee-order-card .order-items {
+  margin-top: 12px;
+}
+
+body.employee-page .employee-order-items-head {
+  color: #121212;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  margin-bottom: 10px;
+  text-transform: uppercase;
 }
 
 body.employee-page .employee-order-card .order-actions {

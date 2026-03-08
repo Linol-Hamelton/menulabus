@@ -132,8 +132,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
-        <?php require __DIR__ . '/partials/employee_account_sections.php'; ?>
-
         <div class="menu-tabs-container">
             <div class="menu-tabs">
                 <button class="tab-btn <?= $activeTab === 'Приём' ? 'active' : '' ?>" data-tab="Приём">Приём</button>
@@ -144,6 +142,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button class="tab-btn <?= $activeTab === 'столы' ? 'active' : '' ?>" data-tab="столы">Столы</button>
             </div>
         </div>
+
+        <?php require __DIR__ . '/partials/employee_account_sections.php'; ?>
     </div>
     <script src="/js/security.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/cart.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
