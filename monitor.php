@@ -8,8 +8,8 @@ if ($_SESSION['user_role'] !== 'owner' && $_SESSION['user_role'] !== 'admin') {
 }
 
 $csrfToken = $_SESSION['csrf_token'] ?? '';
-$scriptNonce = $GLOBALS['scriptNonce'] ?? ($_SESSION['csp_nonce']['script'] ?? '');
-$styleNonce = $GLOBALS['styleNonce'] ?? ($_SESSION['csp_nonce']['style'] ?? '');
+$monitorCssVersion = (string) (@filemtime(__DIR__ . '/css/monitor.css') ?: '1');
+$monitorJsVersion = (string) (@filemtime(__DIR__ . '/js/monitor-page.js') ?: '1');
 
 // Подключаем необходимые файлы
 require_once 'db.php';
@@ -418,6 +418,13 @@ function formatPercentage($value, $goodThreshold = 90, $warningThreshold = 70) {
     ];
 }
 
+function renderMonitorIcon(string $name, string $class = 'monitor-icon'): string {
+    $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+    $safeClass = htmlspecialchars($class, ENT_QUOTES, 'UTF-8');
+
+    return '<svg class="' . $safeClass . '" aria-hidden="true" focusable="false"><use href="/images/icons/phosphor-sprite.svg#' . $safeName . '"></use></svg>';
+}
+
 // Получаем метрики для отображения
 $metrics = getPerformanceMetrics(true);
 ?>
@@ -427,390 +434,21 @@ $metrics = getPerformanceMetrics(true);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мониторинг производительности</title>
-    <style nonce="<?= htmlspecialchars($styleNonce ?? '', ENT_QUOTES, 'UTF-8') ?>">
-        :root {
-            --primary: #3498db;
-            --success: #2ecc71;
-            --warning: #f39c12;
-            --danger: #e74c3c;
-            --dark: #2c3e50;
-            --light: #ecf0f1;
-            --gray: #95a5a6;
-        }
-        
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; 
-            padding: 20px; 
-            background: #f5f5f5; 
-            color: #333;
-        }
-        
-        .container { 
-            max-width: 1400px; 
-            margin: 0 auto; 
-        }
-        
-        header { 
-            background: var(--dark); 
-            color: white; 
-            padding: 20px; 
-            border-radius: 8px 8px 0 0;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        h1 { 
-            margin: 0; 
-            font-size: 24px;
-        }
-        
-        .subtitle { 
-            color: #bdc3c7; 
-            margin-top: 5px;
-        }
-        
-        .dashboard { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-            gap: 20px; 
-            margin-bottom: 30px;
-        }
-        
-        .card { 
-            background: white; 
-            padding: 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
-            margin-bottom: 20px;
-        }
-        
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-        }
-        
-        .card h2 { 
-            margin-top: 0; 
-            color: var(--dark); 
-            border-bottom: 2px solid var(--primary); 
-            padding-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .metric { 
-            margin: 15px 0;
-        }
-        
-        .metric-label { 
-            font-weight: bold; 
-            color: var(--gray); 
-            margin-bottom: 5px;
-            font-size: 0.9em;
-        }
-        
-        .metric-value { 
-            font-size: 1.4em; 
-            color: var(--dark);
-            font-weight: bold;
-        }
-        
-        .progress-bar { 
-            height: 20px; 
-            background: var(--light); 
-            border-radius: 10px; 
-            overflow: hidden; 
-            margin: 10px 0;
-        }
-        
-        .progress-fill { 
-            height: 100%; 
-            transition: width 0.3s;
-        }
-        
-        .progress-success { background: linear-gradient(90deg, var(--success), #27ae60); }
-        .progress-warning { background: linear-gradient(90deg, var(--warning), #e67e22); }
-        .progress-danger { background: linear-gradient(90deg, var(--danger), #c0392b); }
-        
-        .progress-text { 
-            text-align: center; 
-            font-size: 0.9em; 
-            color: var(--gray); 
-            margin-top: 5px;
-        }
-        
-        .stats-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
-            gap: 15px; 
-            margin-top: 20px;
-        }
-        
-        .stat-item { 
-            background: var(--light); 
-            padding: 15px; 
-            border-radius: 6px; 
-            border-left: 4px solid var(--primary);
-        }
-        
-        .stat-label { 
-            font-size: 0.9em; 
-            color: #6c757d;
-        }
-        
-        .stat-value { 
-            font-size: 1.2em; 
-            font-weight: bold; 
-            color: var(--dark);
-        }
-        
-        .actions { 
-            display: flex; 
-            gap: 10px; 
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-        
-        .btn { 
-            padding: 10px 20px; 
-            border: none; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            font-weight: bold; 
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .btn-primary { 
-            background: var(--primary); 
-            color: white;
-        }
-        
-        .btn-primary:hover { 
-            background: #2980b9;
-        }
-        
-        .btn-success { 
-            background: var(--success); 
-            color: white;
-        }
-        
-        .btn-success:hover { 
-            background: #27ae60;
-        }
-        
-        .btn-danger { 
-            background: var(--danger); 
-            color: white;
-        }
-        
-        .btn-danger:hover { 
-            background: #c0392b;
-        }
-        
-        .btn-warning { 
-            background: var(--warning); 
-            color: white;
-        }
-        
-        .btn-warning:hover { 
-            background: #e67e22;
-        }
-        
-        .table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 20px;
-        }
-        
-        .table th, .table td { 
-            padding: 12px; 
-            text-align: left; 
-            border-bottom: 1px solid #dee2e6;
-        }
-        
-        .table th { 
-            background: var(--light); 
-            font-weight: bold; 
-            color: #495057;
-        }
-        
-        .table tr:hover { 
-            background: var(--light);
-        }
-        
-        .status-good { 
-            color: var(--success); 
-            font-weight: bold;
-        }
-        
-        .status-warning { 
-            color: var(--warning); 
-            font-weight: bold;
-        }
-        
-        .status-critical { 
-            color: var(--danger); 
-            font-weight: bold;
-        }
-        
-        .refresh-info { 
-            text-align: center; 
-            margin-top: 20px; 
-            color: var(--gray); 
-            font-size: 0.9em;
-        }
-        
-        .icon { 
-            font-size: 1.2em;
-        }
-        
-        #result { 
-            margin-top: 20px; 
-            padding: 15px; 
-            border-radius: 4px; 
-            display: none;
-        }
-        
-        .success { 
-            background: #d4edda; 
-            color: #155724; 
-            border: 1px solid #c3e6cb;
-        }
-        
-        .error { 
-            background: #f8d7da; 
-            color: #721c24; 
-            border: 1px solid #f5c6cb;
-        }
-        
-        .warning { 
-            background: #fff3cd; 
-            color: #856404; 
-            border: 1px solid #ffeaa7;
-        }
-        
-        .timestamp {
-            font-size: 0.9em;
-            color: var(--gray);
-            text-align: right;
-        }
-
-        .header-meta {
-            align-items: flex-end;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            color: white;
-            text-decoration: none;
-        }
-
-        .btn-secondary:hover,
-        .btn-secondary:focus-visible {
-            background: rgba(255, 255, 255, 0.18);
-            border-color: rgba(255, 255, 255, 0.28);
-        }
-
-        .progress-text--left {
-            text-align: left;
-        }
-        
-        .health-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        
-        .health-good { background: var(--success); }
-        .health-warning { background: var(--warning); }
-        .health-critical { background: var(--danger); }
-        
-        .chart-container {
-            height: 200px;
-            margin: 20px 0;
-            position: relative;
-        }
-        
-        .auto-refresh {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        
-        .auto-refresh label {
-            font-size: 0.9em;
-            color: var(--gray);
-        }
-
-        .hidden { display: none; }
-        .overflow-x-auto { overflow-x: auto; }
-        .code-block {
-            background: var(--light);
-            padding: 15px;
-            border-radius: 4px;
-            overflow: auto;
-        }
-        .code-block-scroll {
-            background: var(--light);
-            padding: 15px;
-            border-radius: 4px;
-            overflow: auto;
-            max-height: 300px;
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 14px;
-            }
-
-            header {
-                align-items: flex-start;
-                gap: 14px;
-                text-align: left;
-            }
-
-            .header-meta {
-                align-items: stretch;
-                width: 100%;
-            }
-
-            .header-actions {
-                justify-content: stretch;
-            }
-
-            .header-actions .btn {
-                justify-content: center;
-                width: 100%;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="/css/monitor.css?v=<?= htmlspecialchars($monitorCssVersion, ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body>
-    <div class="container">
+    <div
+        class="container monitor-page"
+        id="monitorPage"
+        data-csrf-token="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>"
+        data-get-metrics-url="?action=get_metrics"
+        data-clear-opcache-url="?action=clear_opcache"
+        data-clear-server-cache-url="/clear-cache.php?scope=server"
+        data-refresh-interval-ms="30000">
+        <template id="monitorMetricsData"><?= htmlspecialchars(json_encode($metrics, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_NOQUOTES, 'UTF-8') ?></template>
         <header>
             <div>
-                <h1>📊 Мониторинг производительности</h1>
+                <h1><?= renderMonitorIcon('chart-bar', 'monitor-heading-icon') ?><span>Мониторинг производительности</span></h1>
                 <div class="subtitle">Версия PHP: <?= PHP_VERSION ?> | Время: <?= date('Y-m-d H:i:s') ?></div>
             </div>
             <div class="header-meta">
@@ -818,26 +456,33 @@ $metrics = getPerformanceMetrics(true);
                     Обновлено: <?= date('H:i:s') ?>
                 </div>
                 <div class="header-actions">
-                    <a href="admin-menu.php" class="btn btn-secondary">Назад в админку</a>
+                    <a href="admin-menu.php" class="btn btn-secondary">
+                        <?= renderMonitorIcon('arrow-left', 'monitor-button-icon') ?>
+                        <span>Назад в админку</span>
+                    </a>
                 </div>
             </div>
         </header>
         
         <!-- Быстрые действия -->
         <div class="card">
-            <h2>⚡ Быстрые действия</h2>
+            <h2><?= renderMonitorIcon('lightning') ?><span>Быстрые действия</span></h2>
             <div class="actions">
                 <button class="btn btn-primary" data-action="refreshMetrics">
-                    <span class="icon">🔄</span> Обновить метрики
+                    <?= renderMonitorIcon('arrows-clockwise', 'monitor-button-icon') ?>
+                    <span>Обновить метрики</span>
                 </button>
                 <button class="btn btn-warning" data-action="clearOpcache">
-                    <span class="icon">🗑️</span> Очистить OPcache
+                    <?= renderMonitorIcon('trash', 'monitor-button-icon') ?>
+                    <span>Очистить OPcache</span>
                 </button>
                 <button class="btn btn-success" data-action="exportMetrics">
-                    <span class="icon">📥</span> Экспорт метрик
+                    <?= renderMonitorIcon('download-simple', 'monitor-button-icon') ?>
+                    <span>Экспорт метрик</span>
                 </button>
-                <button class="btn" data-action="showApi">
-                    <span class="icon">🔧</span> API Endpoint
+                <button class="btn btn-neutral" data-action="showApi">
+                    <?= renderMonitorIcon('wrench', 'monitor-button-icon') ?>
+                    <span>API Endpoint</span>
                 </button>
             </div>
 
@@ -854,20 +499,18 @@ $metrics = getPerformanceMetrics(true);
                 </select>
             </div>
             
-            <div id="result" class="result"></div>
+            <div id="result" class="result" hidden aria-live="polite"></div>
         </div>
         
         <!-- Основные метрики -->
         <div class="dashboard">
             <!-- Карточка здоровья системы -->
             <div class="card">
-                <h2>❤️ Здоровье системы</h2>
+                <h2><?= renderMonitorIcon('heart') ?><span>Здоровье системы</span></h2>
                 <div class="metric">
                     <div class="metric-label">Общий статус</div>
                     <div class="metric-value" id="systemHealth">Загрузка...</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill progress-success" id="healthBar" data-width="0"></div>
-                    </div>
+                    <progress class="progress-meter progress-success" id="healthBar" max="100" value="0"></progress>
                 </div>
                 <div class="stats-grid" id="healthIndicators">
                     <!-- Индикаторы будут заполнены JavaScript -->
@@ -876,7 +519,7 @@ $metrics = getPerformanceMetrics(true);
             
             <!-- Карточка производительности -->
             <div class="card">
-                <h2>⚡ Производительность</h2>
+                <h2><?= renderMonitorIcon('lightning') ?><span>Производительность</span></h2>
                 <div class="metric">
                     <div class="metric-label">Время выполнения</div>
                     <div class="metric-value"><?= $metrics['performance']['execution']['time'] ?></div>
@@ -903,7 +546,7 @@ $metrics = getPerformanceMetrics(true);
             
             <!-- Карточка OPcache -->
             <div class="card">
-                <h2>💾 OPcache</h2>
+                <h2><?= renderMonitorIcon('hard-drive') ?><span>OPcache</span></h2>
                 <?php if ($metrics['php']['opcache']['enabled']): ?>
                     <div class="metric">
                         <div class="metric-label">Hit Rate</div>
@@ -913,12 +556,13 @@ $metrics = getPerformanceMetrics(true);
                         ?>">
                             <?= $metrics['php']['opcache']['hit_rate'] ?>%
                         </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill <?= 
+                        <progress
+                            class="progress-meter <?=
                                 $metrics['php']['opcache']['hit_rate'] > 90 ? 'progress-success' : 
                                 ($metrics['php']['opcache']['hit_rate'] > 70 ? 'progress-warning' : 'progress-danger')
-                            ?>" data-width="<?= min($metrics['php']['opcache']['hit_rate'], 100) ?>"></div>
-                        </div>
+                            ?>"
+                            max="100"
+                            value="<?= min($metrics['php']['opcache']['hit_rate'], 100) ?>"></progress>
                     </div>
                     <div class="stats-grid">
                         <div class="stat-item">
@@ -953,7 +597,7 @@ $metrics = getPerformanceMetrics(true);
         <div class="dashboard">
             <!-- Карточка базы данных -->
             <div class="card">
-                <h2>🗄️ База данных</h2>
+                <h2><?= renderMonitorIcon('database') ?><span>База данных</span></h2>
                 <div class="metric">
                     <div class="metric-label">Buffer Pool Hit Rate</div>
                     <div class="metric-value <?= 
@@ -962,12 +606,13 @@ $metrics = getPerformanceMetrics(true);
                     ?>">
                         <?= $metrics['database']['buffer_pool_hit_rate'] ?>%
                     </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill <?= 
+                    <progress
+                        class="progress-meter <?=
                             $metrics['database']['buffer_pool_hit_rate'] > 99 ? 'progress-success' : 
                             ($metrics['database']['buffer_pool_hit_rate'] > 95 ? 'progress-warning' : 'progress-danger')
-                        ?>" data-width="<?= min($metrics['database']['buffer_pool_hit_rate'], 100) ?>"></div>
-                    </div>
+                        ?>"
+                        max="100"
+                        value="<?= min($metrics['database']['buffer_pool_hit_rate'], 100) ?>"></progress>
                 </div>
                 <div class="stats-grid">
                     <div class="stat-item">
@@ -993,7 +638,7 @@ $metrics = getPerformanceMetrics(true);
             
             <!-- Карточка сервера -->
             <div class="card">
-                <h2>🖥️ Сервер</h2>
+                <h2><?= renderMonitorIcon('desktop') ?><span>Сервер</span></h2>
                 <div class="metric">
                     <div class="metric-label">Загрузка CPU (1min)</div>
                     <div class="metric-value <?= 
@@ -1024,7 +669,7 @@ $metrics = getPerformanceMetrics(true);
         
         <!-- Детальная информация -->
         <div class="card">
-            <h2>📋 Детальная информация</h2>
+            <h2><?= renderMonitorIcon('list-bullets') ?><span>Детальная информация</span></h2>
             <div class="overflow-x-auto">
                 <table class="table">
                     <thead>
@@ -1127,8 +772,8 @@ $metrics = getPerformanceMetrics(true);
             </div>
         </div>
 
-        <div class="card hidden" id="apiSection">
-            <h2>🔧 API Endpoint</h2>
+        <div class="card" id="apiSection" hidden>
+            <h2><?= renderMonitorIcon('wrench') ?><span>API Endpoint</span></h2>
             <p>Для получения метрик в формате JSON используйте:</p>
             <pre class="code-block">
 GET /monitor.php?api=1
@@ -1142,392 +787,6 @@ POST /clear-cache.php?scope=server (header: X-CSRF-Token)
             </pre>
         </div>
     </div>
-    
-    <script nonce="<?= htmlspecialchars($scriptNonce ?? '', ENT_QUOTES, 'UTF-8') ?>">
-    // Глобальные переменные
-    let autoRefreshInterval = null;
-    let refreshInterval = 30000; // 30 секунд по умолчанию
-    const monitorCsrfToken = <?= json_encode($csrfToken, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
-    
-    // Функция для показа результата
-    function showResult(message, type = 'success') {
-        const resultDiv = document.getElementById('result');
-        resultDiv.className = 'result ' + type;
-        resultDiv.textContent = message;
-        resultDiv.style.display = 'block';
-        
-        // Скрыть через 5 секунд
-        setTimeout(() => {
-            resultDiv.style.display = 'none';
-        }, 5000);
-    }
-    
-    // Функция обновления метрик
-    async function refreshMetrics() {
-        try {
-            const response = await fetch('?action=get_metrics');
-            const metrics = await response.json();
-            updateMetricsDisplay(metrics);
-            
-            // Обновить время последнего обновления
-            document.getElementById('lastUpdate').textContent = 
-                'Обновлено: ' + new Date().toLocaleTimeString();
-            
-            showResult('Метрики обновлены', 'success');
-        } catch (error) {
-            showResult('Ошибка обновления метрик: ' + error.message, 'error');
-        }
-    }
-    
-    // Функция очистки OPcache
-    async function clearOpcache() {
-        if (!confirm('Вы уверены? Это сбросит весь кэш OPcache.')) {
-            return;
-        }
-        
-        try {
-            const response = await fetch('?action=clear_opcache');
-            const result = await response.json();
-            
-            showResult(result.message, result.success ? 'success' : 'error');
-            
-            if (result.success) {
-                // Обновить метрики через 2 секунды
-                setTimeout(refreshMetrics, 2000);
-            }
-        } catch (error) {
-            showResult('Ошибка: ' + error.message, 'error');
-        }
-    }
-    
-    // Функция очистки серверного кэша (Redis)
-    async function clearServerCache() {
-        if (!confirm('Вы уверены? Это сбросит весь серверный кэш.')) {
-            return;
-        }
-
-        if (!monitorCsrfToken) {
-            showResult('CSRF token not found. Reload the page.', 'error');
-            return;
-        }
-
-        try {
-            const response = await fetch('/clear-cache.php?scope=server', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-Token': monitorCsrfToken
-                }
-            });
-            const result = await response.json();
-
-            const success = response.ok && result.status === 'success';
-            let message = result.message || (success ? 'Server cache cleared' : 'Cache clear failed');
-            if (success && result.details) {
-                const details = [];
-                if ('redis_cache_cleared' in result.details) {
-                    details.push(`Redis: ${result.details.redis_cache_cleared ? 'ok' : 'skip'}`);
-                }
-                if (details.length) {
-                    message += ` (${details.join(', ')})`;
-                }
-            }
-
-            showResult(message, success ? 'success' : 'error');
-
-            if (success) {
-                setTimeout(refreshMetrics, 2000);
-            }
-        } catch (error) {
-            showResult('Ошибка: ' + error.message, 'error');
-        }
-    }
-
-    // Функция экспорта метрик
-    function exportMetrics() {
-        const data = <?= json_encode($metrics, JSON_PRETTY_PRINT) ?>;
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'metrics-' + new Date().toISOString().split('T')[0] + '.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        showResult('Метрики экспортированы', 'success');
-    }
-    
-    // Функция показа API
-    function showApi() {
-        const apiSection = document.getElementById('apiSection');
-        apiSection.classList.toggle('hidden');
-        
-        // Показать пример API ответа
-        const exampleDiv = document.getElementById('apiExample');
-        const data = <?= json_encode($metrics, JSON_PRETTY_PRINT) ?>;
-        exampleDiv.textContent = JSON.stringify(data, null, 2);
-    }
-    
-    // Функция обновления отображения метрик
-    function updateMetricsDisplay(metrics) {
-        // Обновить здоровье системы
-        updateSystemHealth(metrics);
-        
-        // Обновить детальную информацию
-        updateDetailedInfo(metrics);
-    }
-    
-    // Функция обновления здоровья системы
-    function updateSystemHealth(metrics) {
-        // Рассчитать общий статус здоровья
-        let healthScore = 0;
-        let totalMetrics = 0;
-        
-        // OPcache hit rate
-        if (metrics.php.opcache.enabled) {
-            const opcacheRate = metrics.php.opcache.hit_rate;
-            healthScore += opcacheRate >= 90 ? 100 : opcacheRate >= 70 ? 70 : 30;
-            totalMetrics++;
-        }
-        
-        // DB buffer pool hit rate
-        const dbRate = metrics.database.buffer_pool_hit_rate;
-        healthScore += dbRate >= 99 ? 100 : dbRate >= 95 ? 70 : 30;
-        totalMetrics++;
-        
-        // CPU load
-        const load = metrics.server.load_average?.['1min'] || 0;
-        healthScore += load < 1 ? 100 : load < 2 ? 70 : 30;
-        totalMetrics++;
-        
-        const averageHealth = Math.round(healthScore / totalMetrics);
-        
-        // Обновить отображение
-        const healthDiv = document.getElementById('systemHealth');
-        const healthBar = document.getElementById('healthBar');
-        
-        let healthStatus, healthClass;
-        if (averageHealth >= 90) {
-            healthStatus = 'Отличное';
-            healthClass = 'status-good';
-            healthBar.className = 'progress-fill progress-success';
-        } else if (averageHealth >= 70) {
-            healthStatus = 'Хорошее';
-            healthClass = 'status-warning';
-            healthBar.className = 'progress-fill progress-warning';
-        } else {
-            healthStatus = 'Требует внимания';
-            healthClass = 'status-critical';
-            healthBar.className = 'progress-fill progress-danger';
-        }
-        
-        healthDiv.className = 'metric-value ' + healthClass;
-        healthDiv.textContent = healthStatus + ' (' + averageHealth + '%)';
-        healthBar.style.width = averageHealth + '%';
-        
-        // Обновить индикаторы
-        updateHealthIndicators(metrics);
-    }
-    
-    // Функция обновления индикаторов здоровья
-    function updateHealthIndicators(metrics) {
-        const indicatorsDiv = document.getElementById('healthIndicators');
-        indicatorsDiv.innerHTML = '';
-        
-        const indicators = [
-            {
-                label: 'OPcache',
-                value: metrics.php.opcache.enabled ? metrics.php.opcache.hit_rate + '%' : 'Отключен',
-                status: metrics.php.opcache.enabled ? 
-                    (metrics.php.opcache.hit_rate >= 90 ? 'good' : 
-                     metrics.php.opcache.hit_rate >= 70 ? 'warning' : 'critical') : 'warning'
-            },
-            {
-                label: 'БД Buffer Pool',
-                value: metrics.database.buffer_pool_hit_rate + '%',
-                status: metrics.database.buffer_pool_hit_rate >= 99 ? 'good' : 
-                        metrics.database.buffer_pool_hit_rate >= 95 ? 'warning' : 'critical'
-            },
-            {
-                label: 'Загрузка CPU',
-                value: (metrics.server.load_average?.['1min'] || 'N/A') + '',
-                status: (metrics.server.load_average?.['1min'] || 0) < 1 ? 'good' : 
-                        (metrics.server.load_average?.['1min'] || 0) < 2 ? 'warning' : 'critical'
-            }
-        ];
-        
-        indicators.forEach(indicator => {
-            const div = document.createElement('div');
-            div.className = 'stat-item';
-            div.innerHTML = `
-                <div class="stat-label">
-                    <span class="health-indicator health-${indicator.status}"></span>
-                    ${indicator.label}
-                </div>
-                <div class="stat-value">${indicator.value}</div>
-            `;
-            indicatorsDiv.appendChild(div);
-        });
-    }
-    
-    // Функция обновления детальной информации
-    function updateDetailedInfo(metrics) {
-        const tbody = document.getElementById('detailedInfo');
-        tbody.innerHTML = '';
-        
-        const rows = [
-            // PHP
-            ['PHP', 'Версия', metrics.php.version, 'good'],
-            ['PHP', 'OPcache', metrics.php.opcache.enabled ? 'Включен' : 'Выключен', metrics.php.opcache.enabled ? 'good' : 'warning'],
-            ['PHP', 'OPcache Hit Rate', metrics.php.opcache.hit_rate + '%', 
-                metrics.php.opcache.hit_rate >= 90 ? 'good' : metrics.php.opcache.hit_rate >= 70 ? 'warning' : 'critical'],
-            
-            // База данных
-            ['БД', 'Buffer Pool Hit Rate', metrics.database.buffer_pool_hit_rate + '%',
-                metrics.database.buffer_pool_hit_rate >= 99 ? 'good' : metrics.database.buffer_pool_hit_rate >= 95 ? 'warning' : 'critical'],
-            ['БД', 'Соединения', metrics.database.connections + ' / ' + metrics.database.max_connections,
-                metrics.database.connections_percentage < 80 ? 'good' : metrics.database.connections_percentage < 90 ? 'warning' : 'critical'],
-            ['БД', 'Медленные запросы', metrics.database.slow_queries,
-                metrics.database.slow_queries < 5 ? 'good' : metrics.database.slow_queries < 20 ? 'warning' : 'critical'],
-            
-            // Сервер
-            ['Сервер', 'Загрузка (1min)', (metrics.server.load_average?.['1min'] || 'N/A') + '',
-                (metrics.server.load_average?.['1min'] || 0) < 1 ? 'good' : (metrics.server.load_average?.['1min'] || 0) < 2 ? 'warning' : 'critical'],
-            ['Сервер', 'Память', formatBytes(metrics.server.memory.used) + ' / ' + metrics.server.memory.limit,
-                'good'],
-            ['Сервер', 'Пик памяти', formatBytes(metrics.server.memory.peak), 'good'],
-            
-            // Производительность
-            ['Приложение', 'Время выполнения', metrics.performance.execution.time, 'good'],
-            ['Приложение', 'Использование памяти', metrics.performance.execution.memory, 'good'],
-            ['Приложение', 'Запросы к БД', metrics.performance.database_queries.total + ' (' + 
-                metrics.performance.database_queries.cached + ' кэшировано)', 'good']
-        ];
-        
-        rows.forEach(row => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${row[0]}</td>
-                <td>${row[1]}</td>
-                <td>${row[2]}</td>
-                <td class="status-${row[3]}">${getStatusText(row[3])}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-    
-    // Вспомогательные функции
-    function formatBytes(bytes) {
-        if (bytes === 0) return '0 B';
-        const k = 1024;
-        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-    
-    function getStatusText(status) {
-        switch(status) {
-            case 'good': return '✓ Хорошо';
-            case 'warning': return '⚠ Предупреждение';
-            case 'critical': return '✗ Критично';
-            default: return status;
-        }
-    }
-    
-    // Управление автообновлением
-    function toggleAutoRefresh() {
-        const checkbox = document.getElementById('autoRefresh');
-        
-        if (checkbox.checked) {
-            startAutoRefresh();
-        } else {
-            stopAutoRefresh();
-        }
-    }
-    
-    function startAutoRefresh() {
-        if (autoRefreshInterval) {
-            clearInterval(autoRefreshInterval);
-        }
-        
-        autoRefreshInterval = setInterval(refreshMetrics, refreshInterval);
-        showResult('Автообновление включено (' + (refreshInterval / 1000) + ' сек)', 'success');
-    }
-    
-    function stopAutoRefresh() {
-        if (autoRefreshInterval) {
-            clearInterval(autoRefreshInterval);
-            autoRefreshInterval = null;
-            showResult('Автообновление выключено', 'warning');
-        }
-    }
-    
-    function updateRefreshInterval() {
-        const select = document.getElementById('refreshInterval');
-        refreshInterval = parseInt(select.value) * 1000;
-        
-        // Если автообновление активно, перезапустить с новым интервалом
-        if (document.getElementById('autoRefresh').checked) {
-            startAutoRefresh();
-        }
-    }
-    
-    // Инициализация при загрузке
-    document.addEventListener('DOMContentLoaded', function() {
-        // Обновить детальную информацию
-        updateMetricsDisplay(<?= json_encode($metrics) ?>);
-
-        // Установить начальные значения
-        const select = document.getElementById('refreshInterval');
-        select.value = refreshInterval / 1000;
-
-        // Инициализировать ширину progress-bar из data-width
-        document.querySelectorAll('[data-width]').forEach(el => {
-            el.style.width = el.dataset.width + '%';
-        });
-
-        // Обработчики кнопок через data-action
-        const actions = { refreshMetrics, clearOpcache, clearServerCache, exportMetrics, showApi };
-        document.querySelectorAll('[data-action]').forEach(btn => {
-            btn.addEventListener('click', function() {
-                this.disabled = true;
-                setTimeout(() => { this.disabled = false; }, 2000);
-                const fn = actions[this.dataset.action];
-                if (fn) fn();
-            });
-        });
-
-        // Обработчики checkbox и select
-        document.getElementById('autoRefresh').addEventListener('change', toggleAutoRefresh);
-        select.addEventListener('change', updateRefreshInterval);
-
-        // Запустить автообновление если нужно
-        if (document.getElementById('autoRefresh').checked) {
-            startAutoRefresh();
-        }
-    });
-    
-    // Обновлять каждые 30 секунд если страница активна
-    let visibilityChange;
-    if (typeof document.hidden !== "undefined") {
-        visibilityChange = "visibilitychange";
-    } else if (typeof document.msHidden !== "undefined") {
-        visibilityChange = "msvisibilitychange";
-    } else if (typeof document.webkitHidden !== "undefined") {
-        visibilityChange = "webkitvisibilitychange";
-    }
-    
-    if (visibilityChange) {
-        document.addEventListener(visibilityChange, function() {
-            if (!document.hidden && autoRefreshInterval) {
-                // Страница стала видимой, обновить метрики
-                refreshMetrics();
-            }
-        });
-    }
-    </script>
+    <script src="/js/monitor-page.js?v=<?= htmlspecialchars($monitorJsVersion, ENT_QUOTES, 'UTF-8') ?>"></script>
 </body>
 </html>
