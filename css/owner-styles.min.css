@@ -744,7 +744,15 @@ body.owner-page .admin-form-container {
   padding: 28px;
 }
 
-body.owner-page .admin-tab-pane#stats {
+body.owner-page .admin-tab-pane {
+  display: none;
+}
+
+body.owner-page .admin-tab-pane.active {
+  display: block;
+}
+
+body.owner-page .admin-tab-pane#stats.active {
   display: flex;
   flex-direction: column;
   gap: 22px;
