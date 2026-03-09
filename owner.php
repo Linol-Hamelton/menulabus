@@ -365,8 +365,8 @@ if (!empty($report_data)) {
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
-    <link rel="stylesheet" href="/css/owner-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/owner-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
 </head>
 
@@ -384,7 +384,14 @@ if (!empty($report_data)) {
         </div>
         <section class="admin-form-container">
             <div class="admin-tab-pane <?= $tab === 'stats' ? 'active' : '' ?>" id="stats">
-                <h2>Аналитика - <?= htmlspecialchars($report_title) ?></h2>
+                <div class="owner-workspace-stack">
+                    <div class="owner-workspace-header">
+                        <div>
+                            <p class="owner-workspace-kicker">Аналитика</p>
+                            <h2>Аналитика - <?= htmlspecialchars($report_title) ?></h2>
+                        </div>
+                        <p class="owner-workspace-copy">KPI, отчёт, графики и отчётные срезы собраны в одном рабочем пространстве.</p>
+                    </div>
 
                 <div class="owner-kpi-grid">
                     <article class="owner-kpi-card">
@@ -459,20 +466,44 @@ if (!empty($report_data)) {
                     </article>
                 </div>
                 <!-- Период и тип отчета -->
-                <div class="report-controls">
-                    <form method="GET" class="report-filter-form">
-                        <input type="hidden" name="report" value="<?= htmlspecialchars($report_type) ?>">
-
-                        <div class="form-group">
-                            <label>Период:</label>
-                            <select name="period" id="periodSelect">
-                                <option value="day" <?= $period === 'day' ? 'selected' : '' ?>>День</option>
-                                <option value="week" <?= $period === 'week' ? 'selected' : '' ?>>Неделя</option>
-                                <option value="month" <?= $period === 'month' ? 'selected' : '' ?>>Месяц</option>
-                                <option value="year" <?= $period === 'year' ? 'selected' : '' ?>>Год</option>
-                            </select>
+                <div class="owner-report-toolbar">
+                    <div class="owner-report-tabs-card">
+                        <div class="owner-report-toolbar-head">
+                            <div>
+                                <p class="owner-workspace-kicker">Отчёты</p>
+                                <h3>Срезы и метрики</h3>
+                            </div>
+                            <p class="owner-report-toolbar-copy">Переключайте отчёт и период, не теряя общий контекст по KPI и графикам.</p>
                         </div>
-                    </form>
+                        <div class="menu-tabs-container owner-report-tabs-container">
+                            <div class="menu-tabs">
+                                <a href="?report=sales&period=<?= $period ?>" class="tab-btn <?= $report_type === 'sales' ? 'active' : '' ?>">Продажи</a>
+                                <a href="?report=profit&period=<?= $period ?>" class="tab-btn <?= $report_type === 'profit' ? 'active' : '' ?>">Прибыль</a>
+                                <a href="?report=efficiency&period=<?= $period ?>" class="tab-btn <?= $report_type === 'efficiency' ? 'active' : '' ?>">Оперативность</a>
+                                <a href="?report=customers&period=<?= $period ?>" class="tab-btn <?= $report_type === 'customers' ? 'active' : '' ?>">Клиенты</a>
+                                <a href="?report=dishes&period=<?= $period ?>" class="tab-btn <?= $report_type === 'dishes' ? 'active' : '' ?>">Топ блюд</a>
+                                <a href="?report=load&period=<?= $period ?>" class="tab-btn <?= $report_type === 'load' ? 'active' : '' ?>">Загруженность</a>
+                                <a href="?report=employees&period=<?= $period ?>" class="tab-btn <?= $report_type === 'employees' ? 'active' : '' ?>">Официанты</a>
+                                <a href="?report=bottlenecks&period=<?= $period ?>" class="tab-btn <?= $report_type === 'bottlenecks' ? 'active' : '' ?>">Узкие места</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="report-controls owner-report-controls-card">
+                        <form method="GET" class="report-filter-form">
+                            <input type="hidden" name="report" value="<?= htmlspecialchars($report_type) ?>">
+
+                            <div class="form-group">
+                                <label>Период:</label>
+                                <select name="period" id="periodSelect">
+                                    <option value="day" <?= $period === 'day' ? 'selected' : '' ?>>День</option>
+                                    <option value="week" <?= $period === 'week' ? 'selected' : '' ?>>Неделя</option>
+                                    <option value="month" <?= $period === 'month' ? 'selected' : '' ?>>Месяц</option>
+                                    <option value="year" <?= $period === 'year' ? 'selected' : '' ?>>Год</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
                 </div>
 
                 <!-- Отчет -->
@@ -533,6 +564,20 @@ if (!empty($report_data)) {
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
+                </div>
+
+                <section class="owner-charts-section">
+                    <div class="owner-report-toolbar-head owner-report-toolbar-head--charts">
+                        <div>
+                            <p class="owner-workspace-kicker">Графики</p>
+                            <h3>Визуализация текущего отчёта</h3>
+                        </div>
+                        <p class="owner-report-toolbar-copy">Графики показывают выбранный отчёт в текущем периоде и обновляются вместе с таблицей.</p>
+                    </div>
+                    <div class="charts-container" id="chartsContainer">
+                        <!-- Графики будут созданы через JavaScript -->
+                    </div>
+                </section>
                 </div>
             </div>
             <div class="admin-tab-pane <?= $tab === 'users' ? 'active' : '' ?>" id="users">
@@ -628,25 +673,6 @@ if (!empty($report_data)) {
             </div>
         </section>
     </div>
-    <!-- Графики -->
-    <div class="charts-container" id="chartsContainer">
-        <!-- Графики будут созданы через JavaScript -->
-    </div>
-
-    <!-- Табы для переключения отчетов -->
-    <div class="menu-tabs-container">
-        <div class="menu-tabs">
-            <a href="?report=sales&period=<?= $period ?>" class="tab-btn <?= $report_type === 'sales' ? 'active' : '' ?>">Продажи</a>
-            <a href="?report=profit&period=<?= $period ?>" class="tab-btn <?= $report_type === 'profit' ? 'active' : '' ?>">Прибыль</a>
-            <a href="?report=efficiency&period=<?= $period ?>" class="tab-btn <?= $report_type === 'efficiency' ? 'active' : '' ?>">Оперативность</a>
-            <a href="?report=customers&period=<?= $period ?>" class="tab-btn <?= $report_type === 'customers' ? 'active' : '' ?>">Клиенты</a>
-            <a href="?report=dishes&period=<?= $period ?>" class="tab-btn <?= $report_type === 'dishes' ? 'active' : '' ?>">Топ блюд</a>
-            <a href="?report=load&period=<?= $period ?>" class="tab-btn <?= $report_type === 'load' ? 'active' : '' ?>">Загруженность</a>
-            <a href="?report=employees&period=<?= $period ?>" class="tab-btn <?= $report_type === 'employees' ? 'active' : '' ?>">Официанты</a>
-            <a href="?report=bottlenecks&period=<?= $period ?>" class="tab-btn <?= $report_type === 'bottlenecks' ? 'active' : '' ?>">Узкие места</a>
-        </div>
-    </div>
-
     <textarea id="owner-page-data" hidden><?= htmlspecialchars(json_encode([
                                                 'chartData' => $chart_data,
                                                 'currentPeriod' => $period,

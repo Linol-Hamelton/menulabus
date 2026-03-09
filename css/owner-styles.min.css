@@ -728,3 +728,236 @@ body.owner-page .chart-empty {
     min-width: 74px;
   }
 }
+
+/* owner.php final workspace polish */
+
+body.owner-page .account-container {
+  display: block;
+  margin: 0 auto;
+  max-width: min(1360px, calc(100vw - 32px));
+  padding: 0 16px 40px;
+}
+
+body.owner-page .admin-form-container {
+  border-radius: 24px;
+  margin: 0;
+  padding: 28px;
+}
+
+body.owner-page .admin-tab-pane#stats {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+body.owner-page .owner-workspace-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+body.owner-page .owner-workspace-header,
+body.owner-page .owner-report-toolbar-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+}
+
+body.owner-page .owner-workspace-header h2,
+body.owner-page .owner-report-toolbar-head h3 {
+  color: var(--ui-text);
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.05;
+  margin: 0;
+}
+
+body.owner-page .owner-workspace-kicker {
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+body.owner-page .owner-workspace-copy,
+body.owner-page .owner-report-toolbar-copy {
+  color: var(--ui-text-muted);
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 440px;
+}
+
+body.owner-page .owner-kpi-grid,
+body.owner-page .owner-top-items-grid,
+body.owner-page .report-content,
+body.owner-page .owner-charts-section {
+  margin: 0;
+}
+
+body.owner-page .owner-kpi-card,
+body.owner-page .owner-top-items-card,
+body.owner-page .owner-report-tabs-card,
+body.owner-page .owner-report-controls-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 246, 242, 0.98));
+  border: 1px solid var(--ui-border);
+  border-radius: 18px;
+  box-shadow: var(--ui-shadow-soft);
+}
+
+body.owner-page .owner-kpi-card {
+  min-height: 112px;
+}
+
+body.owner-page .owner-report-toolbar {
+  align-items: stretch;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+}
+
+body.owner-page .owner-report-tabs-card {
+  padding: 20px 22px;
+}
+
+body.owner-page .owner-report-controls-card {
+  display: flex;
+  padding: 20px 22px;
+}
+
+body.owner-page .owner-report-controls-card .report-filter-form {
+  align-items: flex-end;
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+body.owner-page .owner-report-controls-card .form-group {
+  width: 100%;
+}
+
+body.owner-page .owner-report-controls-card label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+body.owner-page .owner-report-controls-card select {
+  min-width: 0;
+  width: 100%;
+}
+
+body.owner-page .menu-tabs-container.owner-report-tabs-container {
+  background: transparent;
+  border-top: 0;
+  bottom: auto;
+  box-shadow: none;
+  left: auto;
+  overflow-x: auto;
+  padding: 0;
+  position: static;
+  right: auto;
+  white-space: nowrap;
+  width: 100%;
+  z-index: auto;
+}
+
+body.owner-page .owner-report-tabs-container .menu-tabs {
+  display: inline-flex;
+  gap: 10px;
+  justify-content: flex-start;
+  min-width: max-content;
+  padding: 4px 0 0;
+}
+
+body.owner-page .owner-report-tabs-container .tab-btn {
+  white-space: nowrap;
+}
+
+body.owner-page .report-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+body.owner-page .owner-charts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+body.owner-page .owner-report-toolbar-head--charts {
+  padding: 0 4px;
+}
+
+body.owner-page .charts-container {
+  margin: 0;
+  max-width: none;
+  padding: 0;
+}
+
+@media (max-width: 1024px) {
+  body.owner-page .account-container {
+    max-width: min(100vw - 24px, 1120px);
+    padding-inline: 12px;
+  }
+
+  body.owner-page .owner-report-toolbar {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  body.owner-page .admin-form-container {
+    padding: 18px;
+  }
+
+  body.owner-page .owner-workspace-header,
+  body.owner-page .owner-report-toolbar-head {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  body.owner-page .owner-workspace-header h2,
+  body.owner-page .owner-report-toolbar-head h3 {
+    font-size: 24px;
+  }
+
+  body.owner-page .owner-workspace-copy,
+  body.owner-page .owner-report-toolbar-copy {
+    max-width: none;
+  }
+
+  body.owner-page .owner-report-tabs-card,
+  body.owner-page .owner-report-controls-card {
+    padding: 16px;
+  }
+
+  body.owner-page .owner-report-tabs-container .menu-tabs {
+    padding-top: 2px;
+  }
+}
+
+@media (max-width: 480px) {
+  body.owner-page .account-container {
+    max-width: calc(100vw - 16px);
+    padding-inline: 8px;
+  }
+
+  body.owner-page .admin-form-container {
+    border-radius: 20px;
+    padding: 14px;
+  }
+
+  body.owner-page .owner-workspace-header h2,
+  body.owner-page .owner-report-toolbar-head h3 {
+    font-size: 22px;
+  }
+
+  body.owner-page .owner-report-tabs-card,
+  body.owner-page .owner-report-controls-card {
+    border-radius: 16px;
+    padding: 14px;
+  }
+}
