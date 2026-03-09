@@ -47,7 +47,8 @@
     }
 
     try {
-      return JSON.parse(template.textContent || "{}");
+      const payload = (template.textContent || template.innerHTML || "").trim();
+      return JSON.parse(payload || "{}");
     } catch (error) {
       console.error("Failed to parse monitor metrics payload", error);
       return null;
