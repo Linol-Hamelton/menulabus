@@ -1013,11 +1013,11 @@ body.employee-page.admin-menu-page .admin-design-panel .design-buttons {
 }
 
 body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#projectName) {
-  grid-column: span 4;
+  grid-column: span 12;
 }
 
 body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#browseImages) {
-  grid-column: span 8;
+  grid-column: span 12;
 }
 
 body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#brandName) {
