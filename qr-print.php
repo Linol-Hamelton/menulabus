@@ -1,8 +1,8 @@
 <?php
 /**
- * qr-print.php — Print QR codes for table service
+ * qr-print.php - Print QR codes for table service
  *
- * GET /qr-print.php?count=N  — print N table QR codes (1–50)
+ * GET /qr-print.php?count=N - print N table QR codes (1-50)
  *
  * Requires employee/admin/owner role.
  */
@@ -15,10 +15,8 @@ require_once __DIR__ . '/db.php';
 $count = max(1, min(50, (int)($_GET['count'] ?? 10)));
 $db    = Database::getInstance();
 
-$appVersion  = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
-$siteName    = htmlspecialchars($GLOBALS['siteName'] ?? 'labus');
-$scriptNonce = $_SESSION['csp_nonce'] ?? '';
-$styleNonce  = $_SESSION['csp_nonce'] ?? '';
+$appVersion = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
+$siteName   = htmlspecialchars($GLOBALS['siteName'] ?? 'labus');
 
 $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'];
 ?>
@@ -43,8 +41,8 @@ $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTT
                 <label for="tableCount">Столов:</label>
                 <input type="number" id="tableCount" class="qr-count-input"
                        value="<?= $count ?>" min="1" max="50">
-                <a href="#" id="applyCount" class="checkout-btn">Применить</a>
-                <button onclick="window.print()" class="checkout-btn">Распечатать</button>
+                <button type="button" id="applyCount" class="checkout-btn">Применить</button>
+                <button type="button" id="printQrBtn" class="checkout-btn">Распечатать</button>
                 <a href="employee.php" class="checkout-btn cancel-btn">
                     <svg class="btn-inline-icon" aria-hidden="true" viewBox="0 0 256 256">
                         <use href="/images/icons/phosphor-sprite.svg#arrow-left"></use>
@@ -72,13 +70,6 @@ $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTT
         </div>
     </main>
 
-    <script nonce="<?= $scriptNonce ?>">
-    document.getElementById('applyCount')?.addEventListener('click', function(e) {
-        e.preventDefault();
-        var n = parseInt(document.getElementById('tableCount').value, 10) || 10;
-        n = Math.max(1, Math.min(50, n));
-        window.location.href = '/qr-print.php?count=' + n;
-    });
-    </script>
+    <script src="/js/qr-print-page.js?v=<?= $appVersion ?>"></script>
 </body>
 </html>
