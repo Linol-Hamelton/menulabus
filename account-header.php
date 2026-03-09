@@ -13,7 +13,7 @@
                 <?php endif; ?>
 
                 <?php if (($user['role'] ?? '') === 'owner'): ?>
-                    <a href="owner.php" class="account-owner">₽</a>
+                    <a href="owner.php" class="account-owner" aria-label="Аналитика владельца" title="Аналитика владельца">₽</a>
                 <?php endif; ?>
             </div>
 

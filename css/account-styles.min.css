@@ -512,7 +512,7 @@
 }
 .account-admin {
   font-size: 25px;
-  padding: 10px 11px;
+  padding: 0;
 }
 .account-admin-icon {
   display: block;
@@ -530,14 +530,28 @@
 .account-admin,
 .account-owner {
   align-items: center;
-  background-color: var(--primary-color);
-  border-radius: 25px;
-  color: var(--white);
+  background: var(--ui-surface);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 14px;
+  color: var(--ui-text-muted);
   display: flex;
-  font-weight: 100;
-  gap: 8px;
+  font-weight: 700;
+  gap: 0;
+  justify-content: center;
+  min-height: 40px;
+  min-width: 40px;
   text-decoration: none;
-  transition: background-color 0.3s;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+.account-admin:hover,
+.account-admin:focus-visible,
+.account-owner:hover,
+.account-owner:focus-visible {
+  background: var(--ui-surface);
+  border-color: rgba(205, 23, 25, 0.28);
+  box-shadow: var(--ui-shadow-soft);
+  color: var(--ui-text);
+  transform: translateY(-1px);
 }
 .account-admin:hover .account-admin-icon,
 .account-admin:focus-visible .account-admin-icon {
@@ -545,8 +559,9 @@
   transform: scale(1.03);
 }
 .account-owner {
-  font-size: 28px;
-  padding: 0 13px;
+  font-size: 21px;
+  line-height: 1;
+  padding: 0;
 }
 .save-role-btn {
   background-color: var(--ui-accent);
