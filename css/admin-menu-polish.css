@@ -2754,11 +2754,11 @@ body.employee-page.admin-menu-page .admin-system-panel { gap: 20px; }
 body.employee-page.admin-menu-page .admin-design-panel { grid-template-columns: repeat(12, minmax(0, 1fr)); }
 body.employee-page.admin-menu-page .admin-design-panel .admin-pane-header,
 body.employee-page.admin-menu-page .admin-design-panel .design-buttons { grid-column: 1 / -1; }
-body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#projectName) { grid-column: span 4; }
-body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#browseImages) { grid-column: span 8; }
+body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#projectName) { grid-column: span 12; }
+body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#browseImages) { grid-column: span 12; }
 body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#brandName) { grid-column: 1 / -1; }
 body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#fontLogoOverride) { grid-column: span 4; }
-body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(.color-controls) { grid-column: span 8; }
+body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(.color-controls) { grid-column: span 12; }
 body.employee-page.admin-menu-page .admin-design-panel .design-buttons { align-items: center; display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-start; }
 body.employee-page.admin-menu-page .file-manager-buttons { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 body.employee-page.admin-menu-page .file-navigation { align-items: start; gap: 12px; grid-template-columns: minmax(0, 1fr) auto; }
@@ -3269,6 +3269,18 @@ body.employee-page.admin-menu-page .admin-block--fonts .font-selector:not(:disab
     --admin-card-gap: 16px;
   }
 
+  body.employee-page.admin-menu-page .account-header-bar {
+    margin-bottom: 10px;
+  }
+
+  body.employee-page.admin-menu-page .admin-tabs-container {
+    margin-bottom: 14px;
+  }
+
+  body.employee-page.admin-menu-page .account-form-container {
+    gap: 14px;
+  }
+
   body.employee-page.admin-menu-page .account-header-bar .container,
   body.employee-page.admin-menu-page .admin-tabs-container,
   body.employee-page.admin-menu-page .account-form-container {
@@ -3278,6 +3290,26 @@ body.employee-page.admin-menu-page .admin-block--fonts .font-selector:not(:disab
   body.employee-page.admin-menu-page .admin-tab-btn {
     min-height: 48px;
     padding-inline: 16px;
+  }
+
+  body.employee-page.admin-menu-page .admin-section-card,
+  body.employee-page.admin-menu-page .admin-form-group {
+    border-radius: 18px;
+  }
+
+  body.employee-page.admin-menu-page .admin-pane-header {
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  body.employee-page.admin-menu-page .admin-pane-title {
+    font-size: 1.75rem;
+    line-height: 1.08;
+  }
+
+  body.employee-page.admin-menu-page .admin-pane-caption {
+    font-size: 0.94rem;
+    line-height: 1.55;
   }
 
   body.employee-page.admin-menu-page .admin-block--fonts .font-controls {
@@ -3309,6 +3341,30 @@ body.employee-page.admin-menu-page .admin-block--fonts .font-selector:not(:disab
 
   body.employee-page.admin-menu-page .admin-pane-caption {
     max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  body.employee-page.admin-menu-page {
+    --admin-shell-max: calc(100vw - 18px);
+    --admin-card-pad: 16px;
+    --admin-card-gap: 14px;
+  }
+
+  body.employee-page.admin-menu-page .admin-tabs-container {
+    margin-bottom: 12px;
+  }
+
+  body.employee-page.admin-menu-page .account-form-container {
+    gap: 12px;
+  }
+
+  body.employee-page.admin-menu-page .admin-pane-title {
+    font-size: 1.58rem;
+  }
+
+  body.employee-page.admin-menu-page .admin-pane-caption {
+    font-size: 0.9rem;
   }
 }
 

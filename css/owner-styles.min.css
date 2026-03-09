@@ -936,8 +936,16 @@ body.owner-page .charts-container {
 }
 
 @media (max-width: 768px) {
+  body.owner-page .admin-tabs-container {
+    margin-bottom: 16px;
+  }
+
   body.owner-page .admin-form-container {
     padding: 18px;
+  }
+
+  body.owner-page .owner-workspace-stack {
+    gap: 16px;
   }
 
   body.owner-page .owner-workspace-header,
@@ -961,6 +969,22 @@ body.owner-page .charts-container {
     padding: 16px;
   }
 
+  body.owner-page .owner-kpi-grid,
+  body.owner-page .owner-top-items-grid,
+  body.owner-page .report-content,
+  body.owner-page .owner-charts-section {
+    gap: 14px;
+  }
+
+  body.owner-page .owner-kpi-card,
+  body.owner-page .owner-top-items-card {
+    border-radius: 18px;
+  }
+
+  body.owner-page .owner-kpi-card {
+    min-height: 100px;
+  }
+
   body.owner-page .owner-report-tabs-container .menu-tabs {
     padding-top: 2px;
   }
@@ -970,6 +994,10 @@ body.owner-page .charts-container {
   body.owner-page .account-container {
     max-width: calc(100vw - 16px);
     padding-inline: 8px;
+  }
+
+  body.owner-page .admin-tabs-container {
+    margin-bottom: 12px;
   }
 
   body.owner-page .admin-form-container {
@@ -986,5 +1014,20 @@ body.owner-page .charts-container {
   body.owner-page .owner-report-controls-card {
     border-radius: 16px;
     padding: 14px;
+  }
+
+  body.owner-page .owner-workspace-stack {
+    gap: 14px;
+  }
+
+  body.owner-page .owner-kpi-grid,
+  body.owner-page .owner-top-items-grid,
+  body.owner-page .report-content,
+  body.owner-page .owner-charts-section {
+    gap: 12px;
+  }
+
+  body.owner-page .owner-kpi-card {
+    min-height: 92px;
   }
 }
