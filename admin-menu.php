@@ -610,7 +610,7 @@ $savedDbFontsJson = htmlspecialchars(
                             Скрыть упоминание Labus в публичных страницах
                         </label>
                         <div class="brand-save-row">
-                            <button id="saveBrandBtn" class="btn-save-colors">Сохранить бренд</button>
+                            <button id="saveBrandBtn" class="checkout-btn">Сохранить бренд</button>
                             <span id="brandStatus" class="brand-status"></span>
                         </div>
                     </div>

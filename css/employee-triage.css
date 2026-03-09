@@ -298,6 +298,7 @@ body.employee-page .employee-order-glance__item {
   border-radius: 12px;
   color: rgba(18, 18, 18, 0.78);
   padding: 9px 12px;
+  max-height: fit-content;
 }
 
 body.employee-page .employee-order-glance__item strong {
