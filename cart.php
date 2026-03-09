@@ -58,6 +58,7 @@ $sbpVisible = $tbankActive || $paymentEnabled;
         .empty-cart-shell{align-items:center;display:flex;justify-content:center}
         .empty-cart-card{background:linear-gradient(180deg,var(--ui-surface) 0%,var(--white) 100%);border:1px solid var(--ui-border);border-radius:28px;box-shadow:var(--ui-shadow-soft);max-width:640px;padding:36px 32px}
         .empty-cart-icon{align-items:center;background:linear-gradient(135deg,rgba(205,23,25,.12),rgba(205,23,25,.04));border:1px solid rgba(205,23,25,.16);border-radius:18px;color:var(--ui-accent);display:inline-flex;height:68px;justify-content:center;margin-bottom:18px;width:68px}
+        .empty-cart-icon-svg{display:block;fill:currentColor;height:32px;width:32px}
         .empty-cart h3{color:var(--ui-text);font-size:30px;line-height:1.1;margin:0 0 12px}
         .empty-cart-actions{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:24px}
         .empty-cart-actions .checkout-btn{min-width:200px;padding:12px 18px;text-decoration:none}
@@ -89,8 +90,8 @@ $sbpVisible = $tbankActive || $paymentEnabled;
                 <div class="empty-cart empty-cart-shell">
                     <div class="empty-cart-card">
                         <div class="empty-cart-icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 256 256" fill="currentColor">
-                                <path d="M96,216a16,16,0,1,1-16-16A16,16,0,0,1,96,216Zm80-16a16,16,0,1,0,16,16A16,16,0,0,0,176,200ZM223.85,69.12l-21.67,92A24,24,0,0,1,178.82,180H84.38A24,24,0,0,1,61,161.26L39.2,64H16a8,8,0,0,1,0-16H45.58a16,16,0,0,1,15.61,12.51L66.28,84H216a8,8,0,0,1,7.79,9.84ZM206,100H69.86l6.75,30H199Z"/>
+                            <svg class="empty-cart-icon-svg" viewBox="0 0 256 256">
+                                <use href="/images/icons/phosphor-sprite.svg#shopping-cart-simple"></use>
                             </svg>
                         </div>
                         <h3>&#1050;&#1086;&#1088;&#1079;&#1080;&#1085;&#1072; &#1087;&#1086;&#1082;&#1072; &#1087;&#1091;&#1089;&#1090;&#1072;&#1103;</h3>

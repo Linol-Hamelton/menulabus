@@ -514,18 +514,13 @@
   font-size: 25px;
   padding: 0;
 }
-.account-admin-icon {
+.account-action-icon {
   display: block;
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
-  background:
-    radial-gradient(circle at 4px 4px, currentColor 0 1.6px, transparent 1.8px),
-    radial-gradient(circle at 14px 4px, currentColor 0 1.6px, transparent 1.8px),
-    radial-gradient(circle at 4px 14px, currentColor 0 1.6px, transparent 1.8px),
-    radial-gradient(circle at 14px 14px, currentColor 0 1.6px, transparent 1.8px);
-  box-shadow: inset 0 0 0 1.5px currentColor;
+  fill: currentColor;
+  height: 20px;
   opacity: 0.95;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  width: 20px;
 }
 .account-admin,
 .account-owner {
@@ -553,13 +548,14 @@
   color: var(--ui-text);
   transform: translateY(-1px);
 }
-.account-admin:hover .account-admin-icon,
-.account-admin:focus-visible .account-admin-icon {
+.account-admin:hover .account-action-icon,
+.account-admin:focus-visible .account-action-icon,
+.account-owner:hover .account-action-icon,
+.account-owner:focus-visible .account-action-icon {
   opacity: 1;
   transform: scale(1.03);
 }
 .account-owner {
-  font-size: 21px;
   line-height: 1;
   padding: 0;
 }

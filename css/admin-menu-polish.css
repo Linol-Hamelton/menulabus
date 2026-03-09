@@ -2571,8 +2571,10 @@ body.auth-page :is(.tab-btn, .checkout-btn, .back-to-menu-btn, .save-role-btn, .
 .mod-add-option-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .mod-add-option-row .mod-opt-name{flex:2;min-width:120px;padding:7px 10px;border:1px solid var(--border-color,#ddd);border-radius:8px;font-size:.9rem}
 .mod-add-option-row .mod-opt-price{width:80px;padding:7px 10px;border:1px solid var(--border-color,#ddd);border-radius:8px;font-size:.9rem}
-.mod-btn-sm{padding:5px 10px;border:none;border-radius:6px;cursor:pointer;font-size:.82rem;background:var(--primary-color,#cd1719);color:#fff}
+.mod-btn-sm{align-items:center;background:var(--primary-color,#cd1719);border:none;border-radius:6px;color:#fff;cursor:pointer;display:inline-flex;font-size:.82rem;gap:6px;justify-content:center;padding:5px 10px}
 .mod-btn-sm:hover{opacity:.85}
+.mod-btn-icon-only{min-width:34px;padding:5px}
+.mod-btn-sm .btn-inline-icon{height:14px;width:14px}
 .mod-new-group-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
 .mod-new-group-row input,.mod-new-group-row select{padding:7px 10px;border:1px solid var(--border-color,#ddd);border-radius:8px;font-size:.9rem}
 .mod-new-group-row input[type=text]{flex:2;min-width:120px}

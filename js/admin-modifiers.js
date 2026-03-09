@@ -48,13 +48,18 @@
                 '<div class="mod-group-header">' +
                     '<span class="mod-group-name">' + escHtml(g.name) + '</span>' +
                     '<span class="mod-group-type">' + (g.type === 'radio' ? 'Один вариант' : 'Несколько') + (g.required ? ', обязательно' : '') + '</span>' +
-                    '<button class="mod-btn-sm mod-del-group" data-group-id="' + g.id + '">✕</button>' +
+                    '<button class="mod-btn-sm mod-del-group mod-btn-icon-only" data-group-id="' + g.id + '" aria-label="Удалить группу" title="Удалить группу">' +
+                        '<svg class="btn-inline-icon" aria-hidden="true" viewBox="0 0 256 256"><use href="/images/icons/phosphor-sprite.svg#x"></use></svg>' +
+                    '</button>' +
                 '</div>' +
                 '<div class="mod-options" id="opts-' + g.id + '">' + renderOptions(g) + '</div>' +
                 '<div class="mod-add-option-row">' +
                     '<input type="text" class="mod-opt-name" placeholder="Вариант" maxlength="100">' +
                     '<input type="number" class="mod-opt-price" placeholder="+₽" step="0.01" min="0" max="9999">' +
-                    '<button class="mod-btn-sm mod-add-opt" data-group-id="' + g.id + '">+ Вариант</button>' +
+                    '<button class="mod-btn-sm mod-add-opt" data-group-id="' + g.id + '">' +
+                        '<svg class="btn-inline-icon" aria-hidden="true" viewBox="0 0 256 256"><use href="/images/icons/phosphor-sprite.svg#plus"></use></svg>' +
+                        '<span>Вариант</span>' +
+                    '</button>' +
                 '</div>';
             list.appendChild(div);
         });
@@ -82,7 +87,9 @@
         return group.options.map(function (o) {
             return '<div class="mod-option">' +
                 '<span>' + escHtml(o.name) + (o.price_delta ? ' (+' + o.price_delta + ' ₽)' : '') + '</span>' +
-                '<button class="mod-btn-sm mod-del-opt" data-option-id="' + o.id + '">✕</button>' +
+                '<button class="mod-btn-sm mod-del-opt mod-btn-icon-only" data-option-id="' + o.id + '" aria-label="Удалить вариант" title="Удалить вариант">' +
+                    '<svg class="btn-inline-icon" aria-hidden="true" viewBox="0 0 256 256"><use href="/images/icons/phosphor-sprite.svg#x"></use></svg>' +
+                '</button>' +
             '</div>';
         }).join('');
     }

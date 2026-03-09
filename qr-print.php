@@ -45,7 +45,12 @@ $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTT
                        value="<?= $count ?>" min="1" max="50">
                 <a href="#" id="applyCount" class="checkout-btn">Применить</a>
                 <button onclick="window.print()" class="checkout-btn">Распечатать</button>
-                <a href="employee.php" class="checkout-btn cancel-btn">← Назад</a>
+                <a href="employee.php" class="checkout-btn cancel-btn">
+                    <svg class="btn-inline-icon" aria-hidden="true" viewBox="0 0 256 256">
+                        <use href="/images/icons/phosphor-sprite.svg#arrow-left"></use>
+                    </svg>
+                    <span>Назад</span>
+                </a>
             </div>
         </div>
 

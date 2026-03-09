@@ -8,12 +8,18 @@
             <div class="section-header-quick-actions">
                 <?php if (in_array(($user['role'] ?? ''), ['owner', 'admin'], true)): ?>
                     <a href="admin-menu.php" class="account-admin" aria-label="Панель администратора">
-                        <span class="account-admin-icon" aria-hidden="true"></span>
+                        <svg class="account-action-icon" aria-hidden="true" viewBox="0 0 256 256">
+                            <use href="/images/icons/phosphor-sprite.svg#gear-six"></use>
+                        </svg>
                     </a>
                 <?php endif; ?>
 
                 <?php if (($user['role'] ?? '') === 'owner'): ?>
-                    <a href="owner.php" class="account-owner" aria-label="Аналитика владельца" title="Аналитика владельца">₽</a>
+                    <a href="owner.php" class="account-owner" aria-label="Аналитика владельца" title="Аналитика владельца">
+                        <svg class="account-action-icon" aria-hidden="true" viewBox="0 0 256 256">
+                            <use href="/images/icons/phosphor-sprite.svg#chart-bar"></use>
+                        </svg>
+                    </a>
                 <?php endif; ?>
             </div>
 

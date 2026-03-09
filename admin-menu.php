@@ -341,7 +341,12 @@ $savedDbFontsJson = htmlspecialchars(
                             <label>
                                 <input type="checkbox" id="newGroupRequired"> Обязательно
                             </label>
-                            <button id="addModifierGroupBtn" class="checkout-btn">+ Группа</button>
+                            <button id="addModifierGroupBtn" class="checkout-btn">
+                                <svg class="btn-inline-icon" aria-hidden="true" viewBox="0 0 256 256">
+                                    <use href="/images/icons/phosphor-sprite.svg#plus"></use>
+                                </svg>
+                                <span>Группа</span>
+                            </button>
                         </div>
                     </section>
                 <?php endif; ?>
@@ -502,7 +507,12 @@ $savedDbFontsJson = htmlspecialchars(
                     <div id="fileBrowser" class="file-browser">
                         <div class="file-navigation">
                             <span class="current-folder">Текущая папка: <span id="currentFolder"></span></span>
-                            <button type="button" class="checkout-btn" id="goBackBtn">← Назад</button>
+                            <button type="button" class="checkout-btn" id="goBackBtn">
+                                <svg class="btn-inline-icon" aria-hidden="true" viewBox="0 0 256 256">
+                                    <use href="/images/icons/phosphor-sprite.svg#arrow-left"></use>
+                                </svg>
+                                <span>Назад</span>
+                            </button>
                         </div>
 
                         <div class="folder-actions">

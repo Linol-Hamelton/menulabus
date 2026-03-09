@@ -1350,6 +1350,13 @@ a {
 .order-summary-btn:hover {
   background-color: var(--primary-dark);
 }
+.btn-inline-icon {
+  display: block;
+  fill: currentColor;
+  flex: 0 0 auto;
+  height: 18px;
+  width: 18px;
+}
 .order-summary-btn .order-total {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
