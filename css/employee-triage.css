@@ -453,4 +453,12 @@ body.employee-page .employee-order-card .status-btn-r {
     gap: 10px;
     text-align: left;
   }
+
+  body.employee-page .account-container {
+    padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+  }
+
+  body.employee-page .admin-form-container {
+    padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  }
 }
