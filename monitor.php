@@ -445,7 +445,7 @@ $metrics = getPerformanceMetrics(true);
         data-clear-opcache-url="?action=clear_opcache"
         data-clear-server-cache-url="/clear-cache.php?scope=server"
         data-refresh-interval-ms="30000">
-        <template id="monitorMetricsData"><?= htmlspecialchars(json_encode($metrics, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_NOQUOTES, 'UTF-8') ?></template>
+        <template id="monitorMetricsData"><?= json_encode($metrics, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></template>
         <header>
             <div>
                 <h1><?= renderMonitorIcon('chart-bar', 'monitor-heading-icon') ?><span>Мониторинг производительности</span></h1>
