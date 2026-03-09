@@ -1,29 +1,25 @@
 <?php
-// opcache-status.php
 $required_role = 'admin';
 require_once __DIR__ . '/require_auth.php';
 
-// Проверка доступности OPcache
 if (!extension_loaded('Zend OPcache')) {
     die('OPcache extension not loaded');
 }
 
-// Обработка действий
 if (isset($_GET['action'])) {
     header('Content-Type: application/json');
-    
+
     switch ($_GET['action']) {
         case 'reset':
             $result = opcache_reset();
             echo json_encode([
                 'success' => $result,
-                'message' => $result ? 'Кэш OPcache успешно сброшен' : 'Ошибка сброса кэша'
+                'message' => $result ? 'Кэш OPcache успешно сброшен' : 'Ошибка сброса кэша',
             ]);
             break;
-            
+
         case 'revalidate':
             if (function_exists('opcache_invalidate')) {
-                // Инвалидируем все файлы
                 $files = get_included_files();
                 $invalidated = 0;
                 foreach ($files as $file) {
@@ -33,32 +29,30 @@ if (isset($_GET['action'])) {
                 }
                 echo json_encode([
                     'success' => true,
-                    'message' => "Перепроверено {$invalidated} файлов"
+                    'message' => "Перепроверено {$invalidated} файлов",
                 ]);
             } else {
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Функция opcache_invalidate недоступна'
+                    'message' => 'Функция opcache_invalidate недоступна',
                 ]);
             }
             break;
-            
+
         case 'get_stats':
-            $status = opcache_get_status();
-            $config = opcache_get_configuration();
             echo json_encode([
                 'success' => true,
                 'data' => [
-                    'status' => $status,
-                    'config' => $config
-                ]
+                    'status' => opcache_get_status(),
+                    'config' => opcache_get_configuration(),
+                ],
             ]);
             break;
-            
+
         default:
             echo json_encode([
                 'success' => false,
-                'message' => 'Неизвестное действие'
+                'message' => 'Неизвестное действие',
             ]);
     }
     exit;
@@ -67,7 +61,6 @@ if (isset($_GET['action'])) {
 $status = opcache_get_status();
 $config = opcache_get_configuration();
 
-// Функция для форматирования байтов
 function formatBytes($bytes, $precision = 2) {
     $units = ['B', 'KB', 'MB', 'GB', 'TB'];
     $bytes = max($bytes, 0);
@@ -77,34 +70,28 @@ function formatBytes($bytes, $precision = 2) {
     return round($bytes, $precision) . ' ' . $units[$pow];
 }
 
-// Функция для расчета процентов
 function calculatePercentage($used, $total) {
-    if ($total == 0) return 0;
+    if ($total == 0) {
+        return 0;
+    }
     return round(($used / $total) * 100, 2);
 }
 
-// Получение метрик
 $memoryUsage = $status['memory_usage'] ?? [];
 $opcacheStats = $status['opcache_statistics'] ?? [];
 $directives = $config['directives'] ?? [];
 
-// Расчет hit rate
-$hitRate = isset($opcacheStats['opcache_hit_rate']) ? 
-    round($opcacheStats['opcache_hit_rate'], 2) : 0;
-
-// Расчет использования памяти
+$hitRate = isset($opcacheStats['opcache_hit_rate']) ? round($opcacheStats['opcache_hit_rate'], 2) : 0;
 $usedMemory = $memoryUsage['used_memory'] ?? 0;
 $freeMemory = $memoryUsage['free_memory'] ?? 0;
 $wastedMemory = $memoryUsage['wasted_memory'] ?? 0;
 $totalMemory = $usedMemory + $freeMemory + $wastedMemory;
-
-// Количество скриптов
 $cachedScripts = $opcacheStats['num_cached_scripts'] ?? 0;
 $maxCachedScripts = $directives['opcache.max_accelerated_files'] ?? 0;
-
-// Время
 $startTime = $opcacheStats['start_time'] ?? 0;
 $lastRestartTime = $opcacheStats['last_restart_time'] ?? 0;
+$cssVersion = @filemtime(__DIR__ . '/css/opcache-status.css') ?: '1.0.0';
+$jsVersion = @filemtime(__DIR__ . '/js/opcache-status-page.js') ?: '1.0.0';
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -112,216 +99,35 @@ $lastRestartTime = $opcacheStats['last_restart_time'] ?? 0;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мониторинг OPcache</title>
-    <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; 
-            padding: 20px; 
-            background: #f5f5f5; 
-            color: #333;
-        }
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-        }
-        header { 
-            background: #2c3e50; 
-            color: white; 
-            padding: 20px; 
-            border-radius: 8px 8px 0 0;
-            margin-bottom: 20px;
-        }
-        h1 { 
-            margin: 0; 
-            font-size: 24px;
-        }
-        .subtitle { 
-            color: #bdc3c7; 
-            margin-top: 5px;
-        }
-        .dashboard { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-            gap: 20px; 
-            margin-bottom: 30px;
-        }
-        .card { 
-            background: white; 
-            padding: 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        .card h2 { 
-            margin-top: 0; 
-            color: #2c3e50; 
-            border-bottom: 2px solid #3498db; 
-            padding-bottom: 10px;
-        }
-        .metric { 
-            margin: 15px 0;
-        }
-        .metric-label { 
-            font-weight: bold; 
-            color: #7f8c8d; 
-            margin-bottom: 5px;
-        }
-        .metric-value { 
-            font-size: 1.4em; 
-            color: #2c3e50;
-        }
-        .progress-bar { 
-            height: 20px; 
-            background: #ecf0f1; 
-            border-radius: 10px; 
-            overflow: hidden; 
-            margin: 10px 0;
-        }
-        .progress-fill { 
-            height: 100%; 
-            background: linear-gradient(90deg, #3498db, #2ecc71); 
-            transition: width 0.3s;
-        }
-        .progress-text { 
-            text-align: center; 
-            font-size: 0.9em; 
-            color: #7f8c8d; 
-            margin-top: 5px;
-        }
-        .stats-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-            gap: 15px; 
-            margin-top: 20px;
-        }
-        .stat-item { 
-            background: #f8f9fa; 
-            padding: 15px; 
-            border-radius: 6px; 
-            border-left: 4px solid #3498db;
-        }
-        .stat-label { 
-            font-size: 0.9em; 
-            color: #6c757d;
-        }
-        .stat-value { 
-            font-size: 1.2em; 
-            font-weight: bold; 
-            color: #2c3e50;
-        }
-        .actions { 
-            display: flex; 
-            gap: 10px; 
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-        .btn { 
-            padding: 10px 20px; 
-            border: none; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            font-weight: bold; 
-            transition: background 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .btn-primary { 
-            background: #3498db; 
-            color: white;
-        }
-        .btn-primary:hover { 
-            background: #2980b9;
-        }
-        .btn-danger { 
-            background: #e74c3c; 
-            color: white;
-        }
-        .btn-danger:hover { 
-            background: #c0392b;
-        }
-        .btn-success { 
-            background: #2ecc71; 
-            color: white;
-        }
-        .btn-success:hover { 
-            background: #27ae60;
-        }
-        .table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 20px;
-        }
-        .table th, .table td { 
-            padding: 12px; 
-            text-align: left; 
-            border-bottom: 1px solid #dee2e6;
-        }
-        .table th { 
-            background: #f8f9fa; 
-            font-weight: bold; 
-            color: #495057;
-        }
-        .table tr:hover { 
-            background: #f8f9fa;
-        }
-        .status-good { 
-            color: #27ae60; 
-            font-weight: bold;
-        }
-        .status-warning { 
-            color: #f39c12; 
-            font-weight: bold;
-        }
-        .status-critical { 
-            color: #e74c3c; 
-            font-weight: bold;
-        }
-        .refresh-info { 
-            text-align: center; 
-            margin-top: 20px; 
-            color: #7f8c8d; 
-            font-size: 0.9em;
-        }
-        .icon { 
-            font-size: 1.2em;
-        }
-        #result { 
-            margin-top: 20px; 
-            padding: 15px; 
-            border-radius: 4px; 
-            display: none;
-        }
-        .success { 
-            background: #d4edda; 
-            color: #155724; 
-            border: 1px solid #c3e6cb;
-        }
-        .error { 
-            background: #f8d7da; 
-            color: #721c24; 
-            border: 1px solid #f5c6cb;
-        }
-    </style>
+    <link rel="stylesheet" href="/css/opcache-status.css?v=<?= htmlspecialchars((string)$cssVersion) ?>">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>📊 Мониторинг OPcache</h1>
+    <div class="opcache-page container">
+        <header class="opcache-header">
+            <h1 class="opcache-heading">
+                <svg class="opcache-heading-icon" aria-hidden="true" viewBox="0 0 256 256">
+                    <use href="/images/icons/phosphor-sprite.svg#chart-bar"></use>
+                </svg>
+                <span>Мониторинг OPcache</span>
+            </h1>
             <div class="subtitle">Версия PHP: <?= PHP_VERSION ?> | Время сервера: <?= date('Y-m-d H:i:s') ?></div>
         </header>
-        
+
         <div class="dashboard">
-            <!-- Карточка Hit Rate -->
-            <div class="card">
-                <h2>⚡ Эффективность кэша</h2>
+            <section class="card">
+                <h2 class="card-title">
+                    <svg class="card-title-icon" aria-hidden="true" viewBox="0 0 256 256">
+                        <use href="/images/icons/phosphor-sprite.svg#lightning"></use>
+                    </svg>
+                    <span>Эффективность кэша</span>
+                </h2>
                 <div class="metric">
                     <div class="metric-label">Hit Rate</div>
                     <div class="metric-value <?= $hitRate > 90 ? 'status-good' : ($hitRate > 70 ? 'status-warning' : 'status-critical') ?>">
                         <?= $hitRate ?>%
                     </div>
                     <div class="progress-bar">
-                        <div class="progress-fill" style="width: <?= min($hitRate, 100) ?>%"></div>
+                        <div class="progress-fill" data-progress="<?= htmlspecialchars((string)min($hitRate, 100)) ?>"></div>
                     </div>
                     <div class="progress-text">
                         <?php if ($hitRate > 90): ?>
@@ -343,20 +149,24 @@ $lastRestartTime = $opcacheStats['last_restart_time'] ?? 0;
                         <div class="stat-value"><?= number_format($opcacheStats['misses'] ?? 0) ?></div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-label">Черный список</div>
+                        <div class="stat-label">Чёрный список</div>
                         <div class="stat-value"><?= number_format($opcacheStats['blacklist_misses'] ?? 0) ?></div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Карточка памяти -->
-            <div class="card">
-                <h2>💾 Использование памяти</h2>
+            </section>
+
+            <section class="card">
+                <h2 class="card-title">
+                    <svg class="card-title-icon" aria-hidden="true" viewBox="0 0 256 256">
+                        <use href="/images/icons/phosphor-sprite.svg#hard-drive"></use>
+                    </svg>
+                    <span>Использование памяти</span>
+                </h2>
                 <div class="metric">
                     <div class="metric-label">Использовано памяти</div>
                     <div class="metric-value"><?= formatBytes($usedMemory) ?> / <?= formatBytes($totalMemory) ?></div>
                     <div class="progress-bar">
-                        <div class="progress-fill" style="width: <?= calculatePercentage($usedMemory, $totalMemory) ?>%"></div>
+                        <div class="progress-fill" data-progress="<?= htmlspecialchars((string)calculatePercentage($usedMemory, $totalMemory)) ?>"></div>
                     </div>
                     <div class="progress-text">
                         <?= calculatePercentage($usedMemory, $totalMemory) ?>% использовано
@@ -380,16 +190,20 @@ $lastRestartTime = $opcacheStats['last_restart_time'] ?? 0;
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Карточка скриптов -->
-            <div class="card">
-                <h2>📁 Кэшированные скрипты</h2>
+            </section>
+
+            <section class="card">
+                <h2 class="card-title">
+                    <svg class="card-title-icon" aria-hidden="true" viewBox="0 0 256 256">
+                        <use href="/images/icons/phosphor-sprite.svg#list-bullets"></use>
+                    </svg>
+                    <span>Кэшированные скрипты</span>
+                </h2>
                 <div class="metric">
                     <div class="metric-label">Скриптов в кэше</div>
                     <div class="metric-value"><?= number_format($cachedScripts) ?> / <?= number_format($maxCachedScripts) ?></div>
                     <div class="progress-bar">
-                        <div class="progress-fill" style="width: <?= calculatePercentage($cachedScripts, $maxCachedScripts) ?>%"></div>
+                        <div class="progress-fill" data-progress="<?= htmlspecialchars((string)calculatePercentage($cachedScripts, $maxCachedScripts)) ?>"></div>
                     </div>
                     <div class="progress-text">
                         <?= calculatePercentage($cachedScripts, $maxCachedScripts) ?>% заполнено
@@ -409,35 +223,53 @@ $lastRestartTime = $opcacheStats['last_restart_time'] ?? 0;
                         <div class="stat-value"><?= number_format($opcacheStats['oom_restarts'] ?? 0) ?></div>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
-        
-        <!-- Действия -->
-        <div class="card">
-            <h2>⚙️ Управление OPcache</h2>
+
+        <section class="card">
+            <h2 class="card-title">
+                <svg class="card-title-icon" aria-hidden="true" viewBox="0 0 256 256">
+                    <use href="/images/icons/phosphor-sprite.svg#gear-six"></use>
+                </svg>
+                <span>Управление OPcache</span>
+            </h2>
             <div class="actions">
-                <button class="btn btn-primary" onclick="resetCache()">
-                    <span class="icon">🔄</span> Сбросить кэш
+                <button type="button" class="btn btn-primary" data-opcache-action="reset">
+                    <svg class="btn-icon" aria-hidden="true" viewBox="0 0 256 256">
+                        <use href="/images/icons/phosphor-sprite.svg#arrows-clockwise"></use>
+                    </svg>
+                    <span>Сбросить кэш</span>
                 </button>
-                <button class="btn btn-success" onclick="revalidateCache()">
-                    <span class="icon">🔍</span> Перепроверить скрипты
+                <button type="button" class="btn btn-success" data-opcache-action="revalidate">
+                    <svg class="btn-icon" aria-hidden="true" viewBox="0 0 256 256">
+                        <use href="/images/icons/phosphor-sprite.svg#lightning"></use>
+                    </svg>
+                    <span>Перепроверить скрипты</span>
                 </button>
-                <button class="btn" onclick="location.reload()">
-                    <span class="icon">📊</span> Обновить статистику
+                <button type="button" class="btn" data-opcache-action="reload">
+                    <svg class="btn-icon" aria-hidden="true" viewBox="0 0 256 256">
+                        <use href="/images/icons/phosphor-sprite.svg#chart-bar"></use>
+                    </svg>
+                    <span>Обновить статистику</span>
                 </button>
-                <button class="btn" onclick="showConfig()">
-                    <span class="icon">⚙️</span> Показать конфигурацию
+                <button type="button" class="btn" data-opcache-action="toggle-config">
+                    <svg class="btn-icon" aria-hidden="true" viewBox="0 0 256 256">
+                        <use href="/images/icons/phosphor-sprite.svg#wrench"></use>
+                    </svg>
+                    <span>Показать конфигурацию</span>
                 </button>
             </div>
-            <div id="result" class="result"></div>
-            <div class="refresh-info">
-                Статистика обновляется автоматически каждые 30 секунд
-            </div>
-        </div>
-        
-        <!-- Детальная информация -->
-        <div class="card">
-            <h2>📋 Детальная информация</h2>
+            <div id="result" class="result" hidden></div>
+            <div class="refresh-info">Статистика обновляется автоматически каждые 30 секунд</div>
+        </section>
+
+        <section class="card">
+            <h2 class="card-title">
+                <svg class="card-title-icon" aria-hidden="true" viewBox="0 0 256 256">
+                    <use href="/images/icons/phosphor-sprite.svg#list-bullets"></use>
+                </svg>
+                <span>Детальная информация</span>
+            </h2>
             <table class="table">
                 <thead>
                     <tr>
@@ -494,99 +326,19 @@ $lastRestartTime = $opcacheStats['last_restart_time'] ?? 0;
                     </tr>
                 </tbody>
             </table>
-        </div>
-        
-        <!-- Конфигурация (скрыта по умолчанию) -->
-        <div class="card" id="configSection" style="display: none;">
-            <h2>⚙️ Конфигурация OPcache</h2>
-            <pre style="background: #f8f9fa; padding: 15px; border-radius: 4px; overflow: auto; max-height: 400px;">
-<?= htmlspecialchars(print_r($directives, true)) ?>
-            </pre>
-        </div>
+        </section>
+
+        <section class="card" id="configSection" hidden>
+            <h2 class="card-title">
+                <svg class="card-title-icon" aria-hidden="true" viewBox="0 0 256 256">
+                    <use href="/images/icons/phosphor-sprite.svg#wrench"></use>
+                </svg>
+                <span>Конфигурация OPcache</span>
+            </h2>
+            <pre class="config-pre"><?= htmlspecialchars(print_r($directives, true)) ?></pre>
+        </section>
     </div>
-    
-    <script>
-    // Функция для показа результата
-    function showResult(message, isSuccess) {
-        const resultDiv = document.getElementById('result');
-        resultDiv.className = 'result ' + (isSuccess ? 'success' : 'error');
-        resultDiv.textContent = message;
-        resultDiv.style.display = 'block';
-        
-        // Скрыть через 5 секунд
-        setTimeout(() => {
-            resultDiv.style.display = 'none';
-        }, 5000);
-    }
-    
-    // Функция сброса кэша
-    function resetCache() {
-        if (!confirm('Вы уверены? Это сбросит весь кэш OPcache.')) {
-            return;
-        }
-        
-        fetch('?action=reset')
-            .then(response => response.json())
-            .then(data => {
-                showResult(data.message, data.success);
-                if (data.success) {
-                    // Обновить страницу через 2 секунды
-                    setTimeout(() => location.reload(), 2000);
-                }
-            })
-            .catch(error => {
-                showResult('Ошибка: ' + error.message, false);
-            });
-    }
-    
-    // Функция перепроверки скриптов
-    function revalidateCache() {
-        fetch('?action=revalidate')
-            .then(response => response.json())
-            .then(data => {
-                showResult(data.message, data.success);
-            })
-            .catch(error => {
-                showResult('Ошибка: ' + error.message, false);
-            });
-    }
-    
-    // Функция показа конфигурации
-    function showConfig() {
-        const configSection = document.getElementById('configSection');
-        configSection.style.display = configSection.style.display === 'none' ? 'block' : 'none';
-    }
-    
-    // Автоматическое обновление статистики каждые 30 секунд
-    setInterval(() => {
-        // Обновляем только если пользователь не взаимодействует с элементами управления
-        if (!document.querySelector('.btn:disabled')) {
-            fetch('?action=get_stats')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Здесь можно обновить отдельные элементы страницы
-                        // Для простоты просто обновляем всю страницу
-                        // location.reload();
-                    }
-                })
-                .catch(error => console.error('Error updating stats:', error));
-        }
-    }, 30000);
-    
-    // Добавить обработчик для всех кнопок
-    document.addEventListener('DOMContentLoaded', function() {
-        const buttons = document.querySelectorAll('.btn');
-        buttons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                // Временная блокировка кнопки на 2 секунды
-                this.disabled = true;
-                setTimeout(() => {
-                    this.disabled = false;
-                }, 2000);
-            });
-        });
-    });
-    </script>
+
+    <script src="/js/opcache-status-page.js?v=<?= htmlspecialchars((string)$jsVersion) ?>"></script>
 </body>
 </html>
