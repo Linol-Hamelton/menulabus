@@ -1029,7 +1029,7 @@ body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(#
 }
 
 body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(.color-controls) {
-  grid-column: span 8;
+  grid-column: span 12;
 }
 
 body.employee-page.admin-menu-page .admin-design-panel .design-buttons {
