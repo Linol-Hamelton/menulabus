@@ -3341,3 +3341,160 @@ body.employee-page.admin-menu-page .admin-block--fonts .font-controls {
     grid-template-columns: 1fr;
   }
 }
+
+/* admin-menu.php focused polish: project name + file manager blocks */
+body.employee-page.admin-menu-page .admin-design-panel > .admin-block--project {
+  align-content: start;
+  display: grid;
+  gap: 16px;
+}
+
+body.employee-page.admin-menu-page .admin-design-panel > .admin-block--files {
+  align-content: start;
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+body.employee-page.admin-menu-page .admin-block--project .project-name-control {
+  align-items: start;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr;
+}
+
+body.employee-page.admin-menu-page .admin-block--project #projectName,
+body.employee-page.admin-menu-page .admin-block--project #saveProjectNameBtn {
+  width: 100%;
+}
+
+body.employee-page.admin-menu-page .admin-block--project #projectName {
+  min-height: 52px;
+}
+
+body.employee-page.admin-menu-page .admin-block--files .file-manager-buttons {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+body.employee-page.admin-menu-page .admin-block--files .file-browser {
+  display: grid;
+  gap: 16px;
+  margin-top: 0;
+  min-width: 0;
+  overflow: hidden;
+  padding: 18px;
+}
+
+body.employee-page.admin-menu-page .admin-block--files .file-browser,
+body.employee-page.admin-menu-page .admin-block--files .file-browser * {
+  min-width: 0;
+}
+
+body.employee-page.admin-menu-page .admin-block--files .file-navigation {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+body.employee-page.admin-menu-page .admin-block--files .current-folder {
+  font-weight: 600;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+body.employee-page.admin-menu-page .admin-block--files .folder-actions,
+body.employee-page.admin-menu-page .admin-block--files .file-upload-group {
+  display: grid;
+  gap: 12px;
+}
+
+body.employee-page.admin-menu-page .admin-block--files #goBackBtn,
+body.employee-page.admin-menu-page .admin-block--files #createFolderBtn,
+body.employee-page.admin-menu-page .admin-block--files #uploadFileBtn {
+  width: auto;
+}
+
+body.employee-page.admin-menu-page .admin-block--files .file-list-container {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body.employee-page.admin-menu-page .admin-block--files .file-item {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+body.employee-page.admin-menu-page .admin-block--files .file-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+body.employee-page.admin-menu-page .admin-block--files .file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+body.employee-page.admin-menu-page .admin-block--files .file-upload-group input[type="file"] {
+  max-width: 100%;
+  width: 100%;
+}
+
+@media (max-width: 1199px) {
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--project,
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--files {
+    grid-column: 1 / -1 !important;
+  }
+
+  body.employee-page.admin-menu-page .admin-block--files .file-manager-buttons {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  body.employee-page.admin-menu-page .admin-block--files .file-navigation {
+    grid-template-columns: 1fr;
+  }
+
+  body.employee-page.admin-menu-page .admin-block--files #goBackBtn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--project,
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--files {
+    grid-column: 1 / -1 !important;
+  }
+
+  body.employee-page.admin-menu-page .admin-block--files .file-manager-buttons {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.employee-page.admin-menu-page .admin-block--files #browseIcons {
+    grid-column: 1 / -1;
+  }
+
+  body.employee-page.admin-menu-page .admin-block--files .file-browser {
+    padding: 16px;
+  }
+
+  body.employee-page.admin-menu-page .admin-block--files #createFolderBtn,
+  body.employee-page.admin-menu-page .admin-block--files #uploadFileBtn,
+  body.employee-page.admin-menu-page .admin-block--project #saveProjectNameBtn {
+    width: 100%;
+  }
+
+  body.employee-page.admin-menu-page .admin-block--files .file-item {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  body.employee-page.admin-menu-page .admin-block--files .file-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
