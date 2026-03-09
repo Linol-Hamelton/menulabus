@@ -3347,12 +3347,14 @@ body.employee-page.admin-menu-page .admin-design-panel > .admin-block--project {
   align-content: start;
   display: grid;
   gap: 16px;
+  grid-column: span 5;
 }
 
 body.employee-page.admin-menu-page .admin-design-panel > .admin-block--files {
   align-content: start;
   display: grid;
   gap: 16px;
+  grid-column: span 7;
   min-width: 0;
 }
 
@@ -3361,6 +3363,7 @@ body.employee-page.admin-menu-page .admin-block--project .project-name-control {
   display: grid;
   gap: 14px;
   grid-template-columns: 1fr;
+  max-width: 460px;
 }
 
 body.employee-page.admin-menu-page .admin-block--project #projectName,
@@ -3373,12 +3376,14 @@ body.employee-page.admin-menu-page .admin-block--project #projectName {
 }
 
 body.employee-page.admin-menu-page .admin-block--files .file-manager-buttons {
+  align-items: stretch;
   display: grid;
   gap: 12px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 body.employee-page.admin-menu-page .admin-block--files .file-browser {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(249, 249, 249, 0.98) 100%);
   display: grid;
   gap: 16px;
   margin-top: 0;
@@ -3400,9 +3405,16 @@ body.employee-page.admin-menu-page .admin-block--files .file-navigation {
 }
 
 body.employee-page.admin-menu-page .admin-block--files .current-folder {
+  align-items: center;
+  background: rgba(208, 26, 34, 0.05);
+  border: 1px solid rgba(208, 26, 34, 0.12);
+  border-radius: 12px;
+  display: inline-flex;
+  min-height: 42px;
   font-weight: 600;
   line-height: 1.45;
   overflow-wrap: anywhere;
+  padding: 10px 14px;
 }
 
 body.employee-page.admin-menu-page .admin-block--files .folder-actions,
@@ -3418,6 +3430,7 @@ body.employee-page.admin-menu-page .admin-block--files #uploadFileBtn {
 }
 
 body.employee-page.admin-menu-page .admin-block--files .file-list-container {
+  border-radius: 14px;
   max-width: 100%;
   overflow-x: hidden;
 }
@@ -3450,6 +3463,10 @@ body.employee-page.admin-menu-page .admin-block--files .file-upload-group input[
   body.employee-page.admin-menu-page .admin-design-panel > .admin-block--project,
   body.employee-page.admin-menu-page .admin-design-panel > .admin-block--files {
     grid-column: 1 / -1 !important;
+  }
+
+  body.employee-page.admin-menu-page .admin-block--project .project-name-control {
+    max-width: none;
   }
 
   body.employee-page.admin-menu-page .admin-block--files .file-manager-buttons {
