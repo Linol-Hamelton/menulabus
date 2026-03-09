@@ -819,32 +819,47 @@ body.owner-page .owner-report-toolbar {
   grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
 }
 
+body.owner-page .owner-report-toolbar > * {
+  min-width: 0;
+}
+
 body.owner-page .owner-report-tabs-card {
+  min-width: 0;
   padding: 20px 22px;
+  width: 100%;
 }
 
 body.owner-page .owner-report-controls-card {
   display: flex;
+  min-width: 0;
   padding: 20px 22px;
+  width: 100%;
 }
 
 body.owner-page .owner-report-controls-card .report-filter-form {
   align-items: flex-end;
   flex: 1 1 auto;
+  max-width: 100%;
+  min-width: 0;
   width: 100%;
 }
 
 body.owner-page .owner-report-controls-card .form-group {
+  max-width: 100%;
+  min-width: 0;
   width: 100%;
 }
 
 body.owner-page .owner-report-controls-card label {
   display: block;
   margin-bottom: 8px;
+  width: auto;
 }
 
 body.owner-page .owner-report-controls-card select {
+  box-sizing: border-box;
   min-width: 0;
+  max-width: 100%;
   width: 100%;
 }
 
@@ -889,6 +904,10 @@ body.owner-page .owner-charts-section {
 
 body.owner-page .owner-report-toolbar-head--charts {
   padding: 0 4px;
+}
+
+body.owner-page .owner-report-toolbar-head > * {
+  min-width: 0;
 }
 
 body.owner-page .charts-container {
