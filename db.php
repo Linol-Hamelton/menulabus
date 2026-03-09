@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../config_copy.php';
+require_once __DIR__ . '/tenant_runtime.php';
 
 if (file_exists(__DIR__ . '/RedisCache.php')) {
     require_once __DIR__ . '/RedisCache.php';
@@ -17,6 +17,7 @@ class Database
     private $productCacheTtl;
     private $menuCacheTtl;
     private $categoriesCacheTtl;
+    private $tenantContext = [];
 
     private function __construct()
     {
@@ -72,16 +73,22 @@ class Database
     private function connect()
     {
         try {
+            $this->tenantContext = tenant_runtime_require_resolved();
             $persistentEnv = getenv('DB_PDO_PERSISTENT');
             // Default is ON for performance (saves ~5-15ms connection overhead per request).
             // Singleton pattern + PHP-FPM pm.max_requests ensure no state leaks.
             // Set DB_PDO_PERSISTENT=0 to disable if issues arise.
             $usePersistent = filter_var($persistentEnv !== false ? $persistentEnv : '1', FILTER_VALIDATE_BOOLEAN);
 
+            $dbHost = (string)($this->tenantContext['tenant_db_host'] ?? DB_HOST);
+            $dbName = (string)($this->tenantContext['tenant_db_name'] ?? DB_NAME);
+            $dbUser = (string)($this->tenantContext['tenant_db_user'] ?? DB_USER);
+            $dbPass = (string)($this->tenantContext['tenant_db_pass'] ?? DB_PASS);
+
             $this->connection = new PDO(
-                "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
-                DB_USER,
-                DB_PASS,
+                "mysql:host=" . $dbHost . ";dbname=" . $dbName . ";charset=utf8mb4",
+                $dbUser,
+                $dbPass,
                 [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -100,7 +107,7 @@ class Database
         } catch (PDOException $e) {
             error_log("DB Connection Error: " . $e->getMessage());
             header('HTTP/1.1 503 Service Unavailable');
-            die("РћС€РёР±РєР° РїРѕРґРєР»СЋС‡РµРЅРёСЏ Рє Р±Р°Р·Рµ РґР°РЅРЅС‹С…. РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РїРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР·Р¶Рµ.");
+            die("Ошибка подключения к базе данных. Пожалуйста, попробуйте позже.");
         }
     }
 
@@ -2761,6 +2768,11 @@ class Database
     public function getConnection()
     {
         return $this->connection;
+    }
+
+    public function getTenantContext(): array
+    {
+        return $this->tenantContext;
     }
 
     public function close()

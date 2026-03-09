@@ -1,11 +1,21 @@
 <?php
 header('Cache-Control: public, max-age=600, s-maxage=600');
 require_once __DIR__ . '/session_init.php';
+$tenantContext = tenant_runtime_require_resolved();
+if (empty($tenantContext['is_provider'])) {
+    header('Location: /menu.php', true, 302);
+    exit;
+}
 $siteName  = htmlspecialchars(trim(html_entity_decode($GLOBALS['siteName']    ?? 'labus',                             ENT_QUOTES, 'UTF-8'), '"\''));
 $siteDesc  = htmlspecialchars(trim(html_entity_decode($GLOBALS['siteDesc']    ?? '',                                   ENT_QUOTES, 'UTF-8'), '"\''));
 $tagline   = htmlspecialchars(trim(html_entity_decode($GLOBALS['siteTagline'] ?? 'цифровое меню и управление заказами', ENT_QUOTES, 'UTF-8'), '"\''));
 $faviconUrl = htmlspecialchars($GLOBALS['faviconUrl'] ?? '/icons/favicon.ico');
 $appVer    = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
+$contactPhone = trim((string)($GLOBALS['contactPhone'] ?? ''));
+$contactAddress = trim((string)($GLOBALS['contactAddress'] ?? ''));
+$socialTg = trim((string)($GLOBALS['socialTg'] ?? ''));
+$socialVk = trim((string)($GLOBALS['socialVk'] ?? ''));
+$footerContactLines = array_values(array_filter([$contactAddress, $contactPhone], static fn ($value) => $value !== ''));
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -171,27 +181,27 @@ $appVer    = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
       <div class="footer-inner">
         <div class="footer-col">
           <h3><?= $siteName ?></h3>
-          <p>
-            Интуитивные меню, которые повышают аппетит и средний чек.
-          </p>
+          <p>Интуитивные меню, которые повышают аппетит и средний чек.</p>
         </div>
+        <?php if ($footerContactLines !== []): ?>
         <div class="footer-col">
           <h3>Контакты</h3>
-          <p>Махачкала,<br>Олега Кошевого,<br>46 а<br>+7‒964‒002‒02‒00</p>
+          <p><?= nl2br(htmlspecialchars(implode(PHP_EOL, $footerContactLines))) ?></p>
         </div>
-        <div class="footer-col">
-          <h3>Часы работы</h3>
-          <p>Пн-Пт: 09:00–18:00</p>
-        </div>
+        <?php endif; ?>
+        <?php if ($socialTg !== '' || $socialVk !== ''): ?>
         <div class="footer-col">
           <h3>Мы в соцсетях</h3>
           <div class="social-links">
-            <a href="https://instagram.com/kultura.bar" aria-label="Instagram"><i class="fab fa-instagram" aria-hidden="true"></i></a>
-            <a href="https://facebook.com/kultura.bar" aria-label="Facebook"><i class="fab fa-facebook-f" aria-hidden="true"></i></a>
-            <a href="https://vk.com/kultura.bar" aria-label="ВКонтакте"><i class="fab fa-vk" aria-hidden="true"></i></a>
-            <a href="https://t.me/kultura_bar" aria-label="Telegram"><i class="fab fa-telegram-plane" aria-hidden="true"></i></a>
+            <?php if ($socialVk !== ''): ?>
+            <a href="<?= htmlspecialchars($socialVk) ?>" aria-label="ВКонтакте" target="_blank" rel="noopener"><i class="fab fa-vk" aria-hidden="true"></i></a>
+            <?php endif; ?>
+            <?php if ($socialTg !== ''): ?>
+            <a href="<?= htmlspecialchars($socialTg) ?>" aria-label="Telegram" target="_blank" rel="noopener"><i class="fab fa-telegram-plane" aria-hidden="true"></i></a>
+            <?php endif; ?>
           </div>
         </div>
+        <?php endif; ?>
       </div>
       <div class="footer-bottom">
         <p>&copy; <?= date('Y') ?> «<?= $siteName ?>». Все права защищены.</p>

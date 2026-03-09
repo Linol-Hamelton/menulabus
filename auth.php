@@ -6,6 +6,7 @@ require_once __DIR__ . '/mailer.php';
 // Получаем экземпляр базы данных (правильный способ для Singleton)
 $db = Database::getInstance(); // <- Ключевое исправление здесь
 $mode = $_GET['mode'] ?? 'login';
+$errors = [];
 $successMessage = $_SESSION['auth_message'] ?? null;
 unset($_SESSION['auth_message']);
 $sessionErrorMessage = $_SESSION['auth_error_message'] ?? null;
@@ -65,11 +66,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $jobId = $queue->push('send_verification_email', [
                             'email' => $email,
                             'name' => $name,
-                            'token' => $verificationToken
+                            'token' => $verificationToken,
+                            'base_url' => tenant_base_url(true)
                         ]);
                         if ($jobId !== false) {
                             $_SESSION['auth_message'] = "Регистрация успешна! Проверьте вашу почту для подтверждения.";
-                            header("Location: auth.php?mode=login");
+                            header("Location: /auth.php?mode=login");
                             exit;
                         } else {
                             $errors[] = "Не удалось отправить письмо с подтверждением. Пожалуйста, попробуйте позже.";
@@ -124,11 +126,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 setcookie(
                     session_name(),
                     session_id(),
-                    time() + 2592000, // 30 дней
-                    $sessionParams['path'],
-                    $sessionParams['domain'],
-                    $sessionParams['secure'],
-                    $sessionParams['httponly']
+                    tenant_host_only_cookie_options([
+                        'expires' => time() + 2592000,
+                        'path' => $sessionParams['path'] ?? '/',
+                        'secure' => (bool)($sessionParams['secure'] ?? false),
+                        'httponly' => (bool)($sessionParams['httponly'] ?? true),
+                        'samesite' => $sessionParams['samesite'] ?? 'Strict',
+                    ])
                 );
 
                 // Если выбрано "Запомнить меня"
@@ -145,11 +149,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     setcookie(
                         'remember',
                         $selector.':'.$validator,
-                        $expires,
-                        '/',
-                         'menu.labus.pro',  // Исправляем домен
-                        true,  // HTTPS only
-                        true   // HTTPOnly
+                        tenant_host_only_cookie_options([
+                            'expires' => $expires,
+                            'path' => '/',
+                            'samesite' => 'Lax',
+                        ])
                     );
                 }
                 
@@ -157,12 +161,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($user['role'] === 'owner') {
                     $onboardingDone = $db->getSetting('onboarding_done');
                     if (!$onboardingDone) {
-                        header("Location: onboarding.php");
+                        header("Location: /onboarding.php");
                         exit;
                     }
                 }
 
-                header("Location: account.php");
+                header("Location: /account.php");
                 exit;
             }
         } catch (Exception $e) {
@@ -196,8 +200,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     <div class="auth-container">
 <div class="auth-tabs">
-    <a href="auth.php?mode=login" class="auth-tab <?= $mode === 'login' ? 'active' : '' ?>">Вход</a>
-    <a href="auth.php?mode=register" class="auth-tab <?= $mode === 'register' ? 'active' : '' ?>">Регистрация</a>
+    <a href="/auth.php?mode=login" class="auth-tab <?= $mode === 'login' ? 'active' : '' ?>">Вход</a>
+    <a href="/auth.php?mode=register" class="auth-tab <?= $mode === 'register' ? 'active' : '' ?>">Регистрация</a>
 </div>
         
         <?php if ($successMessage): ?>
@@ -347,9 +351,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span class="btn-loader" aria-hidden="true"></span>
                 </button>
                 <div class="auth-footer">
-                    <a href="password-reset.php" class="auth-link">Забыли пароль?</a>
+                    <a href="/password-reset.php" class="auth-link">Забыли пароль?</a>
                     <span class="auth-separator">|</span>
-                    <a href="auth.php?mode=register" class="auth-link">Регистрация</a>
+                    <a href="/auth.php?mode=register" class="auth-link">Регистрация</a>
                 </div>
             </form>
 

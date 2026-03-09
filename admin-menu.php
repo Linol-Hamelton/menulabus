@@ -611,8 +611,7 @@ $savedDbFontsJson = htmlspecialchars(
                                 value="<?= htmlspecialchars($bs('custom_domain')) ?>"
                                 maxlength="253" placeholder="menu.myrestaurant.ru">
                             <small class="brand-logo-hint">
-                                Добавьте CNAME-запись: <strong><?= htmlspecialchars($bs('custom_domain') ?: 'menu.myrestaurant.ru') ?></strong> → <strong>menu.labus.pro</strong>,
-                                затем уведомите поддержку для выпуска SSL-сертификата.
+                                Это информационное поле. Фактическое подключение домена и выбор tenant-БД теперь управляются через внешний tenant registry.
                             </small>
                         </label>
                         <label class="admin-label" id="hideBrandingLabel">

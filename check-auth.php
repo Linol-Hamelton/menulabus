@@ -26,7 +26,11 @@ try {
             // Пользователь не найден или неактивен - очищаем сессию
             session_destroy();
             if (isset($_COOKIE['remember'])) {
-                setcookie('remember', '', time() - 3600, '/', 'menu.labus.pro', true, true);
+                setcookie('remember', '', tenant_host_only_cookie_options([
+                    'expires' => time() - 3600,
+                    'path' => '/',
+                    'samesite' => 'Lax',
+                ]));
             }
         }
     } 
@@ -68,11 +72,13 @@ try {
                         setcookie(
                             session_name(),
                             session_id(),
-                            time() + 2592000,
-                            $sessionParams['path'],
-                            $sessionParams['domain'],
-                            $sessionParams['secure'],
-                            $sessionParams['httponly']
+                            tenant_host_only_cookie_options([
+                                'expires' => time() + 2592000,
+                                'path' => $sessionParams['path'] ?? '/',
+                                'secure' => (bool)($sessionParams['secure'] ?? false),
+                                'httponly' => (bool)($sessionParams['httponly'] ?? true),
+                                'samesite' => $sessionParams['samesite'] ?? 'Strict',
+                            ])
                         );
 
                         // Обновляем токен (ротация)
@@ -85,11 +91,11 @@ try {
                         setcookie(
                             'remember',
                             $selector.':'.$new_validator,
-                            $new_expires,
-                            '/',
-                            'menu.labus.pro',  // Исправляем домен
-                            true,
-                            true
+                            tenant_host_only_cookie_options([
+                                'expires' => $new_expires,
+                                'path' => '/',
+                                'samesite' => 'Lax',
+                            ])
                         );
                         
                         $response['isLoggedIn'] = true;
@@ -104,11 +110,19 @@ try {
                 } else {
                     // Токен просрочен - удаляем
                     $db->deleteRememberToken($selector);
-                    setcookie('remember', '', time() - 3600, '/', 'menu.labus.pro', true, true);
+                    setcookie('remember', '', tenant_host_only_cookie_options([
+                        'expires' => time() - 3600,
+                        'path' => '/',
+                        'samesite' => 'Lax',
+                    ]));
                 }
             } else {
                 // Невалидный токен - удаляем
-                setcookie('remember', '', time() - 3600, '/', 'menu.labus.pro', true, true);
+                setcookie('remember', '', tenant_host_only_cookie_options([
+                    'expires' => time() - 3600,
+                    'path' => '/',
+                    'samesite' => 'Lax',
+                ]));
             }
         }
     }

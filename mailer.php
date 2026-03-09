@@ -33,13 +33,14 @@ class Mailer {
         $this->mail->setFrom('fruslanj@yandex.ru', $this->appName);
     }
 
-    public function sendVerificationEmail($email, $name, $token) {
+    public function sendVerificationEmail($email, $name, $token, ?string $baseUrl = null) {
         try {
             $this->mail->addAddress($email, $name);
             $this->mail->Subject = 'Подтверждение регистрации';
             
             // HTML-версия письма
-            $verificationLink = "https://menu.labus.pro/verify.php?token=$token";
+            $baseUrl = rtrim($baseUrl ?: tenant_base_url(true), '/');
+            $verificationLink = ($baseUrl !== '' ? $baseUrl : tenant_base_url()) . '/verify.php?token=' . rawurlencode((string)$token);
             $this->mail->isHTML(true);
             $this->mail->Body = "
                 <h2>Здравствуйте, $name!</h2>
@@ -61,13 +62,14 @@ class Mailer {
         }
     }
 
-public function sendPasswordResetEmail($email, $name, $token) {
+public function sendPasswordResetEmail($email, $name, $token, ?string $baseUrl = null) {
     try {
         $this->mail->addAddress($email, $name);
         $this->mail->Subject = 'Сброс пароля';
         
         // HTML-версия письма
-        $resetLink = "https://menu.labus.pro/password-reset.php?token=$token";
+        $baseUrl = rtrim($baseUrl ?: tenant_base_url(true), '/');
+        $resetLink = ($baseUrl !== '' ? $baseUrl : tenant_base_url()) . '/password-reset.php?token=' . rawurlencode((string)$token);
         $this->mail->isHTML(true);
         $this->mail->Body = "
             <h2>Здравствуйте, $name!</h2>

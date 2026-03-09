@@ -1,7 +1,7 @@
 <?php
 /**
- * Система очередей для асинхронной обработки (Фаза 2 roadmap)
- * File-based queue с locking для простоты на shared hosting
+ * РЎРёСЃС‚РµРјР° РѕС‡РµСЂРµРґРµР№ РґР»СЏ Р°СЃРёРЅС…СЂРѕРЅРЅРѕР№ РѕР±СЂР°Р±РѕС‚РєРё (Р¤Р°Р·Р° 2 roadmap)
+ * File-based queue СЃ locking РґР»СЏ РїСЂРѕСЃС‚РѕС‚С‹ РЅР° shared hosting
  */
 
 class Queue {
@@ -53,7 +53,7 @@ class Queue {
             }
         }
         
-        // Перезаписываем файл без первой задачи
+        // РџРµСЂРµР·Р°РїРёСЃС‹РІР°РµРј С„Р°Р№Р» Р±РµР· РїРµСЂРІРѕР№ Р·Р°РґР°С‡Рё
         ftruncate($fp, 0);
         rewind($fp);
         fwrite($fp, implode('', $lines));
@@ -72,7 +72,7 @@ class Queue {
     }
 }
 
-// Worker скрипт (worker.php)
+// Worker СЃРєСЂРёРїС‚ (worker.php)
 if (php_sapi_name() === 'cli') {
     $queueName = $argv[1] ?? 'default';
     $queue = new Queue($queueName);
@@ -94,7 +94,8 @@ if (php_sapi_name() === 'cli') {
                         $mailer->sendVerificationEmail(
                             $job['data']['email'],
                             $job['data']['name'],
-                            $job['data']['token']
+                            $job['data']['token'],
+                            $job['data']['base_url'] ?? null
                         );
                         break;
                     case 'send_password_reset_email':
@@ -103,7 +104,8 @@ if (php_sapi_name() === 'cli') {
                         $mailer->sendPasswordResetEmail(
                             $job['data']['email'],
                             $job['data']['name'],
-                            $job['data']['token']
+                            $job['data']['token'],
+                            $job['data']['base_url'] ?? null
                         );
                         break;
                     default:

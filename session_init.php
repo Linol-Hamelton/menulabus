@@ -9,6 +9,8 @@
 // - api: do NOT start sessions, do NOT generate CSP nonces/CSRF, do NOT do file I/O.
 // - sse: keep auth via session, but keep init minimal (caller should session_write_close()).
 
+require_once __DIR__ . '/tenant_runtime.php';
+
 $labusCtx = defined('LABUS_CTX') ? (string)LABUS_CTX : 'web';
 if (!in_array($labusCtx, ['web', 'api', 'sse'], true)) {
     $labusCtx = 'web';
@@ -19,6 +21,17 @@ $requestId = bin2hex(random_bytes(8));
 $requestUri = (string)($_SERVER['REQUEST_URI'] ?? '/');
 $requestMethod = (string)($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $GLOBALS['request_id'] = $requestId;
+$tenantContext = tenant_runtime();
+if (!tenant_is_cli() && ($tenantContext['state'] ?? '') !== 'resolved') {
+    tenant_runtime_require_resolved();
+}
+$GLOBALS['tenantContext'] = $tenantContext;
+$GLOBALS['tenantMode'] = (string)($tenantContext['mode'] ?? 'provider');
+$GLOBALS['isProviderMode'] = !empty($tenantContext['is_provider']);
+$GLOBALS['currentHost'] = (string)($tenantContext['current_host'] ?? '');
+$GLOBALS['primaryHost'] = (string)($tenantContext['primary_host'] ?? '');
+$GLOBALS['baseUrl'] = (string)($tenantContext['base_url'] ?? '');
+$GLOBALS['primaryBaseUrl'] = (string)($tenantContext['primary_base_url'] ?? '');
 
 header_remove('Cache-Control');
 header_remove('Expires');
@@ -27,22 +40,9 @@ header_remove('Pragma');
 // Lightweight init for API: no sessions, no CSP, no CSRF, fast OPTIONS.
 if ($labusCtx === 'api') {
     $origin = (string)($_SERVER['HTTP_ORIGIN'] ?? '');
-    $allowedOrigins = [
-        'https://menu.labus.pro',
-        'https://www.menu.labus.pro',
-        'capacitor://localhost',
-        'ionic://localhost',
-        'http://localhost',
-        'http://127.0.0.1',
-    ];
-    $allowedCorsOrigin = 'https://menu.labus.pro';
-    if ($origin !== '') {
-        foreach ($allowedOrigins as $allowed) {
-            if ($origin === $allowed || strpos($origin, $allowed . ':') === 0) {
-                $allowedCorsOrigin = $origin;
-                break;
-            }
-        }
+    $allowedCorsOrigin = tenant_default_allowed_origin();
+    if ($origin !== '' && tenant_is_allowed_origin($origin)) {
+        $allowedCorsOrigin = $origin;
     }
 
     if (!headers_sent()) {
@@ -110,9 +110,10 @@ if ($labusCtx === 'sse') {
         // SSE endpoints will set Cache-Control themselves.
         @session_cache_limiter('');
         ini_set('session.use_strict_mode', 1);
-        ini_set('session.cookie_secure', isset($_SERVER['HTTPS']));
+        ini_set('session.cookie_secure', tenant_current_scheme() === 'https');
         ini_set('session.cookie_httponly', true);
         ini_set('session.cookie_samesite', 'Strict');
+        tenant_apply_session_cookie_params(7200, 'Strict');
         session_start([
             'cookie_lifetime' => 7200,
             'cookie_httponly' => true,
@@ -143,18 +144,18 @@ if ($labusCtx === 'sse') {
 // Web context (default).
 ob_start();
 
-// РЎРЅР°С‡Р°Р»Р° РѕРїСЂРµРґРµР»СЏРµРј РїРµСЂРµРјРµРЅРЅСѓСЋ (Р”РћР‘РђР’Р›Р•Рќ webmanifest)
+// Р РЋР Р…Р В°РЎвЂЎР В°Р В»Р В° Р С•Р С—РЎР‚Р ВµР Т‘Р ВµР В»РЎРЏР ВµР С Р С—Р ВµРЎР‚Р ВµР СР ВµР Р…Р Р…РЎС“РЎР‹ (Р вЂќР С›Р вЂР С’Р вЂ™Р вЂєР вЂўР Сњ webmanifest)
 $isStaticFile = preg_match('/\.(?:css|js|png|jpg|webp|jpeg|gif|ico|svg|woff|woff2|ttf|json|webmanifest)$/', $_SERVER['REQUEST_URI']);
 
-// РџРѕС‚РѕРј РѕР±СЂР°Р±Р°С‚С‹РІР°РµРј СЃС‚Р°С‚РёС‡РµСЃРєРёРµ С„Р°Р№Р»С‹
+// Р СџР С•РЎвЂљР С•Р С Р С•Р В±РЎР‚Р В°Р В±Р В°РЎвЂљРЎвЂ№Р Р†Р В°Р ВµР С РЎРѓРЎвЂљР В°РЎвЂљР С‘РЎвЂЎР ВµРЎРѓР С”Р С‘Р Вµ РЎвЂћР В°Р в„–Р В»РЎвЂ№
 if ($isStaticFile) {
-    // Р”Р»СЏ version.json - РєРѕСЂРѕС‚РєРѕРµ РєСЌС€РёСЂРѕРІР°РЅРёРµ
+    // Р вЂќР В»РЎРЏ version.json - Р С”Р С•РЎР‚Р С•РЎвЂљР С”Р С•Р Вµ Р С”РЎРЊРЎв‚¬Р С‘РЎР‚Р С•Р Р†Р В°Р Р…Р С‘Р Вµ
     if (strpos($_SERVER['REQUEST_URI'], 'version.json') !== false) {
         header("Cache-Control: no-cache, must-revalidate");
         header("Expires: Thu, 01 Jan 1970 00:00:00 GMT");
         header("Pragma: no-cache");
     } else {
-        // Р”Р»СЏ РѕСЃС‚Р°Р»СЊРЅРѕР№ СЃС‚Р°С‚РёРєРё - РґР»РёС‚РµР»СЊРЅРѕРµ РєСЌС€РёСЂРѕРІР°РЅРёРµ
+        // Р вЂќР В»РЎРЏ Р С•РЎРѓРЎвЂљР В°Р В»РЎРЉР Р…Р С•Р в„– РЎРѓРЎвЂљР В°РЎвЂљР С‘Р С”Р С‘ - Р Т‘Р В»Р С‘РЎвЂљР ВµР В»РЎРЉР Р…Р С•Р Вµ Р С”РЎРЊРЎв‚¬Р С‘РЎР‚Р С•Р Р†Р В°Р Р…Р С‘Р Вµ
         header("Cache-Control: public, max-age=31536000, immutable");
         header("Expires: " . gmdate("D, d M Y H:i:s", time() + 31536000) . " GMT");
         header("Pragma: cache");
@@ -162,28 +163,29 @@ if ($isStaticFile) {
     exit;
 }
 
-// РџСЂРѕРІРµСЂСЏРµРј, Р±С‹Р»Р° Р»Рё СѓР¶Рµ Р·Р°РїСѓС‰РµРЅР° СЃРµСЃСЃРёСЏ
+// Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚РЎРЏР ВµР С, Р В±РЎвЂ№Р В»Р В° Р В»Р С‘ РЎС“Р В¶Р Вµ Р В·Р В°Р С—РЎС“РЎвЂ°Р ВµР Р…Р В° РЎРѓР ВµРЎРѓРЎРѓР С‘РЎРЏ
 if (session_status() === PHP_SESSION_NONE) {
-    // РљРѕРЅС„РёРіСѓСЂР°С†РёСЏ СЃРµСЃСЃРёРё Р”Рћ Р·Р°РїСѓСЃРєР°
+    // Р С™Р С•Р Р…РЎвЂћР С‘Р С–РЎС“РЎР‚Р В°РЎвЂ Р С‘РЎРЏ РЎРѓР ВµРЎРѓРЎРѓР С‘Р С‘ Р вЂќР С› Р В·Р В°Р С—РЎС“РЎРѓР С”Р В°
     ini_set('session.use_strict_mode', 1);
-    ini_set('session.cookie_secure', isset($_SERVER['HTTPS']));
+    ini_set('session.cookie_secure', tenant_current_scheme() === 'https');
     ini_set('session.cookie_httponly', true);
     ini_set('session.cookie_samesite', 'Strict');
     ini_set('session.gc_probability', 1);
-    ini_set('session.gc_divisor', 1000); // GC реже, Redis TTL уже чистит сессии
+    ini_set('session.gc_divisor', 1000); // GC СЂРµР¶Рµ, Redis TTL СѓР¶Рµ С‡РёСЃС‚РёС‚ СЃРµСЃСЃРёРё
     ini_set('session.lazy_write', 1);
     ini_set('session.use_cookies', 1);
     ini_set('session.use_only_cookies', 1);
     ini_set('session.trans_sid_hosts', '');
     ini_set('session.trans_sid_tags', '');
 
-    // РџРѕ СѓРјРѕР»С‡Р°РЅРёСЋ: РєРѕСЂРѕС‚РєР°СЏ СЃРµСЃСЃРёСЏ (2 С‡Р°СЃР°) РґР»СЏ Р°РЅРѕРЅРёРјРЅС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№.
-    // Р”Р»СЏ Р°РІС‚РѕСЂРёР·РѕРІР°РЅРЅС‹С… вЂ” РїСЂРѕРґР»РёРј cookie РїРѕСЃР»Рµ РїСЂРѕРІРµСЂРєРё РЅРёР¶Рµ.
-    $defaultLifetime = 7200; // 2 С‡Р°СЃР°
+    // Р СџР С• РЎС“Р СР С•Р В»РЎвЂЎР В°Р Р…Р С‘РЎР‹: Р С”Р С•РЎР‚Р С•РЎвЂљР С”Р В°РЎРЏ РЎРѓР ВµРЎРѓРЎРѓР С‘РЎРЏ (2 РЎвЂЎР В°РЎРѓР В°) Р Т‘Р В»РЎРЏ Р В°Р Р…Р С•Р Р…Р С‘Р СР Р…РЎвЂ№РЎвЂ¦ Р С—Р С•Р В»РЎРЉР В·Р С•Р Р†Р В°РЎвЂљР ВµР В»Р ВµР в„–.
+    // Р вЂќР В»РЎРЏ Р В°Р Р†РЎвЂљР С•РЎР‚Р С‘Р В·Р С•Р Р†Р В°Р Р…Р Р…РЎвЂ№РЎвЂ¦ РІР‚вЂќ Р С—РЎР‚Р С•Р Т‘Р В»Р С‘Р С cookie Р С—Р С•РЎРѓР В»Р Вµ Р С—РЎР‚Р С•Р Р†Р ВµРЎР‚Р С”Р С‘ Р Р…Р С‘Р В¶Р Вµ.
+    $defaultLifetime = 7200; // 2 РЎвЂЎР В°РЎРѓР В°
     ini_set('session.cookie_lifetime', $defaultLifetime);
-    ini_set('session.gc_maxlifetime', 2592000); // 30 РґРЅРµР№ вЂ” РјР°РєСЃРёРјСѓРј Р¶РёР·РЅРё С„Р°Р№Р»Р° СЃРµСЃСЃРёРё
+    ini_set('session.gc_maxlifetime', 2592000); // 30 Р Т‘Р Р…Р ВµР в„– РІР‚вЂќ Р СР В°Р С”РЎРѓР С‘Р СРЎС“Р С Р В¶Р С‘Р В·Р Р…Р С‘ РЎвЂћР В°Р в„–Р В»Р В° РЎРѓР ВµРЎРѓРЎРѓР С‘Р С‘
 
-    // Р—Р°РїСѓСЃРєР°РµРј СЃРµСЃСЃРёСЋ СЃ Р±РµР·РѕРїР°СЃРЅС‹РјРё РЅР°СЃС‚СЂРѕР№РєР°РјРё
+    // Р вЂ”Р В°Р С—РЎС“РЎРѓР С”Р В°Р ВµР С РЎРѓР ВµРЎРѓРЎРѓР С‘РЎР‹ РЎРѓ Р В±Р ВµР В·Р С•Р С—Р В°РЎРѓР Р…РЎвЂ№Р СР С‘ Р Р…Р В°РЎРѓРЎвЂљРЎР‚Р С•Р в„–Р С”Р В°Р СР С‘
+    tenant_apply_session_cookie_params($defaultLifetime, 'Strict');
     session_start([
         'cookie_lifetime' => $defaultLifetime,
         'cookie_httponly' => true,
@@ -191,9 +193,9 @@ if (session_status() === PHP_SESSION_NONE) {
     ]);
 }
 
-// РџСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕРµ РѕР±РЅРѕРІР»РµРЅРёРµ РєСЌС€Р° РїСЂРё РЅРѕРІРѕР№ РІРµСЂСЃРёРё
+// Р СџРЎР‚Р С‘Р Р…РЎС“Р Т‘Р С‘РЎвЂљР ВµР В»РЎРЉР Р…Р С•Р Вµ Р С•Р В±Р Р…Р С•Р Р†Р В»Р ВµР Р…Р С‘Р Вµ Р С”РЎРЊРЎв‚¬Р В° Р С—РЎР‚Р С‘ Р Р…Р С•Р Р†Р С•Р в„– Р Р†Р ВµРЎР‚РЎРѓР С‘Р С‘
 if (session_status() === PHP_SESSION_ACTIVE) {
-    // РџСЂРѕРІРµСЂСЏРµРј РІРµСЂСЃРёСЋ РїСЂРёР»РѕР¶РµРЅРёСЏ (РЅРµ РєР°Р¶РґС‹Р№ Р·Р°РїСЂРѕСЃ)
+    // Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚РЎРЏР ВµР С Р Р†Р ВµРЎР‚РЎРѓР С‘РЎР‹ Р С—РЎР‚Р С‘Р В»Р С•Р В¶Р ВµР Р…Р С‘РЎРЏ (Р Р…Р Вµ Р С”Р В°Р В¶Р Т‘РЎвЂ№Р в„– Р В·Р В°Р С—РЎР‚Р С•РЎРѓ)
     $versionCheckInterval = 60;
     $now = time();
     $lastVersionCheck = $_SESSION['version_checked_at'] ?? 0;
@@ -205,18 +207,18 @@ if (session_status() === PHP_SESSION_ACTIVE) {
             $currentVersion = $versionData['version'] ?? '1.0.0';
 
             if (empty($_SESSION['app_version']) || $_SESSION['app_version'] !== $currentVersion) {
-                // РќРѕРІР°СЏ РІРµСЂСЃРёСЏ - РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕ РѕР±РЅРѕРІР»СЏРµРј РєСЌС€
+                // Р СњР С•Р Р†Р В°РЎРЏ Р Р†Р ВµРЎР‚РЎРѓР С‘РЎРЏ - Р С—РЎР‚Р С‘Р Р…РЎС“Р Т‘Р С‘РЎвЂљР ВµР В»РЎРЉР Р…Р С• Р С•Р В±Р Р…Р С•Р Р†Р В»РЎРЏР ВµР С Р С”РЎРЊРЎв‚¬
                 $_SESSION['app_version'] = $currentVersion;
                 $_SESSION['force_no_cache'] = true;
 
-                // Р”РѕР±Р°РІР»СЏРµРј Р·Р°РіРѕР»РѕРІРєРё РїСЂРѕС‚РёРІ РєСЌС€РёСЂРѕРІР°РЅРёСЏ
+                // Р вЂќР С•Р В±Р В°Р Р†Р В»РЎРЏР ВµР С Р В·Р В°Р С–Р С•Р В»Р С•Р Р†Р С”Р С‘ Р С—РЎР‚Р С•РЎвЂљР С‘Р Р† Р С”РЎРЊРЎв‚¬Р С‘РЎР‚Р С•Р Р†Р В°Р Р…Р С‘РЎРЏ
                 header("Pragma: no-cache");
                 header("Expires: Thu, 01 Jan 1970 00:00:00 GMT");
             }
         }
     }
 
-    // РџСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕРµ РѕР±РЅРѕРІР»РµРЅРёРµ РїРѕ РїР°СЂР°РјРµС‚СЂСѓ
+    // Р СџРЎР‚Р С‘Р Р…РЎС“Р Т‘Р С‘РЎвЂљР ВµР В»РЎРЉР Р…Р С•Р Вµ Р С•Р В±Р Р…Р С•Р Р†Р В»Р ВµР Р…Р С‘Р Вµ Р С—Р С• Р С—Р В°РЎР‚Р В°Р СР ВµРЎвЂљРЎР‚РЎС“
     if (isset($_GET['forceReload'])) {
         header("Pragma: no-cache");
         header("Expires: Thu, 01 Jan 1970 00:00:00 GMT");
@@ -224,7 +226,7 @@ if (session_status() === PHP_SESSION_ACTIVE) {
     }
 }
 
-// РџСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕРµ РѕР±РЅРѕРІР»РµРЅРёРµ РєСЌС€Р° РїСЂРё force_reload
+// Р СџРЎР‚Р С‘Р Р…РЎС“Р Т‘Р С‘РЎвЂљР ВµР В»РЎРЉР Р…Р С•Р Вµ Р С•Р В±Р Р…Р С•Р Р†Р В»Р ВµР Р…Р С‘Р Вµ Р С”РЎРЊРЎв‚¬Р В° Р С—РЎР‚Р С‘ force_reload
 if (session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['force_reload'])) {
     header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
     header("Pragma: no-cache");
@@ -232,7 +234,7 @@ if (session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['force_reload']))
     unset($_SESSION['force_reload']);
 }
 
-// Р“РµРЅРµСЂРёСЂСѓРµРј nonce РµСЃР»Рё РµС‰Рµ РЅРµ СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅ
+// Р вЂњР ВµР Р…Р ВµРЎР‚Р С‘РЎР‚РЎС“Р ВµР С nonce Р ВµРЎРѓР В»Р С‘ Р ВµРЎвЂ°Р Вµ Р Р…Р Вµ РЎРѓР С–Р ВµР Р…Р ВµРЎР‚Р С‘РЎР‚Р С•Р Р†Р В°Р Р…
 if (session_status() === PHP_SESSION_ACTIVE) {
     if (empty($_SESSION['csp_nonce']['script'])) {
         $_SESSION['csp_nonce']['script'] = base64_encode(random_bytes(16));
@@ -245,33 +247,35 @@ if (session_status() === PHP_SESSION_ACTIVE) {
 $scriptNonce = $_SESSION['csp_nonce']['script'] ?? '';
 $styleNonce = $_SESSION['csp_nonce']['style'] ?? '';
 
-// РЈР±РµРґРёС‚РµСЃСЊ, С‡С‚Рѕ nonce РїРµСЂРµРґР°РµС‚СЃСЏ РІ РїРµСЂРµРјРµРЅРЅС‹Рµ PHP
+// Р Р€Р В±Р ВµР Т‘Р С‘РЎвЂљР ВµРЎРѓРЎРЉ, РЎвЂЎРЎвЂљР С• nonce Р С—Р ВµРЎР‚Р ВµР Т‘Р В°Р ВµРЎвЂљРЎРѓРЎРЏ Р Р† Р С—Р ВµРЎР‚Р ВµР СР ВµР Р…Р Р…РЎвЂ№Р Вµ PHP
 $GLOBALS['scriptNonce'] = $scriptNonce;
 $GLOBALS['styleNonce']  = $styleNonce;
 $GLOBALS['csrfToken'] = $_SESSION['csrf_token'] ?? '';
 
 $origin = (string)($_SERVER['HTTP_ORIGIN'] ?? '');
-$allowedOrigins = [
-    'https://menu.labus.pro',
-    'https://www.menu.labus.pro',
-    'capacitor://localhost',
-    'ionic://localhost',
-    'http://localhost',
-    'http://127.0.0.1',
-];
-$allowedCorsOrigin = 'https://menu.labus.pro';
-if ($origin !== '') {
-    foreach ($allowedOrigins as $allowed) {
-        if ($origin === $allowed || strpos($origin, $allowed . ':') === 0) {
-            $allowedCorsOrigin = $origin;
-            break;
-        }
-    }
+$allowedCorsOrigin = tenant_default_allowed_origin();
+if ($origin !== '' && tenant_is_allowed_origin($origin)) {
+    $allowedCorsOrigin = $origin;
 }
+$permissionsOrigins = array_values(array_filter(array_unique([
+    tenant_base_url(),
+    tenant_base_url(true),
+])));
+$permissionsCamera = $permissionsOrigins === []
+    ? 'camera=()'
+    : 'camera=(self ' . implode(' ', array_map(static fn(string $value): string => '"' . $value . '"', $permissionsOrigins)) . ')';
+$permissionsGeolocation = $permissionsOrigins === []
+    ? 'geolocation=()'
+    : 'geolocation=(self ' . implode(' ', array_map(static fn(string $value): string => '"' . $value . '"', $permissionsOrigins)) . ')';
+$scriptSrcParts = ["'self'", "'nonce-$scriptNonce'"];
+foreach ($permissionsOrigins as $permissionsOrigin) {
+    $scriptSrcParts[] = $permissionsOrigin;
+}
+$connectSrcParts = tenant_connect_src_origins();
 
-// в”Њв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”ђ
-// в”‚ 1. SECURITY HEADERS - Zero-tolerance policy               в”‚
-// в””в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”
+// РІвЂќРЉРІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќС’
+// РІвЂќвЂљ 1. SECURITY HEADERS - Zero-tolerance policy               РІвЂќвЂљ
+// РІвЂќвЂќРІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќВ
 $securityHeaders = [
     // Basic security
     'X-Content-Type-Options'       => 'nosniff',
@@ -286,14 +290,14 @@ $securityHeaders = [
     'Access-Control-Allow-Headers' => 'Content-Type, X-CSRF-Token, Authorization, Idempotency-Key, X-Request-Id',
     'Access-Control-Allow-Credentials' => 'true',
 
-    // Permissions-Policy - СЂР°Р·СЂРµС€Р°РµРј РєР°РјРµСЂСѓ Рё РіРµРѕР»РѕРєР°С†РёСЋ РґР»СЏ С‚РµРєСѓС‰РµРіРѕ РґРѕРјРµРЅР°
+    // Permissions-Policy - РЎР‚Р В°Р В·РЎР‚Р ВµРЎв‚¬Р В°Р ВµР С Р С”Р В°Р СР ВµРЎР‚РЎС“ Р С‘ Р С–Р ВµР С•Р В»Р С•Р С”Р В°РЎвЂ Р С‘РЎР‹ Р Т‘Р В»РЎРЏ РЎвЂљР ВµР С”РЎС“РЎвЂ°Р ВµР С–Р С• Р Т‘Р С•Р СР ВµР Р…Р В°
     'Permissions-Policy'           => join(', ', [
         'accelerometer=()',
         'autoplay=()',
-        'camera=(self "https://menu.labus.pro")',
+        $permissionsCamera,
         'encrypted-media=()',
         'fullscreen=()',
-        'geolocation=(self "https://menu.labus.pro")',
+        $permissionsGeolocation,
         'gyroscope=()',
         'magnetometer=()',
         'microphone=()',
@@ -302,15 +306,15 @@ $securityHeaders = [
         'usb=()'
     ]),
 
-    // Content Security Policy - РґРѕР±Р°РІР»СЏРµРј РЅРµРѕР±С…РѕРґРёРјС‹Рµ СЂР°Р·СЂРµС€РµРЅРёСЏ (РћР‘РќРћР’Р›Р•РќРћ РґР»СЏ PWA)
+    // Content Security Policy - Р Т‘Р С•Р В±Р В°Р Р†Р В»РЎРЏР ВµР С Р Р…Р ВµР С•Р В±РЎвЂ¦Р С•Р Т‘Р С‘Р СРЎвЂ№Р Вµ РЎР‚Р В°Р В·РЎР‚Р ВµРЎв‚¬Р ВµР Р…Р С‘РЎРЏ (Р С›Р вЂР СњР С›Р вЂ™Р вЂєР вЂўР СњР С› Р Т‘Р В»РЎРЏ PWA)
     'Content-Security-Policy' => join('; ', [
         "default-src 'none'",
-        "script-src 'self' 'nonce-$scriptNonce' https://menu.labus.pro",
+        'script-src ' . implode(' ', $scriptSrcParts),
         "style-src 'self' 'nonce-$styleNonce'",
         "img-src 'self' data: blob:",
         "font-src 'self'",
         // Allow API calls if the app is served from Capacitor local origin (capacitor://localhost).
-        "connect-src 'self' https://menu.labus.pro https://www.menu.labus.pro https://nominatim.openstreetmap.org",
+        'connect-src ' . implode(' ', $connectSrcParts),
         "frame-src 'none'",
         "object-src 'none'",
         "base-uri 'self'",
@@ -342,20 +346,20 @@ if (!headers_sent()) {
     header('Vary: Origin', false);
 }
 
-// РџСЂРёРЅСѓРґРёС‚РµР»СЊРЅС‹Рµ Р·Р°РіРѕР»РѕРІРєРё РїСЂРѕС‚РёРІ РєСЌС€РёСЂРѕРІР°РЅРёСЏ РґР»СЏ HTML СЃС‚СЂР°РЅРёС†
+// Р СџРЎР‚Р С‘Р Р…РЎС“Р Т‘Р С‘РЎвЂљР ВµР В»РЎРЉР Р…РЎвЂ№Р Вµ Р В·Р В°Р С–Р С•Р В»Р С•Р Р†Р С”Р С‘ Р С—РЎР‚Р С•РЎвЂљР С‘Р Р† Р С”РЎРЊРЎв‚¬Р С‘РЎР‚Р С•Р Р†Р В°Р Р…Р С‘РЎРЏ Р Т‘Р В»РЎРЏ HTML РЎРѓРЎвЂљРЎР‚Р В°Р Р…Р С‘РЎвЂ 
 /* if (!headers_sent() && !$isStaticFile) {
     header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
     header("Pragma: no-cache");
     header("Expires: Thu, 01 Jan 1970 00:00:00 GMT");
 } */
 
-// в”Њв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”ђ
-// в”‚ 3. CSRF & USER SYNC - Automatic                            в”‚
-// в””в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”
+// РІвЂќРЉРІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќС’
+// РІвЂќвЂљ 3. CSRF & USER SYNC - Automatic                            РІвЂќвЂљ
+// РІвЂќвЂќРІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќВ
 // Generate/refresh CSRF token
 require_once __DIR__ . '/db.php';
 
-// РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ CSRF С‚РѕРєРµРЅР°
+// Р ВР Р…Р С‘РЎвЂ Р С‘Р В°Р В»Р С‘Р В·Р В°РЎвЂ Р С‘РЎРЏ CSRF РЎвЂљР С•Р С”Р ВµР Р…Р В°
 if (session_status() === PHP_SESSION_ACTIVE) {
     $csrfToken = $_SESSION['csrf_token'] ?? '';
     if (empty($csrfToken)) {
@@ -376,7 +380,7 @@ if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['user_id']) && e
         } else {
             // User deleted/deactivated - logout
             session_destroy();
-            header("Location: auth.php");
+            header("Location: /auth.php");
             exit;
         }
     } catch (Exception $e) {
@@ -384,7 +388,7 @@ if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['user_id']) && e
     }
 }
 
-// ── Brand globals (White Label) ──────────────────────────────────────────────
+// в”Ђв”Ђ Brand globals (White Label) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 if (session_status() === PHP_SESSION_ACTIVE && $labusCtx === 'web') {
     try {
         $db = Database::getInstance();
@@ -396,7 +400,7 @@ if (session_status() === PHP_SESSION_ACTIVE && $labusCtx === 'web') {
         $GLOBALS['siteName']       = $bsGet('app_name',        'labus');
         $GLOBALS['siteTagline']    = $bsGet('app_tagline',     'Меню ресторана');
         $GLOBALS['siteDesc']       = $bsGet('app_description', '');
-        $GLOBALS['contactPhone']   = $bsGet('contact_phone',   '+79640020200');
+        $GLOBALS['contactPhone']   = $bsGet('contact_phone',   '');
         $GLOBALS['contactAddress'] = $bsGet('contact_address', '');
         $GLOBALS['logoUrl']        = $bsGet('logo_url',        '');
         $GLOBALS['faviconUrl']     = $bsGet('favicon_url',     '/icons/favicon.ico');
@@ -410,7 +414,7 @@ if (session_status() === PHP_SESSION_ACTIVE && $labusCtx === 'web') {
         $GLOBALS['siteName']           = 'labus';
         $GLOBALS['siteTagline']        = 'Меню ресторана';
         $GLOBALS['siteDesc']           = '';
-        $GLOBALS['contactPhone']       = '+79640020200';
+        $GLOBALS['contactPhone']       = '';
         $GLOBALS['contactAddress']     = '';
         $GLOBALS['logoUrl']            = '';
         $GLOBALS['faviconUrl']         = '/icons/favicon.ico';
@@ -421,18 +425,18 @@ if (session_status() === PHP_SESSION_ACTIVE && $labusCtx === 'web') {
     }
 }
 
-// в"Њв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”ђ
-// в”‚ 4. ADDITIONAL SECURITY HARDENING                           в”‚
-// в””в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”
+// РІ"РЉРІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќС’
+// РІвЂќвЂљ 4. ADDITIONAL SECURITY HARDENING                           РІвЂќвЂљ
+// РІвЂќвЂќРІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќВ
 // Remove PHP version exposure
 header_remove('X-Powered-By');
 // Disable unnecessary features
 header('X-Permitted-Cross-Domain-Policies: none');
 header('X-DNS-Prefetch-Control: off');
 
-// в”Њв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”ђ
-// в”‚ 5. UTILITY FUNCTIONS                                       в”‚
-// в””в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”
+// РІвЂќРЉРІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќС’
+// РІвЂќвЂљ 5. UTILITY FUNCTIONS                                       РІвЂќвЂљ
+// РІвЂќвЂќРІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќВ
 function regenerate_session_id()
 {
     if (session_status() === PHP_SESSION_ACTIVE) {
@@ -462,9 +466,9 @@ function destroy_session_secure()
     }
 }
 
-// в”Њв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”ђ
-// в”‚ 6. CSRF VALIDATION FOR API REQUESTS                        в”‚
-// в””в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”
+// РІвЂќРЉРІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќС’
+// РІвЂќвЂљ 6. CSRF VALIDATION FOR API REQUESTS                        РІвЂќвЂљ
+// РІвЂќвЂќРІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќР‚РІвЂќВ
 
 /**
  * Validate CSRF token for API requests
@@ -511,7 +515,7 @@ if ($isApiRequest) {
         exit;
     }
 
-    // РџСЂРѕРІРµСЂРєР° Content-Type РґР»СЏ РЅРµ-GET Р·Р°РїСЂРѕСЃРѕРІ
+    // Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚Р С”Р В° Content-Type Р Т‘Р В»РЎРЏ Р Р…Р Вµ-GET Р В·Р В°Р С—РЎР‚Р С•РЎРѓР С•Р Р†
     if ($requestMethod !== 'GET') {
         $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
         if (
@@ -546,18 +550,18 @@ if (isset($_GET['force_reload']) && session_status() === PHP_SESSION_ACTIVE) {
 }
 
 // =================================================================
-// РџР РћР”Р›Р•РќРР• РЎР•РЎРЎРР Р”Р›РЇ РђР’РўРћР РР—РћР’РђРќРќР«РҐ РџРћР›Р¬Р—РћР’РђРўР•Р›Р•Р™
+// Р СџР В Р С›Р вЂќР вЂєР вЂўР СњР ВР вЂў Р РЋР вЂўР РЋР РЋР ВР В Р вЂќР вЂєР Р‡ Р С’Р вЂ™Р СћР С›Р В Р ВР вЂ”Р С›Р вЂ™Р С’Р СњР СњР В«Р Тђ Р СџР С›Р вЂєР В¬Р вЂ”Р С›Р вЂ™Р С’Р СћР вЂўР вЂєР вЂўР в„ў
 // =================================================================
 
 if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['user_id'])) {
-    // РћР±РЅРѕРІР»СЏРµРј РІСЂРµРјСЏ РїРѕСЃР»РµРґРЅРµР№ Р°РєС‚РёРІРЅРѕСЃС‚Рё
+    // Р С›Р В±Р Р…Р С•Р Р†Р В»РЎРЏР ВµР С Р Р†РЎР‚Р ВµР СРЎРЏ Р С—Р С•РЎРѓР В»Р ВµР Т‘Р Р…Р ВµР в„– Р В°Р С”РЎвЂљР С‘Р Р†Р Р…Р С•РЎРѓРЎвЂљР С‘
     $now = time();
     $activityInterval = 60;
     if (empty($_SESSION['last_activity']) || ($now - $_SESSION['last_activity']) >= $activityInterval) {
         $_SESSION['last_activity'] = $now;
     }
 
-    // РџСЂРѕРґР»РµРІР°РµРј cookie СЃРµСЃСЃРёРё РЅРµ С‡Р°С‰Рµ 1 СЂР°Р·Р° РІ 6 С‡Р°СЃРѕРІ
+    // Р СџРЎР‚Р С•Р Т‘Р В»Р ВµР Р†Р В°Р ВµР С cookie РЎРѓР ВµРЎРѓРЎРѓР С‘Р С‘ Р Р…Р Вµ РЎвЂЎР В°РЎвЂ°Р Вµ 1 РЎР‚Р В°Р В·Р В° Р Р† 6 РЎвЂЎР В°РЎРѓР С•Р Р†
     $cookieRefreshInterval = 21600; // 6h
     $lastCookieRefresh = $_SESSION['last_cookie_refresh'] ?? 0;
     if (($now - $lastCookieRefresh) >= $cookieRefreshInterval) {
@@ -565,18 +569,20 @@ if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['user_id'])) {
         setcookie(
             session_name(),
             session_id(),
-            $now + 2592000, // 30 РґРЅРµР№
-            $sessionParams['path'],
-            $sessionParams['domain'],
-            $sessionParams['secure'],
-            $sessionParams['httponly']
+            tenant_host_only_cookie_options([
+                'expires' => $now + 2592000,
+                'path' => $sessionParams['path'] ?? '/',
+                'secure' => (bool)($sessionParams['secure'] ?? false),
+                'httponly' => (bool)($sessionParams['httponly'] ?? true),
+                'samesite' => $sessionParams['samesite'] ?? 'Strict',
+            ])
         );
         $_SESSION['last_cookie_refresh'] = $now;
     }
 
-    // Р РµРіРµРЅРµСЂРёСЂСѓРµРј ID СЃРµСЃСЃРёРё РўРћР›Р¬РљРћ РїСЂРё РїРѕРґРѕР·СЂРёС‚РµР»СЊРЅРѕР№ Р°РєС‚РёРІРЅРѕСЃС‚Рё
-    // Р”Р»СЏ Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅРЅС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ - РѕРґРЅР° СЃРµСЃСЃРёСЏ РЅР° РІСЃРµ СѓСЃС‚СЂРѕР№СЃС‚РІР°/РІРєР»Р°РґРєРё
-    // РџРѕРґРѕР·СЂРёС‚РµР»СЊРЅР°СЏ Р°РєС‚РёРІРЅРѕСЃС‚СЊ: СЃРјРµРЅР° IP, user-agent РёР»Рё РґРѕР»РіР°СЏ РЅРµР°РєС‚РёРІРЅРѕСЃС‚СЊ
+    // Р В Р ВµР С–Р ВµР Р…Р ВµРЎР‚Р С‘РЎР‚РЎС“Р ВµР С ID РЎРѓР ВµРЎРѓРЎРѓР С‘Р С‘ Р СћР С›Р вЂєР В¬Р С™Р С› Р С—РЎР‚Р С‘ Р С—Р С•Р Т‘Р С•Р В·РЎР‚Р С‘РЎвЂљР ВµР В»РЎРЉР Р…Р С•Р в„– Р В°Р С”РЎвЂљР С‘Р Р†Р Р…Р С•РЎРѓРЎвЂљР С‘
+    // Р вЂќР В»РЎРЏ Р В·Р В°РЎР‚Р ВµР С–Р С‘РЎРѓРЎвЂљРЎР‚Р С‘РЎР‚Р С•Р Р†Р В°Р Р…Р Р…РЎвЂ№РЎвЂ¦ Р С—Р С•Р В»РЎРЉР В·Р С•Р Р†Р В°РЎвЂљР ВµР В»Р ВµР в„– - Р С•Р Т‘Р Р…Р В° РЎРѓР ВµРЎРѓРЎРѓР С‘РЎРЏ Р Р…Р В° Р Р†РЎРѓР Вµ РЎС“РЎРѓРЎвЂљРЎР‚Р С•Р в„–РЎРѓРЎвЂљР Р†Р В°/Р Р†Р С”Р В»Р В°Р Т‘Р С”Р С‘
+    // Р СџР С•Р Т‘Р С•Р В·РЎР‚Р С‘РЎвЂљР ВµР В»РЎРЉР Р…Р В°РЎРЏ Р В°Р С”РЎвЂљР С‘Р Р†Р Р…Р С•РЎРѓРЎвЂљРЎРЉ: РЎРѓР СР ВµР Р…Р В° IP, user-agent Р С‘Р В»Р С‘ Р Т‘Р С•Р В»Р С–Р В°РЎРЏ Р Р…Р ВµР В°Р С”РЎвЂљР С‘Р Р†Р Р…Р С•РЎРѓРЎвЂљРЎРЉ
     $currentIP = $_SERVER['REMOTE_ADDR'] ?? '';
     $currentUA = $_SERVER['HTTP_USER_AGENT'] ?? '';
     $securityCheckInterval = 300; // 5 min
@@ -614,12 +620,12 @@ if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['user_id'])) {
 }
 
 // =================================================================
-// Р Р•Р“Р•РќР•Р РђР¦РРЇ РЎР•РЎРЎРР Р”Р›РЇ РќР•Р—РђР Р•Р“РРЎРўР РР РћР’РђРќРќР«РҐ РџРћР›Р¬Р—РћР’РђРўР•Р›Р•Р™
+// Р В Р вЂўР вЂњР вЂўР СњР вЂўР В Р С’Р В¦Р ВР Р‡ Р РЋР вЂўР РЋР РЋР ВР В Р вЂќР вЂєР Р‡ Р СњР вЂўР вЂ”Р С’Р В Р вЂўР вЂњР ВР РЋР СћР В Р ВР В Р С›Р вЂ™Р С’Р СњР СњР В«Р Тђ Р СџР С›Р вЂєР В¬Р вЂ”Р С›Р вЂ™Р С’Р СћР вЂўР вЂєР вЂўР в„ў
 // =================================================================
 
 if (session_status() === PHP_SESSION_ACTIVE && empty($_SESSION['user_id'])) {
-    // Р”Р»СЏ Р°РЅРѕРЅРёРјРЅС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ СЂРµРіРµРЅРµСЂРёСЂСѓРµРј ID С‡Р°С‰Рµ РґР»СЏ Р±РµР·РѕРїР°СЃРЅРѕСЃС‚Рё
-    $regenerateInterval = 1800; // 30 РјРёРЅСѓС‚
+    // Р вЂќР В»РЎРЏ Р В°Р Р…Р С•Р Р…Р С‘Р СР Р…РЎвЂ№РЎвЂ¦ Р С—Р С•Р В»РЎРЉР В·Р С•Р Р†Р В°РЎвЂљР ВµР В»Р ВµР в„– РЎР‚Р ВµР С–Р ВµР Р…Р ВµРЎР‚Р С‘РЎР‚РЎС“Р ВµР С ID РЎвЂЎР В°РЎвЂ°Р Вµ Р Т‘Р В»РЎРЏ Р В±Р ВµР В·Р С•Р С—Р В°РЎРѓР Р…Р С•РЎРѓРЎвЂљР С‘
+    $regenerateInterval = 1800; // 30 Р СР С‘Р Р…РЎС“РЎвЂљ
     if (!isset($_SESSION['last_regeneration']) ||
         (time() - $_SESSION['last_regeneration']) > $regenerateInterval) {
 

@@ -20,13 +20,13 @@ if (isset($_COOKIE['remember'])) {
             
             // Удаляем куку (устанавливаем срок в прошлое)
             setcookie(
-                'remember', 
-                '', 
-                time() - 3600, 
-                '/', 
-                'menu.labus.pro', 
-                true,    // HTTPS only
-                true     // HTTPOnly
+                'remember',
+                '',
+                tenant_host_only_cookie_options([
+                    'expires' => time() - 3600,
+                    'path' => '/',
+                    'samesite' => 'Lax',
+                ])
             );
         }
     } catch (Exception $e) {
@@ -44,11 +44,13 @@ if (session_status() === PHP_SESSION_ACTIVE) {
     setcookie(
         session_name(),
         '',
-        time() - 3600,
-        $sessionParams['path'],
-        $sessionParams['domain'],
-        $sessionParams['secure'],
-        $sessionParams['httponly']
+        tenant_host_only_cookie_options([
+            'expires' => time() - 3600,
+            'path' => $sessionParams['path'] ?? '/',
+            'secure' => (bool)($sessionParams['secure'] ?? false),
+            'httponly' => (bool)($sessionParams['httponly'] ?? true),
+            'samesite' => $sessionParams['samesite'] ?? 'Strict',
+        ])
     );
     
     session_destroy();
@@ -59,15 +61,15 @@ if (isset($_COOKIE['csrf_token'])) {
     setcookie(
         'csrf_token',
         '',
-        time() - 3600,
-        '/',
-        'menu.labus.pro',
-        true,
-        true
+        tenant_host_only_cookie_options([
+            'expires' => time() - 3600,
+            'path' => '/',
+            'samesite' => 'Strict',
+        ])
     );
 }
 
 // 5. Перенаправляем на страницу входа
-header("Location: auth.php");
+header("Location: /auth.php");
 exit;
 ?>

@@ -26,7 +26,7 @@ $sbpVisible = $tbankActive || $paymentEnabled;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="/manifest.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <meta name="csrf-token" content="<?= $_SESSION['csrf_token'] ?? '' ?>">
-    <meta http-equiv="Permissions-Policy" content="camera=(self 'https://menu.labus.pro'), microphone=()">
+    <meta http-equiv="Permissions-Policy" content="camera=(self), microphone=()">
     <meta http-equiv="Content-Security-Policy" content="media-src 'self' blob:;">
     <title><?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?> | Заказ</title>
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
@@ -98,7 +98,7 @@ $sbpVisible = $tbankActive || $paymentEnabled;
                         <p>&#1044;&#1086;&#1073;&#1072;&#1074;&#1100;&#1090;&#1077; &#1073;&#1083;&#1102;&#1076;&#1072; &#1074; &#1079;&#1072;&#1082;&#1072;&#1079;, &#1072; &#1077;&#1089;&#1083;&#1080; &#1093;&#1086;&#1090;&#1080;&#1090;&#1077; &#1089;&#1085;&#1072;&#1095;&#1072;&#1083;&#1072; &#1087;&#1086;&#1089;&#1084;&#1086;&#1090;&#1088;&#1077;&#1090;&#1100; &#1087;&#1086;&#1076;&#1073;&#1086;&#1088;&#1082;&#1091;, &#1086;&#1090;&#1082;&#1088;&#1086;&#1081;&#1090;&#1077; &#1093;&#1080;&#1090;&#1099; &#1080; &#1072;&#1082;&#1094;&#1080;&#1080;.</p>
                         <div class="empty-cart-actions">
                             <a href="menu.php" class="checkout-btn">&#1042;&#1077;&#1088;&#1085;&#1091;&#1090;&#1100;&#1089;&#1103; &#1074; &#1084;&#1077;&#1085;&#1102;</a>
-                            <a href="index.php" class="checkout-btn checkout-btn-secondary">&#1061;&#1080;&#1090;&#1099; &#1080; &#1072;&#1082;&#1094;&#1080;&#1080;</a>
+                            <a href="/" class="checkout-btn checkout-btn-secondary">&#1061;&#1080;&#1090;&#1099; &#1080; &#1072;&#1082;&#1094;&#1080;&#1080;</a>
                         </div>
                     </div>
                 </div>

@@ -19,7 +19,7 @@ function oauth_secret(): string
     if (is_string($env) && $env !== '') {
         return $env;
     }
-    return hash('sha256', DB_HOST . '|' . DB_NAME . '|' . DB_USER . '|' . DB_PASS);
+    return hash('sha256', tenant_secret_material());
 }
 
 function oauth_make_state(string $mode): string
@@ -52,16 +52,13 @@ $state = oauth_make_state($mode);
 // Bind state to the browser across cross-site redirect.
 // Lax is required so cookie is sent on top-level GET navigation back from Google.
 $cookieOpts = [
-    'expires' => time() + 300,
     'path' => '/google-oauth-callback.php',
-    'domain' => 'menu.labus.pro',
-    'secure' => true,
-    'httponly' => true,
+    'expires' => time() + 300,
     'samesite' => 'Lax',
 ];
-setcookie('g_oauth_state', $state, $cookieOpts);
+setcookie('g_oauth_state', $state, tenant_host_only_cookie_options($cookieOpts));
 
-$redirectUri = 'https://menu.labus.pro/google-oauth-callback.php';
+$redirectUri = tenant_url('/google-oauth-callback.php');
 $params = [
     'client_id' => $clientId,
     'redirect_uri' => $redirectUri,
@@ -78,4 +75,3 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Location: ' . $url, true, 302);
 exit;
-

@@ -27,7 +27,7 @@ function oauth_secret(): string
     if (is_string($env) && $env !== '') {
         return $env;
     }
-    return hash('sha256', DB_HOST . '|' . DB_NAME . '|' . DB_USER . '|' . DB_PASS);
+    return hash('sha256', tenant_secret_material());
 }
 
 function oauth_verify_state(string $state): ?array
@@ -58,7 +58,7 @@ function oauth_verify_state(string $state): ?array
 function auth_fail(string $msg): void
 {
     $_SESSION['auth_error_message'] = $msg;
-    header('Location: auth.php?mode=login', true, 302);
+    header('Location: ' . tenant_url('/auth.php', ['mode' => 'login']), true, 302);
     exit;
 }
 
@@ -76,14 +76,11 @@ if ($code === '' || $state === '') {
 
 // CSRF binding cookie check.
 $cookieState = (string)($_COOKIE['vk_oauth_state'] ?? '');
-setcookie('vk_oauth_state', '', [
+setcookie('vk_oauth_state', '', tenant_host_only_cookie_options([
     'expires' => time() - 3600,
     'path' => '/vk-oauth-callback.php',
-    'domain' => 'menu.labus.pro',
-    'secure' => true,
-    'httponly' => true,
     'samesite' => 'Lax',
-]);
+]));
 if ($cookieState === '' || !hash_equals($cookieState, $state)) {
     auth_fail('VK OAuth: invalid state (cookie mismatch)');
 }
@@ -104,7 +101,7 @@ if ($clientId === '' || $clientSecret === '') {
     auth_fail('VK OAuth is not configured');
 }
 
-$redirectUri = 'https://menu.labus.pro/vk-oauth-callback.php';
+$redirectUri = tenant_url('/vk-oauth-callback.php');
 
 // Exchange code -> access_token
 $body = http_build_query([
@@ -258,12 +255,14 @@ $sessionParams = session_get_cookie_params();
 setcookie(
     session_name(),
     session_id(),
-    time() + 2592000,
-    $sessionParams['path'],
-    $sessionParams['domain'],
-    $sessionParams['secure'],
-    $sessionParams['httponly']
+    tenant_host_only_cookie_options([
+        'expires' => time() + 2592000,
+        'path' => $sessionParams['path'] ?? '/',
+        'secure' => (bool)($sessionParams['secure'] ?? false),
+        'httponly' => (bool)($sessionParams['httponly'] ?? true),
+        'samesite' => $sessionParams['samesite'] ?? 'Strict',
+    ])
 );
 
-header('Location: account.php', true, 302);
+header('Location: /account.php', true, 302);
 exit;

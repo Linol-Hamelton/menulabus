@@ -26,7 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $sent = $mailer->sendPasswordResetEmail(
                         $email,
                         (string)($user['name'] ?? ''),
-                        $resetToken
+                        $resetToken,
+                        tenant_base_url(true)
                     );
                 } catch (Throwable $e) {
                     $sent = false;
@@ -40,7 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $jobId = $queue->push('send_password_reset_email', [
                         'email' => $email,
                         'name' => (string)($user['name'] ?? ''),
-                        'token' => $resetToken
+                        'token' => $resetToken,
+                        'base_url' => tenant_base_url(true)
                     ]);
                     if ($jobId === false) {
                         error_log('Password reset email enqueue failed for user id: ' . (int)$user['id']);
@@ -63,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $passwordHash = password_hash($password, PASSWORD_DEFAULT);
             if ($db->resetPassword($token, $passwordHash)) {
                 $_SESSION['auth_message'] = "Пароль успешно изменен! Теперь вы можете войти.";
-                header("Location: auth.php");
+                header("Location: /auth.php");
                 exit;
             } else {
                 $errors[] = "Неверная или устаревшая ссылка для сброса пароля";
@@ -124,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <button type="submit" class="btn">Отправить ссылку</button>
             </form>
-            <p class="auth-link"><a href="auth.php">Вернуться к входу</a></p>
+            <p class="auth-link"><a href="/auth.php">Вернуться к входу</a></p>
         <?php endif; ?>
     </div>
 </body>
