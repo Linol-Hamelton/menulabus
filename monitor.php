@@ -702,6 +702,36 @@ $metrics = getPerformanceMetrics(true);
             color: var(--gray);
             text-align: right;
         }
+
+        .header-meta {
+            align-items: flex-end;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: white;
+            text-decoration: none;
+        }
+
+        .btn-secondary:hover,
+        .btn-secondary:focus-visible {
+            background: rgba(255, 255, 255, 0.18);
+            border-color: rgba(255, 255, 255, 0.28);
+        }
+
+        .progress-text--left {
+            text-align: left;
+        }
         
         .health-indicator {
             display: inline-block;
@@ -748,6 +778,32 @@ $metrics = getPerformanceMetrics(true);
             overflow: auto;
             max-height: 300px;
         }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 14px;
+            }
+
+            header {
+                align-items: flex-start;
+                gap: 14px;
+                text-align: left;
+            }
+
+            .header-meta {
+                align-items: stretch;
+                width: 100%;
+            }
+
+            .header-actions {
+                justify-content: stretch;
+            }
+
+            .header-actions .btn {
+                justify-content: center;
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -757,8 +813,13 @@ $metrics = getPerformanceMetrics(true);
                 <h1>📊 Мониторинг производительности</h1>
                 <div class="subtitle">Версия PHP: <?= PHP_VERSION ?> | Время: <?= date('Y-m-d H:i:s') ?></div>
             </div>
-            <div class="timestamp" id="lastUpdate">
-                Обновлено: <?= date('H:i:s') ?>
+            <div class="header-meta">
+                <div class="timestamp" id="lastUpdate">
+                    Обновлено: <?= date('H:i:s') ?>
+                </div>
+                <div class="header-actions">
+                    <a href="admin-menu.php" class="btn btn-secondary">Назад в админку</a>
+                </div>
             </div>
         </header>
         
@@ -1010,7 +1071,7 @@ $metrics = getPerformanceMetrics(true);
                     </div>
                     <div class="metric">
                         <div class="metric-label">Log file</div>
-                        <div class="progress-text" style="text-align:left;">
+                        <div class="progress-text progress-text--left">
                             <?= htmlspecialchars((string)($smoke['log_file'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
                         </div>
                     </div>
@@ -1053,7 +1114,7 @@ $metrics = getPerformanceMetrics(true);
 
                     <div class="metric">
                         <div class="metric-label">Log file</div>
-                        <div class="progress-text" style="text-align:left;">
+                        <div class="progress-text progress-text--left">
                             <?= htmlspecialchars((string)($checkout['log_file'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
                         </div>
                     </div>

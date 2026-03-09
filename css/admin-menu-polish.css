@@ -2697,14 +2697,15 @@ body.employee-page.admin-menu-page .account-header-bar .container,
 body.employee-page.admin-menu-page .admin-tabs-container,
 body.employee-page.admin-menu-page .account-form-container { padding-inline: 24px; }
 body.employee-page.admin-menu-page .account-form-container { gap: 24px; padding-bottom: 32px; }
-body.employee-page.admin-menu-page .account-header-bar .section-header-menu { align-items: center; gap: 12px; min-height: auto; padding-block: 4px 2px; }
+body.employee-page.admin-menu-page .account-header-bar .section-header-menu { align-items: center; gap: 8px; min-height: 40px; padding-block: 0; }
 body.employee-page.admin-menu-page .section-header-quick-actions,
 body.employee-page.admin-menu-page .section-header-nav-actions { gap: 8px; }
 body.employee-page.admin-menu-page .section-header-quick-actions a,
-body.employee-page.admin-menu-page .section-header-nav-actions .back-to-menu-btn { min-height: 38px; }
-body.employee-page.admin-menu-page .section-header-nav-actions .back-to-menu-btn { background: var(--ui-surface-muted); border-color: rgba(15, 23, 42, 0.08); color: var(--ui-text-muted); }
+body.employee-page.admin-menu-page .section-header-nav-actions .back-to-menu-btn { min-height: 40px; }
+body.employee-page.admin-menu-page .section-header-nav-actions { margin-left: auto; }
+body.employee-page.admin-menu-page .section-header-nav-actions .back-to-menu-btn { background: var(--primary-color); border-color: var(--primary-color); color: #fff; }
 body.employee-page.admin-menu-page .section-header-nav-actions .back-to-menu-btn:hover,
-body.employee-page.admin-menu-page .section-header-nav-actions .back-to-menu-btn:focus-visible { border-color: var(--primary-color); color: var(--ui-text); }
+body.employee-page.admin-menu-page .section-header-nav-actions .back-to-menu-btn:focus-visible { background: var(--primary-dark); border-color: var(--primary-dark); color: #fff; }
 body.employee-page.admin-menu-page .admin-tabs-container { margin: 0 auto 22px; }
 body.employee-page.admin-menu-page .admin-tabs { gap: 12px; }
 body.employee-page.admin-menu-page .admin-tab-btn { min-width: 162px; }
