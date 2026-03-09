@@ -3131,6 +3131,93 @@ body.employee-page.admin-menu-page .admin-block--tools .checkout-btn {
   width: auto;
 }
 
+/* admin-menu.php focused polish: fonts block only */
+body.employee-page.admin-menu-page .admin-design-panel > .admin-block--fonts {
+  grid-column: 1 / -1;
+}
+
+body.employee-page.admin-menu-page .admin-block--fonts {
+  align-content: start;
+}
+
+body.employee-page.admin-menu-page .admin-block--fonts h3 {
+  margin-bottom: 2px;
+}
+
+body.employee-page.admin-menu-page .admin-block--fonts .font-controls {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+body.employee-page.admin-menu-page .admin-block--fonts .font-control {
+  align-content: start;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 248, 248, 0.98) 100%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+  display: grid;
+  gap: 12px;
+  min-height: 100%;
+  padding: 18px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+body.employee-page.admin-menu-page .admin-block--fonts .font-control:hover {
+  border-color: rgba(208, 26, 34, 0.18);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+body.employee-page.admin-menu-page .admin-block--fonts .font-control:focus-within {
+  border-color: rgba(208, 26, 34, 0.32);
+  box-shadow: 0 0 0 3px rgba(208, 26, 34, 0.12);
+}
+
+body.employee-page.admin-menu-page .admin-block--fonts .font-control label {
+  align-items: start;
+  cursor: pointer;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 20px minmax(0, 1fr);
+  line-height: 1.4;
+  margin: 0;
+}
+
+body.employee-page.admin-menu-page .admin-block--fonts .font-override-checkbox {
+  accent-color: #d01a22;
+  height: 18px;
+  margin: 2px 0 0;
+  width: 18px;
+}
+
+body.employee-page.admin-menu-page .admin-block--fonts .font-selector {
+  min-height: 46px;
+  width: 100%;
+}
+
+body.employee-page.admin-menu-page .admin-block--fonts .font-selector:disabled {
+  background: rgba(245, 245, 245, 0.92);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: rgba(75, 85, 99, 0.88);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+body.employee-page.admin-menu-page .admin-block--fonts .font-selector:not(:disabled) {
+  background: #fff;
+  border-color: rgba(208, 26, 34, 0.16);
+}
+
+body.employee-page.admin-menu-page .admin-block--fonts .font-selector:not(:disabled):hover {
+  border-color: rgba(208, 26, 34, 0.26);
+}
+
+body.employee-page.admin-menu-page .admin-block--fonts .font-selector:not(:disabled):focus {
+  border-color: rgba(208, 26, 34, 0.36);
+  box-shadow: 0 0 0 3px rgba(208, 26, 34, 0.12);
+}
+
 @media (max-width: 1199px) {
   body.employee-page.admin-menu-page {
     --admin-shell-max: min(1088px, calc(100vw - 40px));
@@ -3169,6 +3256,10 @@ body.employee-page.admin-menu-page .admin-block--tools .checkout-btn {
   body.employee-page.admin-menu-page .file-manager-buttons {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  body.employee-page.admin-menu-page .admin-block--fonts .font-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 768px) {
@@ -3187,6 +3278,15 @@ body.employee-page.admin-menu-page .admin-block--tools .checkout-btn {
   body.employee-page.admin-menu-page .admin-tab-btn {
     min-height: 48px;
     padding-inline: 16px;
+  }
+
+  body.employee-page.admin-menu-page .admin-block--fonts .font-controls {
+    gap: 12px;
+    grid-template-columns: 1fr;
+  }
+
+  body.employee-page.admin-menu-page .admin-block--fonts .font-control {
+    padding: 16px;
   }
 
   body.employee-page.admin-menu-page .admin-block--manual form,
@@ -3209,5 +3309,35 @@ body.employee-page.admin-menu-page .admin-block--tools .checkout-btn {
 
   body.employee-page.admin-menu-page .admin-pane-caption {
     max-width: none;
+  }
+}
+
+/* admin-menu.php fonts block final override */
+body.employee-page.admin-menu-page .admin-design-panel > .admin-block--fonts {
+  grid-column: 1 / -1 !important;
+  width: 100%;
+}
+
+body.employee-page.admin-menu-page .admin-block--fonts .font-controls {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 1199px) {
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--fonts {
+    grid-column: 1 / -1 !important;
+  }
+
+  body.employee-page.admin-menu-page .admin-block--fonts .font-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  body.employee-page.admin-menu-page .admin-design-panel > .admin-block--fonts {
+    grid-column: 1 / -1 !important;
+  }
+
+  body.employee-page.admin-menu-page .admin-block--fonts .font-controls {
+    grid-template-columns: 1fr;
   }
 }
