@@ -8,7 +8,7 @@
             <div class="section-header-quick-actions">
                 <?php if (in_array(($user['role'] ?? ''), ['owner', 'admin'], true)): ?>
                     <a href="admin-menu.php" class="account-admin" aria-label="Панель администратора">
-                        <i class="fas fa-cog"></i>
+                        <span class="account-admin-icon" aria-hidden="true"></span>
                     </a>
                 <?php endif; ?>
 
@@ -26,4 +26,3 @@
         </div>
     </div>
 </section>
-

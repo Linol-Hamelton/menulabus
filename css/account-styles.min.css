@@ -514,6 +514,19 @@
   font-size: 25px;
   padding: 10px 11px;
 }
+.account-admin-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background:
+    radial-gradient(circle at 4px 4px, currentColor 0 1.6px, transparent 1.8px),
+    radial-gradient(circle at 14px 4px, currentColor 0 1.6px, transparent 1.8px),
+    radial-gradient(circle at 4px 14px, currentColor 0 1.6px, transparent 1.8px),
+    radial-gradient(circle at 14px 14px, currentColor 0 1.6px, transparent 1.8px);
+  box-shadow: inset 0 0 0 1.5px currentColor;
+  opacity: 0.95;
+}
 .account-admin,
 .account-owner {
   align-items: center;
@@ -525,6 +538,11 @@
   gap: 8px;
   text-decoration: none;
   transition: background-color 0.3s;
+}
+.account-admin:hover .account-admin-icon,
+.account-admin:focus-visible .account-admin-icon {
+  opacity: 1;
+  transform: scale(1.03);
 }
 .account-owner {
   font-size: 28px;
