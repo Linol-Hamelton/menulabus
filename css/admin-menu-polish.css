@@ -2697,7 +2697,7 @@ body.employee-page.admin-menu-page .account-header-bar .container,
 body.employee-page.admin-menu-page .admin-tabs-container,
 body.employee-page.admin-menu-page .account-form-container { padding-inline: 24px; }
 body.employee-page.admin-menu-page .account-form-container { gap: 24px; padding-bottom: 32px; }
-body.employee-page.admin-menu-page .account-header-bar .section-header-menu { align-items: center; gap: 8px; min-height: 40px; padding-block: 0; }
+body.employee-page.admin-menu-page .account-header-bar .section-header-menu { align-items: center; gap: 8px; min-height: 72px; padding-block: 0; }
 body.employee-page.admin-menu-page .section-header-quick-actions,
 body.employee-page.admin-menu-page .section-header-nav-actions { gap: 8px; }
 body.employee-page.admin-menu-page .section-header-quick-actions a,
