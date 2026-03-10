@@ -2,12 +2,13 @@
 
 require_once dirname(__DIR__, 2) . '/tenant_runtime.php';
 require_once __DIR__ . '/smoke.php';
+require_once __DIR__ . '/seed_profiles.php';
 
 function provision_usage(): void
 {
     $usage = <<<TXT
 Usage:
-  php scripts/tenant/provision.php --brand-name="Brand" --brand-slug=brand --domain=menu.brand.tld --mode=tenant --owner-email=owner@example.com --tenant-db-user=db_user --tenant-db-pass=db_pass [--owner-password=secret] [--skip-smoke]
+  php scripts/tenant/provision.php --brand-name="Brand" --brand-slug=brand --domain=menu.brand.tld --mode=tenant --owner-email=owner@example.com --tenant-db-user=db_user --tenant-db-pass=db_pass [--owner-password=secret] [--seed-profile=restaurant-demo] [--skip-smoke]
 TXT;
     fwrite(STDERR, $usage . PHP_EOL);
 }
@@ -249,6 +250,7 @@ try {
         'owner-password::',
         'tenant-db-user:',
         'tenant-db-pass:',
+        'seed-profile::',
         'skip-smoke',
     ]);
 
@@ -260,6 +262,7 @@ try {
     $tenantDbUser = provision_require_arg($options, 'tenant-db-user');
     $tenantDbPass = provision_require_arg($options, 'tenant-db-pass');
     $ownerPassword = trim((string)($options['owner-password'] ?? ''));
+    $seedProfile = trim((string)($options['seed-profile'] ?? ''));
     $skipSmoke = array_key_exists('skip-smoke', $options);
 
     if (!in_array($mode, ['provider', 'tenant'], true)) {
@@ -305,6 +308,17 @@ try {
     provision_seed_settings($tenantPdo, $brandName, $domain, $mode, (int)$seeded['owner_id']);
     $tenantPdo->commit();
 
+    $seedProfileSummary = null;
+    if ($seedProfile !== '') {
+        $seedProfileSummary = tenant_seed_apply_profile($tenantPdo, [
+            'tenant_id' => 0,
+            'brand_slug' => $brandSlug,
+            'brand_name' => $brandName,
+            'owner_email' => $ownerEmail,
+            'domain' => $domain,
+        ], $seedProfile, false);
+    }
+
     $tenantId = provision_tenant_registry($controlPdo, [
         'mode' => $mode,
         'brand_slug' => $brandSlug,
@@ -331,6 +345,8 @@ try {
         'db_user' => $tenantDbUser,
         'owner_email' => $ownerEmail,
         'owner_password' => $ownerPassword,
+        'seed_profile' => $seedProfile === '' ? null : $seedProfile,
+        'seed_summary' => $seedProfileSummary,
         'smoke' => $smoke,
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . PHP_EOL;
     exit(0);
