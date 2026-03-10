@@ -3606,3 +3606,25 @@ body.employee-page.admin-menu-page .account-header-bar .container {
     width: 100% !important;
   }
 }
+
+/* Keep the catalog editor stack in a single column. */
+body.employee-page.admin-menu-page .admin-dishes-workspace {
+  grid-template-columns: 1fr !important;
+}
+
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-form-group.admin-subsection-card:first-of-type,
+body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-subsection-card:last-of-type {
+  grid-column: 1;
+  grid-row: auto;
+}
+
+body.employee-page.admin-menu-page .admin-block--manual form,
+body.employee-page.admin-menu-page .admin-block--csv form {
+  grid-template-columns: 1fr !important;
+}
+
+body.employee-page.admin-menu-page .admin-block--csv .download-button-container,
+body.employee-page.admin-menu-page .admin-block--csv .checkout-btn {
+  min-width: 0;
+  width: 100%;
+}
