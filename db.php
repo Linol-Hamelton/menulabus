@@ -18,6 +18,7 @@ class Database
     private $menuCacheTtl;
     private $categoriesCacheTtl;
     private $tenantContext = [];
+    private $tenantCacheNamespace = 'tenant:legacy';
 
     private function __construct()
     {
@@ -74,6 +75,7 @@ class Database
     {
         try {
             $this->tenantContext = tenant_runtime_require_resolved();
+            $this->tenantCacheNamespace = $this->resolveTenantCacheNamespace();
             $persistentEnv = getenv('DB_PDO_PERSISTENT');
             // Default is ON for performance (saves ~5-15ms connection overhead per request).
             // Singleton pattern + PHP-FPM pm.max_requests ensure no state leaks.
@@ -173,10 +175,52 @@ class Database
     private function invalidateMenuCache()
     {
         if ($this->redisCache) {
-            $this->redisCache->invalidate('menu_items_*');
-            $this->redisCache->invalidate('product_*');
-            $this->redisCache->invalidate('categories_*');
+            $this->redisCache->invalidate($this->tenantCachePattern('menu_items_*'));
+            $this->redisCache->invalidate($this->tenantCachePattern('product_*'));
+            $this->redisCache->invalidate($this->tenantCachePattern('categories_*'));
         }
+    }
+
+    private function resolveTenantCacheNamespace(): string
+    {
+        $tenantId = (int)($this->tenantContext['tenant_id'] ?? 0);
+        if ($tenantId > 0) {
+            return 'tenant:' . $tenantId;
+        }
+
+        foreach (['brand_slug', 'tenant_db_name', 'primary_host', 'current_host'] as $field) {
+            $value = $this->sanitizeTenantCachePart((string)($this->tenantContext[$field] ?? ''));
+            if ($value !== '') {
+                return 'tenant:' . $value;
+            }
+        }
+
+        return 'tenant:legacy';
+    }
+
+    private function sanitizeTenantCachePart(string $value): string
+    {
+        $value = strtolower(trim($value));
+        if ($value === '') {
+            return '';
+        }
+
+        $value = preg_replace('/[^a-z0-9._-]+/i', '_', $value);
+        if (!is_string($value)) {
+            return '';
+        }
+
+        return trim($value, '._-');
+    }
+
+    private function tenantCacheKey(string $key): string
+    {
+        return $this->tenantCacheNamespace . ':' . ltrim($key, ':');
+    }
+
+    private function tenantCachePattern(string $pattern): string
+    {
+        return $this->tenantCacheNamespace . ':' . ltrim($pattern, ':');
     }
 
     private function invalidateOrderCache($orderId = null)
@@ -318,14 +362,14 @@ class Database
     private function touchOrdersLastUpdate(): void
     {
         if ($this->redisCache) {
-            $this->redisCache->set('orders_last_update_ts', time(), 86400);
+            $this->redisCache->set($this->tenantCacheKey('orders_last_update_ts'), time(), 86400);
         }
     }
 
     public function getOrdersLastUpdateTs(): int
     {
         if ($this->redisCache) {
-            $cached = $this->redisCache->get('orders_last_update_ts');
+            $cached = $this->redisCache->get($this->tenantCacheKey('orders_last_update_ts'));
             if (is_numeric($cached)) {
                 return (int)$cached;
             }
@@ -333,7 +377,7 @@ class Database
 
         $timestamp = (int)$this->scalar("SELECT UNIX_TIMESTAMP(MAX(updated_at)) FROM orders WHERE 1");
         if ($timestamp > 0 && $this->redisCache) {
-            $this->redisCache->set('orders_last_update_ts', $timestamp, 86400);
+            $this->redisCache->set($this->tenantCacheKey('orders_last_update_ts'), $timestamp, 86400);
         }
         return $timestamp;
     }
@@ -344,7 +388,7 @@ class Database
 
     public function getProductById($id)
     {
-        $cacheKey = 'product_' . $id;
+        $cacheKey = $this->tenantCacheKey('product_' . $id);
 
         if ($this->redisCache) {
             $cached = $this->redisCache->get($cacheKey);
@@ -407,7 +451,7 @@ class Database
 
     public function getMenuItems($category = null, bool $availableOnly = true)
     {
-        $cacheKey = ($availableOnly ? 'menu_items_' : 'menu_items_all_') . ($category ?: 'all');
+        $cacheKey = $this->tenantCacheKey(($availableOnly ? 'menu_items_' : 'menu_items_all_') . ($category ?: 'all'));
 
         if ($this->redisCache) {
             $cached = $this->redisCache->get($cacheKey);
@@ -451,7 +495,7 @@ class Database
 
     public function getArchivedMenuItems($category = null): array
     {
-        $cacheKey = 'menu_items_archived_' . ($category ?: 'all');
+        $cacheKey = $this->tenantCacheKey('menu_items_archived_' . ($category ?: 'all'));
 
         if ($this->redisCache) {
             $cached = $this->redisCache->get($cacheKey);
@@ -869,7 +913,7 @@ class Database
 
     public function getUniqueCategories()
     {
-        $cacheKey = 'categories_unique';
+        $cacheKey = $this->tenantCacheKey('categories_unique');
 
         if ($this->redisCache) {
             $cached = $this->redisCache->get($cacheKey);
