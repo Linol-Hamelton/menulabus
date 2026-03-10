@@ -1,76 +1,115 @@
-/* qr-print.css — Styles for QR code table printing page */
-.qr-print-container {
-    padding: 20px;
-    max-width: 900px;
+/* qr-print.css - Styles for QR code table printing page */
+body.qr-print-page .qr-print-container {
     margin: 0 auto;
+    max-width: min(1240px, calc(100vw - 32px));
+    padding: 96px 16px 40px;
+    width: 100%;
 }
-.qr-print-header {
-    display: flex;
+
+body.qr-print-page .qr-print-header {
     align-items: center;
-    justify-content: space-between;
+    display: flex;
     flex-wrap: wrap;
     gap: 12px;
+    justify-content: space-between;
     margin-bottom: 20px;
 }
-.qr-print-header h1 {
+
+body.qr-print-page .qr-print-header h1 {
     font-size: 1.4rem;
     margin: 0;
 }
-.qr-count-row {
-    display: flex;
+
+body.qr-print-page .qr-count-row {
     align-items: center;
-    gap: 10px;
+    display: flex;
     flex-wrap: wrap;
+    gap: 10px;
 }
-.qr-count-row label {
+
+body.qr-print-page .qr-count-row label {
     font-size: .9rem;
     font-weight: 600;
 }
-.qr-count-input {
-    width: 70px;
-    padding: 6px 10px;
+
+body.qr-print-page .qr-count-input {
     border: 1.5px solid var(--border-color, #ddd);
     border-radius: 8px;
     font-size: .95rem;
+    padding: 6px 10px;
     text-align: center;
+    width: 70px;
 }
-.qr-grid {
+
+body.qr-print-page .qr-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     padding: 10px 0;
 }
-.qr-item {
-    text-align: center;
-    padding: 16px;
+
+body.qr-print-page .qr-item {
+    background: var(--card-bg, #fff);
     border: 1px solid var(--border-color, #eee);
     border-radius: 12px;
     break-inside: avoid;
-    background: var(--card-bg, #fff);
+    padding: 16px;
+    text-align: center;
 }
-.qr-item img {
-    width: 150px;
-    height: 150px;
-    display: block;
-    margin: 0 auto 10px;
+
+body.qr-print-page .qr-item img {
     border-radius: 4px;
+    display: block;
+    height: 150px;
+    margin: 0 auto 10px;
+    width: 150px;
 }
-.qr-item-label {
-    font-weight: 700;
-    font-size: 1rem;
+
+body.qr-print-page .qr-item-label {
     color: var(--text-color, #1a1a1a);
+    font-size: 1rem;
+    font-weight: 700;
 }
-.qr-item-sub {
-    font-size: .8rem;
+
+body.qr-print-page .qr-item-sub {
     color: var(--light-text, #777);
+    font-size: .8rem;
     margin-top: 2px;
 }
+
+@media (max-width: 767px) {
+    body.qr-print-page .qr-print-container {
+        max-width: calc(100vw - 24px);
+        padding: 88px 12px 32px;
+    }
+}
+
 @media print {
-    .no-print { display: none !important; }
-    .qr-print-container { padding: 0; }
-    .qr-item {
+    @page {
+        margin: 14mm 10mm 12mm;
+    }
+
+    body.qr-print-page {
+        background: #fff;
+    }
+
+    body.qr-print-page .header,
+    body.qr-print-page .no-print {
+        display: none !important;
+    }
+
+    body.qr-print-page .qr-print-container {
+        max-width: none;
+        padding: 4mm 0 0;
+    }
+
+    body.qr-print-page .qr-grid {
+        padding-top: 0;
+    }
+
+    body.qr-print-page .qr-item {
         border: 1px solid #ccc;
+        break-inside: avoid-page;
         page-break-inside: avoid;
     }
-    body { background: #fff; }
 }
