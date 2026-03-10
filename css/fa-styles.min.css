@@ -279,7 +279,7 @@ a {
 .cart-item {
   align-items: center;
   background: var(--white);
-  border-radius: 10px;
+  border-radius: 25px;
   display: flex;
   justify-content: space-between;
   padding: 3%;
@@ -452,7 +452,7 @@ a {
 .desktop-table .checkout-btn {
   background-color: var(--primary-color);
   border: none;
-  border-radius: 20px;
+  border-radius: 25px;
   color: var(--white);
   cursor: pointer;
   display: inline-block;
@@ -634,7 +634,7 @@ a {
 }
 .delivery-content {
   background-color: var(--white);
-  border-radius: 20px;
+  border-radius: 25px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.18);
   max-height: 90%;
   overflow-y: auto;
@@ -668,7 +668,7 @@ a {
 }
 .delivery-modal-content {
   background-color: var(--white);
-  border-radius: 10px;
+  border-radius: 25px;
   box-shadow: 0 4px 20px #00000026;
   height: 100%;
   overflow-y: auto;
@@ -780,7 +780,7 @@ a {
 }
 .qr-scanner-container:before {
   border: 2px solid var(--agree);
-  border-radius: 15px;
+  border-radius: 25px;
   box-shadow: 0 0 0 4000px #0000004d;
   content: "";
   height: 200px;
@@ -890,7 +890,7 @@ a {
 }
 .auth-container {
   background: var(--white);
-  border-radius: 10px;
+  border-radius: 25px;
   box-shadow: 0 5px 15px #0000001a;
   margin: 100px auto;
   max-width: 500px;
@@ -1049,7 +1049,7 @@ a {
 .mobile-table-item {
   background: var(--white);
   border: 1px solid var(--light-text);
-  border-radius: 10px;
+  border-radius: 25px;
   box-shadow: 0 0 5px #0000001a;
   display: flex;
   flex-direction: column;
@@ -1063,7 +1063,7 @@ a {
 .mobile-table-btn {
   background-color: var(--primary-color);
   border: none;
-  border-radius: 15px;
+  border-radius: 25px;
   color: var(--white);
   cursor: pointer;
   font-family: Inter;
@@ -1166,7 +1166,7 @@ a {
 .btn-form {
   background-color: var(--primary-color);
   border: none;
-  border-radius: 10px;
+  border-radius: 25px;
   cursor: pointer;
   display: inline-block;
   font-family: Inter;
@@ -1320,8 +1320,7 @@ body.cart-page #menu {
 }
 .back-to-menu-btn {
   justify-content: center;
-  padding: 10px 15px;
-  width: 100px;
+  padding: 8px 15px;
 }
 .back-to-menu-btn:first-child {
   margin-right: auto;
@@ -1534,7 +1533,7 @@ body.cart-page #menu {
     background: var(--ui-surface-muted);
     border: 1px solid var(--ui-border);
     border-bottom: 2px solid var(--ui-border);
-    border-radius: 20px;
+    border-radius: 25px;
     color: var(--ui-text-muted);
     cursor: pointer;
     font-size: 16px;
@@ -1593,7 +1592,7 @@ body.cart-page #menu {
   height: 0;
 }
 .menu-item {
-  border-radius: 20px;
+  border-radius: 25px;
   box-shadow: 0 0 10px #00000080;
   overflow: hidden;
   transition:
@@ -1677,7 +1676,7 @@ body.cart-page #menu {
 .checkout-btn {
   background-color: var(--ui-accent);
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: 25px;
   color: var(--ui-accent-contrast);
   cursor: pointer;
   font-family: Inter;
@@ -1764,7 +1763,7 @@ body.cart-page #menu {
 }
 .cancel-btn,
 .cancel-btn:hover {
-  color: var(--light-text);
+  color: var(--text-color);
 }
 .buy {
   align-items: center;
@@ -1847,7 +1846,7 @@ body.cart-page #menu {
 .reservation-form {
   align-items: center;
   background-color: var(--white);
-  border-radius: 10px;
+  border-radius: 25px;
   flex: 1;
   justify-items: center;
   padding: 10px 30px;
@@ -1863,7 +1862,7 @@ body.cart-page #menu {
 }
 .form-group input {
   border: 1px solid var(--light-text);
-  border-radius: 10px;
+  border-radius: 25px;
   font-size: 16px;
   padding: 12px 15px;
   width: 100%;

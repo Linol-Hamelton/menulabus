@@ -151,7 +151,7 @@ body.employee-page .admin-tab-btn {
   background: var(--ui-surface-muted);
   border: 1px solid var(--ui-border);
   border-bottom: 2px solid var(--ui-border);
-  border-radius: 20px;
+  border-radius: 25px;
   color: var(--ui-text-muted);
   font-size: 16px;
   font-weight: 600;
@@ -217,7 +217,7 @@ body.employee-page .inline-action-form {
 body.employee-page .checkout-btn,
 body.employee-page .admin-checkout-btn,
 body.employee-page .download-button-container {
-  border-radius: 10px;
+  border-radius: 25px;
   min-height: 40px;
   padding: 8px 14px;
 }
@@ -285,7 +285,7 @@ body.employee-page .color-controls {
 body.employee-page .color-control,
 body.employee-page .font-control {
   background: var(--white);
-  border-radius: 10px;
+  border-radius: 25px;
   padding: 12px;
 }
 
@@ -309,7 +309,7 @@ body.employee-page .font-control {
   }
 
   body.admin-menu-page .admin-section-card {
-    border-radius: 20px;
+    border-radius: 25px;
   }
 
   body.admin-menu-page .admin-subsection-card {
@@ -339,7 +339,7 @@ body.employee-page .font-control {
   }
 
   body.employee-page .admin-tab-btn {
-    border-radius: 20px;
+    border-radius: 25px;
     text-align: center;
   }
 
@@ -650,7 +650,7 @@ body.owner-page .admin-tab-btn {
   background: var(--ui-surface-muted);
   border: 1px solid var(--ui-border);
   border-bottom: 2px solid var(--ui-border);
-  border-radius: 20px;
+  border-radius: 25px;
   color: var(--ui-text-muted);
   font-size: 16px;
   font-weight: 600;
@@ -1451,7 +1451,7 @@ body.owner-page .menu-tabs .tab-btn {
   background: var(--ui-surface-muted);
   border: 1px solid var(--ui-border);
   border-bottom: 2px solid var(--ui-border);
-  border-radius: 20px;
+  border-radius: 25px;
   color: var(--ui-text-muted);
   cursor: pointer;
   font-size: 16px;
@@ -1496,7 +1496,7 @@ body.owner-page .menu-tabs .tab-btn:hover {
   }
 
   body.owner-page .admin-tab-btn {
-    border-radius: 20px;
+    border-radius: 25px;
     text-align: center;
   }
 
@@ -1618,7 +1618,7 @@ body.employee-page .order-header {
   align-items: center;
   background: var(--bg-light);
   border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 10px;
+  border-radius: 25px;
   display: grid;
   gap: 8px;
   grid-template-columns: auto auto 1fr auto;
@@ -1748,7 +1748,7 @@ body.customer_orders-page .checkout-btn,
 body.employee-page .status-btn,
 body.employee-page .status-btn-r,
 body.employee-page .checkout-btn {
-  border-radius: 10px;
+  border-radius: 25px;
   min-height: 36px;
   padding: 7px 12px;
 }
@@ -1760,7 +1760,7 @@ body.employee-page .mobile-table-actions {
 }
 body.employee-page .stop-btn,
 body.employee-page .mobile-table-btn {
-  border-radius: 10px;
+  border-radius: 25px;
   font-size: 13px;
   min-height: 36px;
   padding: 7px 16px;
@@ -1816,7 +1816,7 @@ body.owner-page .menu-tabs .tab-btn {
   background: var(--ui-surface-muted);
   border: 1px solid var(--ui-border);
   border-bottom: 2px solid var(--ui-border);
-  border-radius: 20px;
+  border-radius: 25px;
   color: var(--ui-text-muted);
   cursor: pointer;
   font-size: 16px;
@@ -1990,7 +1990,7 @@ body.account-page .form-group input:disabled {
 body.account-page .menu-view-options {
   background: var(--bg-light);
   border: 1px solid rgba(0, 0, 0, 0.05);
-  border-radius: 10px;
+  border-radius: 25px;
   gap: 8px;
   padding: 10px;
 }
@@ -2016,7 +2016,7 @@ body.account-page .menu-view-text {
 }
 
 body.account-page .checkout-btn {
-  border-radius: 10px;
+  border-radius: 25px;
   min-height: 40px;
   padding: 8px 14px;
 }
@@ -2034,7 +2034,7 @@ body.account-page .section-header-nav-actions {
 }
 
 body.account-page .back-to-menu-btn {
-  border-radius: 10px;
+  border-radius: 25px;
   margin: 0;
   min-height: 40px;
   min-width: 120px;
@@ -2066,7 +2066,7 @@ body.account-page .back-to-menu-btn {
 }
 
 .account-header-bar .back-to-menu-btn {
-  border-radius: 10px;
+  border-radius: 25px;
   margin: 0;
   min-height: 40px;
   min-width: 120px;
@@ -2203,7 +2203,7 @@ body.auth-page .auth-errors,
 body.auth-page .auth-success,
 body.auth-page .success-message {
   border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 10px;
+  border-radius: 25px;
   margin-bottom: 14px;
   padding: 10px 12px;
 }
@@ -2294,7 +2294,7 @@ body.auth-page .remember-me label {
 body.auth-page .auth-form .btn,
 body.auth-page .auth-form .checkout-btn,
 body.auth-page .auth-container form .btn {
-    border-radius: 10px;
+    border-radius: 25px;
     min-height: 40px;
     padding: 8px 14px;
     margin: 0 auto;

@@ -51,7 +51,7 @@
 .account-section {
   background: var(--ui-surface);
   border: 1px solid var(--ui-border);
-  border-radius: 15px;
+  border-radius: 25px;
   box-shadow: var(--ui-shadow-soft);
   flex: 1;
   margin-top: 25px;
@@ -181,7 +181,7 @@
     background: var(--ui-surface-muted);
     border: 1px solid var(--ui-border);
     border-bottom: 2px solid var(--ui-border);
-    border-radius: 20px;
+    border-radius: 25px;
     color: var(--ui-text-muted);
     cursor: pointer;
     font-size: 16px;
@@ -439,7 +439,7 @@
 .admin-checkout-btn {
   background-color: var(--ui-accent);
   border: none;
-  border-radius: 10px;
+  border-radius: 25px;
   color: var(--ui-accent-contrast);
   cursor: pointer;
   font-family: Inter;
@@ -490,7 +490,7 @@
 }
 .progress-bar {
   background: var(--ui-surface-muted);
-  border-radius: 10px;
+  border-radius: 25px;
   height: 20px;
   overflow: hidden;
   width: 100%;
@@ -517,10 +517,10 @@
 .account-action-icon {
   display: block;
   fill: currentColor;
-  height: 20px;
+  font-size: 15px;
   opacity: 0.95;
   transition: opacity 0.2s ease, transform 0.2s ease;
-  width: 20px;
+  width: 26px;
 }
 .account-admin,
 .account-owner {
@@ -533,8 +533,8 @@
   font-weight: 700;
   gap: 0;
   justify-content: center;
-  min-height: 40px;
-  min-width: 40px;
+  min-height: 50px;
+  min-width: 50px;
   text-decoration: none;
   transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
@@ -562,7 +562,7 @@
 .save-role-btn {
   background-color: var(--ui-accent);
   border: none;
-  border-radius: 10px;
+  border-radius: 25px;
   color: var(--ui-accent-contrast);
   cursor: pointer;
   font-family: Inter;
@@ -692,7 +692,7 @@ body.customer_orders-page .customer-orders-empty {
   align-items: flex-start;
   background: linear-gradient(180deg, rgba(205, 23, 25, 0.04) 0%, rgba(205, 23, 25, 0.01) 100%), var(--ui-surface);
   border: 1px solid var(--ui-border);
-  border-radius: 20px;
+  border-radius: 25px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -712,7 +712,7 @@ body.customer_orders-page .customer-orders-empty--compact {
 body.customer_orders-page .customer-order-card {
   background: var(--ui-surface);
   border: 1px solid var(--ui-border);
-  border-radius: 20px;
+  border-radius: 25px;
   box-shadow: var(--ui-shadow-soft);
   overflow: hidden;
 }

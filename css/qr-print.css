@@ -37,7 +37,7 @@ body.qr-print-page .qr-count-row label {
 
 body.qr-print-page .qr-count-input {
     border: 1.5px solid var(--border-color, #ddd);
-    border-radius: 10px;
+    border-radius: 25px;
     font-size: .95rem;
     min-height: 40px;
     padding: 0 10px;
@@ -80,7 +80,7 @@ body.qr-print-page .qr-item img {
 }
 
 body.qr-print-page .qr-item-label {
-    color: var(--text-color, #1a1a1a);
+    color: var(--primary-dark, #1a1a1a);
     font-size: 1rem;
     font-weight: 700;
 }

@@ -45,7 +45,7 @@ body [hidden] {
   gap: 24px;
   padding: 24px;
   margin-bottom: 20px;
-  border-radius: 20px;
+  border-radius: 25px;
   background: linear-gradient(135deg, #1f2430 0%, #2c3442 100%);
   color: #fff;
   box-shadow: var(--monitor-shadow);
@@ -126,7 +126,7 @@ body [hidden] {
   margin-bottom: 20px;
   padding: 24px;
   border: 1px solid var(--monitor-border);
-  border-radius: 20px;
+  border-radius: 25px;
   background: var(--monitor-surface);
   box-shadow: var(--monitor-shadow);
 }

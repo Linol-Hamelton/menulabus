@@ -58,7 +58,7 @@
     color: var(--light-text);
     background: var(--bg-light);
     padding: 4px 10px;
-    border-radius: 20px;
+    border-radius: 25px;
     display: flex;
     align-items: center;
     gap: 6px;

@@ -51,7 +51,7 @@ body.employee-page .employee-queue-metric__value {
 body.employee-page .employee-triage-toolbar {
   background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245, 242, 238, 0.98) 100%);
   border: 1px solid rgba(18, 18, 18, 0.08);
-  border-radius: 20px;
+  border-radius: 25px;
   box-shadow: 0 16px 36px rgba(18, 18, 18, 0.08);
   margin-bottom: 18px;
   padding: 18px;
