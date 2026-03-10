@@ -35,7 +35,23 @@ $errors = $success = null;
 /* --- CRUD logic --- */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     /* ---------- 1. Одиночное добавление / редактирование товара ---------- */
-    if (isset($_POST['restore_archived'])) {
+    if (isset($_POST['archive_item'])) {
+        if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
+            $_SESSION['error'] = 'Ошибка безопасности';
+        } else {
+            $id = (int)($_POST['id'] ?? 0);
+            if ($id <= 0) {
+                $_SESSION['error'] = 'Некорректный ID';
+            } else {
+                $ok = $db->archiveMenuItem($id);
+                $_SESSION[$ok ? 'success' : 'error'] = $ok
+                    ? 'Блюдо архивировано'
+                    : 'Не удалось архивировать блюдо';
+            }
+        }
+        header('Location: admin-menu.php?view=active');
+        exit;
+    } elseif (isset($_POST['restore_archived'])) {
         if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
             $_SESSION['error'] = 'Ошибка безопасности';
         } else {
@@ -409,6 +425,11 @@ $savedDbFontsJson = htmlspecialchars(
                                         </form>
                                     <?php else: ?>
                                         <a href="admin-menu.php?edit=<?= $it['id'] ?>" class="admin-checkout-btn">Редактировать</a>
+                                        <form method="POST" class="inline-action-form">
+                                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                            <input type="hidden" name="id" value="<?= (int)$it['id'] ?>">
+                                            <button type="submit" name="archive_item" class="admin-checkout-btn cancel">Архивировать</button>
+                                        </form>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -465,6 +486,11 @@ $savedDbFontsJson = htmlspecialchars(
                                     <a href="admin-menu.php?edit=<?= $it['id'] ?>" class="mobile-table-btn">
                                         Редактировать
                                     </a>
+                                    <form method="POST" class="inline-action-form">
+                                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                        <input type="hidden" name="id" value="<?= (int)$it['id'] ?>">
+                                        <button type="submit" name="archive_item" class="mobile-table-btn">Архивировать</button>
+                                    </form>
                                 <?php endif; ?>
                             </div>
                         </div>

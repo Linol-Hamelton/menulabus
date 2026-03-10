@@ -658,6 +658,28 @@ class Database
         }
     }
 
+    public function archiveMenuItem(int $id): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE menu_items
+                SET archived_at = NOW(),
+                    available = 0
+                WHERE id = :id
+                  AND archived_at IS NULL
+            ");
+            $stmt->execute([':id' => $id]);
+            $ok = $stmt->rowCount() > 0;
+            if ($ok) {
+                $this->invalidateMenuCache();
+            }
+            return $ok;
+        } catch (PDOException $e) {
+            error_log("archiveMenuItem Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function sanitizeOrderItemsForCheckout(array $items): array
     {
         $removedItems = [];
