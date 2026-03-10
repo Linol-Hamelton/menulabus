@@ -35,15 +35,15 @@ $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTT
     <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
 
     <main class="qr-print-container">
-        <div class="qr-print-header no-print">
+        <div class="section-header-menu qr-print-header no-print">
             <h1>QR-коды для столов</h1>
-            <div class="qr-count-row">
+            <div class="section-header-nav-actions qr-count-row">
                 <label for="tableCount">Столов:</label>
                 <input type="number" id="tableCount" class="qr-count-input"
                        value="<?= $count ?>" min="1" max="50">
                 <button type="button" id="applyCount" class="checkout-btn">Применить</button>
                 <button type="button" id="printQrBtn" class="checkout-btn">Распечатать</button>
-                <a href="employee.php" class="checkout-btn cancel-btn">
+                <a href="employee.php" class="back-to-menu-btn cancel-btn">
                     <svg class="btn-inline-icon" aria-hidden="true" viewBox="0 0 256 256">
                         <use href="/images/icons/phosphor-sprite.svg#arrow-left"></use>
                     </svg>

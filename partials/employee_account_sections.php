@@ -334,30 +334,32 @@ $formatPaymentState = static function (?string $method, ?string $status) use ($f
 
         <div class="orders-list tab-content <?= $activeTab === 'столы' ? 'active' : '' ?>" id="столы">
             <?php $tableOrders = $db->getActiveTableOrders(); ?>
-            <div class="admin-form-group">
-                <a href="/qr-print.php" class="checkout-btn" target="_blank">Распечатать QR-коды столов</a>
+            <div class="form-actions">
+                <a href="/qr-print.php" class="checkout-btn" target="_blank" rel="noopener">Распечатать QR-коды столов</a>
             </div>
             <?php if (empty($tableOrders)): ?>
                 <p>Нет активных заказов за столиками</p>
             <?php else: ?>
-                <table class="owner-table">
-                    <thead>
-                        <tr>
-                            <th>Стол</th>
-                            <th>Заказов</th>
-                            <th>Сумма</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($tableOrders as $row): ?>
+                <div class="desktop-table">
+                    <table>
+                        <thead>
                             <tr>
-                                <td>Стол <?= htmlspecialchars($row['table_num']) ?></td>
-                                <td><?= (int)$row['order_count'] ?></td>
-                                <td><?= number_format((float)$row['total_sum'], 0, '.', ' ') ?> ₽</td>
+                                <th class="first-col">Стол</th>
+                                <th>Заказов</th>
+                                <th class="last-col">Сумма</th>
                             </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($tableOrders as $row): ?>
+                                <tr class="menu-table">
+                                    <td>Стол <?= htmlspecialchars($row['table_num']) ?></td>
+                                    <td><?= (int)$row['order_count'] ?></td>
+                                    <td><?= number_format((float)$row['total_sum'], 0, '.', ' ') ?> ₽</td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
             <?php endif; ?>
         </div>
     </section>

@@ -9,6 +9,20 @@ body.employee-page .employee-queue-overview {
   margin: 0 0 22px;
 }
 
+body.employee-page .orders-list > .form-actions {
+  justify-content: flex-start;
+  margin: 0 0 16px;
+}
+
+body.employee-page .orders-list > .form-actions .checkout-btn {
+  margin: 0;
+  text-decoration: none;
+}
+
+body.employee-page .orders-list .desktop-table {
+  margin: 0;
+}
+
 body.employee-page .employee-queue-metric {
   background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,245,242,0.98) 100%);
   border: 1px solid rgba(18, 18, 18, 0.08);
