@@ -1,76 +1,98 @@
-﻿# Project Reference
+# Project Reference
 
 ## 1. Project Summary
 
-`menu.labus.pro` is a PHP-based restaurant menu and ordering platform with:
+`Menu Labus` is a white-label PHP-based restaurant menu and ordering platform.
 
-- public web menu and order flow
-- role-based backoffice (`owner`, `admin`, `employee`)
+The same codebase serves two modes:
+
+- `provider` deployment on the company domain (`menu.labus.pro`) for B2B promotion and demo flows
+- `tenant` deployments on client domains for real restaurant public sites and ordering
+
+The platform includes:
+
+- public menu and order flow
+- role-based backoffice (`owner`, `admin`, `employee`, `customer`)
 - mobile-oriented REST API (`/api/v1/*`)
 - realtime order status updates (SSE/long-poll)
-- security hardening runbooks and smoke checks
+- security/deploy/runbook documentation
 
-Primary host: shared server (FastPanel + Nginx + PHP-FPM + MySQL, optional Redis).
+Primary host model today: shared server (FastPanel + Nginx + PHP-FPM + MySQL, optional Redis).
 
-## 2. Runtime Stack
+## 2. Tenant Isolation Model
 
-- PHP (project codebase, API, web pages)
-- MySQL (main persistence)
-- Redis/memory cache abstractions in code (`RedisCache.php`, query/cache helpers)
-- Nginx frontend with FastCGI, microcache for selected routes
+Hard rule:
+
+- one client = one separate database
+
+Recommended DB naming convention:
+
+- `menu_<brand_slug>`
+
+Examples:
+
+- `menu_labus_demo`
+- `menu_kultura_bar`
+- `menu_bon_pizza`
+
+Isolation assumptions:
+
+- each client has their own DB, brand settings, users, orders, and menu data
+- provider marketing content must not leak into tenant domains
+- code is shared, production data is not
+
+## 3. Runtime Stack
+
+- PHP (project codebase, API, public pages)
+- MySQL (main persistence; separate DB per tenant)
+- Redis/memory cache abstractions in code (`RedisCache.php`, cache helpers)
+- Nginx frontend with FastCGI, selected caching/microcache
 - PHP-FPM pool split: web / api / sse
+- PWA + push notifications
 
-## 3. Request Architecture
+## 4. Request Architecture
 
-### 3.1 Web context
+### 4.1 Web context
 
-- Browser requests web pages (`/menu.php`, account/admin pages).
-- Session/cookie auth and CSRF/CSP handling are initialized by `session_init.php` (web context).
+- browser requests public pages (`/menu.php`, `index.php`, account/admin pages)
+- session/cookie auth and CSRF/CSP handling are initialized by `session_init.php`
 
-### 3.2 API context
+### 4.2 API context
 
-- API endpoints live in `api/v1/*` and use `api/v1/bootstrap.php`.
-- API uses `LABUS_CTX='api'` lightweight init path.
-- Mobile auth is token-based (`Authorization: Bearer ...`), not cookie-session dependent.
+- API endpoints live in `api/v1/*` and use `api/v1/bootstrap.php`
+- mobile auth is token-based (`Authorization: Bearer ...`), not cookie-session dependent
 
-### 3.3 Realtime updates
+### 4.3 Realtime updates
 
-- Active paths: `/orders-sse.php` and `/ws-poll.php`.
-- They are routed to dedicated SSE PHP-FPM pool in optimized Nginx config.
+- active paths: `/orders-sse.php` and `/ws-poll.php`
+- long-lived requests should be isolated to the SSE pool
 
-### 3.4 Blocked legacy/internal endpoints
+## 5. Public Entry Points
 
-In production vhost config (`nginx-optimized.conf`), the following are intentionally blocked (`404`):
+### 5.1 Provider deployment
 
-- `/phpinfo.php`
-- `/db-indexes-optimizer.php`
-- `/db-indexes-optimizer-v2.php`
-- `/order_updates.php` (legacy)
-- `/scripts/api-metrics-report.php` (internal CLI/reporting)
-- `/scripts/api-smoke-runner.php` (internal CLI runner)
+- `/` => provider B2B landing
+- `/index.php` => provider landing
+- `/menu.php` => demo menu / transactional surface
 
-## 4. Key App Entry Points
+### 5.2 Tenant deployment
 
-### 4.1 Public/customer flow
-
-- `/menu.php` (main entry)
+- `/` => tenant public entry (`menu.php` directly or tenant homepage)
+- `/menu.php` => main transactional menu
 - `/cart.php`
 - `/create_new_order.php`, `/create_guest_order.php`
 - `/order-track.php`, `/order-status.php`
 
-### 4.2 Account/admin flow
+## 6. Backoffice and Operations
 
 - `/auth.php`, `/logout.php`, `/password-reset.php`
-- `/account.php`, `/owner.php`, `/employee.php`, `/admin-menu.php`
-- `/monitor.php` (operational dashboard)
+- `/account.php`
+- `/owner.php`
+- `/employee.php`
+- `/admin-menu.php`
+- `/monitor.php`
 
-### 4.3 Realtime and push
-
-- `/orders-sse.php`
-- `/ws-poll.php`
-- `/api/v1/push/subscribe.php`
-
-## 5. API v1 Surface (source of truth in OpenAPI)
+## 7. API v1 Surface
 
 Current API files (excluding bootstrap):
 
@@ -86,46 +108,41 @@ Current API files (excluding bootstrap):
 - `/api/v1/orders/status.php`
 - `/api/v1/push/subscribe.php`
 
-Contract file: [`docs/openapi.yaml`](./openapi.yaml)
+Contract file:
 
-## 6. Security State (current)
+- [`docs/openapi.yaml`](./openapi.yaml)
 
-Implemented controls include:
+## 8. Branding and White-Label Surface
 
-- strict security headers and CSP strategy
-- explicit blocking of sensitive diagnostics/internal endpoints
-- menu-only hardening scope for shared host safety
-- security smoke script and runbook:
-  - `scripts/perf/security-smoke.sh`
-  - `docs/security-smoke-checklist.md`
+Brand-dependent public settings should come from tenant settings, not from hard-coded provider defaults.
 
-Current security status and roadmap:
+The codebase already exposes a branding surface for:
 
-- [`docs/security-hardening-status.md`](./security-hardening-status.md)
+- app name
+- tagline
+- description
+- contact phone
+- contact address / map link
+- social links
+- logo
+- favicon
+- colors
+- fonts
+- custom domain
+- hide-provider-branding flag
+
+## 9. Security and Deploy References
+
 - [`docs/security-hardening-roadmap.md`](./security-hardening-roadmap.md)
-
-## 7. Deployment and Operations
-
-Main deployment flow (Git pull on server):
-
+- [`docs/security-smoke-checklist.md`](./security-smoke-checklist.md)
 - [`docs/deployment-workflow.md`](./deployment-workflow.md)
-
-Infra templates/docs:
-
 - [`docs/deploy/nginx-pool-split.md`](./deploy/nginx-pool-split.md)
 - [`docs/deploy/php-fpm-pool-split.md`](./deploy/php-fpm-pool-split.md)
 
-DB maintenance docs:
+## 10. Documentation Policy
 
-- [`docs/db/backfill-order-items.md`](./db/backfill-order-items.md)
-
-## 8. Mobile Wrapper
-
-Capacitor wrapper notes:
-
-- [`docs/mobile/capacitor-wrapper.md`](./mobile/capacitor-wrapper.md)
-
-## 9. Documentation Policy
-
-- All project docs are kept under `docs/`.
-- API contract source of truth: `docs/openapi.yaml`.
+- active docs stay under `docs/`
+- historical snapshots move to `docs/archive/`
+- API contract source of truth: `docs/openapi.yaml`
+- product-mode source of truth: `docs/product-model.md`
+- tenant launch runbook: `docs/tenant-launch-checklist.md`

@@ -1,53 +1,55 @@
-﻿# Menu Labus
+# Menu Labus
 
-Restaurant menu and ordering platform for `menu.labus.pro`.
+White-label restaurant menu and ordering platform.
+
+`menu.labus.pro` is the provider-owned deployment used for B2B promotion and demo flows.
+Client restaurant deployments should run the same codebase on their own domains with separate databases.
 
 ## RU: Быстрый контекст
 
-Этот репозиторий содержит production-код веб-приложения и API:
+Этот репозиторий содержит:
 
-- публичное меню и оформление заказов
+- provider-mode публичный слой для продвижения решения от лица `Labus`
+- tenant-mode публичный слой для реальных ресторанов на клиентских доменах
 - кабинет/админ-зоны для персонала и владельца
 - mobile API (`/api/v1/*`) с bearer-токенами
 - realtime-обновления заказов (`/orders-sse.php`, `/ws-poll.php`)
 - набор security/deploy/runbook-документов
 
-### Стек
+## Основные правила
+
+- `1 клиент = 1 отдельная БД`
+- имя БД должно содержать slug бренда клиента
+- `1 клиент = 1 домен + 1 набор бренд-настроек`
+- провайдерский B2B-контент не должен попадать на клиентские домены
+- source of truth по документации хранится в `docs/`
+
+## Стек
 
 - PHP + MySQL
 - Nginx + PHP-FPM (pool split: web/api/sse)
 - Redis/cache abstractions (опционально)
 - PWA + push notifications
 
-### Где что смотреть
+## Где что смотреть
 
-- Общая актуальная справка: [`docs/project-reference.md`](./docs/project-reference.md)
 - Карта документации: [`docs/index.md`](./docs/index.md)
-- План дальнейших улучшений: [`docs/project-improvement-roadmap.md`](./docs/project-improvement-roadmap.md)
-- API контракт (source of truth): [`docs/openapi.yaml`](./docs/openapi.yaml)
-- API smoke: [`docs/api-smoke.md`](./docs/api-smoke.md)
+- Продуктовая модель: [`docs/product-model.md`](./docs/product-model.md)
+- Архитектура и active flows: [`docs/project-reference.md`](./docs/project-reference.md)
+- Приоритетный roadmap: [`docs/project-improvement-roadmap.md`](./docs/project-improvement-roadmap.md)
+- Runbook запуска нового клиента: [`docs/tenant-launch-checklist.md`](./docs/tenant-launch-checklist.md)
+- API контракт: [`docs/openapi.yaml`](./docs/openapi.yaml)
 - Deployment flow: [`docs/deployment-workflow.md`](./docs/deployment-workflow.md)
-- Security runbooks: `docs/security-*`
+- Security roadmap и smoke: `docs/security-*`
 
-### Local quick checks
+## Local quick checks
 
 ```bash
 npm ci
 npm run openapi:validate
 ```
 
-### Current constraints
+## Current constraints
 
 - Shared-host scope lock: не трогать Docker/порты других сайтов в рамках menu-only изменений.
 - API contract source of truth: `docs/openapi.yaml`.
-
-## EN: Quickstart for engineers/LLM
-
-1. Start with [`docs/index.md`](./docs/index.md) for the full docs map.
-2. Read [`docs/project-reference.md`](./docs/project-reference.md) for architecture and active flows.
-3. Use [`docs/project-improvement-roadmap.md`](./docs/project-improvement-roadmap.md) as prioritized next-step plan.
-4. Treat [`docs/openapi.yaml`](./docs/openapi.yaml) as the API contract source of truth.
-5. Validate API spec with `npm run openapi:validate`.
-6. Use [`docs/deployment-workflow.md`](./docs/deployment-workflow.md) for server pull/reload flow.
-7. Use `docs/security-*` + `scripts/perf/security-smoke.sh` for hardening and smoke verification.
-8. Use only current docs under `docs/` as implementation source of truth.

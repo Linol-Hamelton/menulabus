@@ -168,7 +168,7 @@ Use one entry per production change step.
   - `scripts/perf/security-smoke-daily.sh`
   - `scripts/perf/install-security-smoke-cron.sh`
   - `scripts/perf/checkout-error-top.php`
-  - `docs/security-phase-commands.md`, `docs/security-hardening-status.md`, `docs/project-improvement-roadmap.md`
+  - `docs/security-phase-commands.md`, `docs/archive/security-hardening-status-2026-03-06.md`, `docs/project-improvement-roadmap.md`
 - Risk summary: low risk; monitoring/observability only, no API schema or business-flow behavior change
 - Preventive checks (pre):
   - repository fast-forward update on server to `26e3e82`

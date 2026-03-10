@@ -1,158 +1,204 @@
-# Project Improvement Roadmap (Low-Risk, High-Impact)
+# Project Improvement Roadmap
 
 ## Goal
 
-Increase business value for venue owners and customer convenience without risky refactoring or cross-project infrastructure changes.
+Turn the current provider deployment into a repeatable product model where:
 
-## Constraints (fixed)
+- `menu.labus.pro` stays the provider-owned B2B showcase
+- new client restaurant launches are fast and predictable
+- each new client gets their own domain, brand, and separate database
 
-- Menu-only scope on shared host: no changes to Docker/services/ports of other projects.
-- One production change per rollout step.
-- Mandatory post-change smoke checks (`scripts/perf/security-smoke.sh` + business smoke).
-- API contract source of truth remains `docs/openapi.yaml`.
+This roadmap is now portability-first and tenant-launch-first.
+
+## Fixed Constraints
+
+- one client = one separate database
+- database name must contain the client brand slug
+- provider and tenant public modes must be separated by domain behavior
+- one production change per rollout step
+- mandatory smoke after each rollout step
+- API contract source of truth remains `docs/openapi.yaml`
+
+## What Already Exists and Should Be Reused
+
+- working order engine
+- role-based backoffice
+- mobile API
+- repeat-order flow
+- owner analytics foundation
+- monitor and security smoke foundation
+- white-label settings surface in admin
+
+The roadmap below is therefore not about rebuilding the platform.
+It is about making tenant launch clean, safe, and scalable.
 
 ## Success Metrics
 
-Track baseline before each phase and compare after rollout:
+- time to launch a new client from zero to production
+- number of manual steps per new client launch
+- number of provider-brand leaks on client domains
+- number of tenant-specific overrides that still require code edits
+- `5xx` / p95 on tenant public flows
+- ordering conversion on tenant domains
 
-- Conversion: `menu_view -> order_create_success`
-- Checkout quality: order create error-rate and abandonment on checkout screens
-- Owner operations: average time to process new order, missed/late order count
-- Reliability: `5xx`, p95 for `/menu.php` and `/api/v1/menu.php`
-- Retention signals: repeat orders per customer (7/30 day)
+## Phase 0: Documentation Reset
 
-## Execution status (as of 2026-03-06)
+### 1) Freeze the product model
 
-- Phase 1.1 completed: daily smoke cron installed on production, 14-day retention enabled, `status=PASS` validated.
-- Phase 1.2 completed: OpenAPI validation gate is active on push to `main` (`.githooks/pre-push`).
-- Phase 1.3 completed: checkout failure observability is active in logs and visible in admin monitor (`Checkout Errors (24h)`).
-- Phase 2.4 implemented in code: owner KPI snapshot in `owner.php` (menu-only, read-only queries), pending production rollout and observation window.
-- Phase 2.5 implementation in progress: order-flow bottleneck report (`created -> accepted -> ready -> completed`) in owner analytics, read-only.
+- Write one clear source of truth for `provider` vs `tenant` mode.
+- Record the rule `1 client = 1 DB`.
+- Record the routing rule for provider and client domains.
 
-## Phase 1 (1-2 weeks): Reliability and conversion quick wins
+Done when:
 
-### 1) Daily automated smoke + log retention
+- no core doc contradicts the two-mode model
 
-- Value: faster incident detection after deploys.
-- Change:
-  - add daily server cron for `scripts/perf/security-smoke.sh`
-  - store logs under `/var/www/labus_pro_usr/data/logs/security-smoke-<UTC>.log` with 14-day retention
-- Risk: low.
-- Done when: scheduled run exists, logs rotate, failures are visible to operator.
+### 2) Remove documentation noise
 
-### 2) OpenAPI parity gate in release flow
+- keep a short core docs set
+- move historical snapshots into `docs/archive/`
+- stop using stale status snapshots as "current state"
 
-- Value: prevents mobile/client regressions and undocumented API drift.
-- Change:
-  - run `npm run openapi:validate` before every release merge to `main`
-  - add short checklist item to `docs/deployment-workflow.md`
-- Risk: low.
-- Done when: release checklist explicitly blocks deploy on failed validation.
+Done when:
 
-### 3) Checkout failure observability (menu-only)
+- a new engineer can understand the system from `docs/index.md` without reading historical documents first
 
-- Value: direct conversion uplift through faster bug localization.
-- Change:
-  - log structured reasons for failed order creation (`validation`, `auth`, `db`, `idempotency`)
-  - keep existing response contract unchanged
-- Risk: low-medium (logging only, no contract changes).
-- Done when: failures are grouped by reason in logs and can be reviewed daily.
+## Phase 1: Domain-Aware Public Behavior
 
-## Phase 2 (2-4 weeks): Owner-facing business boost
+### 3) Introduce runtime mode switch by hostname
 
-### 4) Owner KPI snapshot page (no schema rewrite)
+- provider domain `/` => B2B landing
+- tenant domain `/` => restaurant public entry
+- stop treating `menu.labus.pro` as the universal default for every deployment
 
-- Value: immediate visibility for revenue and operational decisions.
-- Change:
-  - add lightweight KPIs in owner/admin area:
-    - orders today
-    - paid/cancelled counts
-    - average чек (AOV)
-    - top items (day/week)
-- Risk: low-medium (read queries only).
-- Done when: KPI block is visible to owner and loads within target p95.
+Risk:
 
-### 5) Order flow bottleneck report
+- low-medium
 
-- Value: reduce delays and improve fulfillment speed.
-- Change:
-  - add simple aggregation by status transition times (created -> accepted -> ready -> completed)
-  - expose as owner-only table/export
-- Risk: medium (new read queries; no core flow change).
-- Done when: owner can identify slow stages by day and by shift.
+Done when:
 
-### 6) Safer cache-clear and monitor operations
+- the same codebase behaves correctly depending on domain
 
-- Value: fewer operator mistakes during peak hours.
-- Change:
-  - add explicit confirmation text + timestamp/user trace in admin monitor actions
-  - keep current auth guards (`require_auth.php`) intact
-- Risk: low.
-- Done when: each cache/maintenance action is auditable.
+### 4) Remove provider hard-coding from tenant fallback paths
 
-## Phase 3 (3-6 weeks): Customer experience and repeat orders
+- provider contacts, map links, CTA blocks, and sales copy must be shown only on provider domains
+- tenant domains must use tenant settings or stay blank until configured
 
-### 7) Reorder shortcut from previous order
+Risk:
 
-- Value: faster repeat purchase, higher retention.
-- Change:
-  - add "repeat order" action for authenticated users using existing order items data
-  - no change to create-order API contract
-- Risk: medium (UI + server-side data mapping).
-- Done when: user can recreate a past order in one action.
+- low
 
-### 8) Delivery address quality guard using geocode endpoint
+Done when:
 
-- Value: fewer failed deliveries and operator callbacks.
-- Change:
-  - on checkout, validate coordinates/address consistency through `/api/v1/geocode.php`
-  - show non-blocking correction hints
-- Risk: low-medium.
-- Done when: address correction hints are shown and manual corrections decrease.
+- no public tenant page shows Labus-specific fallback content
 
-### 9) Push subscription health checks
+## Phase 2: Database and Tenant Provisioning
 
-- Value: better order status communication and fewer support contacts.
-- Change:
-  - periodic validation of stale push subscriptions
-  - owner-facing counter: active vs invalid subscriptions
-- Risk: medium.
-- Done when: invalid subscription ratio trend is visible and decreasing.
+### 5) Formalize DB naming convention
 
-## Phase 4 (continuous): Performance without risky behavior changes
+- recommended DB name: `menu_<brand_slug>`
+- examples: `menu_kultura_bar`, `menu_bon_pizza`, `menu_labus_demo`
 
-### 10) API menu endpoint cache behavior audit
+Done when:
 
-- Value: lower API latency and backend load under peak.
-- Change:
-  - verify intended behavior of `/api/v1/menu.php` (`cache-control`, `x-cache-status`, no-store policy)
-  - if business-safe, run controlled microcache experiment (short TTL, instant rollback path)
-- Risk: medium (must preserve correctness and no-store requirements).
-- Done when: p95 improves without data consistency regressions.
+- every new tenant launch follows one naming convention
 
-### 11) Nginx/PHP-FPM capacity tuning from real metrics
+### 6) Create tenant provisioning checklist
 
-- Value: stable peak handling for menu and order creation.
-- Change:
-  - tune pool limits and keepalive/cache parameters based on measured load
-  - apply one parameter group per release step
-- Risk: medium.
-- Done when: peak-hour p95 and error-rate stay within target thresholds.
+- create DB
+- import schema
+- create tenant admin user
+- configure brand settings
+- configure domain / SSL
+- run smoke
+- store the runbook in `docs/tenant-launch-checklist.md`
 
-## Rollout rules for every roadmap item
+Risk:
 
-1. Baseline capture (5xx/p95 + business metric for the item).
-2. One change per release.
-3. Config syntax/service checks.
-4. Smoke + business verification.
-5. 30-minute observation window.
-6. Immediate rollback on stop criteria.
+- low
 
-## Recommended execution order
+Done when:
 
-1. Phase 1 items 1-3
-2. Phase 2 items 4-6
-3. Phase 3 items 7-9
-4. Phase 4 items 10-11
+- launching a new restaurant is a checklist, not tribal knowledge
 
-This order maximizes near-term value while keeping rollout risk low.
+## Phase 3: White-Label Completeness
+
+### 7) Make tenant branding sufficient without code edits
+
+- name
+- tagline
+- description
+- contacts
+- logo
+- favicon
+- colors
+- fonts
+- social links
+- custom domain
+- hide-provider-branding
+
+Done when:
+
+- a new restaurant can be branded fully from settings and content, not from PHP edits
+
+### 8) Split provider demo content from tenant seed content
+
+- provider deployment may use demo content
+- tenant deployment must start from restaurant-friendly defaults
+
+Done when:
+
+- provider B2B content and tenant restaurant content are different by design, not by accident
+
+## Phase 4: Restaurant-Ready UX Cleanup
+
+### 9) Remove UI artifacts that block client rollout quality
+
+- icon-font leakage into visible text
+- raw coordinates and long metadata in order cards
+- stale "active" orders that should be completed or archived
+
+Done when:
+
+- the client-facing and staff-facing experience looks like a real restaurant product, not an internal demo mixed with legacy data
+
+### 10) Finish tenant-safe public entry UX
+
+- decide tenant default entry: direct `menu.php` or tenant homepage
+- ensure this choice is configurable per deployment without changing provider behavior
+
+Done when:
+
+- tenant public routing is predictable and documented
+
+## Phase 5: Optional Automation
+
+### 11) Add bootstrap automation for new tenants
+
+- generate DB name from brand slug
+- apply schema
+- create initial brand settings
+- output launch checklist
+
+Done when:
+
+- new tenant launch can be mostly scripted
+
+## Rollout Rules
+
+1. One change per release step.
+2. Update docs before or with the change.
+3. Run smoke and key business verification after each step.
+4. Keep rollback simple.
+5. Prefer settings-driven rollout over template duplication.
+
+## Recommended Execution Order
+
+1. Phase 0
+2. Phase 1
+3. Phase 2
+4. Phase 3
+5. Phase 4
+6. Phase 5
+
+This order minimizes rework: first define the model, then route by domain, then provision isolated tenants, then finish branding and UX.

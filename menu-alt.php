@@ -54,9 +54,9 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
                 <div class="cart-item-price"><strong class="modal-strong">Углеводы:</strong>
                     <span id="modalCarbs"></span> г
                 </div>
-            </div>
-            <div class="modal-footer">
+                            <div class="modal-footer">
                 <button id="closeModalBtn" class="checkout-btn">Закрыть</button>
+            </div>
             </div>
         </div>
     </div>
