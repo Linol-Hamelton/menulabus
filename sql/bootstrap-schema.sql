@@ -216,7 +216,7 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   auth VARCHAR(255) NOT NULL,
   created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY uniq_push_subscription_keys (endpoint, p256dh, auth),
+  UNIQUE KEY uniq_push_subscription_keys (endpoint(191), p256dh(64), auth(64)),
   KEY idx_push_subscriptions_user_id (user_id),
   KEY idx_push_subscriptions_order_id (order_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
