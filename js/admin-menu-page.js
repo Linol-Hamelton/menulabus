@@ -3,6 +3,37 @@
     '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg>';
   const ERR_ICON =
     '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31l-66.34,66.35a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/><path d="M232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg>';
+  const SCROLL_KEY = 'admin-menu:scroll-y';
+
+  function saveScrollPosition() {
+    try {
+      sessionStorage.setItem(SCROLL_KEY, String(window.scrollY || window.pageYOffset || 0));
+    } catch (error) {
+      // Ignore storage failures and keep navigation working.
+    }
+  }
+
+  function restoreScrollPosition() {
+    try {
+      const raw = sessionStorage.getItem(SCROLL_KEY);
+      if (raw === null) return;
+
+      sessionStorage.removeItem(SCROLL_KEY);
+      const top = Number.parseInt(raw, 10);
+      if (!Number.isFinite(top) || top < 0) return;
+
+      if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+      }
+
+      const apply = () => window.scrollTo(0, top);
+      apply();
+      window.requestAnimationFrame(apply);
+      window.setTimeout(apply, 120);
+    } catch (error) {
+      // Ignore storage failures and keep navigation working.
+    }
+  }
 
   function getCsrfToken() {
     return (
@@ -174,6 +205,26 @@
     document.getElementById('saveTgChatIdBtn')?.addEventListener('click', saveTelegramChatId);
 
     document.addEventListener('click', (event) => {
+      const navLink = event.target.closest('a[href]');
+      if (!navLink) return;
+
+      const href = navLink.getAttribute('href') || '';
+      if (href.startsWith('admin-menu.php')) {
+        saveScrollPosition();
+      }
+    });
+
+    document.addEventListener('submit', (event) => {
+      const form = event.target;
+      if (!(form instanceof HTMLFormElement)) return;
+
+      const action = form.getAttribute('action') || 'admin-menu.php';
+      if (action === '' || action.startsWith('admin-menu.php')) {
+        saveScrollPosition();
+      }
+    });
+
+    document.addEventListener('click', (event) => {
       const stopBtn = event.target.closest('.stop-btn');
       if (!stopBtn) return;
 
@@ -184,6 +235,7 @@
 
   syncSavedFonts();
   document.addEventListener('DOMContentLoaded', () => {
+    restoreScrollPosition();
     bindBrandControls();
     bindAdminActions();
   });
