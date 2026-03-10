@@ -71,7 +71,7 @@ $sbpVisible = $tbankActive || $paymentEnabled;
     </style>
 </head>
 
-<body id="body" data-is-logged-in="<?= isset($_SESSION['user_id']) ? 'true' : 'false' ?>">
+<body id="body" class="cart-page" data-is-logged-in="<?= isset($_SESSION['user_id']) ? 'true' : 'false' ?>">
     <?php
     // Вставка JavaScript для повторения заказа
     if (isset($_SESSION['repeat_order_js'])) {

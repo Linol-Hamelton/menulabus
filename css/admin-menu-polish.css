@@ -784,11 +784,11 @@ body.employee-page.admin-menu-page .account-form-container {
 }
 
 body.employee-page.admin-menu-page .account-header-bar {
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 body.employee-page.admin-menu-page .account-header-bar .container {
-  padding-inline: 24px;
+  padding-inline: 0;
 }
 
 body.employee-page.admin-menu-page .account-header-bar .section-header-menu {
@@ -1556,6 +1556,10 @@ body.owner-page #menu {
   padding-top: 96px !important;
 }
 
+body.cart-page #menu {
+  padding-top: 60px !important;
+}
+
 body.account-page #menu {
   padding-top: 96px !important;
 }
@@ -2086,7 +2090,8 @@ body.account-page .back-to-menu-btn {
 @media (max-width: 768px) {
   body.customer_orders-page:not(.account-page) .section-header-menu,
   body.employee-page .section-header-menu,
-  body.owner-page .section-header-menu {
+  body.owner-page .section-header-menu,
+  body.cart-page .section-header-menu {
     margin-top: 0 !important;
   }
 
@@ -2094,6 +2099,10 @@ body.account-page .back-to-menu-btn {
   body.employee-page #menu,
   body.owner-page #menu {
     padding-top: 86px !important;
+  }
+
+  body.cart-page #menu {
+    padding-top: 60px !important;
   }
 
   body.account-page #menu {
@@ -2686,7 +2695,6 @@ body.employee-page.admin-menu-page {
   --admin-soft-shadow: 0 18px 44px rgba(15, 23, 42, 0.06);
 }
 
-body.employee-page.admin-menu-page .account-header-bar .container,
 body.employee-page.admin-menu-page .admin-tabs-container,
 body.employee-page.admin-menu-page .account-form-container {
   margin-inline: auto;
@@ -2694,8 +2702,7 @@ body.employee-page.admin-menu-page .account-form-container {
   width: 100%;
 }
 
-body.employee-page.admin-menu-page .account-header-bar { margin-bottom: 16px; }
-body.employee-page.admin-menu-page .account-header-bar .container,
+body.employee-page.admin-menu-page .account-header-bar { margin-bottom: 0; }
 body.employee-page.admin-menu-page .admin-tabs-container,
 body.employee-page.admin-menu-page .account-form-container { padding-inline: 24px; }
 body.employee-page.admin-menu-page .account-form-container { gap: 24px; padding-bottom: 32px; }
