@@ -3581,3 +3581,28 @@ body.employee-page.admin-menu-page .admin-block--files .file-upload-group input[
     justify-content: flex-start;
   }
 }
+
+/* Keep the shared account header aligned with owner.php. */
+body.employee-page.admin-menu-page .account-header-bar .container {
+  margin-inline: auto;
+  max-width: none !important;
+  width: 80% !important;
+}
+
+@media (max-width: 1200px) {
+  body.employee-page.admin-menu-page .account-header-bar .container {
+    width: 85% !important;
+  }
+}
+
+@media (max-width: 992px) {
+  body.employee-page.admin-menu-page .account-header-bar .container {
+    width: 90% !important;
+  }
+}
+
+@media (max-width: 768px) {
+  body.employee-page.admin-menu-page .account-header-bar .container {
+    width: 100% !important;
+  }
+}

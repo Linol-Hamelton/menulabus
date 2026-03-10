@@ -1251,6 +1251,9 @@ a {
   position: relative;
   height: auto;
 }
+body.cart-page #menu {
+  padding-top: 60px;
+}
 .order-item {
   background: var(--white);
   border: 1px solid var(--light-text);
