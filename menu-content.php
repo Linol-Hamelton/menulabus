@@ -34,7 +34,9 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
                 <h2>Меню</h2>
                 <a href="cart.php" class="order-summary-btn">
                     <span class="order-total">0 ₽</span>
-                    <i class="fas fa-shopping-cart"></i>
+                    <svg class="btn-inline-icon" aria-hidden="true" viewBox="0 0 256 256">
+                        <use href="/images/icons/phosphor-sprite.svg#shopping-cart-simple"></use>
+                    </svg>
                 </a>
             </div>
 

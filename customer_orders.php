@@ -124,7 +124,7 @@ if (($_GET['partial'] ?? '') === 'account-sections') {
     
 </head>
 
-<body class="customer_orders-page">
+<body class="customer_orders-page account-page">
     <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     <?php require_once __DIR__ . '/account-header.php'; ?>
 

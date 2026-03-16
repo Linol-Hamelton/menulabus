@@ -39,9 +39,23 @@ $getDeliveryTitle = static function (array $order) use ($deliveryTypeLabels): st
     return $deliveryTypeLabels[$type] ?? ucfirst($type ?: 'Заказ');
 };
 
+$getDeliverySummary = static function (array $order): string {
+    $type = (string)($order['delivery_type'] ?? '');
+    $raw = trim((string)($order['delivery_details'] ?? ''));
+
+    return match ($type) {
+        'table' => $raw !== '' ? 'Стол ' . $raw : 'Номер стола уточняется',
+        'bar' => 'Выдача у барной стойки',
+        'takeaway' => 'Выдача в заведении',
+        'delivery' => $raw !== '' ? 'Адрес доставки указан' : 'Адрес доставки уточняется',
+        default => $raw !== '' ? 'Детали указаны' : 'Детали появятся после обновления статуса',
+    };
+};
+
 $getDeliveryDetail = static function (array $order): string {
     $type = (string)($order['delivery_type'] ?? '');
     $raw = trim((string)($order['delivery_details'] ?? ''));
+
     if ($type === 'table' && $raw !== '') {
         return 'Стол ' . $raw;
     }
@@ -54,19 +68,22 @@ $getDeliveryDetail = static function (array $order): string {
     if ($raw !== '') {
         return $raw;
     }
+
     return $type === 'delivery'
         ? 'Адрес доставки уточняется'
         : 'Детали выдачи появятся после обновления статуса';
 };
 
-$renderOrderCard = static function (array $order, bool $isHistory) use ($getDeliveryTitle, $getDeliveryDetail, $statusTitles, $statusToneMap): void {
+$renderOrderCard = static function (array $order, bool $isHistory) use ($getDeliveryTitle, $getDeliverySummary, $getDeliveryDetail, $statusTitles, $statusToneMap): void {
     $status = (string)($order['status'] ?? '');
     $statusTitle = $statusTitles[$status] ?? $status;
     $statusTone = $statusToneMap[$status] ?? '';
     $deliveryTitle = $getDeliveryTitle($order);
+    $deliverySummary = $getDeliverySummary($order);
     $deliveryDetail = $getDeliveryDetail($order);
     $createdAt = date('d.m H:i', strtotime((string)($order['created_at'] ?? 'now')));
     $total = number_format((float)($order['total'] ?? 0), 0, '.', ' ') . ' ₽';
+    $itemsCount = array_reduce($order['items'] ?? [], static fn($sum, $item) => $sum + (int)($item['quantity'] ?? 0), 0);
     $detailsId = 'order-items-' . (int)$order['id'];
     ?>
     <article class="order-item order-item--customer <?= $isHistory ? 'order-item--history' : 'order-item--active' ?>"
@@ -81,11 +98,12 @@ $renderOrderCard = static function (array $order, bool $isHistory) use ($getDeli
                     </div>
                     <div class="customer-order-meta">
                         <span class="order-date"><?= htmlspecialchars($createdAt) ?></span>
+                        <span class="customer-order-items-count"><?= (int)$itemsCount ?> поз.</span>
                         <span class="order-total"><?= htmlspecialchars($total) ?></span>
                     </div>
                     <div class="customer-order-delivery">
                         <span class="customer-order-delivery-type"><?= htmlspecialchars($deliveryTitle) ?></span>
-                        <span class="customer-order-delivery-detail"><?= htmlspecialchars($deliveryDetail) ?></span>
+                        <span class="customer-order-delivery-detail"><?= htmlspecialchars($deliverySummary) ?></span>
                     </div>
                 </div>
                 <div class="customer-order-actions-top">
@@ -114,6 +132,11 @@ $renderOrderCard = static function (array $order, bool $isHistory) use ($getDeli
             </button>
 
             <div class="order-items customer-order-details" id="<?= htmlspecialchars($detailsId) ?>">
+                <div class="customer-order-detail-line">
+                    <span class="customer-order-detail-label">Получение</span>
+                    <span class="customer-order-detail-value"><?= htmlspecialchars($deliveryDetail) ?></span>
+                </div>
+
                 <?php if (!empty($order['user_phone'])): ?>
                     <div class="customer-order-detail-line">
                         <span class="customer-order-detail-label">Контакт</span>

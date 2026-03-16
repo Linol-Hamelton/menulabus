@@ -97,6 +97,19 @@ $formatPaymentState = static function (?string $method, ?string $status) use ($f
         default => ['text' => $methodLabel . ' · legacy', 'tone' => 'quiet'],
     };
 };
+
+$getDeliveryExpandedDetail = static function (array $order): string {
+    $type = trim((string)($order['delivery_type'] ?? ''));
+    $raw = trim((string)($order['delivery_details'] ?? ''));
+
+    return match (mb_strtolower($type, 'UTF-8')) {
+        'table' => $raw !== '' ? 'Стол ' . $raw : 'Номер стола уточняется',
+        'bar' => 'Выдача у барной стойки',
+        'takeaway' => 'Забрать в заведении',
+        'delivery' => $raw !== '' ? $raw : 'Адрес доставки уточняется',
+        default => $raw !== '' ? $raw : 'Детали получения уточняются',
+    };
+};
 ?>
 
 <div class="account-sections">
@@ -213,6 +226,7 @@ $formatPaymentState = static function (?string $method, ?string $status) use ($f
                             $paymentMethod = trim((string)($o['payment_method'] ?? 'cash'));
                             $paymentStatus = trim((string)($o['payment_status'] ?? 'not_required'));
                             $paymentState = $formatPaymentState($paymentMethod, $paymentStatus);
+                            $deliveryExpandedDetail = $getDeliveryExpandedDetail($o);
                             $searchBlob = implode(' ', array_filter([
                                 '#' . $o['id'],
                                 $o['user_name'] ?? '',
@@ -248,7 +262,7 @@ $formatPaymentState = static function (?string $method, ?string $status) use ($f
                                         <span class="employee-order-age employee-order-age--<?= htmlspecialchars($ageTone) ?>" title="<?= $ageMinutes ?> мин"><?= htmlspecialchars($ageLabel) ?></span>
                                         <span class="employee-order-items-count"><?= $itemsCount ?> поз.</span>
                                         <span class="order-total"><?= number_format($o['total'], 0, '.', ' ') ?> ₽</span>
-                                        <span class="employee-toggle-icon">Состав</span>
+                                        <span class="employee-toggle-icon">Детали</span>
                                     </div>
                                 </div>
 
@@ -259,25 +273,25 @@ $formatPaymentState = static function (?string $method, ?string $status) use ($f
                                     <span class="employee-order-glance__item employee-order-glance__item--payment employee-order-glance__item--payment-<?= htmlspecialchars($paymentState['tone']) ?>">
                                         <strong>Оплата:</strong> <?= htmlspecialchars($paymentState['text']) ?>
                                     </span>
-                                    <?php if (!empty($o['delivery_details'])): ?>
-                                        <span class="employee-order-glance__item employee-order-glance__item--details">
-                                            <strong>Детали:</strong> <?= htmlspecialchars($o['delivery_details']) ?>
-                                        </span>
-                                    <?php endif; ?>
-                                    <?php if ($o['updater_name']): ?>
-                                        <span class="employee-order-glance__item">
-                                            <strong>Обновил:</strong> <?= htmlspecialchars($o['updater_name']) ?>
-                                        </span>
-                                    <?php endif; ?>
-                                    <?php if (!in_array($o['status'], ['завершён', 'отказ'], true)): ?>
-                                        <span class="employee-order-glance__item employee-order-glance__item--action">
-                                            <strong>Следующий шаг:</strong> <?= htmlspecialchars($getNextActionLabel($o['status'])) ?>
-                                        </span>
-                                    <?php endif; ?>
                                 </div>
 
                                 <div class="order-items">
                                     <div class="employee-order-items-head">Состав заказа</div>
+                                    <div class="employee-order-glance">
+                                        <span class="employee-order-glance__item employee-order-glance__item--details">
+                                            <strong>Детали:</strong> <?= htmlspecialchars($deliveryExpandedDetail) ?>
+                                        </span>
+                                        <?php if ($o['updater_name']): ?>
+                                            <span class="employee-order-glance__item">
+                                                <strong>Обновил:</strong> <?= htmlspecialchars($o['updater_name']) ?>
+                                            </span>
+                                        <?php endif; ?>
+                                        <?php if (!in_array($o['status'], ['завершён', 'отказ'], true)): ?>
+                                            <span class="employee-order-glance__item employee-order-glance__item--action">
+                                                <strong>Следующий шаг:</strong> <?= htmlspecialchars($getNextActionLabel($o['status'])) ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
                                     <?php foreach ($o['items'] as $item): ?>
                                         <div class="order-product">
                                             <span class="product-name"><?= htmlspecialchars($item['name']) ?></span>

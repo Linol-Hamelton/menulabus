@@ -860,6 +860,33 @@ body.customer_orders-page .customer-order-detail-value {
 body.customer_orders-page .customer-order-products {
   margin-top: 12px;
 }
+body.customer_orders-page .customer-order-items-count {
+  color: var(--ui-text-muted);
+}
+body.customer_orders-page .order-toggle-icon {
+  color: var(--ui-text-muted);
+  display: inline-flex;
+  min-width: 18px;
+}
+body.customer_orders-page .order-toggle-icon::before {
+  content: none;
+}
+body.customer_orders-page .order-toggle-icon::after {
+  border-bottom: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  content: "";
+  display: inline-block;
+  height: 8px;
+  transform: rotate(45deg) translateY(-1px);
+  transition: transform 0.2s ease;
+  width: 8px;
+}
+body.customer_orders-page .order-toggle-icon.fa-chevron-down::after {
+  transform: rotate(45deg) translateY(-1px);
+}
+body.customer_orders-page .order-toggle-icon.fa-chevron-up::after {
+  transform: rotate(-135deg) translateY(-1px);
+}
 @media (max-width: 768px) {
   body.customer_orders-page .customer-orders-header {
     gap: 14px;
