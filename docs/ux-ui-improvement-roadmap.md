@@ -1,16 +1,18 @@
 # UX/UI Improvement Roadmap
 
-This document is the active source of truth for UX/UI improvements.
+## Implementation Status
 
-It complements:
-
-- `docs/product-model.md`
-- `docs/public-layer-guidelines.md`
-- `docs/project-improvement-roadmap.md`
+- Status: `Partial`
+- Last reviewed: `2026-03-17`
+- Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
+- Current implementation notes:
+  - Provider and tenant public UX are now clearly split.
+  - Critical visible icon-font leakage was removed from key public and account-facing surfaces.
+  - Order-card metadata compression is implemented in the main customer and employee views.
 
 ## Goal
 
-Improve quality, clarity, and conversion without breaking the current ordering engine or mixing provider marketing with tenant public UX.
+Improve quality, clarity, and conversion without breaking the ordering engine or mixing provider marketing with tenant public UX.
 
 ## Fixed Product Decisions
 
@@ -21,84 +23,46 @@ Improve quality, clarity, and conversion without breaking the current ordering e
 - `menu.php` must not become a provider landing page.
 - Tenant public UX must feel like a real restaurant product, not a provider demo.
 
-## Public-Surface Rules
+## What Is Already Implemented
 
-### Provider mode
+### Public split
 
-- use `index.php` for B2B positioning, lead generation, and demo entry
-- allow provider storytelling, consultation CTA, and demo content
-- route `/` to the provider landing
+- provider `/` is a B2B landing
+- tenant `/` can render a restaurant-facing homepage
+- tenant `/menu.php` stays the transactional menu
 
-### Tenant mode
+### Public and account cleanup
 
-- use `/` for the real restaurant public entry
-- keep public content restaurant-specific
-- route customers into `menu.php` fast
-- never show provider contacts, provider map links, or provider CTA blocks
+- critical cart/header icon leakage is fixed in the main public flow
+- customer and employee order cards now keep long details in expanded sections instead of the first visible row
+- tenant public pages no longer mirror provider B2B catalog content
 
-## Page Priorities
+### Internal page improvements
 
-### `index.php`
+- major layout regressions on `admin-menu.php`, `owner.php`, `employee.php`, `cart.php`, and `qr-print.php` have been reduced
+- scroll retention on `admin-menu.php` interactions is implemented
 
-Provider mode:
+## What Is Still Open
 
-- strengthen first-screen value proposition
-- keep clear CTA split between learning about the product and trying the demo flow
-- avoid turning the provider landing into a full catalog clone
+### 1. Address and map-link model
 
-Tenant mode:
+- address text and dedicated map link are now separate settings in runtime and public UI
+- public CTA behavior around location still requires launch-time QA
 
-- use only if the restaurant needs a homepage before the menu
-- keep it restaurant-facing only
-- do not reuse provider sections mechanically
+### 2. Internal shell normalization
 
-### `menu.php`
+- several operational pages already share the same shell direction
+- the shell contract is not fully centralized yet, so some page-specific overrides remain
 
-- preserve the familiar category-driven ordering flow
-- improve first-screen scanning, search/filter discoverability, and cart visibility
-- keep ordering faster than browsing
+### 3. Stale-order cleanup
 
-### `cart.php`
+- the roadmap still expects cleanup of stale active orders
+- this is not yet documented as a fully implemented product or ops mechanic
 
-- improve empty-state recovery back to the menu
-- make action hierarchy clearer on mobile
-- keep checkout guidance explicit without crowding the screen
+### 4. Legacy non-critical icon debt
 
-### `customer_orders.php`
-
-- split active orders from history
-- reduce repeated metadata and long raw addresses
-- highlight tracking and repeat-order actions
-
-### `order-track.php`
-
-- make the active status and ETA easier to understand at a glance
-- adapt status wording to delivery, pickup, and table scenarios
-
-### `employee.php`
-
-- optimize for triage speed, not decoration
-- surface urgency, next action, and order type faster
-- compress secondary metadata
-
-### `admin-menu.php`
-
-- simplify navigation layers
-- keep menu/content management visually primary
-- separate diagnostics from everyday catalog work
-
-### `owner.php`
-
-- treat analytics as one coherent workspace
-- keep raw numbers visible
-- improve interpretation without hiding operational detail
-
-## Cross-Cutting Cleanup Priorities
-
-- remove icon-font leakage from visible text
-- remove raw coordinates and long metadata strings from order cards
-- remove provider fallback links from tenant public pages
-- clean up stale "active" orders that should be completed or archived
+- critical visible cases are fixed
+- legacy Font Awesome usage still exists in some non-critical parts of the codebase and should not silently grow again
 
 ## Validation Metrics
 
@@ -122,4 +86,4 @@ Staff/owner-facing:
 - do not add heavy visual complexity to staff flows
 - do not break the familiar checkout path
 - do not ship provider marketing into tenant public pages
-- do not turn a staged improvement into a big-bang redesign
+- do not turn staged improvements into a big-bang redesign

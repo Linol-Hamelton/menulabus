@@ -181,16 +181,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['cart_products'] = $products;
 
                 // Генерируем JavaScript для сохранения в localStorage
-                $cartData = json_encode($cartItems, JSON_UNESCAPED_UNICODE);
-                $productsData = json_encode($products, JSON_UNESCAPED_UNICODE);
 
                 // Сохраняем в сессии для передачи в cart.php
-                $_SESSION['repeat_order_js'] = "
-                    <script>
-                        localStorage.setItem('cart', '{$cartData}');
-                        localStorage.setItem('products', '{$productsData}');
-                    </script>
-                ";
+                $_SESSION['repeat_order_payload'] = [
+                    'cart' => $cartItems,
+                    'products' => $products,
+                ];
 
                 header("Location: cart.php");
                 exit;

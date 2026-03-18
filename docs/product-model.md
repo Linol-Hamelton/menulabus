@@ -1,29 +1,34 @@
 # Product Model
 
-This document is the source of truth for how the product should exist as both:
+## Implementation Status
 
-- a provider-owned B2B showcase on the company domain
-- a white-label restaurant site on client domains
+- Status: `Partial`
+- Last reviewed: `2026-03-17`
+- Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`
+- Current implementation notes:
+  - Provider and tenant public modes are implemented and separated by hostname-aware runtime.
+  - Tenant homepage is live on `test.milyidom.com`.
+  - The branding model now separates address text and dedicated map URL in code and public UI.
+  - Tenant public entry is still not configurable per deployment.
 
 ## 1. Core Product Definition
 
 `Menu Labus` is a white-label restaurant menu and ordering platform.
 
-The same codebase must support two deployment modes:
+The same codebase supports two deployment modes:
 
-- `provider` mode: company-owned B2B domain used for product promotion, demo flows, and lead generation
+- `provider` mode: company-owned domain used for product promotion, demo flows, and lead generation
 - `tenant` mode: client-owned restaurant domain used as the real public menu and ordering surface
 
-The engine is restaurant-first.
-The B2B layer exists only to promote the solution from the provider side and must not leak into client deployments.
+The engine is restaurant-first. The provider layer exists to promote the product and must not leak into tenant deployments.
 
 ## 2. Non-Negotiable Rules
 
 1. One client = one separate database.
 2. The database name must contain the client brand slug.
 3. One client = one domain (or subdomain) + one isolated brand configuration.
-4. Provider marketing content must never appear on client domains.
-5. The ordering engine, roles, API, and backoffice stay shared at code level but isolated at data level.
+4. Provider marketing content must never appear on tenant public domains.
+5. Ordering, roles, API, and backoffice stay shared at code level but isolated at data level.
 
 ## 3. Deployment Modes
 
@@ -38,25 +43,25 @@ Purpose:
 - explain the product
 - collect leads
 - demonstrate the ordering experience
-- show the provider brand (`Labus`)
+- show the provider brand
 
 Allowed public content:
 
 - B2B positioning
 - promo blocks
 - consultation / lead form
-- demo menu or demo restaurant content
+- demo restaurant content
 
-Default route rule:
+Current implementation:
 
-- `/` should open the provider landing (`index.php`)
+- `/` opens the provider landing page
+- `/menu.php` stays the provider demo / transactional surface
 
 ### 3.2 Tenant mode
 
-Examples:
+Example:
 
-- `menu.client-brand.ru`
-- `app.restaurant-name.ru`
+- `test.milyidom.com`
 
 Purpose:
 
@@ -65,28 +70,32 @@ Purpose:
 Allowed public content:
 
 - restaurant brand
-- restaurant menu
+- restaurant homepage and menu
 - delivery / pickup / table ordering
-- restaurant contacts, address, hours, social links
+- restaurant contacts, address, hours, and socials
 
 Forbidden on tenant domains:
 
 - provider sales copy
 - provider contacts
 - provider map links
-- provider CTA blocks like "consultation", "become a client", or similar
+- provider CTA blocks such as consultation / become-a-client messaging
 
-Default route rule:
+Current implementation:
 
-- `/` should open the tenant public entry
-- that entry can be either `menu.php` directly or a tenant-specific restaurant homepage
-- `index.php` on tenant domains must be restaurant-facing only if it is used at all
+- `/` can render a restaurant-facing homepage
+- `/menu.php` is the primary transactional menu
+- the public-entry choice is not configurable per deployment yet
 
 ## 4. Database Isolation Model
 
-Recommended convention:
+Hard rule:
 
-- database name: `menu_<brand_slug>`
+- no shared production database for multiple restaurant tenants
+
+Recommended naming:
+
+- `menu_<brand_slug>`
 
 Examples:
 
@@ -94,37 +103,23 @@ Examples:
 - `menu_bon_pizza`
 - `menu_labus_demo`
 
-Where `brand_slug` is:
+Why this model stays in place:
 
-- lowercase
-- latin only
-- words joined by underscores
-- derived from the restaurant brand
-
-Isolation rule:
-
-- no shared production database for multiple clients
-- each client has their own schema, settings, orders, users, and content
-- cross-client analytics must not depend on tenant data being stored in one DB
-
-This keeps:
-
-- data isolation simple
-- backup/restore simple
-- domain-to-tenant mapping explicit
-- client offboarding and migration realistic
+- data isolation stays simple
+- backup / restore stays simple
+- domain-to-tenant mapping stays explicit
+- client migration and offboarding remain realistic
 
 ## 5. White-Label Surface
 
-The public tenant experience must be controlled by tenant settings, not by hard-coded provider defaults.
-
-At minimum, tenant branding must cover:
+Target tenant branding model:
 
 - app / restaurant name
 - tagline
 - meta description
 - phone
-- address/map link
+- address
+- map link
 - social links
 - logo
 - favicon
@@ -133,20 +128,24 @@ At minimum, tenant branding must cover:
 - custom domain
 - hide-provider-branding flag
 
+Current implementation gap:
+
+- the runtime already supports most brand fields
+- tenant public-entry behavior still is not configurable per deployment
+
 ## 6. What Must Stay Shared Across All Modes
 
 - codebase
 - order engine
 - customer auth flows
-- staff/admin/owner roles
+- staff / admin / owner roles
 - mobile API
 - realtime order updates
-- deployment/security runbooks
+- deployment and security runbooks
 
-## 7. Immediate Documentation Consequence
+## 7. Current Verified Facts
 
-Every core project document must now assume:
-
-- `menu.labus.pro` is the provider deployment, not the universal default model for all tenants
-- tenant onboarding means provisioning a new domain + a new database + tenant branding
-- the roadmap is about making tenant launch predictable and low-risk, not about turning the provider demo into the permanent default state
+- Provider `/` is live as a B2B landing on `menu.labus.pro`.
+- Tenant `/` is live as a restaurant-facing homepage on `test.milyidom.com`.
+- Tenant `/menu.php` is live as restaurant catalog and ordering surface.
+- Provider and tenant data are isolated by tenant-aware runtime and separate databases.

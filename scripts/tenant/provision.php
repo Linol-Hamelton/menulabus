@@ -154,6 +154,7 @@ function provision_seed_settings(PDO $pdo, string $brandName, string $domain, st
         'hide_labus_branding' => $hideBranding,
         'contact_phone' => '',
         'contact_address' => '',
+        'contact_map_url' => '',
         'logo_url' => '',
         'favicon_url' => '/icons/favicon.ico',
         'social_tg' => '',
@@ -229,6 +230,19 @@ function provision_tenant_pdo(array $config): PDO
 function provision_random_password(int $length = 24): string
 {
     return substr(bin2hex(random_bytes((int)ceil($length / 2))), 0, $length);
+}
+
+function provision_rollback_hint(string $domain, string $dbName, ?string $seedProfile): string
+{
+    $hint = "Code rollback: switch the deploy target back to the previous stable Git revision and rerun release smoke.";
+    $hint .= " Data rollback for {$domain} ({$dbName}): restore the tenant DB from backup";
+    if ($seedProfile !== null && $seedProfile !== '') {
+        $hint .= " or rerun `php scripts/tenant/seed.php --profile={$seedProfile} --domain={$domain} --force` after fixing the seed/profile.";
+    } else {
+        $hint .= " if the tenant content was modified during launch.";
+    }
+
+    return $hint;
 }
 
 if (PHP_SAPI !== 'cli') {
@@ -343,11 +357,16 @@ try {
         'domain' => $domain,
         'db_name' => $dbName,
         'db_user' => $tenantDbUser,
+        'owner' => [
+            'email' => $ownerEmail,
+            'password' => $ownerPassword,
+        ],
         'owner_email' => $ownerEmail,
         'owner_password' => $ownerPassword,
         'seed_profile' => $seedProfile === '' ? null : $seedProfile,
         'seed_summary' => $seedProfileSummary,
         'smoke' => $smoke,
+        'rollback_hint' => provision_rollback_hint($domain, $dbName, $seedProfile === '' ? null : $seedProfile),
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . PHP_EOL;
     exit(0);
 } catch (Throwable $e) {

@@ -1,12 +1,23 @@
 # Mobile Wrapper (Capacitor)
 
-Goal: wrap the existing production web app into Android/iOS shells with minimal cost.
+## Implementation Status
 
-## Prereqs
+- Status: `Partial`
+- Last reviewed: `2026-03-17`
+- Current implementation notes:
+  - Capacitor wrapper files exist and build instructions are valid.
+  - Current `server.url` is provider-centric and points to `https://menu.labus.pro/menu.php`.
+  - This is not yet a tenant-aware mobile strategy.
+
+## Goal
+
+Wrap the existing web app in Android/iOS shells with minimal engineering cost.
+
+## Prerequisites
 
 - Node.js 20+
-- Android Studio (for Android build)
-- Xcode (for iOS build, macOS only)
+- Android Studio for Android builds
+- Xcode for iOS builds on macOS
 
 ## Install
 
@@ -15,14 +26,19 @@ cd mobile
 npm install
 ```
 
-## Configure
+## Current Configuration
 
-Default config loads the production site:
-- `server.url = https://menu.labus.pro`
+Default config loads the provider deployment:
 
-This is the cheapest way to get apps running, but store review may require native value-add.
+- `server.url = https://menu.labus.pro/menu.php`
 
-## Android (first run)
+This is enough for a provider-centric wrapper or internal demo app.
+
+## Current Gap
+
+If the product needs tenant-aware mobile behavior, the wrapper must stop assuming a single provider URL and adopt a tenant selection or tenant-specific build strategy.
+
+## Android
 
 ```bash
 cd mobile
@@ -31,7 +47,7 @@ npx cap sync android
 npx cap open android
 ```
 
-## iOS (macOS)
+## iOS
 
 ```bash
 cd mobile
@@ -42,7 +58,5 @@ npx cap open ios
 
 ## Notes
 
-- If you later decide to load local `www/` assets instead of `server.url`, your in-app origin becomes
-  `capacitor://localhost`, and your API calls to `https://menu.labus.pro/api/v1/*` will rely on CORS.
-- For auth in a local-origin app, cookie sessions are not reliable (SameSite=Strict). Prefer token auth (`/api/v1/auth/*`).
-
+- If you switch from remote `server.url` to bundled local assets, in-app origin becomes `capacitor://localhost`.
+- In a local-origin app, cookie sessions are unreliable because of `SameSite=Strict`; prefer token auth via `/api/v1/auth/*`.

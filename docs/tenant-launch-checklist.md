@@ -1,8 +1,17 @@
 # Tenant Launch Checklist
 
-This document turns tenant onboarding into a repeatable runbook.
+## Implementation Status
 
-Use it when launching a new restaurant on the shared codebase.
+- Status: `Partial`
+- Last reviewed: `2026-03-17`
+- Current implementation notes:
+  - Tenant provisioning and seeding are scriptable.
+  - DNS, vhost, SSL, and final production go-live remain manual.
+  - Brand settings now support separate address text and dedicated map URL.
+
+## Purpose
+
+Use this runbook when launching a new restaurant tenant on the shared codebase.
 
 Related source-of-truth documents:
 
@@ -19,7 +28,8 @@ Collect and freeze:
 - brand slug
 - target domain or subdomain
 - primary contact phone
-- address and map link
+- address text
+- map link, if you plan to expose a real map destination
 - logo and favicon
 - social links
 - launch owner/admin email
@@ -30,11 +40,6 @@ Slug rule:
 - lowercase
 - latin only
 - words joined by underscores
-
-Example:
-
-- brand: `Kultura Bar`
-- slug: `kultura_bar`
 
 ## 2. Database Provisioning
 
@@ -47,33 +52,41 @@ Naming rule:
 - database name must contain the client brand slug
 - recommended format: `menu_<brand_slug>`
 
-Examples:
-
-- `menu_kultura_bar`
-- `menu_bon_pizza`
-
 Checklist:
 
 - create the database
 - import the current application schema
 - verify DB user permissions
-- point the tenant runtime config to the new database
+- point tenant runtime config to the new database
 - record DB name and domain mapping in the launch log
+
+Current automation available:
+
+- `scripts/tenant/provision.php`
+- `scripts/tenant/seed.php`
+- `scripts/tenant/smoke.php`
+
+Recommended scripted flow:
+
+1. `provision.php` creates tenant DB/runtime mapping and optional initial seed.
+2. `seed.php` applies or refreshes the restaurant demo/content profile.
+3. `smoke.php` runs short provider/tenant regression smoke before release sign-off.
 
 ## 3. Tenant Runtime Setup
 
-Configure:
+Manual infra steps:
 
-- tenant domain / vhost
+- tenant domain / DNS
+- web server vhost
 - SSL certificate
 - runtime DB credentials
-- cache/session settings if tenant-specific overrides exist
+- cache/session overrides if needed
 
 Expected routing:
 
 - provider domain `/` => provider landing
 - tenant domain `/` => tenant public entry
-- tenant `menu.php` => transactional menu
+- tenant `/menu.php` => transactional menu
 
 ## 4. Brand and Public Layer Setup
 
@@ -83,7 +96,7 @@ Set tenant branding before opening public access:
 - tagline
 - meta description
 - phone
-- address / map link
+- address text
 - social links
 - logo
 - favicon
@@ -91,6 +104,10 @@ Set tenant branding before opening public access:
 - fonts
 - custom domain
 - hide-provider-branding flag
+
+Current implementation note:
+
+- if location CTA matters for launch quality, verify both the visible address text and the public map URL before go-live
 
 Public verification:
 
@@ -121,12 +138,13 @@ Load or verify:
 - dishes
 - prices
 - availability flags
-- delivery/pickup/table settings
+- delivery / pickup / table settings
 - payment-related configuration if used
 
 Check:
 
-- menu loads publicly
+- tenant homepage loads
+- public menu loads
 - cart accepts items
 - order creation works
 
@@ -152,6 +170,10 @@ API smoke:
 - `GET /api/v1/menu.php`
 - auth login / me flow
 - create order if mobile/API use is planned
+
+Recommended release smoke:
+
+- `php scripts/tenant/smoke.php --provider-domain=menu.labus.pro --tenant-domain=<tenant-domain>`
 
 ## 8. Launch Acceptance
 

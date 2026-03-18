@@ -15,6 +15,16 @@ $tbankActive = $tbEnabled && $tbTermKey !== '';
 // СБП кнопка: если T-Bank включён — маршрутизируем туда, иначе через ЮКасса
 $sbpMethod  = $tbankActive ? 'tbank_sbp' : 'sbp';
 $sbpVisible = $tbankActive || $paymentEnabled;
+$repeatOrderPayloadAttr = '';
+if (isset($_SESSION['repeat_order_payload']) && is_array($_SESSION['repeat_order_payload'])) {
+    $repeatOrderPayloadJson = json_encode($_SESSION['repeat_order_payload'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if (is_string($repeatOrderPayloadJson)) {
+        $repeatOrderPayloadAttr = base64_encode($repeatOrderPayloadJson);
+    }
+    unset($_SESSION['repeat_order_payload']);
+}
+$prefilledQrTable = !empty($_SESSION['qr_table']) ? (int)$_SESSION['qr_table'] : 0;
+unset($_SESSION['qr_table']);
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -32,56 +42,21 @@ $sbpVisible = $tbankActive || $paymentEnabled;
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/menu-alt.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
-    <style nonce="<?= $styleNonce ?>">
-        /* Payment block */
-        .payment-method-block{margin-top:16px}
-        .payment-method-label{font-weight:600;margin-bottom:8px;display:block;color:var(--light-text)}
-        .payment-options-gap{gap:8px}
-        /* Tips: override grid for narrow screens if needed */
-        @media(max-width:380px){.tips-options{grid-template-columns:repeat(3,1fr)}}
-        /* Delivery type options: icon stacked above label */
-        .delivery-option{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;line-height:1.2;font-size:13px}
-        .delivery-option svg{flex-shrink:0;display:block}
-        /* Payment options: icon + label side by side */
-        .payment-option{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:7px;font-size:13px}
-        .payment-option svg{flex-shrink:0;display:block}
-        /* Scan button layout */
-        .scan-btn{display:flex;align-items:center;justify-content:center;gap:10px}
-        .scan-btn svg{flex-shrink:0}
-        /* Location button */
-        .detect-location-btn{line-height:0;display:flex;align-items:center;justify-content:center}
-        /* Cart empty state */
-        .checkout-btn-secondary{background:var(--ui-surface);border-color:var(--ui-border);color:var(--ui-text)}
-        .checkout-btn-secondary:hover{background:var(--ui-surface-muted);color:var(--ui-text)}
-        .menu-content-empty{max-width:840px}
-        .empty-cart-shell{align-items:center;display:flex;justify-content:center}
-        .empty-cart-card{background:linear-gradient(180deg,var(--ui-surface) 0%,var(--white) 100%);border:1px solid var(--ui-border);border-radius:28px;box-shadow:var(--ui-shadow-soft);max-width:640px;padding:36px 32px}
-        .empty-cart-icon{align-items:center;background:linear-gradient(135deg,rgba(205,23,25,.12),rgba(205,23,25,.04));border:1px solid rgba(205,23,25,.16);border-radius:18px;color:var(--ui-accent);display:inline-flex;height:68px;justify-content:center;margin-bottom:18px;width:68px}
-        .empty-cart-icon-svg{display:block;fill:currentColor;height:32px;width:32px}
-        .empty-cart h3{color:var(--ui-text);font-size:30px;line-height:1.1;margin:0 0 12px}
-        .empty-cart-actions{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:24px}
-        .empty-cart-actions .checkout-btn{min-width:200px;padding:12px 18px;text-decoration:none}
-        .clear-cart-container{gap:12px}
-        .clear-cart-container #clear-cart-btn{background:var(--ui-surface);border-color:var(--ui-border);color:var(--ui-text)}
-        .clear-cart-container #clear-cart-btn:hover{background:var(--ui-surface-muted);color:var(--ui-text)}
-        .clear-cart-container #checkout-btn{box-shadow:var(--ui-shadow-soft)}
-        .clear-cart-container.is-empty,.cart-total.is-empty,.cart-summary-container.is-empty{display:none}
-        @media(max-width:768px){.empty-cart{padding:24px 0 8px}.empty-cart-card{border-radius:22px;padding:24px 18px}.empty-cart h3{font-size:24px}.empty-cart-actions{flex-direction:column}.empty-cart-actions .checkout-btn{min-width:0;width:100%}}
-    </style>
 </head>
 
-<body id="body" class="cart-page" data-is-logged-in="<?= isset($_SESSION['user_id']) ? 'true' : 'false' ?>">
-    <?php
+<body id="body"
+    class="cart-page"
+    data-is-logged-in="<?= isset($_SESSION['user_id']) ? 'true' : 'false' ?>"
+    data-repeat-order-payload="<?= htmlspecialchars($repeatOrderPayloadAttr, ENT_QUOTES, 'UTF-8') ?>"
+    data-qr-table="<?= $prefilledQrTable > 0 ? $prefilledQrTable : '' ?>">
+    <?php /*
     // Вставка JavaScript для повторения заказа
-    if (isset($_SESSION['repeat_order_js'])) {
-        echo $_SESSION['repeat_order_js'];
-        unset($_SESSION['repeat_order_js']);
-    }
-    ?>
+    */ ?>
     <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     <section id="menu" class="section menu">
-        <div class="container">
+        <div class="container account-header-bar">
             <div class="section-header-menu">
                 <h2>Заказ</h2>
                 <a href="menu.php" class="back-to-menu-btn">В меню</a>
@@ -187,24 +162,6 @@ $sbpVisible = $tbankActive || $paymentEnabled;
                 </div>
                 <input type="hidden" id="selectedPaymentMethod" value="">
             </div>
-            <script nonce="<?= $scriptNonce ?>">
-            (function () {
-                var row = document.getElementById('paymentOptionsRow');
-                if (!row) return;
-                row.addEventListener('click', function (e) {
-                    var opt = e.target.closest('.payment-option');
-                    if (!opt) return;
-                    var method = opt.getAttribute('data-method');
-                    if (!method) return;
-                    var hidden = document.getElementById('selectedPaymentMethod');
-                    if (hidden) hidden.value = method;
-                    try { localStorage.setItem('paymentMethod', method); } catch (err) {}
-                    row.querySelectorAll('.payment-option').forEach(function (el) { el.classList.remove('active'); });
-                    opt.classList.add('active');
-                });
-            })();
-            </script>
-
             <div class="tips-section">
                 <label class="payment-label">Чаевые</label>
                 <div class="tips-options">
@@ -252,10 +209,8 @@ $sbpVisible = $tbankActive || $paymentEnabled;
         <p>&copy; <?= date('Y') ?> «<?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?>». Все права защищены.</p>
     </div>
 
-    <?php if (!empty($_SESSION['qr_table'])): ?>
-    <script nonce="<?= $scriptNonce ?>">
+    <?php /*
     document.addEventListener('DOMContentLoaded', function() {
-        var tableNum = <?= (int)$_SESSION['qr_table'] ?>;
         // Click the "За стол" option to activate the table block
         var tableOpt = document.querySelector('.delivery-option[data-type="table"]');
         if (tableOpt) tableOpt.click();
@@ -268,8 +223,7 @@ $sbpVisible = $tbankActive || $paymentEnabled;
         var confirmBtn = document.getElementById('manualTableBtn');
         if (confirmBtn) confirmBtn.click();
     });
-    </script>
-    <?php endif; ?>
+    */ ?>
     <script src="/js/cart-tips.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/qr-scanner-lazy.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/security.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>

@@ -139,60 +139,6 @@ if (($_GET['partial'] ?? '') === 'account-sections') {
 
         <?php require __DIR__ . '/partials/customer_orders_account_sections.php'; ?>
     </div>
-    <script nonce="<?= $scriptNonce ?>">
-    (function () {
-        var VIEW_KEY = 'customerOrdersView';
-
-        function getCookie(name) {
-            var match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[$()*+./?[\\\]^{|}-]/g, '\\$&') + '=([^;]*)'));
-            return match ? decodeURIComponent(match[1]) : '';
-        }
-
-        function getCurrentView() {
-            var saved = getCookie(VIEW_KEY) || localStorage.getItem(VIEW_KEY) || 'active';
-            return saved === 'history' ? 'history' : 'active';
-        }
-
-        function applyView(view) {
-            document.querySelectorAll('[data-order-view]').forEach(function (button) {
-                var active = button.dataset.orderView === view;
-                button.classList.toggle('active', active);
-                button.setAttribute('aria-pressed', active ? 'true' : 'false');
-            });
-
-            document.querySelectorAll('[data-orders-view]').forEach(function (section) {
-                section.classList.toggle('active', section.dataset.ordersView === view);
-            });
-        }
-
-        function saveView(view) {
-            localStorage.setItem(VIEW_KEY, view);
-            document.cookie = VIEW_KEY + '=' + encodeURIComponent(view) + '; path=/; max-age=31536000';
-        }
-
-        document.addEventListener('click', function (event) {
-            var button = event.target.closest('[data-order-view]');
-            if (!button) {
-                var toggleButton = event.target.closest('[data-toggle-order]');
-                if (!toggleButton) {
-                    return;
-                }
-                window.requestAnimationFrame(function () {
-                    toggleButton.setAttribute('aria-expanded', toggleButton.classList.contains('active') ? 'true' : 'false');
-                });
-                return;
-            }
-            event.preventDefault();
-            var view = button.dataset.orderView === 'history' ? 'history' : 'active';
-            saveView(view);
-            applyView(view);
-        });
-
-        document.addEventListener('DOMContentLoaded', function () {
-            applyView(getCurrentView());
-        });
-    })();
-    </script>
     <script src="/js/security.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/cart.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>

@@ -1,23 +1,38 @@
 # Nginx + PHP-FPM Pool Split (web/api/sse)
 
-This folder contains configuration templates. Apply on the server manually.
+## Implementation Status
 
-Goals:
-- Keep SSE (long-lived requests) from starving normal web/API requests.
-- Allow API to use a lightweight PHP-FPM pool with different limits and logs.
+- Status: `Partial`
+- Last reviewed: `2026-03-17`
+- Current implementation notes:
+  - This folder contains templates and guidance.
+  - It must not be treated as proof that pool split is fully applied in every production environment.
 
-## Recommended routing
-1) /api/v1/* -> api pool
-2) /orders-sse.php and optionally /ws-poll.php -> sse pool (buffering off)
-3) everything else -> web pool
+## Purpose
 
-Templates:
-- `deploy/nginx/pool-split-upstreams.conf` (upstream blocks)
-- `deploy/nginx/server-locations-pool-split.conf` (location routing)
+Use separate routing/pool strategy to keep SSE or long-lived requests from starving normal web/API requests.
+
+## Recommended Routing
+
+1. `/api/v1/*` -> API pool
+2. `/orders-sse.php` and optionally `/ws-poll.php` -> SSE pool with buffering disabled
+3. everything else -> web pool
+
+## Templates
+
+- `deploy/nginx/pool-split-upstreams.conf`
+- `deploy/nginx/server-locations-pool-split.conf`
 
 ## Microcache
+
 For burst protection, consider microcache for:
-- /api/v1/menu.php (public only, bypass on Authorization header)
+
+- `/api/v1/menu.php` on public unauthenticated traffic
 
 Template:
+
 - `deploy/nginx/api-microcache.conf`
+
+## Current Scope Note
+
+Treat this document as manual-apply operational guidance. If pool split is rolled out on a host, record that rollout separately in deploy/security change logs.

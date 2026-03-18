@@ -116,6 +116,11 @@ function tenant_seed_target_pdo(array $target): PDO
     ]);
 }
 
+function tenant_seed_rollback_hint(string $domain, string $dbName, string $profile): string
+{
+    return "Restore tenant DB {$dbName} from backup, or rerun `php scripts/tenant/seed.php --profile={$profile} --domain={$domain} --force` after correcting the seed data.";
+}
+
 if (PHP_SAPI !== 'cli') {
     http_response_code(404);
     exit;
@@ -170,8 +175,13 @@ try {
             'db_name' => $target['db_name'],
             'db_user' => $target['db_user'],
         ],
+        'owner' => [
+            'email' => (string)($owner['email'] ?? ''),
+            'name' => (string)($owner['name'] ?? ''),
+        ],
         'seed' => $summary,
         'smoke' => $smoke,
+        'rollback_hint' => tenant_seed_rollback_hint((string)$target['domain'], (string)$target['db_name'], $profile),
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . PHP_EOL;
     exit(0);
 } catch (Throwable $e) {

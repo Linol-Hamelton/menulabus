@@ -1,8 +1,14 @@
 # Security Phase Commands (Server Runbook)
 
-These commands are for controlled production execution, one phase at a time.
+## Implementation Status
 
-## Phase 0 - Baseline capture
+- Status: `Partial`
+- Last reviewed: `2026-03-17`
+- Current implementation notes:
+  - Commands for Phase 1 and Phase 4A are relevant to implemented menu-only hardening.
+  - Commands for later phases remain planning/runbook material, not proof of completed rollout.
+
+## Phase 0 - Baseline Capture
 
 ```bash
 WEBUSER="labus_pro_usr"
@@ -26,11 +32,11 @@ curl -sS -I https://menu.labus.pro/menu.php | egrep -i "strict-transport-securit
 curl -sS -I https://menu.labus.pro/phpinfo.php
 ```
 
-Expected: `HTTP/2 404`.
+Expected: `404`.
 
-## Phase 1A - Daily smoke + retention (cron)
+## Phase 1A - Daily smoke and retention
 
-Install/update daily cron entry (runs at `03:17` UTC by default):
+Install/update daily cron entry:
 
 ```bash
 cd /var/www/labus_pro_usr/data/www/menu.labus.pro
@@ -47,21 +53,6 @@ RETENTION_DAYS="14" \
 bash /var/www/labus_pro_usr/data/www/menu.labus.pro/scripts/perf/security-smoke-daily.sh
 ```
 
-Expected:
-
-- log file `/var/www/labus_pro_usr/data/logs/security-smoke-<UTC>.log` is created
-- output contains `status=PASS` or `status=FAIL`
-- logs older than 14 days are deleted automatically
-
-Daily top-3 checkout error reasons (last 24h):
-
-```bash
-php /var/www/labus_pro_usr/data/www/menu.labus.pro/scripts/perf/checkout-error-top.php \
-  --log=/var/www/labus_pro_usr/data/logs/menu.labus.pro-php.error.log \
-  --hours=24 \
-  --top=3
-```
-
 ## Phase 2 - Port/service inventory (read-only)
 
 ```bash
@@ -74,26 +65,21 @@ Optional external check from trusted host:
 nmap -Pn -p 21,22,25,80,443,3306,8080,8443 menu.labus.pro
 ```
 
-Detailed runbook and table for this phase:
+Detailed runbook:
 
 - `docs/security-phase-2-inventory.md`
-- `scripts/perf/phase2-port-inventory.sh`
 
-Example:
+Important: before any firewall edits, keep two active SSH sessions open.
 
-```bash
-bash scripts/perf/phase2-port-inventory.sh menu.labus.pro
-```
-
-Important: before any future firewall edits, keep two active SSH sessions open.
-
-## Phase 3 - SSH/fail2ban validation (after config by admin)
+## Phase 3 - SSH/fail2ban validation
 
 ```bash
 sshd -t
 systemctl status ssh --no-pager
 fail2ban-client status
 ```
+
+Use only if those controls are actually being rolled out by an admin.
 
 ## Phase 4 - Nginx safe reload flow
 
@@ -106,8 +92,6 @@ Then run:
 ```bash
 bash scripts/perf/security-smoke.sh https://menu.labus.pro
 ```
-
-If script path is unavailable on server, run commands from `docs/security-smoke-checklist.md` manually.
 
 ## Phase 4A - Menu-only exposure lock verification
 
@@ -124,9 +108,15 @@ do
 done
 ```
 
-Expected: all paths return `404`.
+Expected: all listed paths return `404`.
 
-## Rollback by commit
+```bash
+curl -sS -I https://menu.labus.pro/opcache-status.php
+```
+
+Expected: `302` redirect to `auth.php` when unauthenticated.
+
+## Rollback by Commit
 
 ```bash
 WEBUSER="labus_pro_usr"
@@ -139,5 +129,5 @@ nginx -t && systemctl reload nginx
 
 After rollback:
 
-1. Reset OPcache via your standard monitor flow.
-2. Re-run `docs/security-smoke-checklist.md`.
+1. reset OPcache
+2. rerun `docs/security-smoke-checklist.md`

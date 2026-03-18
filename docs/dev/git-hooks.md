@@ -1,8 +1,15 @@
-﻿# Git Hooks
+# Git Hooks
 
-This repository stores versioned hooks in `.githooks/`.
+## Implementation Status
 
-## Enable hooks
+- Status: `Implemented`
+- Last reviewed: `2026-03-17`
+- Current implementation notes:
+  - Versioned hooks live in `.githooks/`.
+  - `pre-push` enforces PHP lint and the OpenAPI gate for `main`.
+  - `post-merge` performs PHP lint and cache cleanup after pull/merge.
+
+## Enable Hooks
 
 Run once in each clone:
 
@@ -10,14 +17,14 @@ Run once in each clone:
 git config core.hooksPath .githooks
 ```
 
-## Hooks included
+## Hooks Included
 
-- `pre-push`: lints staged PHP files (`php -l`) before push.
-- `pre-push` (main gate): when a push includes `main`, runs `npm run openapi:validate` and blocks push on failure.
-- `post-merge`: runs after `git pull` / merge, lints changed PHP files and clears `data/cache/*` (except `.gitkeep`).
+- `pre-push`: lints staged PHP files with `php -l`
+- `pre-push` on `main`: runs `npm run openapi:validate` and blocks push on failure
+- `post-merge`: lints changed PHP files and clears `data/cache/*` except `.gitkeep`
 
 ## Notes
 
-- Hooks are local Git configuration. They are not active until `core.hooksPath` is set.
+- Hooks are local Git configuration and are inactive until `core.hooksPath` is set.
 - On the production server, set this once after clone.
-- Keep Node.js/npm available on developer machines that push `main`, because OpenAPI validation is mandatory for release pushes.
+- Developers pushing `main` need Node.js/npm available because OpenAPI validation is mandatory.

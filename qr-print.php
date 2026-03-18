@@ -28,6 +28,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTT
     <title>Печать QR-кодов столов | <?= $siteName ?></title>
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= $appVersion ?>">
+    <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/css/qr-print.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= $appVersion ?>">
 </head>
@@ -35,6 +36,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTT
     <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
 
     <main class="qr-print-container">
+        <div class="container account-header-bar">
         <div class="section-header-menu qr-print-header no-print">
             <h1>QR-коды для столов</h1>
             <div class="section-header-nav-actions qr-count-row">
@@ -67,6 +69,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTT
                 <div class="qr-item-sub"><?= htmlspecialchars($siteName) ?></div>
             </div>
             <?php endfor; ?>
+        </div>
         </div>
     </main>
 

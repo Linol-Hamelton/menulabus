@@ -1,14 +1,16 @@
 # Project Improvement Roadmap
 
+## Implementation Status
+
+- Status: `Partial`
+- Last reviewed: `2026-03-17`
+- Current implementation notes:
+  - The core provider/tenant model is implemented.
+  - Remaining work is mostly in launch automation, white-label completeness, and final UX/ops polish.
+
 ## Goal
 
-Turn the current provider deployment into a repeatable product model where:
-
-- `menu.labus.pro` stays the provider-owned B2B showcase
-- new client restaurant launches are fast and predictable
-- each new client gets their own domain, brand, and separate database
-
-This roadmap is now portability-first and tenant-launch-first.
+Keep `menu.labus.pro` as the provider-owned B2B showcase while making restaurant tenant launches predictable, low-risk, and repeatable.
 
 ## Fixed Constraints
 
@@ -19,6 +21,17 @@ This roadmap is now portability-first and tenant-launch-first.
 - mandatory smoke after each rollout step
 - API contract source of truth remains `docs/openapi.yaml`
 
+## Phase Status
+
+| Phase | Status | Current state |
+|---|---|---|
+| Phase 0: Documentation reset | `Partial` | Core docs exist and are now synchronized, but documentation discipline is still manual and must be maintained. |
+| Phase 1: Domain-aware public behavior | `Implemented` | Hostname-aware runtime, provider landing, tenant homepage, and separate public menu behavior are implemented. |
+| Phase 2: Database and tenant provisioning | `Partial` | Checklist and provisioning scripts exist, but DNS, vhost, SSL, and final go-live remain manual. |
+| Phase 3: White-label completeness | `Partial` | Branding surface, separate address/map-link model, and tenant seed exist, but per-deployment public-entry configuration and some completeness gaps remain. |
+| Phase 4: Restaurant-ready UX cleanup | `Partial` | Major icon cleanup and order-card compression are done, but stale-order cleanup and full shell normalization remain. |
+| Phase 5: Optional automation | `Partial` | Provisioning and seed automation exist, but launch is not fully one-click and does not emit a final launch artifact. |
+
 ## What Already Exists and Should Be Reused
 
 - working order engine
@@ -28,177 +41,89 @@ This roadmap is now portability-first and tenant-launch-first.
 - owner analytics foundation
 - monitor and security smoke foundation
 - white-label settings surface in admin
+- tenant provisioning and demo seed scripts
 
-The roadmap below is therefore not about rebuilding the platform.
-It is about making tenant launch clean, safe, and scalable.
+## Phase Details
 
-## Success Metrics
+### Phase 0: Documentation Reset
 
-- time to launch a new client from zero to production
-- number of manual steps per new client launch
-- number of provider-brand leaks on client domains
-- number of tenant-specific overrides that still require code edits
-- `5xx` / p95 on tenant public flows
-- ordering conversion on tenant domains
+Current depth:
 
-## Phase 0: Documentation Reset
+- active docs live under `docs/`
+- historical docs live under `docs/archive/`
+- active docs now describe provider vs tenant explicitly
 
-### 1) Freeze the product model
+Remaining work:
 
-- Write one clear source of truth for `provider` vs `tenant` mode.
-- Record the rule `1 client = 1 DB`.
-- Record the routing rule for provider and client domains.
+- keep docs synchronized with future releases
+- avoid new drift between repo state and public behavior
 
-Done when:
+### Phase 1: Domain-Aware Public Behavior
 
-- no core doc contradicts the two-mode model
+Implemented:
 
-### 2) Remove documentation noise
+- provider `/` => B2B landing
+- tenant `/` => restaurant-facing homepage
+- tenant `/menu.php` => restaurant transactional menu
+- provider and tenant public content separated by runtime mode
 
-- keep a short core docs set
-- move historical snapshots into `docs/archive/`
-- stop using stale status snapshots as "current state"
+### Phase 2: Database and Tenant Provisioning
 
-Done when:
+Implemented:
 
-- a new engineer can understand the system from `docs/index.md` without reading historical documents first
+- separate tenant databases
+- control-plane runtime lookup
+- tenant provisioning script
+- tenant launch checklist
+- tenant demo seed script
 
-## Phase 1: Domain-Aware Public Behavior
+Still partial because:
 
-### 3) Introduce runtime mode switch by hostname
+- DNS setup remains manual
+- vhost setup remains manual
+- SSL issuance remains manual
+- final production smoke remains operator-driven
 
-- provider domain `/` => B2B landing
-- tenant domain `/` => restaurant public entry
-- stop treating `menu.labus.pro` as the universal default for every deployment
+### Phase 3: White-Label Completeness
 
-Risk:
+Implemented:
 
-- low-medium
+- settings-driven name, tagline, description, phone, logo, favicon, colors, fonts, social links
+- separate restaurant-friendly demo seed
 
-Done when:
+Still partial because:
 
-- the same codebase behaves correctly depending on domain
+- some white-label surfaces still require launch-time QA, not just settings
+- tenant public-entry mode is still not configurable per deployment
 
-### 4) Remove provider hard-coding from tenant fallback paths
+### Phase 4: Restaurant-Ready UX Cleanup
 
-- provider contacts, map links, CTA blocks, and sales copy must be shown only on provider domains
-- tenant domains must use tenant settings or stay blank until configured
+Implemented:
 
-Risk:
+- tenant restaurant homepage
+- critical icon-font cleanup in visible public/account surfaces
+- order-card metadata compression in key staff/customer views
 
-- low
+Still partial because:
 
-Done when:
+- stale active orders are not handled as a completed product cleanup track
+- internal UI shell is improved but not fully normalized across every operational page
 
-- no public tenant page shows Labus-specific fallback content
+### Phase 5: Optional Automation
 
-## Phase 2: Database and Tenant Provisioning
+Implemented:
 
-### 5) Formalize DB naming convention
+- tenant DB bootstrap and seed automation
+- smoke script coverage for seeded tenant basics
 
-- recommended DB name: `menu_<brand_slug>`
-- examples: `menu_kultura_bar`, `menu_bon_pizza`, `menu_labus_demo`
+Still partial because:
 
-Done when:
+- launch still needs manual infra work
+- there is no single end-to-end tenant launch artifact or one-command go-live flow
+- regression smoke is scriptable, but still operator-triggered after release
 
-- every new tenant launch follows one naming convention
+## Recommended Next Execution Order
 
-### 6) Create tenant provisioning checklist
-
-- create DB
-- import schema
-- create tenant admin user
-- configure brand settings
-- configure domain / SSL
-- run smoke
-- store the runbook in `docs/tenant-launch-checklist.md`
-
-Risk:
-
-- low
-
-Done when:
-
-- launching a new restaurant is a checklist, not tribal knowledge
-
-## Phase 3: White-Label Completeness
-
-### 7) Make tenant branding sufficient without code edits
-
-- name
-- tagline
-- description
-- contacts
-- logo
-- favicon
-- colors
-- fonts
-- social links
-- custom domain
-- hide-provider-branding
-
-Done when:
-
-- a new restaurant can be branded fully from settings and content, not from PHP edits
-
-### 8) Split provider demo content from tenant seed content
-
-- provider deployment may use demo content
-- tenant deployment must start from restaurant-friendly defaults
-
-Done when:
-
-- provider B2B content and tenant restaurant content are different by design, not by accident
-
-## Phase 4: Restaurant-Ready UX Cleanup
-
-### 9) Remove UI artifacts that block client rollout quality
-
-- icon-font leakage into visible text
-- raw coordinates and long metadata in order cards
-- stale "active" orders that should be completed or archived
-
-Done when:
-
-- the client-facing and staff-facing experience looks like a real restaurant product, not an internal demo mixed with legacy data
-
-### 10) Finish tenant-safe public entry UX
-
-- decide tenant default entry: direct `menu.php` or tenant homepage
-- ensure this choice is configurable per deployment without changing provider behavior
-
-Done when:
-
-- tenant public routing is predictable and documented
-
-## Phase 5: Optional Automation
-
-### 11) Add bootstrap automation for new tenants
-
-- generate DB name from brand slug
-- apply schema
-- create initial brand settings
-- output launch checklist
-
-Done when:
-
-- new tenant launch can be mostly scripted
-
-## Rollout Rules
-
-1. One change per release step.
-2. Update docs before or with the change.
-3. Run smoke and key business verification after each step.
-4. Keep rollback simple.
-5. Prefer settings-driven rollout over template duplication.
-
-## Recommended Execution Order
-
-1. Phase 0
-2. Phase 1
-3. Phase 2
-4. Phase 3
-5. Phase 4
-6. Phase 5
-
-This order minimizes rework: first define the model, then route by domain, then provision isolated tenants, then finish branding and UX.
+1. Finish internal-shell normalization on remaining operational pages.
+2. Tighten launch automation around DNS/vhost/SSL runbooks.
+3. Keep docs in lockstep with each release step.

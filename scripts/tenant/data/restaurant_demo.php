@@ -6,6 +6,7 @@ return [
         'tagline' => 'Пицца, гриль и завтраки весь день',
         'description' => 'Городское бистро с печью, грилем и спокойным залом для ежедневных встреч.',
         'contact_phone' => '+7 (999) 410-24-10',
+        'contact_map_url' => 'https://yandex.ru/maps/?text=%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0%2C%20%D0%A6%D0%B2%D0%B5%D1%82%D0%BD%D0%BE%D0%B9%20%D0%B1-%D1%80%2C%2024',
         'contact_address' => 'Москва, Цветной б-р, 24',
         'logo_url' => '',
         'favicon_url' => '/icons/favicon.ico',

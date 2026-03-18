@@ -1,8 +1,14 @@
 # Security Smoke Checklist (Production)
 
-Run after each security step.
+## Implementation Status
 
-## 1) Core availability
+- Status: `Implemented`
+- Last reviewed: `2026-03-17`
+- Verified against published pages: `https://menu.labus.pro/phpinfo.php`, `https://menu.labus.pro/order_updates.php`, `https://menu.labus.pro/opcache-status.php`
+- Current implementation notes:
+  - This checklist validates currently deployed menu-only hardening, not future security phases.
+
+## 1. Core availability
 
 ```bash
 curl -sS -o /dev/null -w "%{http_code}\n" https://menu.labus.pro/menu.php
@@ -11,7 +17,7 @@ curl -sS -o /dev/null -w "%{http_code}\n" https://menu.labus.pro/api/v1/menu.php
 
 Expected: `200` for both.
 
-## 2) Public endpoint exposure checks
+## 2. Public endpoint exposure checks
 
 ```bash
 for p in \
@@ -28,7 +34,7 @@ done
 
 Expected: `404` for all listed paths.
 
-## 3) Security headers quick check
+## 3. Security headers quick check
 
 ```bash
 curl -sS -I https://menu.labus.pro/menu.php | egrep -i "strict-transport-security|content-security-policy|x-frame-options|x-content-type-options|referrer-policy|cross-origin"
@@ -37,10 +43,10 @@ curl -sS -I https://menu.labus.pro/api/v1/menu.php | egrep -i "cache-control|x-c
 
 Expected:
 
-- `/menu.php` has strict security headers and CSP.
-- `/api/v1/menu.php` keeps expected cache behavior and headers.
+- `/menu.php` has strict security headers and CSP
+- `/api/v1/menu.php` keeps expected cache and security headers
 
-## 4) API cache/perf sanity
+## 4. API cache/perf sanity
 
 ```bash
 for i in {1..5}; do curl -sS -D - -o /dev/null https://menu.labus.pro/api/v1/menu.php | egrep -i "cache-control|x-cache-status"; done
@@ -48,7 +54,17 @@ for i in {1..5}; do curl -sS -D - -o /dev/null https://menu.labus.pro/api/v1/men
 
 Expected: stable `cache-control` and no abnormal status behavior.
 
-## 5) Session/cookie safety check for `clear-cache.php`
+## 5. Auth gate check for `opcache-status.php`
+
+```bash
+curl -sS -I https://menu.labus.pro/opcache-status.php
+```
+
+Expected:
+
+- `302` redirect to `auth.php` when unauthenticated
+
+## 6. Session/cookie safety check for `clear-cache.php`
 
 ```bash
 curl -sS -D - -o /dev/null https://menu.labus.pro/clear-cache.php | egrep -i "set-cookie|cache-control|pragma"
@@ -56,19 +72,19 @@ curl -sS -D - -o /dev/null https://menu.labus.pro/clear-cache.php | egrep -i "se
 
 Expected:
 
-- `cache-control` and `pragma` are present.
-- if `Set-Cookie` exists, it should include `HttpOnly`, `SameSite=Strict`, and `Secure` (for HTTPS).
+- `cache-control` and `pragma` are present
+- if `Set-Cookie` exists, it should include `HttpOnly`, `SameSite=Strict`, and `Secure` for HTTPS
 
-## 6) Admin/business flow checks
+## 7. Admin/business flow checks
 
 Manual checks:
 
 1. Admin login works.
 2. CSV import with valid file works.
-3. Create one test order (site/API path), verify status endpoint.
-4. SSE/poll endpoint returns expected response.
+3. Create one test order and verify status endpoint.
+4. SSE/poll path returns expected response.
 
-## 7) Error and latency snapshot
+## 8. Error and latency snapshot
 
 Capture and compare with baseline:
 

@@ -1,13 +1,12 @@
 /* qr-print.css - Styles for QR code table printing page */
 body.qr-print-page .qr-print-container {
     margin: 0 auto;
-    max-width: min(1240px, calc(100vw - 32px));
-    padding: 96px 16px 40px;
+    padding: 96px 0 40px;
     width: 100%;
 }
 
 body.qr-print-page .section-header-menu {
-    margin: 0 0 24px;
+    margin: 0 20px 24px;
     min-height: 0;
     padding: 0;
 }
@@ -93,8 +92,7 @@ body.qr-print-page .qr-item-sub {
 
 @media (max-width: 767px) {
     body.qr-print-page .qr-print-container {
-        max-width: calc(100vw - 24px);
-        padding: 88px 12px 32px;
+        padding: 88px 0 32px;
     }
 
     body.qr-print-page .section-header-menu {
@@ -123,8 +121,12 @@ body.qr-print-page .qr-item-sub {
     }
 
     body.qr-print-page .qr-print-container {
-        max-width: none;
         padding: 4mm 0 0;
+    }
+
+    body.qr-print-page .qr-print-container > .container {
+        max-width: none;
+        padding: 0;
     }
 
     body.qr-print-page .qr-grid {

@@ -1,13 +1,18 @@
 # Public Layer Guidelines
 
-This document replaces the old mixed UX assumptions with one clear rule:
+## Implementation Status
 
-- provider domain = B2B marketing and demo
-- tenant domain = real restaurant public experience
+- Status: `Partial`
+- Last reviewed: `2026-03-17`
+- Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
+- Current implementation notes:
+  - Provider and tenant public surfaces are separated in runtime and live.
+  - Tenant homepage is restaurant-facing and no longer redirects by default to `/menu.php`.
+  - White-label branding is mostly settings-driven, including separate address text and map-link fields.
 
 ## 1. Source of Truth
 
-Use this file for any public-surface decision that touches:
+Use this document for public-surface decisions that touch:
 
 - landing behavior
 - homepage behavior
@@ -34,12 +39,15 @@ Expected routing:
 - `/` => provider landing
 - `/menu.php` => demo transactional flow
 
+Current state:
+
+- implemented and verified live on `2026-03-17`
+
 ## 3. Tenant Domain Rules
 
-Tenant examples:
+Tenant example:
 
-- `menu.client-brand.ru`
-- `app.restaurant-name.ru`
+- `test.milyidom.com`
 
 Allowed:
 
@@ -61,6 +69,12 @@ Expected routing:
 - `/` => tenant public entry
 - `/menu.php` => primary transactional menu
 
+Current state:
+
+- tenant homepage is live and restaurant-facing
+- transactional menu remains on `/menu.php`
+- per-deployment entry configuration is still missing
+
 ## 4. Stable UX Decisions
 
 - `menu.php` remains the primary ordering surface in all modes.
@@ -73,14 +87,18 @@ Expected routing:
 
 - tenant brand name is visible everywhere public
 - tenant logo and favicon replace provider defaults
-- tenant phone and map link replace provider defaults
-- no Labus sales copy remains in public pages
-- public homepage and menu route behave correctly for the tenant domain
-- cart, checkout, tracking, and account flows remain unchanged functionally
+- tenant phone replaces provider fallback contacts
+- no Labus sales copy remains in tenant public pages
+- tenant homepage and `/menu.php` both behave correctly
+- cart, checkout, tracking, and account flows remain functional
+
+Current implementation note:
+
+- tenant public QA must verify both address text and map CTA
+- if no map URL is configured, the location CTA should stay hidden instead of falling back to provider or raw address links
 
 ## 6. Current Cleanup Priorities
 
-- remove icon-font text leakage from visible UI
-- remove raw coordinates and overly long metadata from order cards
-- remove provider fallback links from tenant public pages
-- keep public entry behavior domain-aware and documented
+- finish internal-shell normalization on remaining operational pages
+- keep provider fallback links out of tenant public pages
+- keep tenant public entry behavior documented and predictable

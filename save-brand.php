@@ -32,6 +32,7 @@ $allowedKeys = [
     'app_description' => 'text',
     'contact_phone'   => 'text',
     'contact_address' => 'text',
+    'contact_map_url' => 'url',
     'social_tg'       => 'url',
     'social_vk'       => 'url',
     'logo_url'             => 'path',

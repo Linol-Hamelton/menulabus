@@ -141,6 +141,7 @@ function tenant_seed_apply_settings(PDO $pdo, array $profile, array $tenantConte
         'hide_labus_branding' => (string)($defaults['hide_labus_branding'] ?? 'true'),
         'contact_phone' => (string)($defaults['contact_phone'] ?? ''),
         'contact_address' => (string)($defaults['contact_address'] ?? ''),
+        'contact_map_url' => (string)($defaults['contact_map_url'] ?? ''),
         'logo_url' => (string)($defaults['logo_url'] ?? ''),
         'favicon_url' => (string)($defaults['favicon_url'] ?? '/icons/favicon.ico'),
         'social_tg' => (string)($defaults['social_tg'] ?? ''),

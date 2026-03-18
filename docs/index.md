@@ -1,6 +1,12 @@
 # Documentation Index
 
-This directory is the source of truth for project documentation.
+## Implementation Status
+
+- Status: `Implemented`
+- Last reviewed: `2026-03-17`
+- Current implementation notes:
+  - This directory is the source of truth for active project documentation.
+  - `docs/archive/*` remains historical reference and must not be treated as current state.
 
 ## Core Docs
 
@@ -17,6 +23,7 @@ Read these first and keep them current:
 
 - [Public Layer Guidelines](./public-layer-guidelines.md)
 - [UX/UI Improvement Roadmap](./ux-ui-improvement-roadmap.md)
+- [Tenant Demo Seed](./tenant-demo-seed.md)
 
 ## Security and Ops
 
@@ -39,6 +46,9 @@ Read these first and keep them current:
 
 ## Archive
 
+Historical only. Do not use these files as current-state documentation:
+
+- [Archive Index](./archive/index.md)
 - [Historical Security Status (2026-03-06)](./archive/security-hardening-status-2026-03-06.md)
 - [Legacy UX/UI Roadmap](./archive/ux-ui-improvement-roadmap-legacy.md)
 

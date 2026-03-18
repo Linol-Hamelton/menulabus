@@ -397,11 +397,29 @@ if (session_status() === PHP_SESSION_ACTIVE && $labusCtx === 'web') {
             $raw = $db->getSetting($key);
             return $raw !== null ? (string)(json_decode($raw, true) ?? $default) : $default;
         };
+        $normalizeBrandContacts = static function (string $address, string $mapUrl): array {
+            $address = trim($address);
+            $mapUrl = trim($mapUrl);
+            if ($mapUrl === '' && $address !== '' && filter_var($address, FILTER_VALIDATE_URL)) {
+                $mapUrl = $address;
+                $address = '';
+            }
+            if ($mapUrl !== '' && !filter_var($mapUrl, FILTER_VALIDATE_URL)) {
+                $mapUrl = '';
+            }
+
+            return [$address, $mapUrl];
+        };
+        [$contactAddress, $contactMapUrl] = $normalizeBrandContacts(
+            $bsGet('contact_address', ''),
+            $bsGet('contact_map_url', '')
+        );
         $GLOBALS['siteName']       = $bsGet('app_name',        'labus');
         $GLOBALS['siteTagline']    = $bsGet('app_tagline',     'Меню ресторана');
         $GLOBALS['siteDesc']       = $bsGet('app_description', '');
         $GLOBALS['contactPhone']   = $bsGet('contact_phone',   '');
-        $GLOBALS['contactAddress'] = $bsGet('contact_address', '');
+        $GLOBALS['contactAddress'] = $contactAddress;
+        $GLOBALS['contactMapUrl']  = $contactMapUrl;
         $GLOBALS['logoUrl']        = $bsGet('logo_url',        '');
         $GLOBALS['faviconUrl']     = $bsGet('favicon_url',     '/icons/favicon.ico');
         $GLOBALS['socialTg']           = $bsGet('social_tg',            '');
@@ -416,6 +434,7 @@ if (session_status() === PHP_SESSION_ACTIVE && $labusCtx === 'web') {
         $GLOBALS['siteDesc']           = '';
         $GLOBALS['contactPhone']       = '';
         $GLOBALS['contactAddress']     = '';
+        $GLOBALS['contactMapUrl']      = '';
         $GLOBALS['logoUrl']            = '';
         $GLOBALS['faviconUrl']         = '/icons/favicon.ico';
         $GLOBALS['socialTg']           = '';

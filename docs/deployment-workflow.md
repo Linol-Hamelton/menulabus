@@ -1,4 +1,13 @@
-﻿# Deployment Workflow (Git Pull on Server)
+# Deployment Workflow (Git Pull on Server)
+
+## Implementation Status
+
+- Status: `Partial`
+- Last reviewed: `2026-03-17`
+- Current implementation notes:
+  - Git-based deploy, versioned hooks, and OpenAPI validation are implemented.
+  - OPcache reset and final smoke remain manual post-pull steps.
+  - This document describes the current production workflow, not a fully automated release pipeline.
 
 ## Quick Copy (Production)
 
@@ -11,21 +20,12 @@ runuser -u "$WEBUSER" -- git -C "$PROJECT" checkout main
 runuser -u "$WEBUSER" -- git -C "$PROJECT" pull --ff-only origin main
 ```
 
-## PHP Compatibility Note (Important)
-
-- On this server, default `php` can point to 8.1, while project dependencies in `vendor/` may require `>=8.2`.
-- Repository hooks (`pre-push`, `post-merge`) auto-select the best available binary for lint in this order:
-  - `php8.5` -> `php8.4` -> `php8.3` -> `php8.2` -> `php`
-- Hooks lint project PHP files only and skip `vendor/`, `node_modules/`, `.git/`, and `data/cache/`.
-- Temporary compatibility mode before runtime upgrade:
-  - WebPush in `update_order_status.php` can run in degrade mode on PHP `<8.2` (status update succeeds, push is skipped with a log entry).
-
 ## Goal
 
-- No WinSCP/manual file upload.
+- No manual file upload.
 - Source of truth: Git.
-- Deployment: `git pull` on server (in `main` only).
-- Everything else (validation and post-pull checks) is automated.
+- Deployment: `git pull` on server.
+- Validation before push and basic post-merge checks via repo hooks.
 
 ## Related Documentation
 
@@ -34,30 +34,38 @@ runuser -u "$WEBUSER" -- git -C "$PROJECT" pull --ff-only origin main
 - API contract: `docs/openapi.yaml`
 - Security runbook set: `docs/security-*`
 
-## Current production specifics (as configured)
+## PHP Compatibility Note
+
+- The server may expose several PHP binaries.
+- Repo hooks auto-select the newest suitable binary in this order:
+  - `php8.5`
+  - `php8.4`
+  - `php8.3`
+  - `php8.2`
+  - `php`
+- Hooks lint project PHP files only and skip `vendor/`, `node_modules/`, `.git/`, and `data/cache/`.
+
+## Current Production Specifics
 
 - Production path: `/var/www/labus_pro_usr/data/www/menu.labus.pro`
-- Git operations are executed as `labus_pro_usr` via `runuser -u ...`.
-- We do not run repo commands as `root` to avoid `dubious ownership`.
-- `core.hooksPath` is set to `.githooks`.
-- Local server-only files are ignored through `.git/info/exclude`.
+- Git operations run as `labus_pro_usr`
+- `core.hooksPath` is set to `.githooks`
+- Local server-only files stay excluded via `.git/info/exclude`
 
-## Branch policy
+## Branch Policy
 
-- `main`: production-ready branch.
-- `actual`: working integration branch (can be kept equal to `main` if needed).
+- `main`: production-ready branch
+- release or working branches: optional, depending on rollout risk
 
 Recommended release flow:
 
-1. Work in `actual`.
-2. Commit changes.
-3. Fast-forward `main` from `actual`.
+1. Prepare changes in a working branch.
+2. Run required checks locally.
+3. Fast-forward `main` only from reviewed release state.
 4. Push to remote.
 5. On server: `git pull --ff-only`.
 
-## One-time setup on server (already applied)
-
-If repository is already initialized in project directory:
+## One-Time Setup on Server
 
 ```bash
 WEBUSER="labus_pro_usr"
@@ -69,54 +77,26 @@ runuser -u "$WEBUSER" -- git -C "$PROJECT" config --get core.hooksPath
 
 This enables:
 
-- `pre-push` hook: PHP syntax check for staged project PHP files with auto-selected PHP binary.
-- `post-merge` hook: PHP syntax check after pull for project PHP files with auto-selected PHP binary, plus cache cleanup.
+- `pre-push`: PHP lint on staged PHP files plus OpenAPI validation when pushing `main`
+- `post-merge`: PHP lint after pull plus cache cleanup
 
-If project directory has no `.git`, run one-time bootstrap:
-
-```bash
-WEBUSER="labus_pro_usr"
-PROJECT="/var/www/labus_pro_usr/data/www/menu.labus.pro"
-REPO_URL="https://github.com/Linol-Hamelton/menulabus"
-
-runuser -u "$WEBUSER" -- git -C "$PROJECT" init -b main
-runuser -u "$WEBUSER" -- git -C "$PROJECT" remote add origin "$REPO_URL"
-runuser -u "$WEBUSER" -- git -C "$PROJECT" fetch --prune origin
-runuser -u "$WEBUSER" -- git -C "$PROJECT" checkout -f -B main origin/main
-runuser -u "$WEBUSER" -- git -C "$PROJECT" config core.hooksPath .githooks
-```
-
-## Local release commands
+## Local Release Commands
 
 ```bash
-# 1) Ensure working branch is up to date
-git checkout actual
+git checkout main
 git pull --ff-only
-
-# 2) Mandatory API contract gate before release
 npm run openapi:validate
-
-# 3) Commit
 git add -A
 git commit -m "release: <short description>"
-
-# 4) Move production branch forward
-git checkout main
-git merge --ff-only actual
-
-# 5) Push
 git push origin main
-git push gitlab actual
 ```
-
-If both remotes use `main`, push `main` to both.
 
 Gate details:
 
-- `.githooks/pre-push` blocks pushes to `main` when `npm run openapi:validate` fails.
-- If validation fails, sync `docs/openapi.yaml` with actual `api/v1/**` endpoints first, then retry push.
+- `.githooks/pre-push` blocks pushes to `main` when `npm run openapi:validate` fails
+- if validation fails, fix `docs/openapi.yaml` or the implementation before retrying
 
-## Server deploy commands
+## Server Deploy Commands
 
 ```bash
 WEBUSER="labus_pro_usr"
@@ -127,17 +107,23 @@ runuser -u "$WEBUSER" -- git -C "$PROJECT" checkout main
 runuser -u "$WEBUSER" -- git -C "$PROJECT" pull --ff-only origin main
 ```
 
-After pull:
+Manual post-pull steps:
 
-1. Run OPcache reset immediately (your existing `monitor.php` flow).
-2. For releases that add new PHP methods used across files (for example `owner.php` calling new methods from `db.php`), treat OPcache reset as mandatory before opening admin/owner pages.
-3. Smoke-check key pages and payment scenario.
+1. Reset OPcache via the established monitor/admin flow.
+2. Run short provider/tenant regression smoke.
+3. Verify admin/owner pages if new PHP methods or shared includes changed.
 
-## Safety rules
+Recommended regression smoke:
+
+```bash
+php scripts/tenant/smoke.php --provider-domain=menu.labus.pro --tenant-domain=test.milyidom.com
+```
+
+## Safety Rules
 
 - Use `--ff-only` on pull to avoid accidental merge commits on server.
-- Do not edit files directly on server.
-- If hotfix is needed, do it in Git and redeploy by pull.
+- Do not edit tracked files directly on server.
+- If a hotfix is needed, do it in Git and redeploy by pull.
 - Keep deploy logs and commit hash for each release.
 
 ## Rollback
@@ -149,15 +135,16 @@ WEBUSER="labus_pro_usr"
 PROJECT="/var/www/labus_pro_usr/data/www/menu.labus.pro"
 
 runuser -u "$WEBUSER" -- git -C "$PROJECT" log --oneline -n 20
-# choose previous stable hash
-runuser -u "$WEBUSER" -- git -C "$PROJECT" checkout <hash>
+runuser -u "$WEBUSER" -- git -C "$PROJECT" checkout <previous_stable_hash>
 ```
 
-Then apply the same OPcache reset and smoke-check.
+Then:
 
-For long-term rollback policy, keep stable releases tagged.
+1. reset OPcache
+2. rerun provider/tenant smoke
+3. record the rollback in release notes or change log
 
-## Security rollout (preventive-first)
+## Security Rollout Rule
 
 Use these documents together:
 
@@ -168,7 +155,7 @@ Use these documents together:
 Rules for security changes:
 
 1. Apply one production change per release step.
-2. Run config syntax checks (`nginx -t` and relevant service checks) before reload.
-3. Run full smoke from `docs/security-smoke-checklist.md` after each step.
-4. Observe production for 30 minutes before next step.
-5. If stop criteria triggers, rollback immediately and document in change log.
+2. Run config syntax checks before reload.
+3. Run smoke after each step.
+4. Observe production before the next step.
+5. If stop criteria triggers, rollback immediately.

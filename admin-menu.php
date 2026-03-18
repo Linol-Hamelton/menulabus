@@ -568,6 +568,12 @@ $savedDbFontsJson = htmlspecialchars(
                     $raw = $db->getSetting($key);
                     return $raw !== null ? (json_decode($raw, true) ?? $default) : $default;
                 };
+                $brandAddressValue = (string)$bs('contact_address');
+                $brandMapUrlValue = (string)$bs('contact_map_url');
+                if ($brandMapUrlValue === '' && $brandAddressValue !== '' && filter_var($brandAddressValue, FILTER_VALIDATE_URL)) {
+                    $brandMapUrlValue = $brandAddressValue;
+                    $brandAddressValue = '';
+                }
                 ?>
                 <div class="admin-form-group admin-block admin-block--brand" id="brandSettings">
                     <h3>Бренд</h3>
@@ -596,10 +602,16 @@ $savedDbFontsJson = htmlspecialchars(
                                 maxlength="200" placeholder="+79000000000">
                         </label>
                         <label class="admin-label">
+                            СЃСЃС‹Р»РєР° РЅР° РєР°СЂС‚Сѓ
+                            <input type="url" id="brandMapUrl" class="admin-input"
+                                value="<?= htmlspecialchars($brandMapUrlValue) ?>"
+                                maxlength="200" placeholder="https://yandex.ru/maps/...">
+                        </label>
+                        <label class="admin-label">
                             Адрес (ссылка на карту)
                             <input type="text" id="brandAddress" class="admin-input"
-                                value="<?= htmlspecialchars($bs('contact_address')) ?>"
-                                maxlength="200" placeholder="https://yandex.ru/maps/...">
+                                value="<?= htmlspecialchars($brandAddressValue) ?>"
+                                maxlength="200" placeholder="Москва, Цветной б-р, 24">
                         </label>
                         <label class="admin-label">
                             Telegram (ссылка)

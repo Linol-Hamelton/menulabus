@@ -1,12 +1,22 @@
 # Project Reference
 
+## Implementation Status
+
+- Status: `Partial`
+- Last reviewed: `2026-03-17`
+- Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
+- Current implementation notes:
+  - Hostname-aware runtime and control-plane tenant resolution are implemented.
+  - Provider and tenant public surfaces are live.
+  - Branding is settings-driven, including separate address text and dedicated map URL fields.
+
 ## 1. Project Summary
 
 `Menu Labus` is a white-label PHP-based restaurant menu and ordering platform.
 
 The same codebase serves two modes:
 
-- `provider` deployment on the company domain (`menu.labus.pro`) for B2B promotion and demo flows
+- `provider` deployment on `menu.labus.pro` for B2B promotion and demo flows
 - `tenant` deployments on client domains for real restaurant public sites and ordering
 
 The platform includes:
@@ -14,10 +24,10 @@ The platform includes:
 - public menu and order flow
 - role-based backoffice (`owner`, `admin`, `employee`, `customer`)
 - mobile-oriented REST API (`/api/v1/*`)
-- realtime order status updates (SSE/long-poll)
-- security/deploy/runbook documentation
+- realtime order status updates (SSE / long-poll)
+- security, deploy, and launch runbooks
 
-Primary host model today: shared server (FastPanel + Nginx + PHP-FPM + MySQL, optional Redis).
+Primary host model today: shared server with Nginx, PHP-FPM, MySQL, and optional Redis-backed cache helpers.
 
 ## 2. Tenant Isolation Model
 
@@ -25,47 +35,46 @@ Hard rule:
 
 - one client = one separate database
 
-Recommended DB naming convention:
+Recommended DB naming:
 
 - `menu_<brand_slug>`
 
-Examples:
-
-- `menu_labus_demo`
-- `menu_kultura_bar`
-- `menu_bon_pizza`
-
 Isolation assumptions:
 
-- each client has their own DB, brand settings, users, orders, and menu data
+- each client has its own DB, brand settings, users, orders, and menu data
 - provider marketing content must not leak into tenant domains
 - code is shared, production data is not
 
+Current implementation:
+
+- control-plane tables resolve tenant by hostname
+- tenant seed and provisioning scripts target isolated tenant databases
+
 ## 3. Runtime Stack
 
-- PHP (project codebase, API, public pages)
-- MySQL (main persistence; separate DB per tenant)
-- Redis/memory cache abstractions in code (`RedisCache.php`, cache helpers)
-- Nginx frontend with FastCGI, selected caching/microcache
-- PHP-FPM pool split: web / api / sse
-- PWA + push notifications
+- PHP application code
+- MySQL persistence
+- cache abstractions and optional Redis-backed helpers
+- Nginx frontend with FastCGI and selective cache/microcache configuration
+- PHP-FPM with documented pool-split templates (`web` / `api` / `sse`)
+- PWA shell and push-related code paths
 
 ## 4. Request Architecture
 
 ### 4.1 Web context
 
-- browser requests public pages (`/menu.php`, `index.php`, account/admin pages)
+- browser requests public pages (`/`, `/menu.php`, account and backoffice pages)
 - session/cookie auth and CSRF/CSP handling are initialized by `session_init.php`
 
 ### 4.2 API context
 
-- API endpoints live in `api/v1/*` and use `api/v1/bootstrap.php`
-- mobile auth is token-based (`Authorization: Bearer ...`), not cookie-session dependent
+- API endpoints live in `api/v1/*`
+- mobile/API auth is bearer-token based, not cookie-session dependent
 
 ### 4.3 Realtime updates
 
 - active paths: `/orders-sse.php` and `/ws-poll.php`
-- long-lived requests should be isolated to the SSE pool
+- long-lived requests should be isolated from normal web/API traffic
 
 ## 5. Public Entry Points
 
@@ -77,11 +86,15 @@ Isolation assumptions:
 
 ### 5.2 Tenant deployment
 
-- `/` => tenant public entry (`menu.php` directly or tenant homepage)
-- `/menu.php` => main transactional menu
+- `/` => tenant public entry, currently capable of rendering a restaurant homepage
+- `/menu.php` => primary transactional menu
 - `/cart.php`
 - `/create_new_order.php`, `/create_guest_order.php`
 - `/order-track.php`, `/order-status.php`
+
+Current implementation gap:
+
+- tenant public entry is not configurable per deployment yet
 
 ## 6. Backoffice and Operations
 
@@ -91,10 +104,11 @@ Isolation assumptions:
 - `/employee.php`
 - `/admin-menu.php`
 - `/monitor.php`
+- `/qr-print.php`
 
 ## 7. API v1 Surface
 
-Current API files (excluding bootstrap):
+Current API files:
 
 - `/api/v1/menu.php`
 - `/api/v1/geocode.php`
@@ -112,17 +126,15 @@ Contract file:
 
 - [`docs/openapi.yaml`](./openapi.yaml)
 
-## 8. Branding and White-Label Surface
+## 8. Branding Surface
 
-Brand-dependent public settings should come from tenant settings, not from hard-coded provider defaults.
-
-The codebase already exposes a branding surface for:
+Settings-driven surface currently includes:
 
 - app name
 - tagline
 - description
 - contact phone
-- contact address / map link
+- contact address
 - social links
 - logo
 - favicon
@@ -130,6 +142,11 @@ The codebase already exposes a branding surface for:
 - fonts
 - custom domain
 - hide-provider-branding flag
+
+Current implementation gap:
+
+- the product model expects `address + map link`
+- current runtime and public UI now expose separate address text and dedicated map URL fields
 
 ## 9. Security and Deploy References
 
@@ -144,5 +161,5 @@ The codebase already exposes a branding surface for:
 - active docs stay under `docs/`
 - historical snapshots move to `docs/archive/`
 - API contract source of truth: `docs/openapi.yaml`
-- product-mode source of truth: `docs/product-model.md`
+- product model source of truth: `docs/product-model.md`
 - tenant launch runbook: `docs/tenant-launch-checklist.md`

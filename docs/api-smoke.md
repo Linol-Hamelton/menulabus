@@ -1,74 +1,112 @@
 # API Smoke Checklist
 
-## Manual curl checks (quick)
+## Implementation Status
 
-1) Login:
+- Status: `Partial`
+- Last reviewed: `2026-03-17`
+- Current implementation notes:
+  - API v1 endpoints are implemented and covered by the OpenAPI contract.
+  - The CLI smoke runner exists, but it is an internal script and must remain blocked from web access.
+  - Example commands below are parameterized and can target either provider or tenant base URLs.
+
+## Base URL
+
+Set the target first:
+
 ```bash
-curl -sS -X POST https://menu.labus.pro/api/v1/auth/login.php \
+BASE_URL="https://menu.labus.pro"
+```
+
+Use a tenant URL when validating a tenant deployment:
+
+```bash
+BASE_URL="https://test.milyidom.com"
+```
+
+## Manual curl checks
+
+1. Login:
+
+```bash
+curl -sS -X POST "$BASE_URL/api/v1/auth/login.php" \
   -H "Content-Type: application/json" \
   -d '{"email":"<email>","password":"<password>","device_name":"smoke"}'
 ```
 
-2) Refresh:
+2. Refresh:
+
 ```bash
-curl -sS -X POST https://menu.labus.pro/api/v1/auth/refresh.php \
+curl -sS -X POST "$BASE_URL/api/v1/auth/refresh.php" \
   -H "Content-Type: application/json" \
   -d '{"refresh_token":"<refresh_token>","device_name":"smoke"}'
 ```
 
-3) Me:
+3. Me:
+
 ```bash
-curl -sS https://menu.labus.pro/api/v1/auth/me.php \
+curl -sS "$BASE_URL/api/v1/auth/me.php" \
   -H "Authorization: Bearer <access_token>"
 ```
 
-4) Menu:
+4. Menu:
+
 ```bash
-curl -sS "https://menu.labus.pro/api/v1/menu.php?category=%D0%9F%D0%B8%D1%86%D1%86%D0%B0"
+curl -sS "$BASE_URL/api/v1/menu.php"
 ```
 
-5) Geocode:
+5. Geocode:
+
 ```bash
-curl -sS "https://menu.labus.pro/api/v1/geocode.php?lat=42.9764&lon=47.5024"
+curl -sS "$BASE_URL/api/v1/geocode.php?lat=42.9764&lon=47.5024"
 ```
 
-6) Create order (idempotent):
+6. Create order (idempotent):
+
 ```bash
-curl -sS -X POST https://menu.labus.pro/api/v1/orders/create.php \
+curl -sS -X POST "$BASE_URL/api/v1/orders/create.php" \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
-  -H "Idempotency-Key: test-001" \
+  -H "Idempotency-Key: smoke-001" \
   -d '{"items":[{"id":1,"name":"Test","price":100,"quantity":1}],"total":100,"delivery_type":"bar"}'
 ```
 
-7) Order status:
+7. Order status:
+
 ```bash
-curl -sS "https://menu.labus.pro/api/v1/orders/status.php?order_id=<order_id>" \
+curl -sS "$BASE_URL/api/v1/orders/status.php?order_id=<order_id>" \
   -H "Authorization: Bearer <access_token>"
 ```
 
-8) Push subscribe:
+8. Push subscribe:
+
 ```bash
-curl -sS -X POST https://menu.labus.pro/api/v1/push/subscribe.php \
+curl -sS -X POST "$BASE_URL/api/v1/push/subscribe.php" \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
   -d '{"subscription":{"endpoint":"https://example.invalid/x","keys":{"p256dh":"x","auth":"y"}}}'
 ```
 
-9) CORS preflight (example for Capacitor):
+9. CORS preflight:
+
 ```bash
-curl -i -X OPTIONS https://menu.labus.pro/api/v1/auth/login.php \
+curl -i -X OPTIONS "$BASE_URL/api/v1/auth/login.php" \
   -H "Origin: capacitor://localhost" \
   -H "Access-Control-Request-Method: POST"
 ```
 
-## Automated runner
+## Automated Runner
 
 ```bash
-php scripts/api-smoke-runner.php --base=https://menu.labus.pro --email=<email> --password=<password> --run-order=1
+php scripts/api-smoke-runner.php --base="$BASE_URL" --email=<email> --password=<password> --run-order=1
 ```
 
-If local PHP has no CA bundle (Windows/OpenServer), add:
+If local PHP has no CA bundle, add:
+
 ```bash
-php scripts/api-smoke-runner.php --base=https://menu.labus.pro --email=<email> --password=<password> --run-order=1 --insecure=1
+php scripts/api-smoke-runner.php --base="$BASE_URL" --email=<email> --password=<password> --run-order=1 --insecure=1
 ```
+
+## Important Notes
+
+- The smoke runner is CLI-only and must not be web-reachable.
+- For menu endpoint verification, use `GET`; `HEAD` can return `405` depending on server behavior.

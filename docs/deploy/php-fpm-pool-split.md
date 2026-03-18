@@ -1,25 +1,39 @@
 # PHP-FPM Pool Split (web/api/sse)
 
-This folder contains templates for separate PHP-FPM pools.
+## Implementation Status
 
-Why:
-- SSE keeps workers busy for up to ~25s.
-- Without isolation, a spike in SSE clients can block API and page loads.
+- Status: `Partial`
+- Last reviewed: `2026-03-17`
+- Current implementation notes:
+  - This document describes templates and tuning guidance.
+  - It is not a guarantee that all listed pools are already active in production.
 
-Suggested pools:
-- web: default, dynamic pages
-- api: /api/v1/*
-- sse: /orders-sse.php (+ ws-poll.php if used)
+## Purpose
 
-Templates:
+Separate pools reduce contention between:
+
+- normal page requests
+- API requests
+- long-lived SSE/poll requests
+
+## Suggested Pools
+
+- `web`: default dynamic pages
+- `api`: `/api/v1/*`
+- `sse`: `/orders-sse.php` and optionally `/ws-poll.php`
+
+## Templates
+
 - `deploy/php-fpm/pool-menu.labus.pro-web.conf`
 - `deploy/php-fpm/pool-menu.labus.pro-api.conf`
 - `deploy/php-fpm/pool-menu.labus.pro-sse.conf`
 
-Start conservative on sse:
-- pm.max_children: 10-30 (tune by RAM and queue metrics)
+## Starting Guidance
 
-Enable per-pool:
-- slowlog
-- request_slowlog_timeout
-- status path (/fpm-status-web, /fpm-status-api, /fpm-status-sse) if desired
+- start conservatively on `sse`
+- size `pm.max_children` from real RAM and queue behavior
+- enable per-pool `slowlog`, `request_slowlog_timeout`, and optional status paths if needed
+
+## Current Scope Note
+
+Use this as a manual rollout template. If a server adopts these pools, record the real production state in deployment notes.

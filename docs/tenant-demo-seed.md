@@ -1,10 +1,17 @@
 # Tenant Demo Seed
 
-`test.milyidom.com` should behave like a restaurant tenant, not like the provider catalog.
+## Implementation Status
 
-This runbook defines the reusable demo seed process for tenant databases.
+- Status: `Implemented`
+- Last reviewed: `2026-03-17`
+- Verified against published pages: `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
+- Current implementation notes:
+  - `test.milyidom.com` behaves like a restaurant tenant after seeding.
+  - The seed writes restaurant-oriented data into the tenant database and does not modify provider data in `menu_labus`.
 
-## Profile
+## Purpose
+
+Use the reusable tenant demo seed to turn a tenant into a restaurant-facing demo environment instead of a provider-style catalog.
 
 Current supported profile:
 
@@ -13,16 +20,15 @@ Current supported profile:
 The profile seeds:
 
 - restaurant-facing brand settings
+- separate address text plus map-link setting
 - synthetic restaurant catalog
 - modifier groups and options
 - demo admin / employee / customer accounts
 - demo orders for owner / employee / customer smoke
 
-It does not modify provider data in `menu_labus`.
-
 ## Seed Existing Tenant
 
-Use control-plane lookup and replace tenant demo content:
+Resolve the tenant through the control-plane and replace tenant demo content:
 
 ```bash
 php scripts/tenant/seed.php --profile=restaurant-demo --domain=test.milyidom.com --force
@@ -34,9 +40,17 @@ Or resolve by slug:
 php scripts/tenant/seed.php --profile=restaurant-demo --brand-slug=test_milyidom --force
 ```
 
+CLI output now includes:
+
+- target domain
+- target DB name
+- owner identity
+- smoke result
+- rollback hint
+
 ## Seed During Provisioning
 
-For a brand-new tenant database, seed the restaurant demo during provisioning:
+For a brand-new tenant database:
 
 ```bash
 php scripts/tenant/provision.php \
@@ -54,15 +68,16 @@ php scripts/tenant/provision.php \
 
 After seeding:
 
-- tenant `/` redirects to `/menu.php`
-- public menu shows restaurant categories and dishes
+- tenant `/` opens the tenant public entry and can render a restaurant-facing homepage
+- tenant `/menu.php` shows restaurant categories and dishes
 - provider domain does not mirror tenant catalog
-- admin can archive / unarchive and edit restaurant items
-- employee board shows active and historical orders
+- tenant public contacts use restaurant address text and optional map CTA, not provider fallback
+- admin can archive, unarchive, and edit restaurant items
+- employee board shows seeded operational data
 - owner reports are populated by seeded completed orders
 
-## Notes
+## Safety Notes
 
-- Use `--force` only on demo tenants. It replaces tenant catalog, modifiers, and orders.
+- Use `--force` only on demo tenants. It replaces tenant catalog, modifiers, and seeded demo orders.
 - Demo staff/customer passwords are emitted by the CLI JSON output.
-- Owner account stays unchanged; the seed does not overwrite owner credentials.
+- The owner account is kept intact; the seed does not overwrite owner credentials.

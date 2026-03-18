@@ -7,6 +7,7 @@ $projectName = trim(html_entity_decode($GLOBALS['siteName'] ?? $_SESSION['projec
 $hideLabusBranding = $GLOBALS['hideLabusBranding'] ?? false;
 $contactPhone = trim((string)($GLOBALS['contactPhone'] ?? ''));
 $contactAddress = trim((string)($GLOBALS['contactAddress'] ?? ''));
+$contactMapUrl = trim((string)($GLOBALS['contactMapUrl'] ?? ''));
 $logoUrl = (string)($GLOBALS['logoUrl'] ?? '');
 $socialTg = (string)($GLOBALS['socialTg'] ?? '');
 $socialVk = (string)($GLOBALS['socialVk'] ?? '');
@@ -34,22 +35,22 @@ $includeHeaderCss = empty($GLOBALS['header_css_in_head']);
     <nav class="nav">
       <ul>
         <?php if ($contactPhone !== ''): ?>
-        <li><a href="tel:<?= htmlspecialchars($contactPhone) ?>">Позвонить</a></li>
+        <li><a href="tel:<?= htmlspecialchars($contactPhone) ?>">РџРѕР·РІРѕРЅРёС‚СЊ</a></li>
         <?php endif; ?>
-        <?php if ($contactAddress !== ''): ?>
+        <?php if ($contactMapUrl !== ''): ?>
         <li>
-          <a href="<?= htmlspecialchars($contactAddress) ?>" target="_blank" rel="noopener">Приехать</a>
+          <a href="<?= htmlspecialchars($contactMapUrl) ?>" target="_blank" rel="noopener">РџСЂРёРµС…Р°С‚СЊ</a>
         </li>
         <?php endif; ?>
-        <li><a href="/menu.php">Меню</a></li>
+        <li><a href="/menu.php">РњРµРЅСЋ</a></li>
         <li class="cart-menu-item">
           <a href="/cart.php">
-            Заказ
+            Р—Р°РєР°Р·
             <span id="cart-total-count" class="cart-counter">0</span>
           </a>
         </li>
         <li class="account-menu-item">
-          <a href="<?= $isLoggedIn ? '/account.php' : '/auth.php' ?>">Аккаунт</a>
+          <a href="<?= $isLoggedIn ? '/account.php' : '/auth.php' ?>">РђРєРєР°СѓРЅС‚</a>
         </li>
       </ul>
     </nav>

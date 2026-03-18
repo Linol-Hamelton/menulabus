@@ -24,10 +24,11 @@ $faviconUrl = htmlspecialchars((string)($GLOBALS['faviconUrl'] ?? '/icons/favico
 $appVer = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0', ENT_QUOTES, 'UTF-8');
 $contactPhone = trim((string)($GLOBALS['contactPhone'] ?? ''));
 $contactAddress = trim((string)($GLOBALS['contactAddress'] ?? ''));
+$contactMapUrl = trim((string)($GLOBALS['contactMapUrl'] ?? ''));
 $socialTg = trim((string)($GLOBALS['socialTg'] ?? ''));
 $socialVk = trim((string)($GLOBALS['socialVk'] ?? ''));
 $footerContactLines = array_values(array_filter([$contactAddress, $contactPhone], static fn($value) => $value !== ''));
-$hasTenantContacts = $contactPhone !== '' || $contactAddress !== '' || $socialTg !== '' || $socialVk !== '';
+$hasTenantContacts = $contactPhone !== '' || $contactAddress !== '' || $contactMapUrl !== '' || $socialTg !== '' || $socialVk !== '';
 $hasTenantAbout = $rawSiteDesc !== '' || $rawTagline !== '';
 $tenantMetaTitle = $isTenant && $tenantLeadText !== ''
     ? $siteName . ' | ' . $tenantLeadText
@@ -35,6 +36,7 @@ $tenantMetaTitle = $isTenant && $tenantLeadText !== ''
 $tenantQuickPoints = array_values(array_filter([
     $contactAddress !== '' ? $contactAddress : null,
     $contactPhone !== '' ? $contactPhone : null,
+    $contactMapUrl !== '' ? 'Карта' : null,
     $socialTg !== '' ? 'Telegram' : null,
     $socialVk !== '' ? 'VK' : null,
 ]));
@@ -320,6 +322,9 @@ $tenantSecondaryLabel = $hasTenantContacts
                             <div class="hero-actions">
                                 <?php if ($contactPhone !== ''): ?>
                                     <a href="tel:<?= htmlspecialchars($contactPhone, ENT_QUOTES, 'UTF-8') ?>" class="btn hero-btn-primary">Позвонить</a>
+                                <?php endif; ?>
+                                <?php if ($contactMapUrl !== ''): ?>
+                                    <a href="<?= htmlspecialchars($contactMapUrl, ENT_QUOTES, 'UTF-8') ?>" class="btn hero-btn-secondary" target="_blank" rel="noopener">Приехать</a>
                                 <?php endif; ?>
                                 <?php if ($socialTg !== ''): ?>
                                     <a href="<?= htmlspecialchars($socialTg, ENT_QUOTES, 'UTF-8') ?>" class="btn hero-btn-secondary" target="_blank" rel="noopener">Telegram</a>
