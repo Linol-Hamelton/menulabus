@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Partial for employee.php: renders only the <div class="account-sections"> block.
 // Expects: $db (Database instance), $_SESSION['csrf_token'], $activeTab.
 
