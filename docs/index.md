@@ -25,6 +25,11 @@ Read these first and keep them current:
 - [UX/UI Improvement Roadmap](./ux-ui-improvement-roadmap.md)
 - [Tenant Demo Seed](./tenant-demo-seed.md)
 
+## Training and Demo
+
+- [Backoffice Role Helpers](./backoffice-role-helpers.md)
+- [Menu Capabilities Presentation](./menu-capabilities-presentation.md)
+
 ## Security and Ops
 
 - [Security Hardening Roadmap](./security-hardening-roadmap.md)

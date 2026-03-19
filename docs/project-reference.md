@@ -100,6 +100,7 @@ Current implementation gap:
 
 - `/auth.php`, `/logout.php`, `/password-reset.php`
 - `/account.php`
+- `/help.php`
 - `/owner.php`
 - `/employee.php`
 - `/admin-menu.php`

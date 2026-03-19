@@ -26,6 +26,7 @@
             <div class="section-header-nav-actions">
                 <?php if (in_array(($user['role'] ?? ''), ['owner', 'employee', 'admin'], true)): ?>
                     <a href="employee.php" class="back-to-menu-btn">Заказы</a>
+                    <a href="help.php" class="back-to-menu-btn">Помощь</a>
                 <?php endif; ?>
                 <a href="customer_orders.php" class="back-to-menu-btn">История</a>
             </div>
