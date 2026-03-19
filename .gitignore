@@ -93,10 +93,12 @@ fix.md
 perf-results/
 
 # Codex / Playwright artifacts
+.playwright-cli/
 output/
 artifacts/
 playwright-report/
 test-results/
+tmp_phosphor/
 
 # Git hooks local runtime files
 .githooks/*.log

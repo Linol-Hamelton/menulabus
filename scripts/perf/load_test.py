@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Simple load test script for HTTP endpoints.
 Uses threading + requests and reuses a Session per worker (keep-alive).

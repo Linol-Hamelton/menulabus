@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-17`
+- Last reviewed: `2026-03-19`
 - Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
 - Current implementation notes:
   - Hostname-aware runtime and control-plane tenant resolution are implemented.
@@ -96,7 +96,7 @@ Current implementation gap:
 
 - tenant public entry is not configurable per deployment yet
 
-## 6. Backoffice and Operations
+## 6. Backoffice
 
 - `/auth.php`, `/logout.php`, `/password-reset.php`
 - `/account.php`
@@ -104,10 +104,19 @@ Current implementation gap:
 - `/owner.php`
 - `/employee.php`
 - `/admin-menu.php`
-- `/monitor.php`
 - `/qr-print.php`
 
-## 7. API v1 Surface
+## 7. Operations and Diagnostics
+
+- `/monitor.php`
+- `/opcache-status.php`
+- `scripts/api-smoke-runner.php`
+- `scripts/api-metrics-report.php`
+- `scripts/tenant/smoke.php`
+
+These tools are retained as ops/security helpers and are not part of the normal public product surface.
+
+## 8. API v1 Surface
 
 Current API files:
 
@@ -127,7 +136,7 @@ Contract file:
 
 - [`docs/openapi.yaml`](./openapi.yaml)
 
-## 8. Branding Surface
+## 9. Branding Surface
 
 Settings-driven surface currently includes:
 
@@ -149,7 +158,7 @@ Current implementation gap:
 - the product model expects `address + map link`
 - current runtime and public UI now expose separate address text and dedicated map URL fields
 
-## 9. Security and Deploy References
+## 10. Security and Deploy References
 
 - [`docs/security-hardening-roadmap.md`](./security-hardening-roadmap.md)
 - [`docs/security-smoke-checklist.md`](./security-smoke-checklist.md)
@@ -157,7 +166,14 @@ Current implementation gap:
 - [`docs/deploy/nginx-pool-split.md`](./deploy/nginx-pool-split.md)
 - [`docs/deploy/php-fpm-pool-split.md`](./deploy/php-fpm-pool-split.md)
 
-## 10. Documentation Policy
+## 11. Development and Perf Utilities
+
+- `scripts/perf/load_test.py`
+- `scripts/perf/security-smoke.sh`
+- `scripts/perf/security-smoke-daily.sh`
+- `scripts/perf/install-security-smoke-cron.sh`
+
+## 12. Documentation Policy
 
 - active docs stay under `docs/`
 - historical snapshots move to `docs/archive/`

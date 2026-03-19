@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Implemented`
-- Last reviewed: `2026-03-17`
+- Last reviewed: `2026-03-19`
 - Current implementation notes:
   - This directory is the source of truth for active project documentation.
   - `docs/archive/*` remains historical reference and must not be treated as current state.
@@ -54,8 +54,6 @@ Read these first and keep them current:
 Historical only. Do not use these files as current-state documentation:
 
 - [Archive Index](./archive/index.md)
-- [Historical Security Status (2026-03-06)](./archive/security-hardening-status-2026-03-06.md)
-- [Legacy UX/UI Roadmap](./archive/ux-ui-improvement-roadmap-legacy.md)
 
 ## Rules
 
