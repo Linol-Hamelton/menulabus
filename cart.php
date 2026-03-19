@@ -47,7 +47,7 @@ unset($_SESSION['qr_table']);
 </head>
 
 <body id="body"
-    class="cart-page"
+    class="cart-page account-page"
     data-is-logged-in="<?= isset($_SESSION['user_id']) ? 'true' : 'false' ?>"
     data-repeat-order-payload="<?= htmlspecialchars($repeatOrderPayloadAttr, ENT_QUOTES, 'UTF-8') ?>"
     data-qr-table="<?= $prefilledQrTable > 0 ? $prefilledQrTable : '' ?>">

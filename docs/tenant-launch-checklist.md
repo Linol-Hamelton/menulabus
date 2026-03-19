@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-17`
+- Last reviewed: `2026-03-19`
 - Current implementation notes:
   - Tenant provisioning and seeding are scriptable.
   - DNS, vhost, SSL, and final production go-live remain manual.
@@ -174,6 +174,7 @@ API smoke:
 Recommended release smoke:
 
 - `php scripts/tenant/smoke.php --provider-domain=menu.labus.pro --tenant-domain=<tenant-domain>`
+- production post-pull hook runs the same smoke automatically for `menu.labus.pro` + `test.milyidom.com`
 
 ## 8. Launch Acceptance
 

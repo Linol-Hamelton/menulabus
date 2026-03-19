@@ -90,15 +90,15 @@ function formatPhoneNumber($phone)
 {
     if (empty($phone)) return '';
 
-    // РЈР±РёСЂР°РµРј РІСЃРµ РЅРµС‡РёСЃР»РѕРІС‹Рµ СЃРёРјРІРѕР»С‹
+    // Убираем все нечисловые символы
     $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
 
-    // Р¤РѕСЂРјР°С‚РёСЂСѓРµРј РЅРѕРјРµСЂ РІ С„РѕСЂРјР°С‚Рµ +7(903)498-16-42
+    // Форматируем номер в формате +7(903)498-16-42
     if (strlen($cleanPhone) === 11 && $cleanPhone[0] === '7') {
         return '+7(' . substr($cleanPhone, 1, 3) . ')' . substr($cleanPhone, 4, 3) . '-' . substr($cleanPhone, 7, 2) . '-' . substr($cleanPhone, 9, 2);
     }
 
-    // Р•СЃР»Рё РЅРѕРјРµСЂ РЅРµ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓРµС‚ РѕР¶РёРґР°РµРјРѕРјСѓ С„РѕСЂРјР°С‚Сѓ, РІРѕР·РІСЂР°С‰Р°РµРј РєР°Рє РµСЃС‚СЊ
+    // Если номер не соответствует ожидаемому формату, возвращаем как есть
     return $phone;
 }
 
@@ -370,7 +370,7 @@ if (!empty($report_data)) {
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
 </head>
 
-<body class="owner-page">
+<body class="owner-page account-page">
     <?php $GLOBALS['header_css_in_head'] = true;
     require_once __DIR__ . '/header.php'; ?>
     <?php require_once __DIR__ . '/account-header.php'; ?>

@@ -30,6 +30,7 @@ is_lint_target() {
 }
 
 PHP_BIN="$(select_php_bin || true)"
+current_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
 
 if [ -n "$PHP_BIN" ]; then
   echo "[post-merge] [hook] using $PHP_BIN for lint"
@@ -68,6 +69,27 @@ fi
 if [ -d "data/cache" ]; then
   find "data/cache" -type f ! -name '.gitkeep' -delete || true
   echo "[post-merge] Cache directory cleaned"
+fi
+
+provider_domain="${CLEANMENU_PROVIDER_DOMAIN:-menu.labus.pro}"
+tenant_domain="${CLEANMENU_TENANT_DOMAIN:-test.milyidom.com}"
+run_release_smoke=0
+
+if [ "$ROOT_DIR" = "/var/www/labus_pro_usr/data/www/menu.labus.pro" ] || [ "${CLEANMENU_RUN_RELEASE_SMOKE:-0}" = "1" ]; then
+  run_release_smoke=1
+fi
+
+if [ -n "$PHP_BIN" ] && [ -f "scripts/tenant/smoke.php" ] && [ "$run_release_smoke" -eq 1 ]; then
+  case "$current_branch" in
+    main|release/*)
+      echo "[post-merge] Running provider/tenant regression smoke..."
+      "$PHP_BIN" scripts/tenant/smoke.php --provider-domain="$provider_domain" --tenant-domain="$tenant_domain"
+      echo "[post-merge] Provider/tenant smoke OK"
+      ;;
+    *)
+      echo "[post-merge] Release smoke skipped on branch $current_branch"
+      ;;
+  esac
 fi
 
 echo "[post-merge] Complete"

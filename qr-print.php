@@ -32,7 +32,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTT
     <link rel="stylesheet" href="/css/qr-print.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= $appVersion ?>">
 </head>
-<body class="qr-print-page">
+<body class="qr-print-page account-page">
     <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
 
     <main class="qr-print-container">

@@ -3,10 +3,11 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-18`
+- Last reviewed: `2026-03-19`
 - Current implementation notes:
   - Git-based deploy, versioned hooks, anti-mojibake pre-push validation, and OpenAPI validation are implemented.
-  - OPcache reset and final smoke remain manual post-pull steps.
+  - Provider/tenant regression smoke now runs automatically from `.githooks/post-merge` on the production checkout path.
+  - OPcache reset remains a manual post-pull step.
   - This document describes the current production workflow, not a fully automated release pipeline.
 
 ## Quick Copy (Production)
@@ -78,7 +79,7 @@ runuser -u "$WEBUSER" -- git -C "$PROJECT" config --get core.hooksPath
 This enables:
 
 - `pre-push`: PHP lint, anti-mojibake scan for pushed text files, and OpenAPI validation when pushing `main`
-- `post-merge`: PHP lint after pull plus cache cleanup
+- `post-merge`: PHP lint after pull, cache cleanup, and provider/tenant smoke on production
 
 ## Local Release Commands
 
@@ -111,10 +112,10 @@ runuser -u "$WEBUSER" -- git -C "$PROJECT" pull --ff-only origin main
 Manual post-pull steps:
 
 1. Reset OPcache via the established monitor/admin flow.
-2. Run short provider/tenant regression smoke.
+2. Verify that the automatic provider/tenant regression smoke passed in `post-merge`.
 3. Verify admin/owner pages if new PHP methods or shared includes changed.
 
-Recommended regression smoke:
+Automatic regression smoke command:
 
 ```bash
 php scripts/tenant/smoke.php --provider-domain=menu.labus.pro --tenant-domain=test.milyidom.com

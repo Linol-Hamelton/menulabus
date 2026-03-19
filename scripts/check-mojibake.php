@@ -38,7 +38,7 @@ function isTargetFile(string $path): bool
         return false;
     }
 
-    foreach (['vendor/', 'node_modules/', '.git/', 'data/cache/', '.playwright-cli/'] as $prefix) {
+    foreach (['vendor/', 'node_modules/', '.git/', 'data/cache/', '.playwright-cli/', 'docs/archive/'] as $prefix) {
         if (str_starts_with($path, $prefix)) {
             return false;
         }

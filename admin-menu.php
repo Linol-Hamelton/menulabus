@@ -210,7 +210,7 @@ $savedDbFontsJson = htmlspecialchars(
 
 </head>
 
-<body class="employee-page admin-menu-page" data-admin-font-settings="<?= $savedDbFontsJson ?>">
+<body class="employee-page admin-menu-page account-page" data-admin-font-settings="<?= $savedDbFontsJson ?>">
     <?php require_once __DIR__ . '/header.php'; ?>
     <?php require_once __DIR__ . '/account-header.php'; ?>
 
@@ -602,13 +602,13 @@ $savedDbFontsJson = htmlspecialchars(
                                 maxlength="200" placeholder="+79000000000">
                         </label>
                         <label class="admin-label">
-                            СЃСЃС‹Р»РєР° РЅР° РєР°СЂС‚Сѓ
+                            Ссылка на карту
                             <input type="url" id="brandMapUrl" class="admin-input"
                                 value="<?= htmlspecialchars($brandMapUrlValue) ?>"
                                 maxlength="200" placeholder="https://yandex.ru/maps/...">
                         </label>
                         <label class="admin-label">
-                            Адрес (ссылка на карту)
+                            Адрес
                             <input type="text" id="brandAddress" class="admin-input"
                                 value="<?= htmlspecialchars($brandAddressValue) ?>"
                                 maxlength="200" placeholder="Москва, Цветной б-р, 24">

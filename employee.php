@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
 </head>
 
-<body class="employee-page" data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
+<body class="employee-page account-page" data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
     <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     <?php require_once __DIR__ . '/account-header.php'; ?>
 
