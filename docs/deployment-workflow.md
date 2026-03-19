@@ -3,9 +3,9 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-17`
+- Last reviewed: `2026-03-18`
 - Current implementation notes:
-  - Git-based deploy, versioned hooks, and OpenAPI validation are implemented.
+  - Git-based deploy, versioned hooks, anti-mojibake pre-push validation, and OpenAPI validation are implemented.
   - OPcache reset and final smoke remain manual post-pull steps.
   - This document describes the current production workflow, not a fully automated release pipeline.
 
@@ -77,7 +77,7 @@ runuser -u "$WEBUSER" -- git -C "$PROJECT" config --get core.hooksPath
 
 This enables:
 
-- `pre-push`: PHP lint on staged PHP files plus OpenAPI validation when pushing `main`
+- `pre-push`: PHP lint, anti-mojibake scan for pushed text files, and OpenAPI validation when pushing `main`
 - `post-merge`: PHP lint after pull plus cache cleanup
 
 ## Local Release Commands
@@ -94,6 +94,7 @@ git push origin main
 Gate details:
 
 - `.githooks/pre-push` blocks pushes to `main` when `npm run openapi:validate` fails
+- `.githooks/pre-push` blocks any push when `scripts/check-mojibake.php` finds suspicious text patterns in pushed files
 - if validation fails, fix `docs/openapi.yaml` or the implementation before retrying
 
 ## Server Deploy Commands

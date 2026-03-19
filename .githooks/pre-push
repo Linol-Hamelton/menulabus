@@ -8,10 +8,24 @@ echo "[pre-push] Running quick checks..."
 remote_name="${1:-}"
 remote_url="${2:-}"
 push_main=0
+declare -a pushed_ranges=()
 while read -r local_ref local_sha remote_ref remote_sha; do
   [ -n "${local_ref:-}" ] || continue
   if [ "$local_ref" = "refs/heads/main" ] || [ "${remote_ref:-}" = "refs/heads/main" ]; then
     push_main=1
+  fi
+  if [ -z "${local_sha:-}" ]; then
+    continue
+  fi
+  if [ -n "${remote_sha:-}" ] && [ "$remote_sha" != "0000000000000000000000000000000000000000" ]; then
+    pushed_ranges+=("${remote_sha}..${local_sha}")
+  elif git show-ref --verify --quiet refs/remotes/origin/main; then
+    base_sha="$(git merge-base "$local_sha" refs/remotes/origin/main || true)"
+    if [ -n "${base_sha:-}" ]; then
+      pushed_ranges+=("${base_sha}..${local_sha}")
+    fi
+  else
+    pushed_ranges+=("${local_sha}^!")
   fi
 done
 
@@ -33,6 +47,18 @@ is_lint_target() {
       ;;
   esac
   return 0
+}
+
+is_mojibake_target() {
+  case "$1" in
+    vendor/*|node_modules/*|.git/*|data/cache/*|.playwright-cli/*)
+      return 1
+      ;;
+    *.php|*.js|*.css|*.md|*.html|*.htm|*.json|*.yml|*.yaml|*.txt|*.svg)
+      return 0
+      ;;
+  esac
+  return 1
 }
 
 PHP_BIN="$(select_php_bin || true)"
@@ -66,6 +92,29 @@ if [ -n "$PHP_BIN" ]; then
   fi
 else
   echo "[pre-push] php not found, skipping lint"
+fi
+
+if [ -n "$PHP_BIN" ]; then
+  declare -A mojibake_seen=()
+  mojibake_files=()
+  for range in "${pushed_ranges[@]}"; do
+    while IFS= read -r file; do
+      [ -n "$file" ] || continue
+      is_mojibake_target "$file" || continue
+      if [ -z "${mojibake_seen[$file]+x}" ]; then
+        mojibake_seen["$file"]=1
+        mojibake_files+=("$file")
+      fi
+    done < <(git diff --name-only --diff-filter=ACMR "$range" || true)
+  done
+
+  if [ "${#mojibake_files[@]}" -gt 0 ]; then
+    echo "[pre-push] Running anti-mojibake check..."
+    "$PHP_BIN" scripts/check-mojibake.php "${mojibake_files[@]}"
+    echo "[pre-push] Mojibake check OK"
+  else
+    echo "[pre-push] No changed text files for mojibake check"
+  fi
 fi
 
 if [ "$push_main" -eq 1 ]; then
