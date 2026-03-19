@@ -6,7 +6,6 @@
 - Last reviewed: `2026-03-19`
 - Current implementation notes:
   - This directory is the source of truth for active project documentation.
-  - `docs/archive/*` remains historical reference and must not be treated as current state.
 
 ## Core Docs
 
@@ -49,14 +48,7 @@ Read these first and keep them current:
 - [VK OAuth Setup](./vk-oauth-setup.md)
 - [Yandex OAuth Setup](./yandex-oauth-setup.md)
 
-## Archive
-
-Historical only. Do not use these files as current-state documentation:
-
-- [Archive Index](./archive/index.md)
-
 ## Rules
 
 - Keep all active project documentation under `docs/`.
-- Keep historical snapshots in `docs/archive/`.
 - API contract source of truth: `docs/openapi.yaml`.

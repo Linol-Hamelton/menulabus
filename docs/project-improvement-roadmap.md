@@ -50,7 +50,6 @@ Keep `menu.labus.pro` as the provider-owned B2B showcase while making restaurant
 Current depth:
 
 - active docs live under `docs/`
-- historical docs live under `docs/archive/`
 - active docs now describe provider vs tenant explicitly
 
 Remaining work:

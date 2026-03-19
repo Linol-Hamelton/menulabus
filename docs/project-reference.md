@@ -115,6 +115,8 @@ Current implementation gap:
 - `scripts/tenant/smoke.php`
 
 These tools are retained as ops/security helpers and are not part of the normal public product surface.
+Root URLs stay stable, while the implementation for `monitor.php` and `opcache-status.php`
+is delegated to `lib/ops/monitor-page.php` and `lib/ops/opcache-status-page.php`.
 
 ## 8. API v1 Surface
 
@@ -176,7 +178,6 @@ Current implementation gap:
 ## 12. Documentation Policy
 
 - active docs stay under `docs/`
-- historical snapshots move to `docs/archive/`
 - API contract source of truth: `docs/openapi.yaml`
 - product model source of truth: `docs/product-model.md`
 - tenant launch runbook: `docs/tenant-launch-checklist.md`

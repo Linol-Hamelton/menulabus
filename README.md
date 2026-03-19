@@ -24,7 +24,6 @@ White-label restaurant menu and ordering platform.
 - Database names should include the client brand slug.
 - Provider marketing content must not appear on tenant public domains.
 - Active documentation lives under [`docs/`](./docs/index.md).
-- Historical snapshots live under `docs/archive/` and are not current-state source of truth.
 
 ## Key Docs
 
