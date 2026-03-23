@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if (!defined('MENU_LABUS_ROOT')) {
     http_response_code(404);
     exit;
