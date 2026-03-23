@@ -3,11 +3,12 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-17`
-- Verified against published pages: `https://menu.labus.pro/phpinfo.php`, `https://menu.labus.pro/order_updates.php`, `https://menu.labus.pro/opcache-status.php`
+- Last reviewed: `2026-03-23`
+- Verified against published pages: `https://menu.labus.pro/phpinfo.php`, `https://menu.labus.pro/order_updates.php`, `https://menu.labus.pro/monitor.php`, `https://menu.labus.pro/opcache-status.php`, `https://menu.labus.pro/file-manager.php?action=get_fonts`
 - Current implementation notes:
   - Phase 1 and Phase 4A outcomes are implemented and verified live.
   - Phase 2, Phase 3, and Phase 5 are not evidenced as completed from repo state or public verification.
+  - Auth-gated ops/admin utility endpoints are part of the current hardened menu-only surface.
 
 ## Goal
 
@@ -24,7 +25,7 @@ Implement security improvements via reversible, testable, single-step changes:
 
 ## Verified Current State
 
-Live checks on `2026-03-17` confirm:
+Live checks on `2026-03-23` confirm:
 
 - `GET /phpinfo.php` => `404`
 - `GET /db-indexes-optimizer.php` => `404`
@@ -32,7 +33,10 @@ Live checks on `2026-03-17` confirm:
 - `GET /order_updates.php` => `404`
 - `GET /scripts/api-metrics-report.php` => `404`
 - `GET /scripts/api-smoke-runner.php` => `404`
+- `GET /monitor.php` => `302` redirect to `auth.php` when unauthenticated
 - `GET /opcache-status.php` => `302` redirect to `auth.php` when unauthenticated
+- `GET /file-manager.php?action=get_fonts` => `302` redirect to `auth.php` when unauthenticated
+- `GET /clear-cache.php?scope=server` => `405`
 
 ## Phase Status
 
@@ -75,7 +79,8 @@ Live checks on `2026-03-17` confirm:
 - Status: `Implemented`
 - Verified:
   - menu-only legacy/internal diagnostic endpoints are locked
-  - `opcache-status.php` uses auth gate behavior instead of public JSON probe behavior
+  - `monitor.php`, `opcache-status.php`, and `file-manager.php` use auth gate behavior instead of public utility access
+  - `clear-cache.php?scope=server` does not behave like a public reset endpoint
 
 ### Phase 5 - Patch cadence and operating discipline
 
@@ -89,7 +94,10 @@ Already implemented:
 
 - `GET /phpinfo.php` returns `404`
 - `GET /order_updates.php` returns `404`
+- `GET /monitor.php` redirects unauthenticated users to `auth.php`
 - `GET /opcache-status.php` redirects unauthenticated users to `auth.php`
+- `GET /file-manager.php?action=get_fonts` redirects unauthenticated users to `auth.php`
+- `GET /clear-cache.php?scope=server` returns `405`
 
 Still outside completed scope:
 
@@ -101,4 +109,4 @@ Still outside completed scope:
 
 1. Decide whether Phase 2 port restrictions are in scope for this host and document the real owner of each exposed service.
 2. Document or implement SSH/fail2ban policy if it exists operationally.
-3. Keep menu-only exposure locks in smoke coverage after each release.
+3. Keep auth-gate and menu-only exposure locks in smoke coverage after each release.

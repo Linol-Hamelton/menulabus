@@ -3,10 +3,11 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-19`
+- Last reviewed: `2026-03-23`
 - Current implementation notes:
   - Git-based deploy, versioned hooks, anti-mojibake pre-push validation, and OpenAPI validation are implemented.
   - Provider/tenant regression smoke now runs automatically from `.githooks/post-merge` on the production checkout path.
+  - Current production rollout commonly restarts the active PHP-FPM unit after branch checkout/pull.
   - OPcache reset remains a manual post-pull step.
   - This document describes the current production workflow, not a fully automated release pipeline.
 
@@ -15,10 +16,12 @@
 ```bash
 WEBUSER="labus_pro_usr"
 PROJECT="/var/www/labus_pro_usr/data/www/menu.labus.pro"
+BRANCH="main" # or release/<name>
 
 runuser -u "$WEBUSER" -- git -C "$PROJECT" fetch --prune origin
-runuser -u "$WEBUSER" -- git -C "$PROJECT" checkout main
-runuser -u "$WEBUSER" -- git -C "$PROJECT" pull --ff-only origin main
+runuser -u "$WEBUSER" -- git -C "$PROJECT" checkout -B "$BRANCH" "origin/$BRANCH"
+runuser -u "$WEBUSER" -- git -C "$PROJECT" pull --ff-only origin "$BRANCH"
+systemctl restart php8.1-fpm
 ```
 
 ## Goal
@@ -55,16 +58,17 @@ runuser -u "$WEBUSER" -- git -C "$PROJECT" pull --ff-only origin main
 
 ## Branch Policy
 
-- `main`: production-ready branch
-- release or working branches: optional, depending on rollout risk
+- `main`: long-lived production-ready branch
+- `release/*`: pinned rollout branch when isolating a release or preserving rollback clarity
+- working branches: local/in-review only
 
 Recommended release flow:
 
 1. Prepare changes in a working branch.
 2. Run required checks locally.
-3. Fast-forward `main` only from reviewed release state.
+3. Promote to a reviewed `release/*` branch or fast-forward `main`, depending on rollout risk.
 4. Push to remote.
-5. On server: `git pull --ff-only`.
+5. On server: deploy the explicit target branch with `checkout -B ... origin/<branch>`.
 
 ## One-Time Setup on Server
 
@@ -84,18 +88,18 @@ This enables:
 ## Local Release Commands
 
 ```bash
-git checkout main
-git pull --ff-only
+git checkout -b release/<short-name>
 npm run openapi:validate
 git add -A
 git commit -m "release: <short description>"
-git push origin main
+git push origin HEAD
 ```
 
 Gate details:
 
 - `.githooks/pre-push` blocks pushes to `main` when `npm run openapi:validate` fails
 - `.githooks/pre-push` blocks any push when `scripts/check-mojibake.php` finds suspicious text patterns in pushed files
+- if pushing a release branch, still run `npm run openapi:validate` locally before push because the hard gate is only automatic on `main`
 - if validation fails, fix `docs/openapi.yaml` or the implementation before retrying
 
 ## Server Deploy Commands
@@ -103,10 +107,12 @@ Gate details:
 ```bash
 WEBUSER="labus_pro_usr"
 PROJECT="/var/www/labus_pro_usr/data/www/menu.labus.pro"
+BRANCH="main" # or release/<name>
 
 runuser -u "$WEBUSER" -- git -C "$PROJECT" fetch --prune origin
-runuser -u "$WEBUSER" -- git -C "$PROJECT" checkout main
-runuser -u "$WEBUSER" -- git -C "$PROJECT" pull --ff-only origin main
+runuser -u "$WEBUSER" -- git -C "$PROJECT" checkout -B "$BRANCH" "origin/$BRANCH"
+runuser -u "$WEBUSER" -- git -C "$PROJECT" pull --ff-only origin "$BRANCH"
+systemctl restart php8.1-fpm
 ```
 
 Manual post-pull steps:
@@ -145,6 +151,18 @@ Then:
 1. reset OPcache
 2. rerun provider/tenant smoke
 3. record the rollback in release notes or change log
+
+Fast rollback by branch:
+
+```bash
+WEBUSER="labus_pro_usr"
+PROJECT="/var/www/labus_pro_usr/data/www/menu.labus.pro"
+ROLLBACK_BRANCH="release/<previous-stable>"
+
+runuser -u "$WEBUSER" -- git -C "$PROJECT" fetch --prune origin
+runuser -u "$WEBUSER" -- git -C "$PROJECT" checkout -B "$ROLLBACK_BRANCH" "origin/$ROLLBACK_BRANCH"
+runuser -u "$WEBUSER" -- git -C "$PROJECT" pull --ff-only origin "$ROLLBACK_BRANCH"
+```
 
 ## Security Rollout Rule
 

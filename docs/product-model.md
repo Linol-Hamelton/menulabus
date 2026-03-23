@@ -3,13 +3,14 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-17`
+- Last reviewed: `2026-03-23`
 - Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`
 - Current implementation notes:
   - Provider and tenant public modes are implemented and separated by hostname-aware runtime.
   - Tenant homepage is live on `test.milyidom.com`.
   - The branding model now separates address text and dedicated map URL in code and public UI.
   - Tenant public entry is still not configurable per deployment.
+  - Auth-gated backoffice and ops surfaces were rechecked live as part of the `2026-03-23` audit cycle.
 
 ## 1. Core Product Definition
 
@@ -132,6 +133,7 @@ Current implementation gap:
 
 - the runtime already supports most brand fields
 - tenant public-entry behavior still is not configurable per deployment
+- launch quality still depends on operator QA for map CTA, branding, and tenant-specific content
 
 ## 6. What Must Stay Shared Across All Modes
 

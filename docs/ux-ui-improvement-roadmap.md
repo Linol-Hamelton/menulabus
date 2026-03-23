@@ -3,12 +3,13 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-17`
+- Last reviewed: `2026-03-23`
 - Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
 - Current implementation notes:
   - Provider and tenant public UX are now clearly split.
   - Critical visible icon-font leakage was removed from key public and account-facing surfaces.
   - Order-card metadata compression is implemented in the main customer and employee views.
+  - Shared help and operational shell improvements are live, but the shell contract is still not fully centralized.
 
 ## Goal
 
@@ -41,13 +42,14 @@ Improve quality, clarity, and conversion without breaking the ordering engine or
 
 - major layout regressions on `admin-menu.php`, `owner.php`, `employee.php`, `cart.php`, and `qr-print.php` have been reduced
 - scroll retention on `admin-menu.php` interactions is implemented
+- `help.php` now provides a shared role helper and product walkthrough surface
 
 ## What Is Still Open
 
-### 1. Address and map-link model
+### 1. Brand/contact validation and launch QA
 
 - address text and dedicated map link are now separate settings in runtime and public UI
-- public CTA behavior around location still requires launch-time QA
+- remaining work is launch-time QA and stronger validation around the public location CTA
 
 ### 2. Internal shell normalization
 

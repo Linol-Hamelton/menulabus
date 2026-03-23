@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-17`
+- Last reviewed: `2026-03-23`
 - Current implementation notes:
   - This document describes templates and tuning guidance.
   - It is not a guarantee that all listed pools are already active in production.

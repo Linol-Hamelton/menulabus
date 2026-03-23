@@ -3,8 +3,8 @@
 ## Implementation Status
 
 - Status: `Implemented`
-- Last reviewed: `2026-03-17`
-- Verified against published pages: `https://menu.labus.pro/phpinfo.php`, `https://menu.labus.pro/order_updates.php`, `https://menu.labus.pro/opcache-status.php`
+- Last reviewed: `2026-03-23`
+- Verified against published pages: `https://menu.labus.pro/phpinfo.php`, `https://menu.labus.pro/order_updates.php`, `https://menu.labus.pro/monitor.php`, `https://menu.labus.pro/opcache-status.php`, `https://menu.labus.pro/file-manager.php?action=get_fonts`
 - Current implementation notes:
   - This checklist validates currently deployed menu-only hardening, not future security phases.
 
@@ -54,17 +54,29 @@ for i in {1..5}; do curl -sS -D - -o /dev/null https://menu.labus.pro/api/v1/men
 
 Expected: stable `cache-control` and no abnormal status behavior.
 
-## 5. Auth gate check for `opcache-status.php`
+## 5. Auth gate checks for ops/admin endpoints
 
 ```bash
+curl -sS -I https://menu.labus.pro/monitor.php
 curl -sS -I https://menu.labus.pro/opcache-status.php
+curl -sS -I "https://menu.labus.pro/file-manager.php?action=get_fonts"
 ```
 
 Expected:
 
-- `302` redirect to `auth.php` when unauthenticated
+- all listed endpoints return `302` redirect to `auth.php` when unauthenticated
 
-## 6. Session/cookie safety check for `clear-cache.php`
+## 6. Method guard check for `clear-cache.php?scope=server`
+
+```bash
+curl -sS -I "https://menu.labus.pro/clear-cache.php?scope=server"
+```
+
+Expected:
+
+- `405 Method Not Allowed`
+
+## 7. Session/cookie safety check for `clear-cache.php`
 
 ```bash
 curl -sS -D - -o /dev/null https://menu.labus.pro/clear-cache.php | egrep -i "set-cookie|cache-control|pragma"
@@ -75,7 +87,7 @@ Expected:
 - `cache-control` and `pragma` are present
 - if `Set-Cookie` exists, it should include `HttpOnly`, `SameSite=Strict`, and `Secure` for HTTPS
 
-## 7. Admin/business flow checks
+## 8. Admin/business flow checks
 
 Manual checks:
 
@@ -84,7 +96,7 @@ Manual checks:
 3. Create one test order and verify status endpoint.
 4. SSE/poll path returns expected response.
 
-## 8. Error and latency snapshot
+## 9. Error and latency snapshot
 
 Capture and compare with baseline:
 

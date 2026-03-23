@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-17`
+- Last reviewed: `2026-03-23`
 - Current implementation notes:
   - This folder contains templates and guidance.
   - It must not be treated as proof that pool split is fully applied in every production environment.

@@ -3,15 +3,18 @@
 ## Implementation Status
 
 - Status: `Implemented`
-- Last reviewed: `2026-03-19`
+- Last reviewed: `2026-03-23`
 - Current implementation notes:
   - This directory is the source of truth for active project documentation.
+  - A full `repo + live` documentation audit was completed on `2026-03-23`.
+  - No active `archive/` or quarantine layer is maintained in this branch.
 
 ## Core Docs
 
 Read these first and keep them current:
 
 - [Product Model](./product-model.md)
+- [Feature Audit Matrix](./feature-audit-matrix.md)
 - [Project Reference](./project-reference.md)
 - [Project Improvement Roadmap](./project-improvement-roadmap.md)
 - [Tenant Launch Checklist](./tenant-launch-checklist.md)
@@ -51,4 +54,5 @@ Read these first and keep them current:
 ## Rules
 
 - Keep all active project documentation under `docs/`.
+- Keep the audit baseline in `docs/feature-audit-matrix.md` current when major behavior changes land.
 - API contract source of truth: `docs/openapi.yaml`.

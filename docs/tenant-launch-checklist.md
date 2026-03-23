@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-19`
+- Last reviewed: `2026-03-23`
 - Current implementation notes:
   - Tenant provisioning and seeding are scriptable.
   - DNS, vhost, SSL, and final production go-live remain manual.
@@ -161,6 +161,7 @@ Backoffice smoke:
 
 - `auth.php`
 - `account.php`
+- `help.php`
 - `owner.php`
 - `admin-menu.php`
 - `employee.php` if used

@@ -3,9 +3,9 @@
 ## Implementation Status
 
 - Status: `Implemented`
-- Last reviewed: `2026-03-19`
+- Last reviewed: `2026-03-23`
 - Current implementation notes:
-  - The current in-app helper surface is [`/help.php`](/d:/cleanmenu/help.php).
+  - The current in-app helper surface is [`/help.php`](../help.php).
   - The page is available to `employee`, `admin`, and `owner` roles through the shared account shell.
   - The helper is intentionally operational and compact: it is meant to reduce onboarding time and common backoffice mistakes.
 

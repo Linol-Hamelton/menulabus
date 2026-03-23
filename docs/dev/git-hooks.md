@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Implemented`
-- Last reviewed: `2026-03-19`
+- Last reviewed: `2026-03-23`
 - Current implementation notes:
   - Versioned hooks live in `.githooks/`.
   - `pre-push` enforces PHP lint, an anti-mojibake text scan for pushed files, and the OpenAPI gate for `main`.

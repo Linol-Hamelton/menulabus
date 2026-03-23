@@ -3,9 +3,10 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-17`
+- Last reviewed: `2026-03-23`
 - Current implementation notes:
-  - API v1 endpoints are implemented and covered by the OpenAPI contract.
+  - Public API v1 endpoints are implemented and covered by the OpenAPI contract.
+  - `api/v1/bootstrap.php` exists as an internal helper include and is not a public contract endpoint.
   - The CLI smoke runner exists, but it is an internal script and must remain blocked from web access.
   - Example commands below are parameterized and can target either provider or tenant base URLs.
 

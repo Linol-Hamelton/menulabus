@@ -3,12 +3,13 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-17`
+- Last reviewed: `2026-03-23`
 - Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
 - Current implementation notes:
   - Provider and tenant public surfaces are separated in runtime and live.
   - Tenant homepage is restaurant-facing and no longer redirects by default to `/menu.php`.
   - White-label branding is mostly settings-driven, including separate address text and map-link fields.
+  - Provider and tenant adjunct public pages such as `cart.php` and `auth.php` are reachable on both domains and remain shared in code.
 
 ## 1. Source of Truth
 
@@ -41,7 +42,7 @@ Expected routing:
 
 Current state:
 
-- implemented and verified live on `2026-03-17`
+- implemented and verified live on `2026-03-23`
 
 ## 3. Tenant Domain Rules
 
@@ -74,6 +75,7 @@ Current state:
 - tenant homepage is live and restaurant-facing
 - transactional menu remains on `/menu.php`
 - per-deployment entry configuration is still missing
+- tenant `cart.php` and `auth.php` remain shared public adjunct pages under tenant branding/runtime
 
 ## 4. Stable UX Decisions
 
@@ -102,3 +104,4 @@ Current implementation note:
 - finish internal-shell normalization on remaining operational pages
 - keep provider fallback links out of tenant public pages
 - keep tenant public entry behavior documented and predictable
+- keep provider demo semantics confined to provider `menu.php` and out of tenant public routes

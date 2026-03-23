@@ -5,12 +5,13 @@ White-label restaurant menu and ordering platform.
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-17`
+- Last reviewed: `2026-03-23`
 - Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
 - Current implementation notes:
   - Provider and tenant runtime split is implemented and live.
   - Tenant homepage is implemented, but tenant public entry is not configurable per deployment yet.
   - Tenant provisioning and demo seed automation exist, but DNS, vhost, SSL, and final go-live remain manual ops steps.
+  - A full `repo + live` documentation audit was completed on `2026-03-23`; active docs remain under `docs/` with no separate archive layer.
 
 ## Current Product Model
 
@@ -28,6 +29,7 @@ White-label restaurant menu and ordering platform.
 ## Key Docs
 
 - Documentation map: [`docs/index.md`](./docs/index.md)
+- Current audit baseline: [`docs/feature-audit-matrix.md`](./docs/feature-audit-matrix.md)
 - Product model: [`docs/product-model.md`](./docs/product-model.md)
 - Project reference: [`docs/project-reference.md`](./docs/project-reference.md)
 - Priority roadmap: [`docs/project-improvement-roadmap.md`](./docs/project-improvement-roadmap.md)

@@ -3,9 +3,9 @@
 ## Implementation Status
 
 - Status: `Implemented`
-- Last reviewed: `2026-03-19`
+- Last reviewed: `2026-03-23`
 - Current implementation notes:
-  - The current presentation summary is reflected in the in-app helper page [`/help.php`](/d:/cleanmenu/help.php).
+  - The current presentation summary is reflected in the in-app helper page [`/help.php`](../help.php).
   - This document is the source version for sales demos, onboarding, and internal walkthroughs.
   - The presentation reflects the current provider/tenant model rather than the old single-domain model.
 

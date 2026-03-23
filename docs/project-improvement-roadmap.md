@@ -3,10 +3,11 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-17`
+- Last reviewed: `2026-03-23`
 - Current implementation notes:
   - The core provider/tenant model is implemented.
-  - Remaining work is mostly in launch automation, white-label completeness, and final UX/ops polish.
+  - A full `repo + live` documentation audit resynchronized active docs on `2026-03-23`.
+  - Remaining work is mostly in launch automation, full shell normalization, and explicit operational cleanup mechanics.
 
 ## Goal
 
@@ -28,9 +29,9 @@ Keep `menu.labus.pro` as the provider-owned B2B showcase while making restaurant
 | Phase 0: Documentation reset | `Partial` | Core docs exist and are now synchronized, but documentation discipline is still manual and must be maintained. |
 | Phase 1: Domain-aware public behavior | `Implemented` | Hostname-aware runtime, provider landing, tenant homepage, and separate public menu behavior are implemented. |
 | Phase 2: Database and tenant provisioning | `Partial` | Checklist and provisioning scripts exist, but DNS, vhost, SSL, and final go-live remain manual. |
-| Phase 3: White-label completeness | `Partial` | Branding surface, separate address/map-link model, and tenant seed exist, but per-deployment public-entry configuration and some completeness gaps remain. |
-| Phase 4: Restaurant-ready UX cleanup | `Partial` | Major icon cleanup and order-card compression are done, but stale-order cleanup and full shell normalization remain. |
-| Phase 5: Optional automation | `Partial` | Provisioning and seed automation exist, but launch is not fully one-click and does not emit a final launch artifact. |
+| Phase 3: White-label completeness | `Partial` | Branding surface, separate address/map-link model, and tenant seed exist; remaining gaps are per-deployment public-entry configuration and launch-time validation. |
+| Phase 4: Restaurant-ready UX cleanup | `Partial` | Major icon cleanup, help surface, and broad shell improvements are done, but stale-order cleanup and full shell normalization remain. |
+| Phase 5: Optional automation | `Partial` | Provisioning, seed automation, and automatic provider/tenant post-merge smoke exist, but launch is not fully one-click and does not emit a final launch artifact. |
 
 ## What Already Exists and Should Be Reused
 
@@ -102,6 +103,7 @@ Implemented:
 - tenant restaurant homepage
 - critical icon-font cleanup in visible public/account surfaces
 - order-card metadata compression in key staff/customer views
+- shared help surface for privileged roles
 
 Still partial because:
 
@@ -114,15 +116,16 @@ Implemented:
 
 - tenant DB bootstrap and seed automation
 - smoke script coverage for seeded tenant basics
+- production `post-merge` hook runs provider/tenant regression smoke automatically on the production checkout path
 
 Still partial because:
 
 - launch still needs manual infra work
 - there is no single end-to-end tenant launch artifact or one-command go-live flow
-- regression smoke is scriptable, but still operator-triggered after release
+- production smoke is automated after pull, but final launch acceptance is still operator-driven
 
 ## Recommended Next Execution Order
 
 1. Finish internal-shell normalization on remaining operational pages.
-2. Tighten launch automation around DNS/vhost/SSL runbooks.
-3. Keep docs in lockstep with each release step.
+2. Convert stale-order cleanup into an explicit product + ops mechanic.
+3. Tighten launch automation around DNS/vhost/SSL and final launch artifact generation.

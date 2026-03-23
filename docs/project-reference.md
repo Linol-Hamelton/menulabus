@@ -3,12 +3,13 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-19`
+- Last reviewed: `2026-03-23`
 - Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
 - Current implementation notes:
   - Hostname-aware runtime and control-plane tenant resolution are implemented.
   - Provider and tenant public surfaces are live.
   - Branding is settings-driven, including separate address text and dedicated map URL fields.
+  - Auth-gated ops/admin utility endpoints now include `monitor.php`, `opcache-status.php`, `clear-cache.php`, and `file-manager.php` with stable root URLs and delegated module implementations.
 
 ## 1. Project Summary
 
@@ -110,6 +111,8 @@ Current implementation gap:
 
 - `/monitor.php`
 - `/opcache-status.php`
+- `/clear-cache.php`
+- `/file-manager.php`
 - `scripts/api-smoke-runner.php`
 - `scripts/api-metrics-report.php`
 - `scripts/tenant/smoke.php`
@@ -117,11 +120,14 @@ Current implementation gap:
 These tools are retained as ops/security helpers and are not part of the normal public product surface.
 Root URLs stay stable, while the implementation for `monitor.php` and `opcache-status.php`
 is delegated to `lib/ops/monitor-page.php` and `lib/ops/opcache-status-page.php`.
+`clear-cache.php` and `file-manager.php` follow the same wrapper pattern via
+`lib/ops/clear-cache-endpoint.php` and `lib/admin/file-manager-endpoint.php`.
 
 ## 8. API v1 Surface
 
 Current API files:
 
+- internal helper: `/api/v1/bootstrap.php` (not a public contract endpoint)
 - `/api/v1/menu.php`
 - `/api/v1/geocode.php`
 - `/api/v1/auth/login.php`
@@ -157,10 +163,27 @@ Settings-driven surface currently includes:
 
 Current implementation gap:
 
-- the product model expects `address + map link`
-- current runtime and public UI now expose separate address text and dedicated map URL fields
+- runtime and public UI now expose separate address text and dedicated map URL fields
+- tenant public-entry behavior still is not configurable per deployment
 
-## 10. Security and Deploy References
+## 10. Integrations and Callbacks
+
+- OAuth start/callback routes:
+  - `/google-oauth-start.php`, `/google-oauth-callback.php`
+  - `/vk-oauth-start.php`, `/vk-oauth-callback.php`
+  - `/yandex-oauth-start.php`, `/yandex-oauth-callback.php`
+- payment-related routes:
+  - `/generate-payment-link.php`
+  - `/confirm-cash-payment.php`
+  - `/payment-return.php`
+  - `/payment-webhook.php`
+- messaging / external callbacks:
+  - `/telegram-webhook.php`
+  - `/telegram-notifications.php`
+
+These surfaces are implemented in code but are audited repo-first unless a safe live verification path exists.
+
+## 11. Security and Deploy References
 
 - [`docs/security-hardening-roadmap.md`](./security-hardening-roadmap.md)
 - [`docs/security-smoke-checklist.md`](./security-smoke-checklist.md)
@@ -168,16 +191,20 @@ Current implementation gap:
 - [`docs/deploy/nginx-pool-split.md`](./deploy/nginx-pool-split.md)
 - [`docs/deploy/php-fpm-pool-split.md`](./deploy/php-fpm-pool-split.md)
 
-## 11. Development and Perf Utilities
+## 12. Development and Perf Utilities
 
 - `scripts/perf/load_test.py`
+- `scripts/perf/run-baseline.sh`
+- `scripts/perf/phase2-port-inventory.sh`
 - `scripts/perf/security-smoke.sh`
 - `scripts/perf/security-smoke-daily.sh`
 - `scripts/perf/install-security-smoke-cron.sh`
+- `scripts/perf/checkout-error-top.php`
 
-## 12. Documentation Policy
+## 13. Documentation Policy
 
 - active docs stay under `docs/`
 - API contract source of truth: `docs/openapi.yaml`
 - product model source of truth: `docs/product-model.md`
 - tenant launch runbook: `docs/tenant-launch-checklist.md`
+- current audit baseline: `docs/feature-audit-matrix.md`

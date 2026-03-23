@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-17`
+- Last reviewed: `2026-03-23`
 - Current implementation notes:
   - VK OAuth flow is implemented in code.
   - Runtime behavior depends on valid production credentials and redirect-URI setup.

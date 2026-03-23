@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-17`
+- Last reviewed: `2026-03-23`
 - Current implementation notes:
   - Capacitor wrapper files exist and build instructions are valid.
   - Current `server.url` is provider-centric and points to `https://menu.labus.pro/menu.php`.

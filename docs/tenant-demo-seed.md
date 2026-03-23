@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Implemented`
-- Last reviewed: `2026-03-17`
+- Last reviewed: `2026-03-23`
 - Verified against published pages: `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
 - Current implementation notes:
   - `test.milyidom.com` behaves like a restaurant tenant after seeding.

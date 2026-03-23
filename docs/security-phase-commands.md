@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-17`
+- Last reviewed: `2026-03-23`
 - Current implementation notes:
   - Commands for Phase 1 and Phase 4A are relevant to implemented menu-only hardening.
   - Commands for later phases remain planning/runbook material, not proof of completed rollout.
@@ -111,10 +111,18 @@ done
 Expected: all listed paths return `404`.
 
 ```bash
+curl -sS -I https://menu.labus.pro/monitor.php
 curl -sS -I https://menu.labus.pro/opcache-status.php
+curl -sS -I "https://menu.labus.pro/file-manager.php?action=get_fonts"
+curl -sS -I "https://menu.labus.pro/clear-cache.php?scope=server"
 ```
 
-Expected: `302` redirect to `auth.php` when unauthenticated.
+Expected:
+
+- `monitor.php` => `302`
+- `opcache-status.php` => `302`
+- `file-manager.php?action=get_fonts` => `302`
+- `clear-cache.php?scope=server` => `405`
 
 ## Rollback by Commit
 
