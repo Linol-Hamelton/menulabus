@@ -36,7 +36,7 @@ $canOpenOwner = $role === 'owner';
                 <a href="#staff-helper" class="tab-btn active">Персонал</a>
                 <a href="#admin-helper" class="tab-btn">Администратор</a>
                 <a href="#owner-helper" class="tab-btn">Владелец</a>
-                <a href="#menu-presentation" class="tab-btn">Возможности меню</a>
+                <a href="#menu-presentation" class="tab-btn">Возможности</a>
             </div>
 
             <div class="form-actions">

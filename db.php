@@ -1452,17 +1452,17 @@ class Database
 
             $header = fgetcsv($csvHandle, 0, $delimiter, '"');
             if ($header === false || count($header) < 11) {
-                throw new Exception("РќРµРІРµСЂРЅС‹Р№ С„РѕСЂРјР°С‚ CSV-С„Р°Р№Р»Р°");
+                throw new Exception("Неверный формат CSV-файла");
             }
 
             $count = 0;
             while (($row = fgetcsv($csvHandle, 0, $delimiter, '"')) !== false) {
                 if (count($row) < 11) {
-                    error_log("РџСЂРѕРїСѓСЃРє СЃС‚СЂРѕРєРё: РЅРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ РґР°РЅРЅС‹С…");
+                    error_log("Пропуск строки: недостаточно данных");
                     continue;
                 }
 
-                error_log("РћР±СЂР°Р±РѕС‚РєР° СЃС‚СЂРѕРєРё: " . implode(',', $row));
+                error_log("Обработка строки: " . implode(',', $row));
 
                 $composition = trim($row[2]);
                 $composition = preg_replace('/([^\s])\s+([^\s])/', '$1, $2', $composition);
@@ -1484,13 +1484,13 @@ class Database
                 ];
 
                 if (!$stmt->execute($params)) {
-                    error_log("РћС€РёР±РєР° РІС‹РїРѕР»РЅРµРЅРёСЏ Р·Р°РїСЂРѕСЃР° РґР»СЏ СЃС‚СЂРѕРєРё: " . implode(',', $row));
+                    error_log("Ошибка выполнения запроса для строки: " . implode(',', $row));
                 }
                 $count++;
             }
 
             if ($count === 0) {
-                throw new Exception("CSV-С„Р°Р№Р» РЅРµ СЃРѕРґРµСЂР¶РёС‚ РґР°РЅРЅС‹С… РґР»СЏ РёРјРїРѕСЂС‚Р°");
+                throw new Exception("CSV-файл не содержит данных для импорта");
             }
 
             $this->connection->commit();
@@ -1501,7 +1501,7 @@ class Database
         } catch (Throwable $e) {
             $this->connection->rollBack();
             error_log("bulkUpdateMenu Error: " . $e->getMessage());
-            $_SESSION['error'] = "РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё CSV: " . $e->getMessage();
+            $_SESSION['error'] = "Ошибка загрузки CSV: " . $e->getMessage();
             return false;
         }
     }
@@ -1830,7 +1830,7 @@ class Database
             error_log("Creating guest user with id: " . $guestId);
             $stmt = $this->prepareCached("
                 INSERT INTO users (id, email, password_hash, name, phone, role, created_at)
-                VALUES (?, 'guest@system.local', '', 'Р“РѕСЃС‚СЊ', '', 'guest', NOW())
+                VALUES (?, 'guest@system.local', '', 'Гость', '', 'guest', NOW())
             ");
             $stmt->execute([$guestId]);
             error_log("Guest user created successfully");
@@ -2134,7 +2134,7 @@ class Database
         }
     }
 
-    // Р”РѕР±Р°РІР»СЏРµРј РѕСЃС‚Р°Р»СЊРЅС‹Рµ РѕС‚С‡РµС‚С‹ Р°РЅР°Р»РѕРіРёС‡РЅРѕ (getEfficiencyReport, getTopCustomers, getTopDishes, getEmployeeStats, getHourlyLoad)
+    // Additional analytics reports follow the same pattern.
     public function getEfficiencyReport($period = 'day')
     {
         $intervals = [

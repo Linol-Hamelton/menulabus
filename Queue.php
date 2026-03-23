@@ -1,12 +1,12 @@
 <?php
 /**
- * РЎРёСЃС‚РµРјР° РѕС‡РµСЂРµРґРµР№ РґР»СЏ Р°СЃРёРЅС…СЂРѕРЅРЅРѕР№ РѕР±СЂР°Р±РѕС‚РєРё (Р¤Р°Р·Р° 2 roadmap)
- * File-based queue СЃ locking РґР»СЏ РїСЂРѕСЃС‚РѕС‚С‹ РЅР° shared hosting
+ * Lightweight file-backed queue for async jobs.
+ * Designed for shared hosting and uses file locking instead of external services.
  */
 
 class Queue {
     private $queueFile;
-    
+
     public function __construct($queueName = 'default') {
         $dir = __DIR__ . '/data/queues';
         if (!is_dir($dir)) {
@@ -14,7 +14,7 @@ class Queue {
         }
         $this->queueFile = $dir . '/' . $queueName . '.queue';
     }
-    
+
     public function push($job, $data) {
         $item = [
             'id' => uniqid('job_', true),
@@ -23,28 +23,28 @@ class Queue {
             'created_at' => time(),
             'attempts' => 0
         ];
-        
+
         return file_put_contents(
-            $this->queueFile, 
-            json_encode($item, JSON_UNESCAPED_UNICODE) . PHP_EOL, 
+            $this->queueFile,
+            json_encode($item, JSON_UNESCAPED_UNICODE) . PHP_EOL,
             FILE_APPEND | LOCK_EX
         ) !== false ? $item['id'] : false;
     }
-    
+
     public function pop() {
         if (!file_exists($this->queueFile)) {
             return null;
         }
-        
+
         $fp = fopen($this->queueFile, 'r+');
         if (!flock($fp, LOCK_EX)) {
             fclose($fp);
             return null;
         }
-        
+
         $lines = [];
         $job = null;
-        
+
         while (($line = fgets($fp)) !== false) {
             if ($job === null && trim($line) !== '') {
                 $job = json_decode(trim($line), true);
@@ -52,18 +52,18 @@ class Queue {
                 $lines[] = $line;
             }
         }
-        
-        // РџРµСЂРµР·Р°РїРёСЃС‹РІР°РµРј С„Р°Р№Р» Р±РµР· РїРµСЂРІРѕР№ Р·Р°РґР°С‡Рё
+
+        // Rewrite the queue file without the processed job.
         ftruncate($fp, 0);
         rewind($fp);
         fwrite($fp, implode('', $lines));
-        
+
         flock($fp, LOCK_UN);
         fclose($fp);
-        
+
         return $job;
     }
-    
+
     public function size() {
         if (!file_exists($this->queueFile)) {
             return 0;
@@ -72,14 +72,14 @@ class Queue {
     }
 }
 
-// Worker СЃРєСЂРёРїС‚ (worker.php)
+// CLI worker loop (worker.php)
 if (php_sapi_name() === 'cli') {
     $queueName = $argv[1] ?? 'default';
     $queue = new Queue($queueName);
-    
+
     while (true) {
         $job = $queue->pop();
-        
+
         if ($job !== null) {
             try {
                 switch ($job['job']) {
