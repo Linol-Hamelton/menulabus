@@ -238,6 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
+        <div class="menu-tabs-container">
         <div class="menu-tabs">
             <a href="account.php?tab=profile" class="tab-btn <?= $activeTab === 'profile' ? 'active' : '' ?>">Профиль</a>
             <a href="account.php?tab=security" class="tab-btn <?= $activeTab === 'security' ? 'active' : '' ?>">Безопасность</a>
@@ -246,11 +247,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="account.php?tab=updates" class="tab-btn <?= $activeTab === 'updates' ? 'active' : '' ?>">Обновления</a>
             <?php endif; ?>
         </div>
+        </div>
 
         <div class="account-sections">
             <?php if ($activeTab === 'profile'): ?>
             <section class="account-section">
-                <h2>Профиль</h2>
+                                <div class="account-section-head">
+                    <div class="account-section-heading">
+                        <p class="account-section-kicker">Account</p>
+                        <h2>Профиль</h2>
+                        <p class="account-section-copy">Обновите имя и телефон, чтобы команда и история заказов показывали актуальные контакты.</p>
+                    </div>
+                </div>
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                     <div class="form-group">
@@ -272,7 +280,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <?php if ($activeTab === 'security'): ?>
             <section class="account-section">
-                <h2>Безопасность</h2>
+                                <div class="account-section-head">
+                    <div class="account-section-heading">
+                        <p class="account-section-kicker">Security</p>
+                        <h2>Безопасность</h2>
+                        <p class="account-section-copy">Смена пароля для аккаунта. Новый пароль применится сразу после сохранения.</p>
+                    </div>
+                </div>
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                     <div class="form-group">
@@ -296,7 +310,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Секция настройки вида меню -->
         <?php if ($activeTab === 'menu'): ?>
         <section class="account-section">
-            <h2>Настройки отображения меню</h2>
+                        <div class="account-section-head">
+                <div class="account-section-heading">
+                    <p class="account-section-kicker">Menu</p>
+                    <h2>Настройки отображения меню</h2>
+                    <p class="account-section-copy">Выберите удобный вид каталога. Настройка сохраняется на вашем аккаунте.</p>
+                </div>
+                <div class="account-section-actions">
+                    <a href="menu.php" class="back-to-menu-btn">Открыть меню</a>
+                </div>
+            </div>
             <form method="POST">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                 <div class="form-group">
@@ -325,8 +348,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <?php if ($canManageUpdates && $activeTab === 'updates'): ?>
         <section class="account-section">
-            <h2>Обновления</h2>
-            <p>Проверка версии и запуск обновления выполняются только на этой вкладке.</p>
+                        <div class="account-section-head">
+                <div class="account-section-heading">
+                    <p class="account-section-kicker">Release</p>
+                    <h2>Обновления</h2>
+                    <p class="account-section-copy">Проверка версии, релизная заметка и быстрый вход в release-flow для команды.</p>
+                </div>
+                <div class="account-section-actions">
+                    <a href="account.php?tab=updates" class="checkout-btn">Проверить обновления</a>
+                </div>
+            </div>
             <div class="form-group">
                 <label>Текущая версия в системе:</label><br>
                 <input type="text" value="<?= htmlspecialchars((string)$versionInfo['version']) ?>" disabled>
@@ -343,9 +374,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p><?= htmlspecialchars((string)$versionInfo['changelog']) ?></p>
             </div>
             <?php endif; ?>
-            <div class="section-header-menu">
-                <a href="account.php?tab=updates" class="checkout-btn">Проверить обновления</a>
-                <a href="logout.php" class="back-to-menu-btn">Выйти</a>
+            <div class="section-header-menu">`r`n                <a href="logout.php" class="back-to-menu-btn">Выйти</a>
             </div>
         </section>
         <?php endif; ?>

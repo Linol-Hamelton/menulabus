@@ -570,10 +570,21 @@ $savedDbFontsJson = htmlspecialchars(
                 };
                 $brandAddressValue = (string)$bs('contact_address');
                 $brandMapUrlValue = (string)$bs('contact_map_url');
+                $publicEntryModeValue = cleanmenu_normalize_tenant_public_entry_mode(
+                    (string)$bs('public_entry_mode', ''),
+                    !empty($GLOBALS['isProviderMode'])
+                );
                 if ($brandMapUrlValue === '' && $brandAddressValue !== '' && filter_var($brandAddressValue, FILTER_VALIDATE_URL)) {
                     $brandMapUrlValue = $brandAddressValue;
                     $brandAddressValue = '';
                 }
+                $launchAcceptance = cleanmenu_launch_acceptance_summary([
+                    'app_name' => (string)$bs('app_name', 'labus'),
+                    'contact_address' => $brandAddressValue,
+                    'contact_map_url' => $brandMapUrlValue,
+                    'public_entry_mode' => $publicEntryModeValue,
+                    'custom_domain' => (string)$bs('custom_domain'),
+                ], !empty($GLOBALS['isProviderMode']));
                 ?>
                 <div class="admin-form-group admin-block admin-block--brand" id="brandSettings">
                     <h3>Бренд</h3>
@@ -596,6 +607,16 @@ $savedDbFontsJson = htmlspecialchars(
                                 maxlength="200" placeholder="Цифровое меню ресторана"><?= htmlspecialchars($bs('app_description')) ?></textarea>
                         </label>
                         <label class="admin-label">
+                            Публичный вход tenant-домена
+                            <select id="brandPublicEntryMode" class="admin-input">
+                                <option value="homepage" <?= $publicEntryModeValue === 'homepage' ? 'selected' : '' ?>>Главная страница ресторана</option>
+                                <option value="menu" <?= $publicEntryModeValue === 'menu' ? 'selected' : '' ?>>Сразу в меню</option>
+                            </select>
+                            <small class="brand-logo-hint">
+                                Настройка применяется только для tenant-домена. Provider-домен всегда остаётся B2B landing.
+                            </small>
+                        </label>
+                        <label class="admin-label">
                             Телефон
                             <input type="text" id="brandPhone" class="admin-input"
                                 value="<?= htmlspecialchars($bs('contact_phone')) ?>"
@@ -606,12 +627,18 @@ $savedDbFontsJson = htmlspecialchars(
                             <input type="url" id="brandMapUrl" class="admin-input"
                                 value="<?= htmlspecialchars($brandMapUrlValue) ?>"
                                 maxlength="200" placeholder="https://yandex.ru/maps/...">
+                            <small class="brand-logo-hint">
+                                CTA "Приехать" показывается только если здесь сохранён валидный URL.
+                            </small>
                         </label>
                         <label class="admin-label">
                             Адрес
                             <input type="text" id="brandAddress" class="admin-input"
                                 value="<?= htmlspecialchars($brandAddressValue) ?>"
                                 maxlength="200" placeholder="Москва, Цветной б-р, 24">
+                            <small class="brand-logo-hint">
+                                Текст адреса отображается отдельно от ссылки на карту и не должен содержать URL.
+                            </small>
                         </label>
                         <label class="admin-label">
                             Telegram (ссылка)
@@ -656,6 +683,29 @@ $savedDbFontsJson = htmlspecialchars(
                             <input type="checkbox" id="brandHideBranding" <?= $bs('hide_labus_branding') === 'true' ? ' checked' : '' ?>>
                             Скрыть упоминание Labus в публичных страницах
                         </label>
+                        <div class="launch-readiness-card">
+                            <h4>Launch readiness</h4>
+                            <ul class="launch-readiness-list">
+                                <?php foreach (($launchAcceptance['items'] ?? []) as $item): ?>
+                                    <li class="launch-readiness-item">
+                                        <span class="account-badge account-badge--<?= !empty($item['ok']) ? 'fresh' : 'warning' ?>">
+                                            <?= !empty($item['ok']) ? 'OK' : 'Check' ?>
+                                        </span>
+                                        <div class="launch-readiness-copy">
+                                            <strong><?= htmlspecialchars((string)($item['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
+                                            <span><?= htmlspecialchars((string)($item['message'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                                        </div>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                            <?php if (!empty($launchAcceptance['warnings'])): ?>
+                                <div class="launch-readiness-warnings">
+                                    <?php foreach ((array)$launchAcceptance['warnings'] as $warning): ?>
+                                        <p><?= htmlspecialchars((string)$warning, ENT_QUOTES, 'UTF-8') ?></p>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                         <div class="brand-save-row">
                             <button id="saveBrandBtn" class="checkout-btn">Сохранить бренд</button>
                             <span id="brandStatus" class="brand-status"></span>

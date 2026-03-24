@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/tenant_runtime.php';
+require_once __DIR__ . '/lib/orders/lifecycle.php';
 
 if (file_exists(__DIR__ . '/RedisCache.php')) {
     require_once __DIR__ . '/RedisCache.php';
@@ -1064,6 +1065,38 @@ class Database
         }
     }
 
+    public function getStaleOrders(int $thresholdMinutes = 45): array
+    {
+        try {
+            $openStatuses = cleanmenu_order_open_statuses();
+            $placeholders = implode(',', array_fill(0, count($openStatuses), '?'));
+            $sql = "
+                SELECT o.id, o.items, o.total, o.status, o.delivery_type, o.delivery_details,
+                       o.created_at, o.last_updated_by,
+                       o.payment_method, o.payment_id, o.payment_status,
+                       u.name as user_name, u.phone as user_phone,
+                       updater.name as updater_name
+                FROM orders o
+                JOIN users u ON o.user_id = u.id
+                LEFT JOIN users updater ON o.last_updated_by = updater.id
+                WHERE o.status IN ($placeholders)
+                  AND o.created_at <= DATE_SUB(NOW(), INTERVAL ? MINUTE)
+                ORDER BY o.created_at ASC
+            ";
+            $params = array_merge($openStatuses, [$thresholdMinutes]);
+            $stmt = $this->prepareCached($sql);
+            $stmt->execute($params);
+            $orders = $stmt->fetchAll();
+            foreach ($orders as &$order) {
+                $order['items'] = json_decode($order['items'], true);
+            }
+            return $orders;
+        } catch (PDOException $e) {
+            error_log("getStaleOrders Error: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getOrderUpdatesSince($timestamp)
     {
         try {
@@ -1155,6 +1188,72 @@ class Database
             $this->connection->rollBack();
             error_log("updateOrderStatus Error: " . $e->getMessage());
             return false;
+        }
+    }
+
+    public function cleanupStaleOrders(int $thresholdMinutes = 45, ?int $userId = null): array
+    {
+        $staleOrders = $this->getStaleOrders($thresholdMinutes);
+        if (empty($staleOrders)) {
+            return [
+                'updated' => 0,
+                'threshold_minutes' => $thresholdMinutes,
+                'orders' => [],
+            ];
+        }
+
+        $updateStmt = $this->prepareCached("
+            UPDATE orders
+            SET status = :status,
+                last_updated_by = :user_id,
+                updated_at = NOW()
+            WHERE id = :id
+        ");
+        $historyStmt = $this->prepareCached("
+            INSERT INTO order_status_history (order_id, status, changed_by, changed_at)
+            VALUES (:order_id, :status, :user_id, NOW())
+        ");
+
+        $updatedIds = [];
+        $this->connection->beginTransaction();
+        try {
+            foreach ($staleOrders as $order) {
+                $orderId = (int)($order['id'] ?? 0);
+                if ($orderId <= 0) {
+                    continue;
+                }
+
+                $updateStmt->execute([
+                    ':status' => 'отказ',
+                    ':user_id' => $userId,
+                    ':id' => $orderId,
+                ]);
+                $historyStmt->execute([
+                    ':order_id' => $orderId,
+                    ':status' => 'отказ',
+                    ':user_id' => $userId,
+                ]);
+                $updatedIds[] = $orderId;
+                $this->invalidateOrderCache($orderId);
+            }
+
+            $this->connection->commit();
+            $this->touchOrdersLastUpdate();
+
+            return [
+                'updated' => count($updatedIds),
+                'threshold_minutes' => $thresholdMinutes,
+                'orders' => $updatedIds,
+            ];
+        } catch (Throwable $e) {
+            $this->connection->rollBack();
+            error_log("cleanupStaleOrders Error: " . $e->getMessage());
+            return [
+                'updated' => 0,
+                'threshold_minutes' => $thresholdMinutes,
+                'orders' => [],
+                'error' => $e->getMessage(),
+            ];
         }
     }
 

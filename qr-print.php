@@ -36,7 +36,9 @@ $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTT
     <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
 
     <main class="qr-print-container">
-        <div class="container account-header-bar">
+        <div class="account-container">
+        <section class="account-section account-section--qr-shell">
+        <div class="account-header-bar account-section-head">
         <div class="section-header-menu qr-print-header no-print">
             <h1>QR-коды для столов</h1>
             <div class="section-header-nav-actions qr-count-row">
@@ -52,6 +54,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTT
                     <span>Назад</span>
                 </a>
             </div>
+        </div>
         </div>
 
         <div class="qr-grid" id="qrGrid">
@@ -70,6 +73,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTT
             </div>
             <?php endfor; ?>
         </div>
+        </section>
         </div>
     </main>
 

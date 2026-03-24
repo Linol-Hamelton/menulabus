@@ -56,7 +56,9 @@ unset($_SESSION['qr_table']);
     */ ?>
     <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     <section id="menu" class="section menu">
-        <div class="container account-header-bar">
+        <div class="account-container">
+            <section class="account-section account-section--cart-shell">
+                <div class="account-header-bar account-section-head">
             <div class="section-header-menu">
                 <h2>Заказ</h2>
                 <a href="menu.php" class="back-to-menu-btn">В меню</a>
@@ -89,6 +91,8 @@ unset($_SESSION['qr_table']);
             <div class="cart-summary-container is-empty">
                 <div id="nutrition-summary" class="nutrition-summary"></div>
             </div>
+                </div>
+            </section>
         </div>
     </section>
 

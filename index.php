@@ -6,6 +6,15 @@ $tenantContext = tenant_runtime_require_resolved();
 $isProvider = !empty($tenantContext['is_provider']);
 $isTenant = !$isProvider;
 $isLoggedIn = !empty($_SESSION['user_id']);
+$publicEntryMode = cleanmenu_normalize_tenant_public_entry_mode(
+    (string)($GLOBALS['publicEntryMode'] ?? ''),
+    $isProvider
+);
+
+if ($isTenant && $publicEntryMode === 'menu') {
+    header('Location: /menu.php', true, 302);
+    exit;
+}
 
 $rawSiteName = trim((string) html_entity_decode($GLOBALS['siteName'] ?? 'labus', ENT_QUOTES, 'UTF-8'), "\"'");
 $rawSiteDesc = trim((string) html_entity_decode($GLOBALS['siteDesc'] ?? '', ENT_QUOTES, 'UTF-8'), "\"'");

@@ -5,11 +5,11 @@
 - Status: `Partial`
 - Last reviewed: `2026-03-23`
 - Current implementation notes:
-  - Git-based deploy, versioned hooks, anti-mojibake pre-push validation, and OpenAPI validation are implemented.
-  - Provider/tenant regression smoke now runs automatically from `.githooks/post-merge` on the production checkout path.
+  - Git-based deploy, versioned hooks, anti-mojibake pre-push validation, docs-drift validation, and OpenAPI validation are implemented.
+  - Provider/tenant regression smoke, release baseline capture, and provider security smoke now run automatically from `.githooks/post-merge` on the production checkout path.
   - Current production rollout commonly restarts the active PHP-FPM unit after branch checkout/pull.
   - OPcache reset remains a manual post-pull step.
-  - This document describes the current production workflow, not a fully automated release pipeline.
+  - Tenant custom-domain go-live is now scriptable through `scripts/tenant/go-live.sh` once DNS is ready.
 
 ## Quick Copy (Production)
 
@@ -82,8 +82,8 @@ runuser -u "$WEBUSER" -- git -C "$PROJECT" config --get core.hooksPath
 
 This enables:
 
-- `pre-push`: PHP lint, anti-mojibake scan for pushed text files, and OpenAPI validation when pushing `main`
-- `post-merge`: PHP lint after pull, cache cleanup, and provider/tenant smoke on production
+- `pre-push`: PHP lint, anti-mojibake scan for pushed text files, docs-drift guard on `release/*` and `main`, and OpenAPI validation when pushing `main`
+- `post-merge`: PHP lint after pull, cache cleanup, release baseline capture, provider/tenant smoke, and provider security smoke on production
 
 ## Local Release Commands
 
@@ -99,6 +99,7 @@ Gate details:
 
 - `.githooks/pre-push` blocks pushes to `main` when `npm run openapi:validate` fails
 - `.githooks/pre-push` blocks any push when `scripts/check-mojibake.php` finds suspicious text patterns in pushed files
+- `.githooks/pre-push` blocks `release/*` and `main` pushes when contract-bearing changes land without updated docs
 - if pushing a release branch, still run `npm run openapi:validate` locally before push because the hard gate is only automatic on `main`
 - if validation fails, fix `docs/openapi.yaml` or the implementation before retrying
 
@@ -118,13 +119,19 @@ systemctl restart php8.1-fpm
 Manual post-pull steps:
 
 1. Reset OPcache via the established monitor/admin flow.
-2. Verify that the automatic provider/tenant regression smoke passed in `post-merge`.
+2. Verify that the automatic provider/tenant regression smoke, baseline capture, and provider security smoke passed in `post-merge`.
 3. Verify admin/owner pages if new PHP methods or shared includes changed.
 
 Automatic regression smoke command:
 
 ```bash
 php scripts/tenant/smoke.php --provider-domain=menu.labus.pro --tenant-domain=test.milyidom.com
+```
+
+Automatic security smoke command:
+
+```bash
+bash scripts/perf/security-smoke.sh https://menu.labus.pro
 ```
 
 ## Safety Rules

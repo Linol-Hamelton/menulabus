@@ -3,11 +3,13 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-23`
+- Last reviewed: `2026-03-24`
 - Current implementation notes:
   - The core provider/tenant model is implemented.
   - A full `repo + live` documentation audit resynchronized active docs on `2026-03-23`.
-  - Remaining work is mostly in launch automation, full shell normalization, and explicit operational cleanup mechanics.
+  - Shared stale-order lifecycle and tenant launch contracts are now explicit in code and operator flow.
+  - Release discipline now includes docs-drift checks, baseline capture, provider/tenant smoke, and provider security smoke.
+  - Tenant go-live is now scriptable end-to-end on the target host via `scripts/tenant/go-live.sh`, with DNS remaining an external prerequisite.
 
 ## Goal
 
@@ -26,12 +28,12 @@ Keep `menu.labus.pro` as the provider-owned B2B showcase while making restaurant
 
 | Phase | Status | Current state |
 |---|---|---|
-| Phase 0: Documentation reset | `Partial` | Core docs exist and are now synchronized, but documentation discipline is still manual and must be maintained. |
+| Phase 0: Documentation reset | `Implemented` | Core docs are synchronized and release/main pushes now include a docs-drift guard. |
 | Phase 1: Domain-aware public behavior | `Implemented` | Hostname-aware runtime, provider landing, tenant homepage, and separate public menu behavior are implemented. |
-| Phase 2: Database and tenant provisioning | `Partial` | Checklist and provisioning scripts exist, but DNS, vhost, SSL, and final go-live remain manual. |
-| Phase 3: White-label completeness | `Partial` | Branding surface, separate address/map-link model, and tenant seed exist; remaining gaps are per-deployment public-entry configuration and launch-time validation. |
-| Phase 4: Restaurant-ready UX cleanup | `Partial` | Major icon cleanup, help surface, and broad shell improvements are done, but stale-order cleanup and full shell normalization remain. |
-| Phase 5: Optional automation | `Partial` | Provisioning, seed automation, and automatic provider/tenant post-merge smoke exist, but launch is not fully one-click and does not emit a final launch artifact. |
+| Phase 2: Database and tenant provisioning | `Implemented` | Provisioning, seed, launch artifact generation, and server-side go-live automation now exist; DNS ownership remains an external input. |
+| Phase 3: White-label completeness | `Implemented` | Branding surface, address/map split, public-entry mode, validation, and launch-acceptance summary are implemented. |
+| Phase 4: Restaurant-ready UX cleanup | `Implemented` | Shared shell primitives, lifecycle badges, help surface, and stale-order cleanup flow are now centralized across operational pages. |
+| Phase 5: Optional automation | `Implemented` | Provisioning, launch artifact generation, one-command go-live, and automatic post-merge smoke/baseline/security checks now exist. |
 
 ## What Already Exists and Should Be Reused
 
@@ -55,8 +57,8 @@ Current depth:
 
 Remaining work:
 
-- keep docs synchronized with future releases
-- avoid new drift between repo state and public behavior
+- keep docs synchronized with future releases through the release hook
+- avoid bypassing the docs-drift guard on release-bearing changes
 
 ### Phase 1: Domain-Aware Public Behavior
 
@@ -77,12 +79,9 @@ Implemented:
 - tenant launch checklist
 - tenant demo seed script
 
-Still partial because:
+Operational note:
 
-- DNS setup remains manual
-- vhost setup remains manual
-- SSL issuance remains manual
-- final production smoke remains operator-driven
+- external DNS ownership still must be confirmed before running go-live on the target host
 
 ### Phase 3: White-Label Completeness
 
@@ -91,10 +90,9 @@ Implemented:
 - settings-driven name, tagline, description, phone, logo, favicon, colors, fonts, social links
 - separate restaurant-friendly demo seed
 
-Still partial because:
+Operational note:
 
-- some white-label surfaces still require launch-time QA, not just settings
-- tenant public-entry mode is still not configurable per deployment
+- launch acceptance is now explicit and artifact-driven; remaining operator duty is final live sign-off after deploy
 
 ### Phase 4: Restaurant-Ready UX Cleanup
 
@@ -105,10 +103,9 @@ Implemented:
 - order-card metadata compression in key staff/customer views
 - shared help surface for privileged roles
 
-Still partial because:
+Operational note:
 
-- stale active orders are not handled as a completed product cleanup track
-- internal UI shell is improved but not fully normalized across every operational page
+- non-critical visual polish may still continue, but the shared shell contract and stale-order operator flow are in place
 
 ### Phase 5: Optional Automation
 
@@ -118,14 +115,12 @@ Implemented:
 - smoke script coverage for seeded tenant basics
 - production `post-merge` hook runs provider/tenant regression smoke automatically on the production checkout path
 
-Still partial because:
+Operational note:
 
-- launch still needs manual infra work
-- there is no single end-to-end tenant launch artifact or one-command go-live flow
-- production smoke is automated after pull, but final launch acceptance is still operator-driven
+- go-live is one-command on the target host once DNS is ready; production acceptance still requires a human release owner
 
 ## Recommended Next Execution Order
 
-1. Finish internal-shell normalization on remaining operational pages.
-2. Convert stale-order cleanup into an explicit product + ops mechanic.
-3. Tighten launch automation around DNS/vhost/SSL and final launch artifact generation.
+1. Keep provider/tenant non-regression smoke green on every release.
+2. Execute host-level security rollout for firewall, SSH/fail2ban, and patch cadence on the production host.
+3. Continue only low-risk UI polish and integration hardening, not foundational shell or launch rewrites.

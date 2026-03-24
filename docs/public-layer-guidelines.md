@@ -3,12 +3,13 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-23`
+- Last reviewed: `2026-03-24`
 - Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
 - Current implementation notes:
   - Provider and tenant public surfaces are separated in runtime and live.
   - Tenant homepage is restaurant-facing and no longer redirects by default to `/menu.php`.
   - White-label branding is mostly settings-driven, including separate address text and map-link fields.
+  - Tenant public-entry behavior is now configurable via `public_entry_mode`.
   - Provider and tenant adjunct public pages such as `cart.php` and `auth.php` are reachable on both domains and remain shared in code.
 
 ## 1. Source of Truth
@@ -74,7 +75,7 @@ Current state:
 
 - tenant homepage is live and restaurant-facing
 - transactional menu remains on `/menu.php`
-- per-deployment entry configuration is still missing
+- per-deployment entry configuration now supports `homepage` and `menu`
 - tenant `cart.php` and `auth.php` remain shared public adjunct pages under tenant branding/runtime
 
 ## 4. Stable UX Decisions
@@ -98,6 +99,7 @@ Current implementation note:
 
 - tenant public QA must verify both address text and map CTA
 - if no map URL is configured, the location CTA should stay hidden instead of falling back to provider or raw address links
+- if `public_entry_mode=menu`, tenant `/` must redirect straight to `/menu.php`
 
 ## 6. Current Cleanup Priorities
 

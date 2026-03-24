@@ -6,8 +6,8 @@
 - Last reviewed: `2026-03-23`
 - Current implementation notes:
   - Versioned hooks live in `.githooks/`.
-  - `pre-push` enforces PHP lint, an anti-mojibake text scan for pushed files, and the OpenAPI gate for `main`.
-  - `post-merge` performs PHP lint, cache cleanup, and mandatory provider/tenant smoke on the production checkout path.
+  - `pre-push` enforces PHP lint, an anti-mojibake text scan for pushed files, a docs-drift guard for `release/*` and `main`, and the OpenAPI gate for `main`.
+  - `post-merge` performs PHP lint, cache cleanup, baseline capture, and mandatory provider/tenant + provider-security smoke on the production checkout path.
 
 ## Enable Hooks
 
@@ -21,9 +21,10 @@ git config core.hooksPath .githooks
 
 - `pre-push`: lints staged PHP files with `php -l`
 - `pre-push`: runs `scripts/check-mojibake.php` on changed text files in the pushed range
+- `pre-push` on `release/*` and `main`: runs `scripts/docs/check-doc-drift.sh` and blocks pushes that change contract-bearing code without docs updates
 - `pre-push` on `main`: runs `npm run openapi:validate` and blocks push on failure
 - `post-merge`: lints changed PHP files and clears `data/cache/*` except `.gitkeep`
-- `post-merge` on the production checkout path: runs `php scripts/tenant/smoke.php --provider-domain=menu.labus.pro --tenant-domain=test.milyidom.com`
+- `post-merge` on the production checkout path: captures a release baseline, runs `php scripts/tenant/smoke.php --provider-domain=menu.labus.pro --tenant-domain=test.milyidom.com`, and runs `bash scripts/perf/security-smoke.sh https://menu.labus.pro`
 
 ## Notes
 

@@ -10,6 +10,7 @@
 // - sse: keep auth via session, but keep init minimal (caller should session_write_close()).
 
 require_once __DIR__ . '/tenant_runtime.php';
+require_once __DIR__ . '/lib/tenant/launch-contract.php';
 
 $labusCtx = defined('LABUS_CTX') ? (string)LABUS_CTX : 'web';
 if (!in_array($labusCtx, ['web', 'api', 'sse'], true)) {
@@ -397,22 +398,13 @@ if (session_status() === PHP_SESSION_ACTIVE && $labusCtx === 'web') {
             $raw = $db->getSetting($key);
             return $raw !== null ? (string)(json_decode($raw, true) ?? $default) : $default;
         };
-        $normalizeBrandContacts = static function (string $address, string $mapUrl): array {
-            $address = trim($address);
-            $mapUrl = trim($mapUrl);
-            if ($mapUrl === '' && $address !== '' && filter_var($address, FILTER_VALIDATE_URL)) {
-                $mapUrl = $address;
-                $address = '';
-            }
-            if ($mapUrl !== '' && !filter_var($mapUrl, FILTER_VALIDATE_URL)) {
-                $mapUrl = '';
-            }
-
-            return [$address, $mapUrl];
-        };
-        [$contactAddress, $contactMapUrl] = $normalizeBrandContacts(
+        [$contactAddress, $contactMapUrl] = cleanmenu_normalize_brand_contacts(
             $bsGet('contact_address', ''),
             $bsGet('contact_map_url', '')
+        );
+        $publicEntryMode = cleanmenu_normalize_tenant_public_entry_mode(
+            $bsGet('public_entry_mode', ''),
+            !empty($GLOBALS['isProviderMode'])
         );
         $GLOBALS['siteName']       = $bsGet('app_name',        'labus');
         $GLOBALS['siteTagline']    = $bsGet('app_tagline', 'Restaurant menu');
@@ -426,6 +418,7 @@ if (session_status() === PHP_SESSION_ACTIVE && $labusCtx === 'web') {
         $GLOBALS['socialVk']           = $bsGet('social_vk',            '');
         $GLOBALS['hideLabusBranding']  = ($bsGet('hide_labus_branding', 'false') === 'true');
         $GLOBALS['customDomain']       = $bsGet('custom_domain',        '');
+        $GLOBALS['publicEntryMode']    = $publicEntryMode;
         $_SESSION['project_name']  = $GLOBALS['siteName'];
     } catch (Exception $e) {
         error_log("Brand globals load failed: " . $e->getMessage());
@@ -441,6 +434,7 @@ if (session_status() === PHP_SESSION_ACTIVE && $labusCtx === 'web') {
         $GLOBALS['socialVk']           = '';
         $GLOBALS['hideLabusBranding']  = false;
         $GLOBALS['customDomain']       = '';
+        $GLOBALS['publicEntryMode']    = cleanmenu_normalize_tenant_public_entry_mode(null, !empty($GLOBALS['isProviderMode']));
     }
 }
 

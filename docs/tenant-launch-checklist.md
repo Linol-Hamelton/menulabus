@@ -3,11 +3,13 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-23`
+- Last reviewed: `2026-03-24`
 - Current implementation notes:
   - Tenant provisioning and seeding are scriptable.
-  - DNS, vhost, SSL, and final production go-live remain manual.
-  - Brand settings now support separate address text and dedicated map URL.
+  - Launch artifact generation is now scriptable through `scripts/tenant/launch.php`.
+  - One-command server-side go-live is now available through `scripts/tenant/go-live.sh`.
+  - DNS ownership remains an external prerequisite before server-side go-live.
+  - Brand settings now support separate address text, dedicated map URL, and explicit tenant public-entry mode.
 
 ## Purpose
 
@@ -30,6 +32,7 @@ Collect and freeze:
 - primary contact phone
 - address text
 - map link, if you plan to expose a real map destination
+- tenant public-entry mode: `homepage` or `menu`
 - logo and favicon
 - social links
 - launch owner/admin email
@@ -62,31 +65,39 @@ Checklist:
 
 Current automation available:
 
+- `scripts/tenant/launch.php`
+- `scripts/tenant/go-live.sh`
 - `scripts/tenant/provision.php`
 - `scripts/tenant/seed.php`
 - `scripts/tenant/smoke.php`
 
 Recommended scripted flow:
 
-1. `provision.php` creates tenant DB/runtime mapping and optional initial seed.
-2. `seed.php` applies or refreshes the restaurant demo/content profile.
-3. `smoke.php` runs short provider/tenant regression smoke before release sign-off.
+1. `launch.php` is the preferred path: it provisions the tenant, applies the frozen launch contract, runs smoke, and writes a launch artifact.
+2. `provision.php` remains the lower-level entrypoint for DB/runtime mapping and optional initial seed.
+3. `seed.php` applies or refreshes the restaurant demo/content profile.
+4. `go-live.sh` is the production path on the target server: it captures a baseline, renders the tenant vhost, obtains or renews SSL, restarts PHP-FPM, reruns smoke, and writes a go-live artifact.
+5. `smoke.php` remains the short provider/tenant regression smoke before release sign-off.
 
 ## 3. Tenant Runtime Setup
 
-Manual infra steps:
+Infra ownership split:
 
-- tenant domain / DNS
-- web server vhost
-- SSL certificate
-- runtime DB credentials
-- cache/session overrides if needed
+- external prerequisite: tenant domain / DNS
+- automated on target server: web server vhost, SSL certificate, PHP-FPM restart, smoke, and go-live artifact
+- runtime DB credentials are handled by provisioning scripts
+- cache/session overrides remain optional only when the target host needs them
 
 Expected routing:
 
 - provider domain `/` => provider landing
 - tenant domain `/` => tenant public entry
 - tenant `/menu.php` => transactional menu
+
+Tenant public-entry contract:
+
+- `public_entry_mode=homepage` => tenant `/` renders the restaurant homepage
+- `public_entry_mode=menu` => tenant `/` redirects to `/menu.php`
 
 ## 4. Brand and Public Layer Setup
 
@@ -97,6 +108,7 @@ Set tenant branding before opening public access:
 - meta description
 - phone
 - address text
+- dedicated map URL
 - social links
 - logo
 - favicon
@@ -104,10 +116,12 @@ Set tenant branding before opening public access:
 - fonts
 - custom domain
 - hide-provider-branding flag
+- public-entry mode
 
 Current implementation note:
 
 - if location CTA matters for launch quality, verify both the visible address text and the public map URL before go-live
+- if `public_entry_mode=menu`, verify that tenant `/` redirects to `/menu.php` and that branding still is correct there
 
 Public verification:
 
@@ -174,6 +188,7 @@ API smoke:
 
 Recommended release smoke:
 
+- `php scripts/tenant/launch.php --brand-name="Brand" --brand-slug=brand --domain=<tenant-domain> --mode=tenant --owner-email=owner@example.com --tenant-db-user=db_user --tenant-db-pass=db_pass --seed-profile=restaurant-demo --public-entry-mode=homepage --contact-phone=+79000000000 --contact-address="Москва, Цветной б-р, 24" --contact-map-url=https://yandex.ru/maps/...`
 - `php scripts/tenant/smoke.php --provider-domain=menu.labus.pro --tenant-domain=<tenant-domain>`
 - production post-pull hook runs the same smoke automatically for `menu.labus.pro` + `test.milyidom.com`
 
@@ -187,6 +202,7 @@ Tenant launch is complete only when:
 - branding is tenant-specific everywhere public
 - no provider content leaks into the tenant public layer
 - key ordering flows pass smoke
+- launch artifact is recorded and stored
 
 ## 9. Suggested Launch Log Record
 
@@ -200,4 +216,6 @@ Record at minimum:
 - database name
 - owner/admin email
 - smoke result
+- launch artifact path
+- go-live artifact path
 - rollback note if any issue appears

@@ -3,13 +3,16 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-23`
+- Last reviewed: `2026-03-24`
 - Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
 - Current implementation notes:
   - Hostname-aware runtime and control-plane tenant resolution are implemented.
   - Provider and tenant public surfaces are live.
   - Branding is settings-driven, including separate address text and dedicated map URL fields.
+  - Tenant public entry is now settings-driven via `public_entry_mode`.
   - Auth-gated ops/admin utility endpoints now include `monitor.php`, `opcache-status.php`, `clear-cache.php`, and `file-manager.php` with stable root URLs and delegated module implementations.
+  - Stale-order cleanup now has both UI and CLI operator flows.
+  - Tenant go-live is scriptable on the target host through `scripts/tenant/go-live.sh`.
 
 ## 1. Project Summary
 
@@ -49,7 +52,7 @@ Isolation assumptions:
 Current implementation:
 
 - control-plane tables resolve tenant by hostname
-- tenant seed and provisioning scripts target isolated tenant databases
+- tenant seed, provisioning, and launch scripts target isolated tenant databases
 
 ## 3. Runtime Stack
 
@@ -87,15 +90,11 @@ Current implementation:
 
 ### 5.2 Tenant deployment
 
-- `/` => tenant public entry, currently capable of rendering a restaurant homepage
+- `/` => tenant public entry, configurable as restaurant homepage or redirect to `/menu.php`
 - `/menu.php` => primary transactional menu
 - `/cart.php`
 - `/create_new_order.php`, `/create_guest_order.php`
 - `/order-track.php`, `/order-status.php`
-
-Current implementation gap:
-
-- tenant public entry is not configurable per deployment yet
 
 ## 6. Backoffice
 
@@ -106,6 +105,7 @@ Current implementation gap:
 - `/employee.php`
 - `/admin-menu.php`
 - `/qr-print.php`
+- `/stale-order-cleanup.php`
 
 ## 7. Operations and Diagnostics
 
@@ -115,7 +115,10 @@ Current implementation gap:
 - `/file-manager.php`
 - `scripts/api-smoke-runner.php`
 - `scripts/api-metrics-report.php`
+- `scripts/orders/cleanup-stale.php`
 - `scripts/tenant/smoke.php`
+- `scripts/tenant/launch.php`
+- `scripts/tenant/go-live.sh`
 
 These tools are retained as ops/security helpers and are not part of the normal public product surface.
 Root URLs stay stable, while the implementation for `monitor.php` and `opcache-status.php`
@@ -160,11 +163,12 @@ Settings-driven surface currently includes:
 - fonts
 - custom domain
 - hide-provider-branding flag
+- public-entry mode
 
 Current implementation gap:
 
 - runtime and public UI now expose separate address text and dedicated map URL fields
-- tenant public-entry behavior still is not configurable per deployment
+- tenant launch acceptance is now explicit and artifact-driven; remaining live sign-off depends on release ownership after deploy
 
 ## 10. Integrations and Callbacks
 
@@ -200,6 +204,11 @@ These surfaces are implemented in code but are audited repo-first unless a safe 
 - `scripts/perf/security-smoke-daily.sh`
 - `scripts/perf/install-security-smoke-cron.sh`
 - `scripts/perf/checkout-error-top.php`
+- `scripts/security/capture-baseline.sh`
+- `scripts/security/apply-network-policy.sh`
+- `scripts/security/harden-ssh-fail2ban.sh`
+- `scripts/security/monthly-review.sh`
+- `scripts/docs/check-doc-drift.sh`
 
 ## 13. Documentation Policy
 

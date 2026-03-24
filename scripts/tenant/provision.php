@@ -1,6 +1,7 @@
 <?php
 
 require_once dirname(__DIR__, 2) . '/tenant_runtime.php';
+require_once dirname(__DIR__, 2) . '/lib/tenant/launch-contract.php';
 require_once __DIR__ . '/smoke.php';
 require_once __DIR__ . '/seed_profiles.php';
 
@@ -8,7 +9,7 @@ function provision_usage(): void
 {
     $usage = <<<TXT
 Usage:
-  php scripts/tenant/provision.php --brand-name="Brand" --brand-slug=brand --domain=menu.brand.tld --mode=tenant --owner-email=owner@example.com --tenant-db-user=db_user --tenant-db-pass=db_pass [--owner-password=secret] [--seed-profile=restaurant-demo] [--skip-smoke]
+  php scripts/tenant/provision.php --brand-name="Brand" --brand-slug=brand --domain=menu.brand.tld --mode=tenant --owner-email=owner@example.com --tenant-db-user=db_user --tenant-db-pass=db_pass [--owner-password=secret] [--seed-profile=restaurant-demo] [--contact-phone=+79000000000] [--contact-address="Москва, Цветной б-р, 24"] [--contact-map-url=https://yandex.ru/maps/... ] [--public-entry-mode=homepage] [--skip-smoke]
 TXT;
     fwrite(STDERR, $usage . PHP_EOL);
 }
@@ -143,18 +144,27 @@ function provision_seed_users(PDO $pdo, string $brandName, string $ownerEmail, s
     ];
 }
 
-function provision_seed_settings(PDO $pdo, string $brandName, string $domain, string $mode, int $ownerId): void
+function provision_seed_settings(PDO $pdo, string $brandName, string $domain, string $mode, int $ownerId, array $brandContract = []): void
 {
     $hideBranding = $mode === 'tenant' ? 'true' : 'false';
+    $defaults = cleanmenu_launch_contract_defaults($mode);
+    [$contactAddress, $contactMapUrl] = cleanmenu_normalize_brand_contacts(
+        (string)($brandContract['contact_address'] ?? $defaults['contact_address']),
+        (string)($brandContract['contact_map_url'] ?? $defaults['contact_map_url'])
+    );
     $settings = [
         'app_name' => $brandName,
         'app_tagline' => '',
         'app_description' => '',
         'custom_domain' => $domain,
         'hide_labus_branding' => $hideBranding,
-        'contact_phone' => '',
-        'contact_address' => '',
-        'contact_map_url' => '',
+        'contact_phone' => (string)($brandContract['contact_phone'] ?? $defaults['contact_phone']),
+        'contact_address' => $contactAddress,
+        'contact_map_url' => $contactMapUrl,
+        'public_entry_mode' => cleanmenu_normalize_tenant_public_entry_mode(
+            (string)($brandContract['public_entry_mode'] ?? $defaults['public_entry_mode']),
+            $mode === 'provider'
+        ),
         'logo_url' => '',
         'favicon_url' => '/icons/favicon.ico',
         'social_tg' => '',
@@ -245,17 +255,9 @@ function provision_rollback_hint(string $domain, string $dbName, ?string $seedPr
     return $hint;
 }
 
-if (PHP_SAPI !== 'cli') {
-    http_response_code(404);
-    exit;
-}
-
-try {
-    if (!tenant_control_configured()) {
-        throw new RuntimeException('tenant control DB config is not available');
-    }
-
-    $options = getopt('', [
+function provision_cli_options(): array
+{
+    return getopt('', [
         'brand-name:',
         'brand-slug:',
         'domain:',
@@ -265,8 +267,19 @@ try {
         'tenant-db-user:',
         'tenant-db-pass:',
         'seed-profile::',
+        'contact-phone::',
+        'contact-address::',
+        'contact-map-url::',
+        'public-entry-mode::',
         'skip-smoke',
     ]);
+}
+
+function provision_run(array $options): array
+{
+    if (!tenant_control_configured()) {
+        throw new RuntimeException('tenant control DB config is not available');
+    }
 
     $brandName = provision_require_arg($options, 'brand-name');
     $brandSlug = provision_normalize_slug(provision_require_arg($options, 'brand-slug'));
@@ -288,6 +301,26 @@ try {
     if ($domain === '') {
         throw new InvalidArgumentException('--domain is not a valid host');
     }
+
+    $brandContract = cleanmenu_launch_contract_defaults($mode);
+    $brandContract['contact_phone'] = trim((string)($options['contact-phone'] ?? ''));
+    $brandContract['contact_address'] = trim((string)($options['contact-address'] ?? ''));
+    $brandContract['contact_map_url'] = trim((string)($options['contact-map-url'] ?? ''));
+    $brandContract['public_entry_mode'] = cleanmenu_normalize_tenant_public_entry_mode(
+        (string)($options['public-entry-mode'] ?? ''),
+        $mode === 'provider'
+    );
+    $contactValidation = cleanmenu_validate_brand_contacts(
+        $brandContract['contact_address'],
+        $brandContract['contact_map_url']
+    );
+    if (!empty($contactValidation['errors'])) {
+        throw new InvalidArgumentException(implode(' ', $contactValidation['errors']));
+    }
+    $brandContract['contact_address'] = $contactValidation['address'];
+    $brandContract['contact_map_url'] = $contactValidation['map_url'];
+    $launchAcceptance = cleanmenu_launch_acceptance_summary($brandContract, $mode === 'provider');
+
     if ($ownerPassword === '') {
         $ownerPassword = provision_random_password();
     }
@@ -319,7 +352,7 @@ try {
 
     $tenantPdo->beginTransaction();
     $seeded = provision_seed_users($tenantPdo, $brandName, $ownerEmail, $ownerPassword);
-    provision_seed_settings($tenantPdo, $brandName, $domain, $mode, (int)$seeded['owner_id']);
+    provision_seed_settings($tenantPdo, $brandName, $domain, $mode, (int)$seeded['owner_id'], $brandContract);
     $tenantPdo->commit();
 
     $seedProfileSummary = null;
@@ -348,13 +381,14 @@ try {
         $smoke = tenant_smoke_run($baseUrl);
     }
 
-    echo json_encode([
+    return [
         'ok' => true,
         'tenant_id' => $tenantId,
         'mode' => $mode,
         'brand_name' => $brandName,
         'brand_slug' => $brandSlug,
         'domain' => $domain,
+        'base_url' => $baseUrl,
         'db_name' => $dbName,
         'db_user' => $tenantDbUser,
         'owner' => [
@@ -363,14 +397,28 @@ try {
         ],
         'owner_email' => $ownerEmail,
         'owner_password' => $ownerPassword,
+        'brand_contract' => $brandContract,
+        'launch_acceptance' => $launchAcceptance,
         'seed_profile' => $seedProfile === '' ? null : $seedProfile,
         'seed_summary' => $seedProfileSummary,
         'smoke' => $smoke,
         'rollback_hint' => provision_rollback_hint($domain, $dbName, $seedProfile === '' ? null : $seedProfile),
-    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . PHP_EOL;
-    exit(0);
-} catch (Throwable $e) {
-    fwrite(STDERR, $e->getMessage() . PHP_EOL);
-    provision_usage();
-    exit(1);
+    ];
+}
+
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
+
+if (realpath((string)($_SERVER['SCRIPT_FILENAME'] ?? '')) === __FILE__) {
+    try {
+        $result = provision_run(provision_cli_options());
+        echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . PHP_EOL;
+        exit(0);
+    } catch (Throwable $e) {
+        fwrite(STDERR, $e->getMessage() . PHP_EOL);
+        provision_usage();
+        exit(1);
+    }
 }

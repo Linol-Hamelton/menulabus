@@ -1,12 +1,13 @@
 <?php
 // Partial for customer_orders.php: renders only the <div class="account-sections"> block.
 // Expects: $db (Database instance), $_SESSION['user_id'], $_SESSION['csrf_token'], $orderView.
+require_once __DIR__ . '/../lib/orders/lifecycle.php';
 
 $orders = $db->getUserOrders($_SESSION['user_id']);
 $orderView = ($orderView ?? 'active') === 'history' ? 'history' : 'active';
 
-$activeStatuses = ['Приём', 'готовим', 'доставляем'];
-$historyStatuses = ['завершён', 'отказ'];
+$activeStatuses = cleanmenu_order_open_statuses();
+$historyStatuses = cleanmenu_order_closed_statuses();
 
 $deliveryTypeLabels = [
     'takeaway' => 'Самовывоз',
@@ -31,8 +32,9 @@ $statusToneMap = [
     'отказ' => 'is-cancelled',
 ];
 
-$activeOrders = array_values(array_filter($orders, static fn($order) => in_array($order['status'], $activeStatuses, true)));
-$historyOrders = array_values(array_filter($orders, static fn($order) => in_array($order['status'], $historyStatuses, true)));
+$activeOrders = array_values(array_filter($orders, static fn($order) => in_array((string)($order['status'] ?? ''), $activeStatuses, true)));
+$historyOrders = array_values(array_filter($orders, static fn($order) => in_array((string)($order['status'] ?? ''), $historyStatuses, true)));
+$lifecycleSummary = cleanmenu_order_lifecycle_summary($orders);
 
 $getDeliveryTitle = static function (array $order) use ($deliveryTypeLabels): string {
     $type = (string)($order['delivery_type'] ?? '');
@@ -85,19 +87,25 @@ $renderOrderCard = static function (array $order, bool $isHistory) use ($getDeli
     $total = number_format((float)($order['total'] ?? 0), 0, '.', ' ') . ' ₽';
     $itemsCount = array_reduce($order['items'] ?? [], static fn($sum, $item) => $sum + (int)($item['quantity'] ?? 0), 0);
     $detailsId = 'order-items-' . (int)$order['id'];
+    $lifecycleMeta = cleanmenu_order_lifecycle_meta($order);
     ?>
     <article class="order-item order-item--customer <?= $isHistory ? 'order-item--history' : 'order-item--active' ?>"
              data-order-id="<?= (int)$order['id'] ?>"
-             data-status="<?= htmlspecialchars($status) ?>">
+             data-status="<?= htmlspecialchars($status) ?>"
+             data-order-lifecycle="<?= htmlspecialchars($lifecycleMeta['lifecycle_bucket']) ?>">
         <div class="customer-order-card">
             <div class="customer-order-summary">
                 <div class="customer-order-primary">
                     <div class="customer-order-topline">
                         <span class="order-id">#<?= (int)$order['id'] ?></span>
                         <span class="order-status-chip <?= htmlspecialchars($statusTone) ?>"><?= htmlspecialchars($statusTitle) ?></span>
+                        <?php if (!$isHistory && !$lifecycleMeta['is_closed']): ?>
+                            <span class="account-badge account-badge--<?= htmlspecialchars($lifecycleMeta['lifecycle_bucket']) ?>"><?= htmlspecialchars($lifecycleMeta['lifecycle_label']) ?></span>
+                        <?php endif; ?>
                     </div>
                     <div class="customer-order-meta">
                         <span class="order-date"><?= htmlspecialchars($createdAt) ?></span>
+                        <span class="employee-order-age employee-order-age--<?= htmlspecialchars($lifecycleMeta['age_tone']) ?>"><?= htmlspecialchars($lifecycleMeta['age_label']) ?></span>
                         <span class="customer-order-items-count"><?= (int)$itemsCount ?> поз.</span>
                         <span class="order-total"><?= htmlspecialchars($total) ?></span>
                     </div>
@@ -112,14 +120,12 @@ $renderOrderCard = static function (array $order, bool $isHistory) use ($getDeli
                             <input type="hidden" name="action" value="repeat_order">
                             <input type="hidden" name="order_id" value="<?= (int)$order['id'] ?>">
                             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-                            <button type="submit" class="checkout-btn customer-order-action"
-                                    title="Добавить все товары из этого заказа в корзину">
+                            <button type="submit" class="checkout-btn customer-order-action" title="Добавить все товары из этого заказа в корзину">
                                 Повторить
                             </button>
                         </form>
                     <?php else: ?>
-                        <a href="order-track.php?id=<?= (int)$order['id'] ?>" class="checkout-btn customer-order-action"
-                           title="Отследить статус заказа">
+                        <a href="order-track.php?id=<?= (int)$order['id'] ?>" class="checkout-btn customer-order-action" title="Отследить статус заказа">
                             Отследить
                         </a>
                     <?php endif; ?>
@@ -151,6 +157,13 @@ $renderOrderCard = static function (array $order, bool $isHistory) use ($getDeli
                     </div>
                 <?php endif; ?>
 
+                <?php if (!$isHistory && !$lifecycleMeta['is_closed']): ?>
+                    <div class="customer-order-detail-line">
+                        <span class="customer-order-detail-label">Следующий шаг</span>
+                        <span class="customer-order-detail-value"><?= htmlspecialchars($lifecycleMeta['next_action_label']) ?></span>
+                    </div>
+                <?php endif; ?>
+
                 <div class="customer-order-products">
                     <?php foreach (($order['items'] ?? []) as $item): ?>
                         <div class="order-product">
@@ -168,12 +181,12 @@ $renderOrderCard = static function (array $order, bool $isHistory) use ($getDeli
 
 <div class="account-sections">
     <section class="account-section customer-orders-section">
-        <div class="customer-orders-header">
-            <div class="customer-orders-heading">
+        <div class="account-section-head">
+            <div class="account-section-heading">
+                <span class="account-section-kicker">Orders</span>
                 <h3>Ваши заказы</h3>
-                <p class="customer-orders-subtitle">Активные заказы вынесены наверх, история оставлена отдельно, чтобы быстрее находить нужное действие.</p>
+                <p class="account-section-copy">Активные заказы вынесены наверх, история оставлена отдельно, чтобы быстрее находить нужное действие.</p>
             </div>
-
             <div class="customer-orders-switch" role="tablist" aria-label="Переключение списка заказов">
                 <button type="button"
                         class="customer-orders-switch-btn <?= $orderView === 'active' ? 'active' : '' ?>"
@@ -191,6 +204,23 @@ $renderOrderCard = static function (array $order, bool $isHistory) use ($getDeli
                 </button>
             </div>
         </div>
+
+        <?php if (!empty($activeOrders)): ?>
+            <div class="account-kpi-grid customer-orders-kpi-grid">
+                <article class="account-kpi-card">
+                    <span class="account-kpi-label">Активные</span>
+                    <strong class="account-kpi-value"><?= count($activeOrders) ?></strong>
+                </article>
+                <article class="account-kpi-card">
+                    <span class="account-kpi-label">Требуют внимания</span>
+                    <strong class="account-kpi-value"><?= (int)$lifecycleSummary['attention'] ?></strong>
+                </article>
+                <article class="account-kpi-card">
+                    <span class="account-kpi-label">Просрочены</span>
+                    <strong class="account-kpi-value"><?= (int)$lifecycleSummary['stale'] ?></strong>
+                </article>
+            </div>
+        <?php endif; ?>
 
         <?php if (empty($orders)): ?>
             <div class="customer-orders-empty">

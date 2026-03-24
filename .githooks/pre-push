@@ -8,11 +8,15 @@ echo "[pre-push] Running quick checks..."
 remote_name="${1:-}"
 remote_url="${2:-}"
 push_main=0
+push_release=0
 declare -a pushed_ranges=()
 while read -r local_ref local_sha remote_ref remote_sha; do
   [ -n "${local_ref:-}" ] || continue
   if [ "$local_ref" = "refs/heads/main" ] || [ "${remote_ref:-}" = "refs/heads/main" ]; then
     push_main=1
+  fi
+  if [[ "$local_ref" == refs/heads/release/* ]] || [[ "${remote_ref:-}" == refs/heads/release/* ]]; then
+    push_release=1
   fi
   if [ -z "${local_sha:-}" ]; then
     continue
@@ -115,6 +119,12 @@ if [ -n "$PHP_BIN" ]; then
   else
     echo "[pre-push] No changed text files for mojibake check"
   fi
+fi
+
+if [ "$push_main" -eq 1 ] || [ "$push_release" -eq 1 ]; then
+  echo "[pre-push] Running docs drift check for release/main push..."
+  bash scripts/docs/check-doc-drift.sh "${pushed_ranges[@]}"
+  echo "[pre-push] Docs drift check OK"
 fi
 
 if [ "$push_main" -eq 1 ]; then

@@ -3,13 +3,14 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-23`
+- Last reviewed: `2026-03-24`
 - Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
 - Current implementation notes:
   - Provider and tenant public UX are now clearly split.
   - Critical visible icon-font leakage was removed from key public and account-facing surfaces.
   - Order-card metadata compression is implemented in the main customer and employee views.
-  - Shared help and operational shell improvements are live, but the shell contract is still not fully centralized.
+  - Shared help and operational shell improvements are live and now extend through the common shell contract.
+  - Shared stale-order lifecycle badges, thresholds, and cleanup actions now exist in customer, employee, and owner-facing operational views.
 
 ## Goal
 
@@ -46,22 +47,7 @@ Improve quality, clarity, and conversion without breaking the ordering engine or
 
 ## What Is Still Open
 
-### 1. Brand/contact validation and launch QA
-
-- address text and dedicated map link are now separate settings in runtime and public UI
-- remaining work is launch-time QA and stronger validation around the public location CTA
-
-### 2. Internal shell normalization
-
-- several operational pages already share the same shell direction
-- the shell contract is not fully centralized yet, so some page-specific overrides remain
-
-### 3. Stale-order cleanup
-
-- the roadmap still expects cleanup of stale active orders
-- this is not yet documented as a fully implemented product or ops mechanic
-
-### 4. Legacy non-critical icon debt
+### 1. Legacy non-critical icon debt
 
 - critical visible cases are fixed
 - legacy Font Awesome usage still exists in some non-critical parts of the codebase and should not silently grow again

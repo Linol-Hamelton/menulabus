@@ -3,6 +3,7 @@
 $required_role = 'owner';
 require_once __DIR__ . '/session_init.php';
 require_once __DIR__ . '/require_auth.php';
+require_once __DIR__ . '/lib/orders/lifecycle.php';
 $csrfToken = $_SESSION['csrf_token'] ?? '';
 
 // Ensure script nonce is available for CSP
@@ -217,6 +218,12 @@ $ownerKpi = [
 ];
 $topItemsToday = [];
 $topItemsWeek = [];
+$ownerOrderLifecycle = [
+    'open' => 0,
+    'closed' => 0,
+    'attention' => 0,
+    'stale' => 0,
+];
 
 // Guard against stale OPcache/partial deploys where db.php may lag behind owner.php.
 try {
@@ -229,6 +236,12 @@ try {
     }
 } catch (Throwable $e) {
     error_log('owner dashboard KPI fallback: ' . $e->getMessage());
+}
+
+try {
+    $ownerOrderLifecycle = cleanmenu_order_lifecycle_summary($db->getAllOrders());
+} catch (Throwable $e) {
+    error_log('owner dashboard order lifecycle fallback: ' . $e->getMessage());
 }
 
 function getChartFields($report_type, $period)
@@ -391,6 +404,16 @@ if (!empty($report_data)) {
                             <h2>Аналитика - <?= htmlspecialchars($report_title) ?></h2>
                         </div>
                         <p class="owner-workspace-copy">KPI, отчёт, графики и отчётные срезы собраны в одном рабочем пространстве.</p>
+                        <div class="account-section-actions">
+                            <a href="employee.php" class="back-to-menu-btn">Открыть заказы</a>
+                            <form method="POST" action="/stale-order-cleanup.php" class="account-inline-form">
+                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                                <input type="hidden" name="return_to" value="owner.php">
+                                <button type="submit" class="checkout-btn" <?= (int)($ownerOrderLifecycle['stale'] ?? 0) <= 0 ? 'disabled' : '' ?>>
+                                    Закрыть просроченные<?= (int)($ownerOrderLifecycle['stale'] ?? 0) > 0 ? ' (' . (int)$ownerOrderLifecycle['stale'] . ')' : '' ?>
+                                </button>
+                            </form>
+                        </div>
                     </div>
 
                 <div class="owner-kpi-grid">
@@ -405,6 +428,14 @@ if (!empty($report_data)) {
                     <article class="owner-kpi-card">
                         <div class="owner-kpi-label">Отменено сегодня</div>
                         <div class="owner-kpi-value"><?= (int)($ownerKpi['cancelled_today'] ?? 0) ?></div>
+                    </article>
+                    <article class="owner-kpi-card">
+                        <div class="owner-kpi-label">Требуют внимания</div>
+                        <div class="owner-kpi-value"><?= (int)($ownerOrderLifecycle['attention'] ?? 0) ?></div>
+                    </article>
+                    <article class="owner-kpi-card">
+                        <div class="owner-kpi-label">Просрочены</div>
+                        <div class="owner-kpi-value"><?= (int)($ownerOrderLifecycle['stale'] ?? 0) ?></div>
                     </article>
                     <article class="owner-kpi-card">
                         <div class="owner-kpi-label">Средний чек (сегодня)</div>
@@ -686,4 +717,3 @@ if (!empty($report_data)) {
 </body>
 
 </html>
-

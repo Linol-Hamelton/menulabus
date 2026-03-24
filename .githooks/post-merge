@@ -82,9 +82,18 @@ fi
 if [ -n "$PHP_BIN" ] && [ -f "scripts/tenant/smoke.php" ] && [ "$run_release_smoke" -eq 1 ]; then
   case "$current_branch" in
     main|release/*)
+      if [ -f "scripts/security/capture-baseline.sh" ]; then
+        echo "[post-merge] Capturing release baseline..."
+        bash scripts/security/capture-baseline.sh "https://${provider_domain}" >/dev/null || true
+      fi
       echo "[post-merge] Running provider/tenant regression smoke..."
       "$PHP_BIN" scripts/tenant/smoke.php --provider-domain="$provider_domain" --tenant-domain="$tenant_domain"
       echo "[post-merge] Provider/tenant smoke OK"
+      if [ -f "scripts/perf/security-smoke.sh" ]; then
+        echo "[post-merge] Running provider security smoke..."
+        bash scripts/perf/security-smoke.sh "https://${provider_domain}"
+        echo "[post-merge] Provider security smoke OK"
+      fi
       ;;
     *)
       echo "[post-merge] Release smoke skipped on branch $current_branch"

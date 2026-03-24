@@ -20,6 +20,13 @@ nginx -t
 php -v || true
 ```
 
+Preferred artifact-producing baseline command:
+
+```bash
+cd /var/www/labus_pro_usr/data/www/menu.labus.pro
+bash scripts/security/capture-baseline.sh https://menu.labus.pro
+```
+
 ```bash
 curl -sS -o /dev/null -w "menu.php status=%{http_code} time_total=%{time_total}\n" https://menu.labus.pro/menu.php
 curl -sS -o /dev/null -w "api/menu status=%{http_code} time_total=%{time_total}\n" https://menu.labus.pro/api/v1/menu.php
@@ -71,6 +78,13 @@ Detailed runbook:
 
 Important: before any firewall edits, keep two active SSH sessions open.
 
+Repo-owned apply script:
+
+```bash
+cd /var/www/labus_pro_usr/data/www/menu.labus.pro
+bash scripts/security/apply-network-policy.sh --ssh-port=22 --allow-tcp=25
+```
+
 ## Phase 3 - SSH/fail2ban validation
 
 ```bash
@@ -80,6 +94,13 @@ fail2ban-client status
 ```
 
 Use only if those controls are actually being rolled out by an admin.
+
+Repo-owned hardening script:
+
+```bash
+cd /var/www/labus_pro_usr/data/www/menu.labus.pro
+bash scripts/security/harden-ssh-fail2ban.sh --ssh-port=22 --allow-users=labus_pro_usr --disable-password-auth
+```
 
 ## Phase 4 - Nginx safe reload flow
 
@@ -139,3 +160,10 @@ After rollback:
 
 1. reset OPcache
 2. rerun `docs/security-smoke-checklist.md`
+
+## Phase 5 - Monthly review cadence
+
+```bash
+cd /var/www/labus_pro_usr/data/www/menu.labus.pro
+bash scripts/security/monthly-review.sh https://menu.labus.pro
+```

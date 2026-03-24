@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Implemented`
-- Last reviewed: `2026-03-23`
+- Last reviewed: `2026-03-24`
 - Current implementation notes:
   - This document captures the current `repo + live` audit baseline.
   - The audit is docs-first: runtime mismatches are recorded here and in roadmaps, not fixed in this cycle.
@@ -32,7 +32,7 @@
 | `/` | live restaurant-facing homepage, title `DOM \| Пицца, гриль и завтраки весь день` | `index.php`, `tenant_runtime.php`, `session_init.php` | `README`, `product-model`, `public-layer-guidelines`, `tenant-demo-seed` | implemented |
 | `/menu.php` | live restaurant catalog and ordering surface (`Пицца`, `Гриль`, `Завтраки`, `Десерты`) | `menu.php`, tenant seed/runtime | same as above | implemented |
 | `/cart.php`, `/auth.php` | reachable and tenant-branded adjunct public pages | `cart.php`, `auth.php` | partial | implemented |
-| public entry config | tenant `/` works, but per-deployment public-entry selection is still not configurable | runtime + launch docs | documented gap | partial |
+| public entry config | tenant `/` is configurable per deployment: `homepage` keeps the restaurant landing, `menu` redirects straight to `/menu.php` | `index.php`, `session_init.php`, `save-brand.php`, `lib/tenant/launch-contract.php`, `scripts/tenant/launch.php` | `product-model`, `public-layer-guidelines`, `tenant-launch-checklist`, `project-reference` | implemented |
 
 ## 3. Auth / Account / Backoffice
 
@@ -45,7 +45,7 @@
 | `/employee.php` | live employee queue / payment / QR flow | `employee.php`, `js/employee-*.js` | `project-reference`, helper docs | implemented |
 | `/customer_orders.php` | live order-history surface | `customer_orders.php` | partial | implemented |
 | `/qr-print.php` | live QR print surface | `qr-print.php` | partial | implemented |
-| internal shell normalization | major regressions reduced, but shared shell contract is still not fully centralized | account/admin/owner/employee/cart/qr-print stack | `ux-ui-improvement-roadmap` | partial |
+| internal shell normalization | shared shell primitives now cover section heads, KPI cards and lifecycle badges, but some pages still keep local markup/layout exceptions | account/admin/owner/employee/cart/qr-print stack, `css/admin-menu-polish.css` | `ux-ui-improvement-roadmap`, `order-lifecycle-contract` | partial |
 
 ## 4. Ops / Diagnostics
 
@@ -84,7 +84,7 @@
 
 ## Current Backlog Produced By This Audit
 
-- finish internal shell normalization across remaining operational pages
-- define and implement stale-order cleanup as an explicit product/ops mechanic
-- tighten launch automation around DNS / vhost / SSL / launch artifact generation
+- keep the unified internal shell contract stable and covered by smoke/manual acceptance
+- keep launch automation and launch artifact generation aligned with real deployment operations
 - document payment and Telegram integration surfaces more explicitly
+- execute host-level security rollout for firewall, SSH/fail2ban, and patch cadence using the new repo-owned scripts

@@ -7,6 +7,7 @@
 - Verified against published pages: `https://menu.labus.pro/phpinfo.php`, `https://menu.labus.pro/order_updates.php`, `https://menu.labus.pro/monitor.php`, `https://menu.labus.pro/opcache-status.php`, `https://menu.labus.pro/file-manager.php?action=get_fonts`
 - Current implementation notes:
   - This checklist validates currently deployed menu-only hardening, not future security phases.
+  - Production `post-merge` now runs the same provider security smoke automatically after release pulls.
 
 ## 1. Core availability
 

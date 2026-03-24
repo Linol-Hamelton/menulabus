@@ -1,6 +1,7 @@
 <?php
 // Partial for employee.php: renders only the <div class="account-sections"> block.
 // Expects: $db (Database instance), $_SESSION['csrf_token'], $activeTab.
+require_once __DIR__ . '/../lib/orders/lifecycle.php';
 
 $normalizeDeliveryType = static function (?string $type): string {
     $value = trim((string)$type);
@@ -20,60 +21,6 @@ $formatDeliveryLabel = static function (?string $type): string {
         'bar' => 'Бар',
         default => $value,
     };
-};
-
-$getNextActionLabel = static function (string $status): string {
-    return match ($status) {
-        'Приём' => 'На кухню',
-        'готовим' => 'В доставку',
-        'доставляем' => 'Принято',
-        default => $status,
-    };
-};
-
-$getOrderAgeMinutes = static function (?string $createdAt): int {
-    $timestamp = $createdAt ? strtotime($createdAt) : false;
-    if ($timestamp === false) {
-        return 0;
-    }
-
-    return max(0, (int) floor((time() - $timestamp) / 60));
-};
-
-$formatOrderAge = static function (int $ageMinutes): string {
-    if ($ageMinutes < 60) {
-        return $ageMinutes . ' мин';
-    }
-
-    $days = intdiv($ageMinutes, 1440);
-    $hours = intdiv($ageMinutes % 1440, 60);
-    $minutes = $ageMinutes % 60;
-
-    if ($days > 0) {
-        return $days . ' д ' . $hours . ' ч';
-    }
-
-    if ($hours > 0 && $minutes > 0) {
-        return $hours . ' ч ' . $minutes . ' мин';
-    }
-
-    return $hours . ' ч';
-};
-
-$getAgeTone = static function (string $status, int $ageMinutes): string {
-    if (in_array($status, ['завершён', 'отказ'], true)) {
-        return 'quiet';
-    }
-
-    if ($ageMinutes >= 45) {
-        return 'critical';
-    }
-
-    if ($ageMinutes >= 20) {
-        return 'warning';
-    }
-
-    return 'fresh';
 };
 
 $formatPaymentMethodLabel = static function (?string $method): string {
@@ -110,58 +57,96 @@ $getDeliveryExpandedDetail = static function (array $order): string {
         default => $raw !== '' ? $raw : 'Детали получения уточняются',
     };
 };
+
+$orders = $db->getAllOrders();
+$statuses = array_map(
+    static fn(string $status): array => ['status' => $status],
+    cleanmenu_order_board_statuses()
+);
+$activeOrders = array_values(array_filter(
+    $orders,
+    static fn(array $order): bool => cleanmenu_order_is_open((string)($order['status'] ?? ''))
+));
+$lifecycleSummary = cleanmenu_order_lifecycle_summary($orders);
+$ordersInWork = count(array_values(array_filter(
+    $orders,
+    static fn(array $order): bool => in_array((string)($order['status'] ?? ''), ['готовим', 'доставляем'], true)
+)));
+$tableOrdersCount = count(array_values(array_filter(
+    $orders,
+    static fn(array $order): bool => ($order['delivery_type'] ?? '') === 'table'
+)));
+$totalOpenRevenue = array_reduce(
+    $activeOrders,
+    static fn(float $sum, array $order): float => $sum + (float)($order['total'] ?? 0),
+    0.0
+);
+$canRunStaleCleanup = in_array((string)($_SESSION['user_role'] ?? ''), ['owner', 'admin'], true);
 ?>
 
 <div class="account-sections">
     <section class="account-section">
-        <h2>Управление заказами</h2>
-        <?php
-        $orders = $db->getAllOrders();
-        $statuses = [
-            ['status' => 'Приём'],
-            ['status' => 'готовим'],
-            ['status' => 'доставляем'],
-            ['status' => 'завершён'],
-            ['status' => 'отказ'],
-        ];
-
-        $activeOrders = array_values(array_filter($orders, static fn($o) => !in_array($o['status'], ['завершён', 'отказ'], true)));
-        $ordersInWork = count(array_values(array_filter($orders, static fn($o) => in_array($o['status'], ['готовим', 'доставляем'], true))));
-        $tableOrdersCount = count(array_values(array_filter($orders, static fn($o) => ($o['delivery_type'] ?? '') === 'table')));
-        $totalOpenRevenue = array_reduce($activeOrders, static fn($sum, $o) => $sum + (float)($o['total'] ?? 0), 0.0);
-        ?>
+        <div class="account-section-head">
+            <div class="account-section-heading">
+                <span class="account-section-kicker">Orders</span>
+                <h2>Управление заказами</h2>
+                <p class="account-section-copy">Единый triage-контур для приёма, кухни, доставки и закрытия смены.</p>
+            </div>
+            <div class="account-section-actions">
+                <a href="/qr-print.php" class="back-to-menu-btn">QR-печать</a>
+                <?php if ($canRunStaleCleanup): ?>
+                    <form method="POST" action="/stale-order-cleanup.php" class="account-inline-form">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars((string)($_SESSION['csrf_token'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="return_to" value="employee.php">
+                        <button type="submit" class="checkout-btn" <?= (int)$lifecycleSummary['stale'] <= 0 ? 'disabled' : '' ?>>
+                            Закрыть просроченные<?= (int)$lifecycleSummary['stale'] > 0 ? ' (' . (int)$lifecycleSummary['stale'] . ')' : '' ?>
+                        </button>
+                    </form>
+                <?php endif; ?>
+            </div>
+        </div>
 
         <?php if (empty($orders)): ?>
             <p>Нет активных заказов</p>
         <?php else: ?>
-            <div class="employee-queue-overview">
-                <article class="employee-queue-metric">
-                    <span class="employee-queue-metric__label">Активные заказы</span>
-                    <strong class="employee-queue-metric__value"><?= count($activeOrders) ?></strong>
+            <div class="employee-queue-overview account-kpi-grid">
+                <article class="employee-queue-metric account-kpi-card">
+                    <span class="employee-queue-metric__label account-kpi-label">Активные заказы</span>
+                    <strong class="employee-queue-metric__value account-kpi-value"><?= count($activeOrders) ?></strong>
                 </article>
-                <article class="employee-queue-metric">
-                    <span class="employee-queue-metric__label">В работе</span>
-                    <strong class="employee-queue-metric__value"><?= $ordersInWork ?></strong>
+                <article class="employee-queue-metric account-kpi-card">
+                    <span class="employee-queue-metric__label account-kpi-label">В работе</span>
+                    <strong class="employee-queue-metric__value account-kpi-value"><?= $ordersInWork ?></strong>
                 </article>
-                <article class="employee-queue-metric">
-                    <span class="employee-queue-metric__label">Столы / зал</span>
-                    <strong class="employee-queue-metric__value"><?= $tableOrdersCount ?></strong>
+                <article class="employee-queue-metric account-kpi-card">
+                    <span class="employee-queue-metric__label account-kpi-label">Требуют внимания</span>
+                    <strong class="employee-queue-metric__value account-kpi-value"><?= (int)$lifecycleSummary['attention'] ?></strong>
                 </article>
-                <article class="employee-queue-metric">
-                    <span class="employee-queue-metric__label">Сумма открытых</span>
-                    <strong class="employee-queue-metric__value"><?= number_format($totalOpenRevenue, 0, '.', ' ') ?> ₽</strong>
+                <article class="employee-queue-metric account-kpi-card">
+                    <span class="employee-queue-metric__label account-kpi-label">Просрочены</span>
+                    <strong class="employee-queue-metric__value account-kpi-value"><?= (int)$lifecycleSummary['stale'] ?></strong>
+                </article>
+                <article class="employee-queue-metric account-kpi-card">
+                    <span class="employee-queue-metric__label account-kpi-label">Столы / зал</span>
+                    <strong class="employee-queue-metric__value account-kpi-value"><?= $tableOrdersCount ?></strong>
+                </article>
+                <article class="employee-queue-metric account-kpi-card">
+                    <span class="employee-queue-metric__label account-kpi-label">Сумма открытых</span>
+                    <strong class="employee-queue-metric__value account-kpi-value"><?= number_format($totalOpenRevenue, 0, '.', ' ') ?> ₽</strong>
                 </article>
             </div>
 
-            <?php foreach ($statuses as $s): ?>
+            <?php foreach ($statuses as $statusRow): ?>
                 <?php
-                $filtered = array_values(array_filter($orders, fn($o) => $o['status'] === $s['status']));
-                usort($filtered, static function (array $left, array $right) use ($s): int {
+                $boardStatus = (string)$statusRow['status'];
+                $filtered = array_values(array_filter(
+                    $orders,
+                    static fn(array $order): bool => (string)($order['status'] ?? '') === $boardStatus
+                ));
+                usort($filtered, static function (array $left, array $right) use ($boardStatus): int {
                     $leftTs = strtotime((string)($left['created_at'] ?? '')) ?: 0;
                     $rightTs = strtotime((string)($right['created_at'] ?? '')) ?: 0;
-                    $isClosedBoard = in_array($s['status'], ['завершён', 'отказ'], true);
-
-                    return $isClosedBoard ? ($rightTs <=> $leftTs) : ($leftTs <=> $rightTs);
+                    return cleanmenu_order_is_closed($boardStatus) ? ($rightTs <=> $leftTs) : ($leftTs <=> $rightTs);
                 });
                 $deliveryBuckets = [];
                 foreach ($filtered as $order) {
@@ -170,26 +155,26 @@ $getDeliveryExpandedDetail = static function (array $order): string {
                 }
                 $visibleSummary = count($filtered) . ' заказ' . (count($filtered) === 1 ? '' : (count($filtered) < 5 ? 'а' : 'ов'));
                 ?>
-                <div class="orders-list tab-content <?= $s['status'] === $activeTab ? 'active' : '' ?>"
-                    id="<?= htmlspecialchars($s['status']) ?>"
-                    data-employee-board
-                    data-status-name="<?= htmlspecialchars($s['status']) ?>">
+                <div class="orders-list tab-content <?= $boardStatus === $activeTab ? 'active' : '' ?>"
+                     id="<?= htmlspecialchars($boardStatus) ?>"
+                     data-employee-board
+                     data-status-name="<?= htmlspecialchars($boardStatus) ?>">
                     <?php if (empty($filtered)): ?>
-                        <p>Нет заказов со статусом «<?= htmlspecialchars($s['status']) ?>»</p>
+                        <p>Нет заказов со статусом «<?= htmlspecialchars($boardStatus) ?>»</p>
                     <?php else: ?>
                         <div class="employee-triage-toolbar">
                             <div class="employee-triage-toolbar__main">
-                                <label class="employee-triage-search" for="employee-search-<?= md5($s['status']) ?>">
+                                <label class="employee-triage-search" for="employee-search-<?= md5($boardStatus) ?>">
                                     <span class="employee-triage-search__label">Быстрый поиск</span>
                                     <input
-                                        id="employee-search-<?= md5($s['status']) ?>"
+                                        id="employee-search-<?= md5($boardStatus) ?>"
                                         type="search"
                                         class="employee-triage-search__input"
                                         placeholder="№ заказа, имя, телефон, блюдо"
                                         data-employee-search>
                                 </label>
                                 <div class="employee-triage-summary">
-                                    <span class="employee-triage-summary__status"><?= htmlspecialchars($s['status']) ?></span>
+                                    <span class="employee-triage-summary__status"><?= htmlspecialchars($boardStatus) ?></span>
                                     <span class="employee-triage-summary__count" data-employee-visible-count><?= htmlspecialchars($visibleSummary) ?></span>
                                 </div>
                             </div>
@@ -198,8 +183,8 @@ $getDeliveryExpandedDetail = static function (array $order): string {
                                 <button type="button" class="employee-filter-chip active" data-filter-type="all">Все</button>
                                 <?php foreach ($deliveryBuckets as $deliveryType => $count): ?>
                                     <button type="button"
-                                        class="employee-filter-chip"
-                                        data-filter-type="<?= htmlspecialchars($deliveryType) ?>">
+                                            class="employee-filter-chip"
+                                            data-filter-type="<?= htmlspecialchars($deliveryType) ?>">
                                         <?= htmlspecialchars($formatDeliveryLabel($deliveryType)) ?>
                                         <span class="employee-filter-chip__count"><?= (int)$count ?></span>
                                     </button>
@@ -211,57 +196,60 @@ $getDeliveryExpandedDetail = static function (array $order): string {
                             Нет заказов, подходящих под текущий поиск или фильтр.
                         </div>
 
-                        <?php foreach ($filtered as $o): ?>
+                        <?php foreach ($filtered as $order): ?>
                             <?php
-                            $deliveryType = $normalizeDeliveryType($o['delivery_type'] ?? null);
-                            $deliveryLabel = $formatDeliveryLabel($o['delivery_type'] ?? null);
-                            $itemsCount = array_reduce($o['items'], static fn($sum, $item) => $sum + (int)($item['quantity'] ?? 0), 0);
+                            $deliveryType = $normalizeDeliveryType($order['delivery_type'] ?? null);
+                            $deliveryLabel = $formatDeliveryLabel($order['delivery_type'] ?? null);
+                            $itemsCount = array_reduce($order['items'] ?? [], static fn(int $sum, array $item): int => $sum + (int)($item['quantity'] ?? 0), 0);
                             $itemNames = implode(' ', array_map(
                                 static fn($item) => trim((string)($item['name'] ?? '')),
-                                $o['items'] ?? []
+                                $order['items'] ?? []
                             ));
-                            $ageMinutes = $getOrderAgeMinutes($o['created_at'] ?? null);
-                            $ageLabel = $formatOrderAge($ageMinutes);
-                            $ageTone = $getAgeTone($o['status'], $ageMinutes);
-                            $paymentMethod = trim((string)($o['payment_method'] ?? 'cash'));
-                            $paymentStatus = trim((string)($o['payment_status'] ?? 'not_required'));
+                            $lifecycleMeta = cleanmenu_order_lifecycle_meta($order);
+                            $paymentMethod = trim((string)($order['payment_method'] ?? 'cash'));
+                            $paymentStatus = trim((string)($order['payment_status'] ?? 'not_required'));
                             $paymentState = $formatPaymentState($paymentMethod, $paymentStatus);
-                            $deliveryExpandedDetail = $getDeliveryExpandedDetail($o);
+                            $deliveryExpandedDetail = $getDeliveryExpandedDetail($order);
                             $searchBlob = implode(' ', array_filter([
-                                '#' . $o['id'],
-                                $o['user_name'] ?? '',
-                                $o['user_phone'] ?? '',
+                                '#' . $order['id'],
+                                $order['user_name'] ?? '',
+                                $order['user_phone'] ?? '',
                                 $deliveryLabel,
-                                $o['delivery_details'] ?? '',
+                                $order['delivery_details'] ?? '',
                                 $itemNames,
                                 $paymentState['text'],
+                                $lifecycleMeta['lifecycle_label'],
                             ]));
                             ?>
                             <article class="order-item employee-order-card"
-                                data-order-id="<?= $o['id'] ?>"
-                                data-status="<?= htmlspecialchars($o['status']) ?>"
-                                data-delivery-type="<?= htmlspecialchars($deliveryType) ?>"
-                                data-order-search="<?= htmlspecialchars(mb_strtolower($searchBlob, 'UTF-8')) ?>">
+                                     data-order-id="<?= (int)$order['id'] ?>"
+                                     data-status="<?= htmlspecialchars((string)$order['status']) ?>"
+                                     data-delivery-type="<?= htmlspecialchars($deliveryType) ?>"
+                                     data-order-lifecycle="<?= htmlspecialchars($lifecycleMeta['lifecycle_bucket']) ?>"
+                                     data-order-search="<?= htmlspecialchars(mb_strtolower($searchBlob, 'UTF-8')) ?>">
                                 <div class="order-header" data-toggle-order>
                                     <div class="employee-order-main">
                                         <div class="employee-order-primary">
-                                            <span class="order-id">#<?= $o['id'] ?></span>
-                                            <span class="order-status <?= strtolower($o['status']) ?>"><?= $o['status'] ?></span>
+                                            <span class="order-id">#<?= (int)$order['id'] ?></span>
+                                            <span class="order-status <?= strtolower((string)$order['status']) ?>"><?= htmlspecialchars((string)$order['status']) ?></span>
                                             <span class="employee-order-delivery employee-order-delivery--<?= htmlspecialchars($deliveryType) ?>"><?= htmlspecialchars($deliveryLabel) ?></span>
                                         </div>
                                         <div class="employee-order-secondary">
-                                            <span class="employee-order-customer"><?= htmlspecialchars($o['user_name']) ?></span>
-                                            <?php if ($o['user_phone']): ?>
-                                                <span class="employee-order-phone"><?= htmlspecialchars($o['user_phone']) ?></span>
+                                            <span class="employee-order-customer"><?= htmlspecialchars((string)($order['user_name'] ?? '')) ?></span>
+                                            <?php if (!empty($order['user_phone'])): ?>
+                                                <span class="employee-order-phone"><?= htmlspecialchars((string)$order['user_phone']) ?></span>
                                             <?php endif; ?>
                                         </div>
                                     </div>
 
                                     <div class="employee-order-meta">
-                                        <span class="order-date"><?= date('d.m H:i', strtotime($o['created_at'])) ?></span>
-                                        <span class="employee-order-age employee-order-age--<?= htmlspecialchars($ageTone) ?>" title="<?= $ageMinutes ?> мин"><?= htmlspecialchars($ageLabel) ?></span>
+                                        <span class="order-date"><?= date('d.m H:i', strtotime((string)$order['created_at'])) ?></span>
+                                        <span class="employee-order-age employee-order-age--<?= htmlspecialchars($lifecycleMeta['age_tone']) ?>" title="<?= (int)$lifecycleMeta['age_minutes'] ?> мин"><?= htmlspecialchars($lifecycleMeta['age_label']) ?></span>
+                                        <?php if (!$lifecycleMeta['is_closed']): ?>
+                                            <span class="account-badge account-badge--<?= htmlspecialchars($lifecycleMeta['lifecycle_bucket']) ?>"><?= htmlspecialchars($lifecycleMeta['lifecycle_label']) ?></span>
+                                        <?php endif; ?>
                                         <span class="employee-order-items-count"><?= $itemsCount ?> поз.</span>
-                                        <span class="order-total"><?= number_format($o['total'], 0, '.', ' ') ?> ₽</span>
+                                        <span class="order-total"><?= number_format((float)$order['total'], 0, '.', ' ') ?> ₽</span>
                                         <span class="employee-toggle-icon">Детали</span>
                                     </div>
                                 </div>
@@ -281,55 +269,57 @@ $getDeliveryExpandedDetail = static function (array $order): string {
                                         <span class="employee-order-glance__item employee-order-glance__item--details">
                                             <strong>Детали:</strong> <?= htmlspecialchars($deliveryExpandedDetail) ?>
                                         </span>
-                                        <?php if ($o['updater_name']): ?>
+                                        <?php if (!empty($order['updater_name'])): ?>
                                             <span class="employee-order-glance__item">
-                                                <strong>Обновил:</strong> <?= htmlspecialchars($o['updater_name']) ?>
+                                                <strong>Обновил:</strong> <?= htmlspecialchars((string)$order['updater_name']) ?>
                                             </span>
                                         <?php endif; ?>
-                                        <?php if (!in_array($o['status'], ['завершён', 'отказ'], true)): ?>
+                                        <?php if (!$lifecycleMeta['is_closed']): ?>
                                             <span class="employee-order-glance__item employee-order-glance__item--action">
-                                                <strong>Следующий шаг:</strong> <?= htmlspecialchars($getNextActionLabel($o['status'])) ?>
+                                                <strong>Следующий шаг:</strong> <?= htmlspecialchars($lifecycleMeta['next_action_label']) ?>
                                             </span>
                                         <?php endif; ?>
                                     </div>
-                                    <?php foreach ($o['items'] as $item): ?>
+                                    <?php foreach (($order['items'] ?? []) as $item): ?>
                                         <div class="order-product">
-                                            <span class="product-name"><?= htmlspecialchars($item['name']) ?></span>
-                                            <span class="product-quantity"><?= $item['quantity'] ?> × <?= $item['price'] ?> ₽</span>
+                                            <span class="product-name"><?= htmlspecialchars((string)($item['name'] ?? '')) ?></span>
+                                            <span class="product-quantity"><?= (int)($item['quantity'] ?? 0) ?> × <?= htmlspecialchars((string)($item['price'] ?? '0')) ?> ₽</span>
                                         </div>
                                     <?php endforeach; ?>
                                 </div>
 
                                 <div class="order-actions">
-                                    <form method="POST" class="update-order-form" data-order-id="<?= $o['id'] ?>">
+                                    <form method="POST" class="update-order-form" data-order-id="<?= (int)$order['id'] ?>">
                                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                                        <input type="hidden" name="order_id" value="<?= $o['id'] ?>">
-                                        <?php if (!in_array($o['status'], ['завершён', 'отказ'])): ?>
-                                            <button type="button" class="status-btn"
-                                                data-action="update_status"
-                                                data-order-id="<?= $o['id'] ?>"
-                                                data-current-status="<?= $o['status'] ?>">
-                                                <?= htmlspecialchars($getNextActionLabel($o['status'])) ?>
+                                        <input type="hidden" name="order_id" value="<?= (int)$order['id'] ?>">
+                                        <?php if (!$lifecycleMeta['is_closed']): ?>
+                                            <button type="button"
+                                                    class="status-btn"
+                                                    data-action="update_status"
+                                                    data-order-id="<?= (int)$order['id'] ?>"
+                                                    data-current-status="<?= htmlspecialchars((string)$order['status']) ?>">
+                                                <?= htmlspecialchars($lifecycleMeta['next_action_label']) ?>
                                             </button>
-                                            <button type="button" class="status-btn-r"
-                                                data-action="reject"
-                                                data-order-id="<?= $o['id'] ?>">
+                                            <button type="button"
+                                                    class="status-btn-r"
+                                                    data-action="reject"
+                                                    data-order-id="<?= (int)$order['id'] ?>">
                                                 Отказ
                                             </button>
                                         <?php endif; ?>
-                                        <?php if (!in_array($o['status'], ['завершён', 'отказ'], true) && $paymentStatus !== 'paid'): ?>
+                                        <?php if (!$lifecycleMeta['is_closed'] && $paymentStatus !== 'paid'): ?>
                                             <?php if ($paymentMethod === 'cash'): ?>
                                                 <button type="button"
-                                                    class="pay-link-btn confirm-cash-btn"
-                                                    data-order-id="<?= (int)$o['id'] ?>"
-                                                    data-payment-action="confirm-cash">
+                                                        class="pay-link-btn confirm-cash-btn"
+                                                        data-order-id="<?= (int)$order['id'] ?>"
+                                                        data-payment-action="confirm-cash">
                                                     Подтвердить наличные
                                                 </button>
                                             <?php elseif ($paymentEnabled ?? false): ?>
                                                 <button type="button"
-                                                    class="pay-link-btn"
-                                                    data-order-id="<?= (int)$o['id'] ?>"
-                                                    data-payment-action="generate-link">
+                                                        class="pay-link-btn"
+                                                        data-order-id="<?= (int)$order['id'] ?>"
+                                                        data-payment-action="generate-link">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
                                                         <path d="M224,104a8,8,0,0,1-16,0V59.32l-82.34,82.34a8,8,0,0,1-11.32-11.32L196.68,48H152a8,8,0,0,1,0-16h64a8,8,0,0,1,8,8Zm-40,24a8,8,0,0,0-8,8v72H48V80h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,80V208a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V136A8,8,0,0,0,184,128Z" />
                                                     </svg>
@@ -366,7 +356,7 @@ $getDeliveryExpandedDetail = static function (array $order): string {
                         <tbody>
                             <?php foreach ($tableOrders as $row): ?>
                                 <tr class="menu-table">
-                                    <td>Стол <?= htmlspecialchars($row['table_num']) ?></td>
+                                    <td>Стол <?= htmlspecialchars((string)$row['table_num']) ?></td>
                                     <td><?= (int)$row['order_count'] ?></td>
                                     <td><?= number_format((float)$row['total_sum'], 0, '.', ' ') ?> ₽</td>
                                 </tr>

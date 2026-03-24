@@ -6,8 +6,8 @@
 - Last reviewed: `2026-03-23`
 - Verified against published pages: `https://menu.labus.pro/phpinfo.php`, `https://menu.labus.pro/order_updates.php`, `https://menu.labus.pro/monitor.php`, `https://menu.labus.pro/opcache-status.php`, `https://menu.labus.pro/file-manager.php?action=get_fonts`
 - Current implementation notes:
-  - Phase 1 and Phase 4A outcomes are implemented and verified live.
-  - Phase 2, Phase 3, and Phase 5 are not evidenced as completed from repo state or public verification.
+  - Phase 0, Phase 1, and Phase 4A outcomes are implemented and verified live or in the release workflow.
+  - Repo-owned execution scripts now exist for Phase 2, Phase 3, and Phase 5, but host rollout still requires an operator on the target server.
   - Auth-gated ops/admin utility endpoints are part of the current hardened menu-only surface.
 
 ## Goal
@@ -45,7 +45,7 @@ Live checks on `2026-03-23` confirm:
 - Status: `Implemented`
 - Notes:
   - release workflow, rollback flow, and change-log template exist
-  - baseline capture is still operator-driven
+  - baseline capture now exists as `scripts/security/capture-baseline.sh` and runs automatically from production `post-merge`
 
 ### Phase 1 - Critical quick wins
 
@@ -56,16 +56,18 @@ Live checks on `2026-03-23` confirm:
 
 ### Phase 2 - Network hardening without lockout
 
-- Status: `Not implemented`
+- Status: `Partial`
 - Notes:
   - inventory/runbook documents exist
-  - repo and public pages do not prove enforced firewall or port policy
+  - repo-owned apply script now exists as `scripts/security/apply-network-policy.sh`
+  - live firewall enforcement still requires host rollout and validation
 
 ### Phase 3 - Access and brute-force protection
 
-- Status: `Not implemented`
+- Status: `Partial`
 - Notes:
-  - SSH hardening and fail2ban may exist operationally, but this is not evidenced by repo state or public verification
+  - repo-owned SSH/fail2ban hardening script now exists as `scripts/security/harden-ssh-fail2ban.sh`
+  - live SSH/fail2ban state still requires host rollout and validation
 
 ### Phase 4 - Low-risk web-layer hardening
 
@@ -84,9 +86,10 @@ Live checks on `2026-03-23` confirm:
 
 ### Phase 5 - Patch cadence and operating discipline
 
-- Status: `Not implemented`
+- Status: `Partial`
 - Notes:
-  - monthly review and provider patch policy are not evidenced as complete process controls
+  - repo-owned monthly review runner now exists as `scripts/security/monthly-review.sh`
+  - recurring cadence, owner assignment, and evidence retention still require operational adoption
 
 ## Public Interface Impact
 
@@ -107,6 +110,7 @@ Still outside completed scope:
 
 ## Next Security Priorities
 
-1. Decide whether Phase 2 port restrictions are in scope for this host and document the real owner of each exposed service.
-2. Document or implement SSH/fail2ban policy if it exists operationally.
+1. Execute the Phase 2 network policy on the target host and record the retained open ports.
+2. Execute and verify the SSH/fail2ban rollout on the target host.
 3. Keep auth-gate and menu-only exposure locks in smoke coverage after each release.
+4. Start a monthly security review cadence and store artifacts from `scripts/security/monthly-review.sh`.

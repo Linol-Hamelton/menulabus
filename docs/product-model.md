@@ -3,14 +3,15 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-23`
+- Last reviewed: `2026-03-24`
 - Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`
 - Current implementation notes:
   - Provider and tenant public modes are implemented and separated by hostname-aware runtime.
   - Tenant homepage is live on `test.milyidom.com`.
   - The branding model now separates address text and dedicated map URL in code and public UI.
-  - Tenant public entry is still not configurable per deployment.
+  - Tenant public entry is now configurable per deployment via `public_entry_mode`.
   - Auth-gated backoffice and ops surfaces were rechecked live as part of the `2026-03-23` audit cycle.
+  - Launch validation and go-live automation now exist in repo; external DNS ownership remains a deployment prerequisite.
 
 ## 1. Core Product Definition
 
@@ -86,7 +87,7 @@ Current implementation:
 
 - `/` can render a restaurant-facing homepage
 - `/menu.php` is the primary transactional menu
-- the public-entry choice is not configurable per deployment yet
+- the public-entry choice can now be frozen per deployment as `homepage` or `menu`
 
 ## 4. Database Isolation Model
 
@@ -128,12 +129,13 @@ Target tenant branding model:
 - fonts
 - custom domain
 - hide-provider-branding flag
+- public-entry mode
 
 Current implementation gap:
 
-- the runtime already supports most brand fields
-- tenant public-entry behavior still is not configurable per deployment
-- launch quality still depends on operator QA for map CTA, branding, and tenant-specific content
+- the runtime supports the brand fields and public-entry contract
+- launch quality is now backed by validation, acceptance summary, and go-live artifacts
+- remaining live sign-off depends on release ownership after deploy, not on missing product model pieces
 
 ## 6. What Must Stay Shared Across All Modes
 

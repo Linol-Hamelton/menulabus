@@ -34,8 +34,24 @@ for i in {1..5}; do
   curl -sS -D - -o /dev/null "$BASE_URL/api/v1/menu.php" | egrep -i "cache-control|x-cache-status" || true
 done
 
-echo "[5/6] clear-cache cookie flags snapshot"
+echo "[5/8] Auth gate checks for ops/admin endpoints"
+for p in \
+  "/monitor.php" \
+  "/opcache-status.php" \
+  "/file-manager.php?action=get_fonts"
+do
+  code="$(curl -sS -o /dev/null -w "%{http_code}" "$BASE_URL$p")"
+  echo "$p: $code"
+  [[ "$code" == "302" ]]
+done
+
+echo "[6/8] clear-cache method guard"
+clear_cache_code="$(curl -sS -o /dev/null -w "%{http_code}" "$BASE_URL/clear-cache.php?scope=server")"
+echo "clear-cache.php?scope=server: $clear_cache_code"
+[[ "$clear_cache_code" == "405" ]]
+
+echo "[7/8] clear-cache cookie flags snapshot"
 curl -sS -D - -o /dev/null "$BASE_URL/clear-cache.php" | egrep -i "set-cookie|cache-control|pragma" || true
 
-echo "[6/6] Done"
+echo "[8/8] Done"
 echo "Security smoke passed for $BASE_URL"

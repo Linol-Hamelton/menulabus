@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Implemented`
-- Last reviewed: `2026-03-23`
+- Last reviewed: `2026-03-24`
 - Current implementation notes:
   - This directory is the source of truth for active project documentation.
   - A full `repo + live` documentation audit was completed on `2026-03-23`.
@@ -16,6 +16,7 @@ Read these first and keep them current:
 - [Product Model](./product-model.md)
 - [Feature Audit Matrix](./feature-audit-matrix.md)
 - [Project Reference](./project-reference.md)
+- [Order Lifecycle Contract](./order-lifecycle-contract.md)
 - [Project Improvement Roadmap](./project-improvement-roadmap.md)
 - [Tenant Launch Checklist](./tenant-launch-checklist.md)
 - [Deployment Workflow](./deployment-workflow.md)
@@ -55,4 +56,5 @@ Read these first and keep them current:
 
 - Keep all active project documentation under `docs/`.
 - Keep the audit baseline in `docs/feature-audit-matrix.md` current when major behavior changes land.
+- Release-bearing contract changes are expected to pass the docs-drift guard in `scripts/docs/check-doc-drift.sh`.
 - API contract source of truth: `docs/openapi.yaml`.

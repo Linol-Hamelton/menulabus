@@ -6,7 +6,8 @@
 - Last reviewed: `2026-03-23`
 - Current implementation notes:
   - This document is an inventory/runbook artifact.
-  - It does not prove that firewall restrictions or final network policy are implemented.
+  - Repo-owned application of the reviewed allowlist is now available through `scripts/security/apply-network-policy.sh`.
+  - It still does not prove that firewall restrictions are already enforced on the live host.
 
 ## Safety Precondition
 

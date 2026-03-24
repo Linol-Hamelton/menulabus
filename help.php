@@ -29,25 +29,29 @@ $canOpenOwner = $role === 'owner';
 
     <div class="account-container">
         <section class="account-section">
-            <h2>Центр помощи</h2>
-            <p>Одна страница для персонала, администратора и владельца: что открывать, в какой последовательности работать и как быстро показать возможности цифрового меню.</p>
+                        <div class="account-section-head">
+                <div class="account-section-heading">
+                    <p class="account-section-kicker">Help</p>
+                    <h2>Центр помощи</h2>
+                    <p class="account-section-copy">Одна страница для персонала, администратора и владельца: что открывать, в какой последовательности работать и как быстро показать возможности цифрового меню.</p>
+                </div>
+                <div class="account-section-actions">
+                    <a href="/employee.php" class="checkout-btn">Открыть заказы</a>
+                    <?php if ($canOpenAdmin): ?>
+                        <a href="/admin-menu.php" class="checkout-btn">Открыть админку</a>
+                    <?php endif; ?>
+                    <?php if ($canOpenOwner): ?>
+                        <a href="/owner.php" class="checkout-btn">Открыть аналитику</a>
+                    <?php endif; ?>
+                    <a href="/menu.php" class="back-to-menu-btn">Открыть меню</a>
+                </div>
+            </div>
 
             <div class="menu-tabs">
                 <a href="#staff-helper" class="tab-btn active">Персонал</a>
                 <a href="#admin-helper" class="tab-btn">Администратор</a>
                 <a href="#owner-helper" class="tab-btn">Владелец</a>
                 <a href="#menu-presentation" class="tab-btn">Возможности</a>
-            </div>
-
-            <div class="form-actions">
-                <a href="/employee.php" class="checkout-btn">Открыть заказы</a>
-                <?php if ($canOpenAdmin): ?>
-                    <a href="/admin-menu.php" class="checkout-btn">Открыть админку</a>
-                <?php endif; ?>
-                <?php if ($canOpenOwner): ?>
-                    <a href="/owner.php" class="checkout-btn">Открыть аналитику</a>
-                <?php endif; ?>
-                <a href="/menu.php" class="back-to-menu-btn">Открыть меню</a>
             </div>
         </section>
 
