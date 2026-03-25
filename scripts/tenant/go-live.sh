@@ -30,7 +30,7 @@ The script:
   2. runs scripts/tenant/launch.php
   3. installs bootstrap + final Nginx vhost for the tenant domain
   4. issues/renews SSL via certbot
-  5. restarts PHP-FPM and runs provider/tenant smoke
+  5. restarts PHP-FPM, runs provider/tenant smoke, provider security smoke, and safe browser regression
   6. writes a go-live artifact JSON
 TXT
 }
@@ -175,6 +175,7 @@ baseline_post_dir="$PROJECT_ROOT/output/security-baselines/post-golive-${BRAND_S
 launch_json="$tmp_dir/launch.json"
 smoke_json="$tmp_dir/provider-tenant-smoke.json"
 provider_security_smoke="$tmp_dir/provider-security-smoke.txt"
+browser_regression_log="$tmp_dir/browser-regression.txt"
 go_live_artifact="$GO_LIVE_ARTIFACT_DIR/go-live-${BRAND_SLUG}-${timestamp}.json"
 nginx_conf_path="$NGINX_SITES_AVAILABLE/${DOMAIN}.conf"
 nginx_enabled_path="$NGINX_SITES_ENABLED/${DOMAIN}.conf"
@@ -227,12 +228,18 @@ runuser -u "$WEBUSER" -- "$PHP_BIN" "$PROJECT_ROOT/scripts/tenant/smoke.php" \
   "--tenant-domain=${DOMAIN}" > "$smoke_json"
 
 bash "$PROJECT_ROOT/scripts/perf/security-smoke.sh" "https://${PROVIDER_DOMAIN}" > "$provider_security_smoke"
+if [ -f "$PROJECT_ROOT/scripts/perf/post-release-regression.sh" ]; then
+  CLEANMENU_PROVIDER_DOMAIN="$PROVIDER_DOMAIN" \
+  CLEANMENU_TENANT_DOMAIN="$DOMAIN" \
+  bash "$PROJECT_ROOT/scripts/perf/post-release-regression.sh" > "$browser_regression_log" 2>&1
+fi
 bash "$PROJECT_ROOT/scripts/security/capture-baseline.sh" "https://${PROVIDER_DOMAIN}" "$baseline_post_dir" >/dev/null
 
 "$PHP_BIN" -r '
 $launch = json_decode((string)file_get_contents($argv[1]), true);
 $smoke = json_decode((string)file_get_contents($argv[2]), true);
 $providerSecuritySmoke = (string)file_get_contents($argv[3]);
+$browserRegression = is_file($argv[10]) ? (string)file_get_contents($argv[10]) : "";
 $payload = [
   "kind" => "tenant_go_live_artifact",
   "generated_at" => gmdate("c"),
@@ -242,6 +249,7 @@ $payload = [
   "launch" => $launch,
   "provider_tenant_smoke" => $smoke,
   "provider_security_smoke" => $providerSecuritySmoke,
+  "browser_regression" => $browserRegression,
   "baseline_pre" => $argv[7],
   "baseline_post" => $argv[8],
   "ssl_cert_path" => "/etc/letsencrypt/live/" . $argv[4] . "/fullchain.pem",
@@ -250,6 +258,6 @@ file_put_contents(
   $argv[9],
   json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL
 );
-' "$launch_json" "$smoke_json" "$provider_security_smoke" "$DOMAIN" "$PHP_FPM_SERVICE" "$nginx_conf_path" "$baseline_pre_dir" "$baseline_post_dir" "$go_live_artifact"
+ ' "$launch_json" "$smoke_json" "$provider_security_smoke" "$DOMAIN" "$PHP_FPM_SERVICE" "$nginx_conf_path" "$baseline_pre_dir" "$baseline_post_dir" "$go_live_artifact" "$browser_regression_log"
 
 echo "[go-live] launch artifact: $go_live_artifact"

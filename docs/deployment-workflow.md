@@ -3,10 +3,12 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-23`
+- Last reviewed: `2026-03-25`
 - Current implementation notes:
   - Git-based deploy, versioned hooks, anti-mojibake pre-push validation, docs-drift validation, and OpenAPI validation are implemented.
-  - Provider/tenant regression smoke, release baseline capture, and provider security smoke now run automatically from `.githooks/post-merge` on the production checkout path.
+  - Provider/tenant regression smoke, release baseline capture, provider security smoke, and a safe browser regression suite now run automatically from `.githooks/post-merge` on the production checkout path when the Playwright runtime is available.
+  - The browser regression suite now writes a mandatory visual sign-off set with desktop/mobile screenshots for key public and internal pages, plus a short visual checklist in the generated report.
+  - Full mutating order-lifecycle coverage is available through the same browser regression suite, but remains opt-in to avoid creating test orders on every pull.
   - Current production rollout commonly restarts the active PHP-FPM unit after branch checkout/pull.
   - OPcache reset remains a manual post-pull step.
   - Tenant custom-domain go-live is now scriptable through `scripts/tenant/go-live.sh` once DNS is ready.
@@ -83,7 +85,7 @@ runuser -u "$WEBUSER" -- git -C "$PROJECT" config --get core.hooksPath
 This enables:
 
 - `pre-push`: PHP lint, anti-mojibake scan for pushed text files, docs-drift guard on `release/*` and `main`, and OpenAPI validation when pushing `main`
-- `post-merge`: PHP lint after pull, cache cleanup, release baseline capture, provider/tenant smoke, and provider security smoke on production
+- `post-merge`: PHP lint after pull, cache cleanup, release baseline capture, provider/tenant smoke, provider security smoke, and safe browser regression on production
 
 ## Local Release Commands
 
@@ -119,8 +121,9 @@ systemctl restart php8.1-fpm
 Manual post-pull steps:
 
 1. Reset OPcache via the established monitor/admin flow.
-2. Verify that the automatic provider/tenant regression smoke, baseline capture, and provider security smoke passed in `post-merge`.
-3. Verify admin/owner pages if new PHP methods or shared includes changed.
+2. Verify that the automatic provider/tenant regression smoke, baseline capture, provider security smoke, and browser regression passed in `post-merge`.
+3. Review the generated visual sign-off screenshots and checklist in the browser regression report before calling the release complete.
+4. If the release touched ordering, run the full order-lifecycle browser regression explicitly.
 
 Automatic regression smoke command:
 
@@ -132,6 +135,28 @@ Automatic security smoke command:
 
 ```bash
 bash scripts/perf/security-smoke.sh https://menu.labus.pro
+```
+
+Automatic safe browser regression command:
+
+```bash
+bash scripts/perf/post-release-regression.sh
+```
+
+The safe run now also produces:
+
+- desktop/mobile screenshots for key provider and tenant pages
+- a `Visual Sign-Off` section in `report.md`
+- a short checklist for overlap, sticky behavior, density, and hierarchy review
+- a failing release result if either the functional regression steps or the visual checks stay red
+
+Full release sign-off with order lifecycle:
+
+```bash
+CLEANMENU_PROVIDER_OWNER_EMAIL=owner@example.com \
+CLEANMENU_PROVIDER_OWNER_PASSWORD=secret \
+CLEANMENU_RUN_ORDER_REGRESSION=1 \
+bash scripts/perf/post-release-regression.sh --orders --require-provider-owner-auth
 ```
 
 ## Safety Rules

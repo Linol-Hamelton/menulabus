@@ -119,6 +119,8 @@ Current implementation:
 - `scripts/tenant/smoke.php`
 - `scripts/tenant/launch.php`
 - `scripts/tenant/go-live.sh`
+- `scripts/perf/post-release-regression.cjs`
+- `scripts/perf/post-release-regression.sh`
 
 These tools are retained as ops/security helpers and are not part of the normal public product surface.
 Root URLs stay stable, while the implementation for `monitor.php` and `opcache-status.php`
@@ -204,6 +206,8 @@ These surfaces are implemented in code but are audited repo-first unless a safe 
 - `scripts/perf/security-smoke-daily.sh`
 - `scripts/perf/install-security-smoke-cron.sh`
 - `scripts/perf/checkout-error-top.php`
+- `scripts/perf/post-release-regression.cjs`
+- `scripts/perf/post-release-regression.sh`
 - `scripts/security/capture-baseline.sh`
 - `scripts/security/apply-network-policy.sh`
 - `scripts/security/harden-ssh-fail2ban.sh`

@@ -94,6 +94,14 @@ if [ -n "$PHP_BIN" ] && [ -f "scripts/tenant/smoke.php" ] && [ "$run_release_smo
         bash scripts/perf/security-smoke.sh "https://${provider_domain}"
         echo "[post-merge] Provider security smoke OK"
       fi
+      if [ -f "scripts/perf/post-release-regression.sh" ] && [ "${CLEANMENU_RUN_BROWSER_REGRESSION:-1}" = "1" ]; then
+        echo "[post-merge] Running browser regression suite..."
+        CLEANMENU_PROVIDER_DOMAIN="$provider_domain" \
+        CLEANMENU_TENANT_DOMAIN="$tenant_domain" \
+        bash scripts/perf/post-release-regression.sh
+      else
+        echo "[post-merge] Browser regression skipped"
+      fi
       ;;
     *)
       echo "[post-merge] Release smoke skipped on branch $current_branch"

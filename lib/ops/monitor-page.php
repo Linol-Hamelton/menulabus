@@ -15,6 +15,7 @@ if ($_SESSION['user_role'] !== 'owner' && $_SESSION['user_role'] !== 'admin') {
 $csrfToken = $_SESSION['csrf_token'] ?? '';
 $monitorCssVersion = (string) (@filemtime(MENU_LABUS_ROOT . '/css/monitor.css') ?: '1');
 $monitorJsVersion = (string) (@filemtime(MENU_LABUS_ROOT . '/js/monitor-page.js') ?: '1');
+$uiUxPolishVersion = (string) (@filemtime(MENU_LABUS_ROOT . '/css/ui-ux-polish.css') ?: '1');
 
 // Required dependencies.
 require_once MENU_LABUS_ROOT . '/db.php';
@@ -440,6 +441,7 @@ $metrics = getPerformanceMetrics(true);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мониторинг производительности</title>
     <link rel="stylesheet" href="/css/monitor.css?v=<?= htmlspecialchars($monitorCssVersion, ENT_QUOTES, 'UTF-8') ?>">
+    <link rel="stylesheet" href="/css/ui-ux-polish.css?v=<?= htmlspecialchars($uiUxPolishVersion, ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body>
     <div

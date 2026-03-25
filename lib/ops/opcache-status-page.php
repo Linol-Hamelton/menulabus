@@ -97,6 +97,7 @@ $startTime = $opcacheStats['start_time'] ?? 0;
 $lastRestartTime = $opcacheStats['last_restart_time'] ?? 0;
 $cssVersion = @filemtime(MENU_LABUS_ROOT . '/css/opcache-status.css') ?: '1.0.0';
 $jsVersion = @filemtime(MENU_LABUS_ROOT . '/js/opcache-status-page.js') ?: '1.0.0';
+$uiUxPolishVersion = @filemtime(MENU_LABUS_ROOT . '/css/ui-ux-polish.css') ?: '1.0.0';
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -105,6 +106,7 @@ $jsVersion = @filemtime(MENU_LABUS_ROOT . '/js/opcache-status-page.js') ?: '1.0.
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мониторинг OPcache</title>
     <link rel="stylesheet" href="/css/opcache-status.css?v=<?= htmlspecialchars((string)$cssVersion) ?>">
+    <link rel="stylesheet" href="/css/ui-ux-polish.css?v=<?= htmlspecialchars((string)$uiUxPolishVersion) ?>">
 </head>
 <body>
     <div class="opcache-page container">

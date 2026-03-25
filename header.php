@@ -12,6 +12,8 @@ $logoUrl = (string)($GLOBALS['logoUrl'] ?? '');
 $socialTg = (string)($GLOBALS['socialTg'] ?? '');
 $socialVk = (string)($GLOBALS['socialVk'] ?? '');
 $appVersion = $_SESSION['app_version'] ?? ($GLOBALS['appVersion'] ?? '1.0.0');
+$uiUxPolishVersion = @filemtime(__DIR__ . '/css/ui-ux-polish.css');
+$uiUxPolishVersion = $uiUxPolishVersion ? (string)$uiUxPolishVersion : (string)$appVersion;
 $isLoggedIn = !empty($_SESSION['user_id']);
 $includeHeaderCss = empty($GLOBALS['header_css_in_head']);
 ?>
@@ -61,4 +63,5 @@ $includeHeaderCss = empty($GLOBALS['header_css_in_head']);
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($appVersion) ?>">
   <?php endif; ?>
+  <link rel="stylesheet" href="/css/ui-ux-polish.css?v=<?= htmlspecialchars($uiUxPolishVersion, ENT_QUOTES, 'UTF-8') ?>">
 </header>
