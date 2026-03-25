@@ -3,11 +3,12 @@
 ## Implementation Status
 
 - Status: `Implemented`
-- Last reviewed: `2026-03-24`
+- Last reviewed: `2026-03-25`
 - Current implementation notes:
   - This document captures the current `repo + live` audit baseline.
   - The audit is docs-first: runtime mismatches are recorded here and in roadmaps, not fixed in this cycle.
   - No whole active doc files met deletion criteria after the audit; stale content was removed from retained docs instead.
+  - Full-scope production coverage now has a dedicated one-shot runner, `scripts/perf/full-ui-audit.cjs`, which reuses the release baseline and emits route-level findings plus a prioritized fix plan.
 
 ## Audit Baseline
 
@@ -45,7 +46,7 @@
 | `/employee.php` | live employee queue / payment / QR flow | `employee.php`, `js/employee-*.js` | `project-reference`, helper docs | implemented |
 | `/customer_orders.php` | live order-history surface | `customer_orders.php` | partial | implemented |
 | `/qr-print.php` | live QR print surface | `qr-print.php` | partial | implemented |
-| internal shell normalization | shared shell primitives now cover section heads, KPI cards and lifecycle badges, but some pages still keep local markup/layout exceptions | account/admin/owner/employee/cart/qr-print stack, `css/admin-menu-polish.css` | `ux-ui-improvement-roadmap`, `order-lifecycle-contract` | partial |
+| internal shell normalization | shared shell primitives now cover section heads, KPI cards and lifecycle badges; account pages also require version/update notices to stay non-blocking relative to shell controls | account/admin/owner/employee/cart/qr-print stack, `css/admin-menu-polish.css`, `css/version.min.css` | `ux-ui-improvement-roadmap`, `order-lifecycle-contract`, `project-reference` | partial |
 
 ## 4. Ops / Diagnostics
 

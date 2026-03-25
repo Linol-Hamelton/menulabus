@@ -8,6 +8,7 @@
   - Git-based deploy, versioned hooks, anti-mojibake pre-push validation, docs-drift validation, and OpenAPI validation are implemented.
   - Provider/tenant regression smoke, release baseline capture, provider security smoke, and a safe browser regression suite now run automatically from `.githooks/post-merge` on the production checkout path when the Playwright runtime is available.
   - The browser regression suite now writes a mandatory visual sign-off set with desktop/mobile screenshots for key public and internal pages, plus a short visual checklist in the generated report.
+  - A separate exhaustive audit runner, `scripts/perf/full-ui-audit.cjs`, now exists for full-scope production audits; it reuses the release baseline checks, covers desktop/mobile route inventories, and produces a findings matrix plus fix plan under `data/logs/full-ui-audit/run-<timestamp>/`.
   - Visual sign-off waits for the final shared polish stylesheet to load and for tab-rail computed styles to stabilize before screenshots and overlap checks are recorded, so release gating no longer depends on cold CSS timing races.
   - Full mutating order-lifecycle coverage is available through the same browser regression suite, but remains opt-in to avoid creating test orders on every pull.
   - Current production rollout commonly restarts the active PHP-FPM unit after branch checkout/pull.
@@ -160,6 +161,16 @@ CLEANMENU_PROVIDER_OWNER_PASSWORD=secret \
 CLEANMENU_RUN_ORDER_REGRESSION=1 \
 bash scripts/perf/post-release-regression.sh --orders --require-provider-owner-auth
 ```
+
+One-shot exhaustive production audit:
+
+```bash
+CLEANMENU_PROVIDER_OWNER_EMAIL=owner@example.com \
+CLEANMENU_PROVIDER_OWNER_PASSWORD=secret \
+node scripts/perf/full-ui-audit.cjs
+```
+
+The exhaustive run is not part of automatic `post-merge`; use it for final release acceptance, broad route/component audits, or after large UI/security changes.
 
 ## Safety Rules
 

@@ -14,6 +14,7 @@
   - Stale-order cleanup now has both UI and CLI operator flows.
   - Tenant go-live is scriptable on the target host through `scripts/tenant/go-live.sh`.
   - Shared visual polish is now delivered through `css/ui-ux-polish.css`, while post-release browser regression captures deterministic desktop/mobile visual sign-off for public, internal, and ops surfaces.
+  - Account pages may present release/version information through `js/version-checker.min.js`, but the shared account shell contract now requires that update notices stay non-blocking and not cover the account chrome.
 
 ## 1. Project Summary
 
@@ -122,6 +123,7 @@ Current implementation:
 - `scripts/tenant/go-live.sh`
 - `scripts/perf/post-release-regression.cjs`
 - `scripts/perf/post-release-regression.sh`
+- `scripts/perf/full-ui-audit.cjs`
 
 These tools are retained as ops/security helpers and are not part of the normal public product surface.
 Root URLs stay stable, while the implementation for `monitor.php` and `opcache-status.php`
@@ -129,6 +131,7 @@ is delegated to `lib/ops/monitor-page.php` and `lib/ops/opcache-status-page.php`
 `clear-cache.php` and `file-manager.php` follow the same wrapper pattern via
 `lib/ops/clear-cache-endpoint.php` and `lib/admin/file-manager-endpoint.php`.
 The browser regression runner is also the release visual gate for shared shell and menu-surface polish.
+`scripts/perf/full-ui-audit.cjs` is the exhaustive companion runner for full production audits across roles, routes, desktop/mobile viewports, and order lifecycle coverage.
 
 ## 8. API v1 Surface
 
