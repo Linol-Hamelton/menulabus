@@ -442,6 +442,7 @@ body.menu-catalog-page .menu-discovery-strip {
 
 body.menu-catalog-page .menu-discovery-toolbar {
   max-width: 760px;
+  margin: auto;
 }
 
 body.menu-catalog-page .menu-discovery-search {
@@ -1186,6 +1187,7 @@ body.account-page .account-section h2 {
 body.account-page .account-section .form-group label {
   color: rgba(18, 18, 18, 0.72);
   font-weight: 700;
+  align-items: center;
 }
 
 body.account-page .account-section .form-group + .form-group {
@@ -1342,4 +1344,55 @@ body.tenant-homepage .footer-bottom p {
   body.qr-print-page .qr-count-row {
     justify-content: flex-start;
   }
+}
+
+body.account-page .menu-tabs-container,
+body.customer_orders-page .menu-tabs-container,
+body.employee-page .menu-tabs-container,
+body.owner-page .menu-tabs-container,
+body.menu-catalog-page .menu-tabs-container {
+  background: transparent !important;
+  border: 0 !important;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+  box-shadow: none !important;
+  left: 50% !important;
+  margin: 0 !important;
+  max-width: min(var(--shell-max-width), calc(100vw - 24px)) !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  position: fixed !important;
+  right: auto !important;
+  top: auto !important;
+  transform: translateX(-50%) !important;
+  width: min(var(--shell-max-width), calc(100vw - 24px)) !important;
+  z-index: 9500 !important;
+}
+
+body.account-page .menu-tabs,
+body.customer_orders-page .menu-tabs,
+body.employee-page .menu-tabs,
+body.owner-page .menu-tabs,
+body.menu-catalog-page .menu-tabs {
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  white-space: nowrap !important;
+}
+
+body.account-page .menu-tabs::-webkit-scrollbar,
+body.customer_orders-page .menu-tabs::-webkit-scrollbar,
+body.employee-page .menu-tabs::-webkit-scrollbar,
+body.owner-page .menu-tabs::-webkit-scrollbar,
+body.menu-catalog-page .menu-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+body.account-page .menu-tabs .tab-btn,
+body.customer_orders-page .menu-tabs .tab-btn,
+body.employee-page .menu-tabs .tab-btn,
+body.owner-page .menu-tabs .tab-btn,
+body.menu-catalog-page .menu-tabs .tab-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }

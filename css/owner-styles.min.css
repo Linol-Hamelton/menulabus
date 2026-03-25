@@ -1031,3 +1031,173 @@ body.owner-page .charts-container {
     min-height: 92px;
   }
 }
+
+body.owner-page .owner-report-toolbar {
+  gap: 20px;
+  grid-template-columns: minmax(0, 1.45fr) minmax(260px, 0.75fr);
+}
+
+body.owner-page .owner-report-tabs-card,
+body.owner-page .owner-report-controls-card {
+  overflow: hidden;
+  position: relative;
+}
+
+body.owner-page .owner-report-tabs-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(248, 244, 238, 0.98));
+  padding: 22px 24px 24px;
+}
+
+body.owner-page .owner-report-tabs-card::before,
+body.owner-page .owner-report-controls-card::before {
+  content: "";
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+body.owner-page .owner-report-tabs-card::before {
+  background: linear-gradient(90deg, rgba(205, 23, 25, 0.12), rgba(205, 23, 25, 0));
+  height: 68px;
+}
+
+body.owner-page .owner-report-controls-card {
+  align-items: center;
+  background: linear-gradient(180deg, rgba(255, 251, 246, 0.99), rgba(244, 237, 230, 0.98));
+  padding: 22px 24px;
+}
+
+body.owner-page .owner-report-controls-card::before {
+  background: linear-gradient(90deg, rgba(205, 23, 25, 0.16), rgba(205, 23, 25, 0));
+  height: 4px;
+}
+
+body.owner-page .owner-report-tabs-card > *,
+body.owner-page .owner-report-controls-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+body.owner-page .owner-report-tabs-card .owner-report-toolbar-head {
+  align-items: end;
+  display: grid;
+  gap: 14px 22px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+  margin-bottom: 18px;
+}
+
+body.owner-page .owner-report-tabs-card .owner-workspace-kicker {
+  margin-bottom: 6px;
+}
+
+body.owner-page .owner-report-tabs-card .owner-report-toolbar-copy {
+  border-left: 1px solid rgba(18, 18, 18, 0.08);
+  max-width: none;
+  padding-left: 18px;
+}
+
+body.owner-page .menu-tabs-container.owner-report-tabs-container {
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(18, 18, 18, 0.08);
+  border-radius: 20px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  padding: 6px;
+}
+
+body.owner-page .owner-report-tabs-container .menu-tabs {
+  gap: 8px;
+  padding: 0;
+}
+
+body.owner-page .owner-report-tabs-container .tab-btn {
+  background: rgba(252, 248, 243, 0.95);
+  border: 1px solid rgba(18, 18, 18, 0.08);
+  border-bottom-width: 1px;
+  border-radius: 16px;
+  box-shadow: none;
+  color: rgba(18, 18, 18, 0.72);
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+  min-height: 46px;
+  padding: 11px 16px;
+}
+
+body.owner-page .owner-report-tabs-container .tab-btn.active,
+body.owner-page .owner-report-tabs-container .tab-btn:hover {
+  background: #fff;
+  border-color: rgba(205, 23, 25, 0.18);
+  box-shadow: 0 10px 22px rgba(18, 18, 18, 0.08);
+  color: #14110f;
+}
+
+body.owner-page .owner-report-controls-card .report-filter-form {
+  align-items: stretch;
+  display: grid;
+  gap: 10px;
+}
+
+body.owner-page .owner-report-controls-card .form-group {
+  display: grid;
+  gap: 10px;
+}
+
+body.owner-page .owner-report-controls-card label {
+  color: rgba(18, 18, 18, 0.6);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin-bottom: 0;
+  text-transform: uppercase;
+}
+
+body.owner-page .owner-report-controls-card select {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(18, 18, 18, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 12px 24px rgba(18, 18, 18, 0.08);
+  font-size: 15px;
+  font-weight: 700;
+  min-height: 52px;
+  padding-inline: 16px;
+}
+
+@media (max-width: 1024px) {
+  body.owner-page .owner-report-tabs-card .owner-report-toolbar-head {
+    grid-template-columns: 1fr;
+  }
+
+  body.owner-page .owner-report-tabs-card .owner-report-toolbar-copy {
+    border-left: 0;
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  body.owner-page .owner-report-toolbar {
+    gap: 16px;
+  }
+
+  body.owner-page .owner-report-tabs-card,
+  body.owner-page .owner-report-controls-card {
+    padding: 18px;
+  }
+
+  body.owner-page .owner-report-tabs-card .owner-report-toolbar-head {
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  body.owner-page .owner-report-tabs-card,
+  body.owner-page .owner-report-controls-card {
+    padding: 16px;
+  }
+
+  body.owner-page .owner-report-controls-card select {
+    min-height: 50px;
+  }
+}

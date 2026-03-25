@@ -4112,3 +4112,42 @@ body.cart-page .cart-summary-container.is-empty {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+body.admin-menu-page .menu-tabs-container,
+body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories {
+  background: transparent !important;
+  border: 0 !important;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+  box-shadow: none !important;
+  left: 50% !important;
+  margin: 0 !important;
+  max-width: min(1240px, calc(100vw - 24px)) !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  position: fixed !important;
+  right: auto !important;
+  top: auto !important;
+  transform: translateX(-50%) !important;
+  width: min(1240px, calc(100vw - 24px)) !important;
+  z-index: 9500 !important;
+}
+
+body.admin-menu-page .menu-tabs,
+body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs {
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  white-space: nowrap !important;
+}
+
+body.admin-menu-page .menu-tabs::-webkit-scrollbar,
+body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+body.admin-menu-page .menu-tabs .tab-btn,
+body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .tab-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
