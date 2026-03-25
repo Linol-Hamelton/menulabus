@@ -107,16 +107,66 @@ async function visualMeta(page) {
   }));
 }
 
+async function waitForVisualReady(page) {
+  await page.waitForLoadState('domcontentloaded').catch(() => {});
+  await page.waitForLoadState('networkidle').catch(() => {});
+
+  await page.waitForFunction(() => {
+    const link = [...document.querySelectorAll('link[rel="stylesheet"]')]
+      .find(node => (node.href || '').includes('/css/ui-ux-polish.css'));
+    const sheet = [...document.styleSheets]
+      .find(node => (node.href || '').includes('/css/ui-ux-polish.css'));
+    return Boolean(link && sheet);
+  }, { timeout: 10000 }).catch(() => {});
+
+  await page.evaluate(async () => {
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready.catch(() => {});
+    }
+  }).catch(() => {});
+
+  let previousKey = '';
+  let stableFrames = 0;
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const meta = await visualMeta(page);
+    const currentKey = meta.hasTabRail
+      ? [
+          meta.tabRailPosition,
+          meta.tabRailTop,
+          meta.tabRailBottom,
+          meta.tabRailViewportTop,
+          meta.tabRailViewportBottom,
+        ].join('|')
+      : 'no-rail';
+
+    if (currentKey === previousKey) {
+      stableFrames += 1;
+    } else {
+      previousKey = currentKey;
+      stableFrames = 0;
+    }
+
+    if (!meta.hasTabRail || stableFrames >= 2) {
+      return meta;
+    }
+
+    await page.waitForTimeout(220);
+  }
+
+  return visualMeta(page);
+}
+
 async function captureVisualSnapshot({ url, name, storageState, viewport, prepare }) {
   return withContext({ storageState, viewport }, async (context) => {
     const page = await context.newPage();
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
-    await page.waitForTimeout(700);
+    await waitForVisualReady(page);
     if (prepare) {
       await prepare(page, context);
-      await page.waitForTimeout(450);
+      await waitForVisualReady(page);
     }
-    const meta = await visualMeta(page);
+    const meta = await waitForVisualReady(page);
     const artifact = await screenshot(page, name);
     const ok = !meta.hasTabRail || meta.tabRailPosition !== 'fixed';
     addVisualCheck(name, ok, {

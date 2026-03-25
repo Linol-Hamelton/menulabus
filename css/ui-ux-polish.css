@@ -1134,3 +1134,212 @@ body.tenant-homepage .footer-bottom {
     padding: 24px 18px;
   }
 }
+
+/* Closing refinement pass: keep shared shell visually aligned across provider
+   and tenant surfaces and remove the last sources of low-grade noise. */
+
+body.account-page .account-header-bar {
+  margin-bottom: 18px;
+}
+
+body.account-page .account-header-bar .container {
+  padding-bottom: 0;
+}
+
+body.account-page .account-header-bar .section-header-quick-actions a {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(18, 18, 18, 0.08);
+  border-radius: 16px;
+  box-shadow: var(--shell-shadow-soft);
+  color: #302922;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+body.account-page .account-header-bar .section-header-nav-actions .back-to-menu-btn,
+body.account-page .account-header-bar .section-header-nav-actions .checkout-btn {
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(18, 18, 18, 0.08);
+  box-shadow: var(--shell-shadow-soft);
+  color: #302922;
+}
+
+body.account-page .account-header-bar .section-header-nav-actions .back-to-menu-btn:hover,
+body.account-page .account-header-bar .section-header-nav-actions .back-to-menu-btn:focus-visible,
+body.account-page .account-header-bar .section-header-nav-actions .checkout-btn:hover,
+body.account-page .account-header-bar .section-header-nav-actions .checkout-btn:focus-visible,
+body.account-page .account-header-bar .section-header-quick-actions a:hover,
+body.account-page .account-header-bar .section-header-quick-actions a:focus-visible {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(205, 23, 25, 0.18);
+  color: #171411;
+}
+
+body.account-page .account-section-heading h2,
+body.account-page .account-section h2 {
+  letter-spacing: -0.02em;
+}
+
+body.account-page .account-section .form-group label {
+  color: rgba(18, 18, 18, 0.72);
+  font-weight: 700;
+}
+
+body.account-page .account-section .form-group + .form-group {
+  margin-top: 2px;
+}
+
+body.help-page .account-sections,
+body.customer_orders-page .account-sections,
+body.qr-print-page .account-sections {
+  display: grid;
+  gap: 24px;
+}
+
+body.help-page .account-section {
+  display: grid;
+  gap: 20px;
+}
+
+body.help-page .menu-tabs {
+  margin-bottom: 4px;
+}
+
+body.help-page .admin-form-container h3 {
+  letter-spacing: -0.015em;
+  margin-bottom: 12px;
+}
+
+body.customer_orders-page .account-section-head {
+  margin-bottom: 24px;
+}
+
+body.customer_orders-page .customer-orders-header {
+  margin-bottom: 4px;
+}
+
+body.customer_orders-page .customer-orders-group {
+  display: grid;
+  gap: 18px;
+}
+
+body.customer_orders-page .customer-orders-group-head {
+  gap: 8px;
+}
+
+body.customer_orders-page .customer-order-card {
+  overflow: hidden;
+}
+
+body.customer_orders-page .customer-order-summary {
+  border-bottom: 1px solid rgba(18, 18, 18, 0.05);
+}
+
+body.customer_orders-page .customer-order-details {
+  border-top: 0;
+}
+
+body.customer_orders-page .customer-order-products {
+  gap: 10px;
+}
+
+body.qr-print-page .account-section--qr-shell {
+  gap: 22px;
+}
+
+body.qr-print-page .qr-count-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+body.qr-print-page .qr-count-row label {
+  color: rgba(18, 18, 18, 0.68);
+  font-weight: 700;
+}
+
+body.qr-print-page .qr-count-input {
+  max-width: 96px;
+}
+
+body.qr-print-page .qr-item {
+  overflow: hidden;
+}
+
+body.menu-catalog-page .section.menu .menu-tabs-container,
+body.menu-catalog-page .menu-content .menu-tabs-container {
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  transform: none !important;
+}
+
+body.menu-catalog-page .section-header-menu {
+  margin-bottom: 22px;
+}
+
+body.menu-catalog-page .footer-bottom {
+  padding-top: 18px;
+}
+
+body.tenant-homepage #about .section-header {
+  margin-bottom: 22px;
+}
+
+body.tenant-homepage #contact .reservation-form {
+  box-shadow: 0 24px 52px rgba(18, 18, 18, 0.1);
+}
+
+body.tenant-homepage .footer-col p,
+body.tenant-homepage .footer-bottom p {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+@media (max-width: 768px) {
+  body.account-page .account-header-bar .section-header-quick-actions a {
+    min-height: 42px;
+    min-width: 42px;
+  }
+
+  body.account-page .account-header-bar .section-header-nav-actions .back-to-menu-btn,
+  body.account-page .account-header-bar .section-header-nav-actions .checkout-btn {
+    padding-inline: 14px;
+  }
+
+  body.help-page .account-sections,
+  body.customer_orders-page .account-sections,
+  body.qr-print-page .account-sections {
+    gap: 18px;
+  }
+
+  body.customer_orders-page .customer-orders-group {
+    gap: 14px;
+  }
+
+  body.cart-page .account-header-bar.account-section-head {
+    margin-bottom: 8px;
+    margin-top: 24px;
+  }
+
+  body.cart-page .section-header-menu {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  body.cart-page .section-header-menu h2 {
+    margin: 0;
+  }
+
+  body.cart-page .empty-cart-shell {
+    padding-top: 6px;
+  }
+
+  body.qr-print-page .qr-count-row {
+    justify-content: flex-start;
+  }
+}
