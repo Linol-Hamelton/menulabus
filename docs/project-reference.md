@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-24`
+- Last reviewed: `2026-03-25`
 - Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
 - Current implementation notes:
   - Hostname-aware runtime and control-plane tenant resolution are implemented.
@@ -13,6 +13,7 @@
   - Auth-gated ops/admin utility endpoints now include `monitor.php`, `opcache-status.php`, `clear-cache.php`, and `file-manager.php` with stable root URLs and delegated module implementations.
   - Stale-order cleanup now has both UI and CLI operator flows.
   - Tenant go-live is scriptable on the target host through `scripts/tenant/go-live.sh`.
+  - Shared visual polish is now delivered through `css/ui-ux-polish.css`, while post-release browser regression captures deterministic desktop/mobile visual sign-off for public, internal, and ops surfaces.
 
 ## 1. Project Summary
 
@@ -127,6 +128,7 @@ Root URLs stay stable, while the implementation for `monitor.php` and `opcache-s
 is delegated to `lib/ops/monitor-page.php` and `lib/ops/opcache-status-page.php`.
 `clear-cache.php` and `file-manager.php` follow the same wrapper pattern via
 `lib/ops/clear-cache-endpoint.php` and `lib/admin/file-manager-endpoint.php`.
+The browser regression runner is also the release visual gate for shared shell and menu-surface polish.
 
 ## 8. API v1 Surface
 

@@ -8,6 +8,7 @@
   - Git-based deploy, versioned hooks, anti-mojibake pre-push validation, docs-drift validation, and OpenAPI validation are implemented.
   - Provider/tenant regression smoke, release baseline capture, provider security smoke, and a safe browser regression suite now run automatically from `.githooks/post-merge` on the production checkout path when the Playwright runtime is available.
   - The browser regression suite now writes a mandatory visual sign-off set with desktop/mobile screenshots for key public and internal pages, plus a short visual checklist in the generated report.
+  - Visual sign-off waits for the final shared polish stylesheet to load and for tab-rail computed styles to stabilize before screenshots and overlap checks are recorded, so release gating no longer depends on cold CSS timing races.
   - Full mutating order-lifecycle coverage is available through the same browser regression suite, but remains opt-in to avoid creating test orders on every pull.
   - Current production rollout commonly restarts the active PHP-FPM unit after branch checkout/pull.
   - OPcache reset remains a manual post-pull step.
@@ -148,6 +149,7 @@ The safe run now also produces:
 - desktop/mobile screenshots for key provider and tenant pages
 - a `Visual Sign-Off` section in `report.md`
 - a short checklist for overlap, sticky behavior, density, and hierarchy review
+- deterministic waiting for `ui-ux-polish.css` and stable tab-rail layout before screenshots and visual checks
 - a failing release result if either the functional regression steps or the visual checks stay red
 
 Full release sign-off with order lifecycle:

@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-24`
+- Last reviewed: `2026-03-25`
 - Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
 - Current implementation notes:
   - Provider and tenant public UX are now clearly split.
@@ -11,6 +11,7 @@
   - Order-card metadata compression is implemented in the main customer and employee views.
   - Shared help and operational shell improvements are live and now extend through the common shell contract.
   - Shared stale-order lifecycle badges, thresholds, and cleanup actions now exist in customer, employee, and owner-facing operational views.
+  - The final shared polish layer now covers provider and tenant shell density, public menu rails, help/QR/cart rhythm, and a deterministic visual release gate.
 
 ## Goal
 
@@ -44,6 +45,7 @@ Improve quality, clarity, and conversion without breaking the ordering engine or
 - major layout regressions on `admin-menu.php`, `owner.php`, `employee.php`, `cart.php`, and `qr-print.php` have been reduced
 - scroll retention on `admin-menu.php` interactions is implemented
 - `help.php` now provides a shared role helper and product walkthrough surface
+- shared shell polish and desktop/mobile visual sign-off now protect provider and tenant account/admin flows from overlap and fixed-rail regressions
 
 ## What Is Still Open
 
