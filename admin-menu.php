@@ -18,6 +18,8 @@ $adminMenuCssVersion = @filemtime(__DIR__ . '/css/admin-menu-polish.css');
 $adminMenuCssVersion = $adminMenuCssVersion ? (string)$adminMenuCssVersion : ($appVersion ?: '1.0.0');
 $adminMenuJsVersion = @filemtime(__DIR__ . '/js/admin-menu-page.js');
 $adminMenuJsVersion = $adminMenuJsVersion ? (string)$adminMenuJsVersion : ($appVersion ?: '1.0.0');
+$adminModifiersJsVersion = @filemtime(__DIR__ . '/js/admin-modifiers.js');
+$adminModifiersJsVersion = $adminModifiersJsVersion ? (string)$adminModifiersJsVersion : ($appVersion ?: '1.0.0');
 
 $menuView = (($_GET['view'] ?? 'active') === 'archived') ? 'archived' : 'active';
 $showArchived = $menuView === 'archived';
@@ -945,7 +947,7 @@ $savedDbFontsJson = htmlspecialchars(
 
     <script src="/js/admin-menu-page.js?v=<?= htmlspecialchars($adminMenuJsVersion, ENT_QUOTES, 'UTF-8') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/file-manager.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
-    <script src="/js/admin-modifiers.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/admin-modifiers.js?v=<?= htmlspecialchars($adminModifiersJsVersion, ENT_QUOTES, 'UTF-8') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/admin-tabs-repair.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/security.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/cart.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
