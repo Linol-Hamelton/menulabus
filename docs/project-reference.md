@@ -14,6 +14,7 @@
   - Stale-order cleanup now has both UI and CLI operator flows.
   - Tenant go-live is scriptable on the target host through `scripts/tenant/go-live.sh`.
   - Shared visual polish is now delivered through `css/ui-ux-polish.css`, while post-release browser regression captures deterministic desktop/mobile visual sign-off for public, internal, and ops surfaces.
+  - Menu-catalog spacing now keeps the discovery/search strip lightweight and reduces dead space between the last visible catalog cards, footer copy, and the bottom dock.
   - Account pages may present release/version information through `js/version-checker.min.js`, but the shared account shell contract now requires that update notices stay non-blocking and not cover the account chrome.
   - The account header action row on narrow screens now stacks as a normal shell section instead of forcing a horizontally scrolling action strip.
   - The shared tab-rail contract now keeps `menu-tabs-container` docked edge-to-edge at the bottom of the viewport across provider/tenant menu and internal shell surfaces, with a full-width plate, zero rail radius, centered desktop alignment, and horizontal-scroll mobile/tablet alignment. Owner report tabs keep a separate owner-specific presentation layer in `css/owner-styles.min.css` without redefining the shared rail geometry.
