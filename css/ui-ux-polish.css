@@ -1048,13 +1048,10 @@ body.tenant-homepage .footer-bottom {
   }
 
   body.account-page .account-header-bar .section-header-nav-actions {
-    flex-wrap: nowrap;
     justify-content: flex-start;
     margin-left: 0 !important;
     order: 2;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    scrollbar-width: thin;
+    padding-top: 20px;
     width: 100% !important;
   }
 
