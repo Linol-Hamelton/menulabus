@@ -235,3 +235,4 @@ These surfaces are implemented in code but are audited repo-first unless a safe 
 - `admin-menu.php` now uses one shared inline shell-width contract for the account header actions, the admin tab rail, and the main editor/catalog cards.
 - That contract lives in `css/ui-ux-polish.css` and keeps the same left/right offsets on desktop, tablet, and mobile without changing markup or button-level styling.
 - In the `dishes` workspace, the catalog list now renders before the update/editor card so operators see the active catalog immediately after the top admin tabs.
+- In the `admin-menu` catalog desktop table, the actions column now switches to a centered stacked-button layout in the `769px–978px` range so `Редактировать` and `Архивировать` stay readable instead of collapsing into an awkward inline cluster.

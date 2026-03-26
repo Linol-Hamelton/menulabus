@@ -15,6 +15,7 @@
   - The current shell contract uses a persistent edge-to-edge bottom-docked tab rail for menu and internal navigation surfaces: full-width, no rail rounding, centered on desktop, and horizontally scrollable on tablet/mobile. Owner analytics keep a distinct report-toolbar treatment with clearer hierarchy between report tabs and period controls.
   - Narrow-screen account headers no longer force quick actions into a horizontal scroller when that harms readability; the shell now allows them to settle into the normal vertical rhythm.
   - Menu catalog pages now use a tighter closing rhythm so the last cards transition into footer copy without an oversized dead zone above the bottom dock.
+  - In `admin-menu.php`, the desktop catalog actions column now uses a dedicated intermediate-width layout from `769px` to `978px`, turning action links into a centered vertical stack instead of a cramped inline pair.
 
 ## Goal
 

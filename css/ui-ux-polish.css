@@ -1060,6 +1060,41 @@ body.tenant-homepage .footer-bottom {
   }
 }
 
+@media (min-width: 769px) and (max-width: 978px) {
+  body.employee-page.admin-menu-page .admin-catalog-card .desktop-table th.last-col {
+    min-width: 188px;
+  }
+
+  body.employee-page.admin-menu-page .admin-catalog-card .desktop-table td:last-child {
+    text-align: center;
+    white-space: normal;
+  }
+
+  body.employee-page.admin-menu-page .admin-catalog-card .desktop-table td:last-child > .admin-checkout-btn,
+  body.employee-page.admin-menu-page .admin-catalog-card .desktop-table td:last-child > .inline-action-form {
+    display: block;
+    margin-inline: auto;
+    max-width: 176px;
+    width: 100%;
+  }
+
+  body.employee-page.admin-menu-page .admin-catalog-card .desktop-table td:last-child > .inline-action-form {
+    margin-top: 8px;
+  }
+
+  body.employee-page.admin-menu-page .admin-catalog-card .desktop-table td:last-child > .admin-checkout-btn,
+  body.employee-page.admin-menu-page .admin-catalog-card .desktop-table td:last-child > .inline-action-form > .admin-checkout-btn {
+    align-items: center;
+    display: inline-flex;
+    justify-content: center;
+    width: 100%;
+  }
+
+  body.employee-page.admin-menu-page .admin-catalog-card .desktop-table td:last-child > .inline-action-form > .admin-checkout-btn.cancel {
+    margin-left: 0;
+  }
+}
+
 @media (max-width: 768px) {
   body.account-page .account-header-bar .section-header-menu {
     align-items: flex-start;
