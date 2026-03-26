@@ -229,3 +229,8 @@ These surfaces are implemented in code but are audited repo-first unless a safe 
 - product model source of truth: `docs/product-model.md`
 - tenant launch runbook: `docs/tenant-launch-checklist.md`
 - current audit baseline: `docs/feature-audit-matrix.md`
+
+## 14. Shared Shell Notes
+
+- `admin-menu.php` now uses one shared inline shell-width contract for the account header actions, the admin tab rail, and the main editor/catalog cards.
+- That contract lives in `css/ui-ux-polish.css` and keeps the same left/right offsets on desktop, tablet, and mobile without changing markup or button-level styling.

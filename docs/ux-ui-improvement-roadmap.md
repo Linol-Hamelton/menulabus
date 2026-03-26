@@ -51,6 +51,7 @@ Improve quality, clarity, and conversion without breaking the ordering engine or
 - shared shell polish and desktop/mobile visual sign-off now protect provider and tenant account/admin flows from overlap and fixed-rail regressions
 - the owner report toolbar now separates report switching from period filtering with a stronger card hierarchy and cleaner spacing
 - the bottom tab rail now uses one shared geometry contract across provider/tenant menu, account, owner, employee, and admin-menu surfaces instead of page-specific fixed-bottom overrides
+- `admin-menu.php` now also keeps one shared inline width for the section header actions, top admin tabs, and main editor/catalog cards, so the working column stays aligned on desktop, tablet, and mobile
 
 ## What Is Still Open
 
