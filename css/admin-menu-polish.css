@@ -77,26 +77,11 @@ body.admin-menu-page .menu-view-switch {
 }
 
 body.admin-menu-page .menu-tabs-container {
-  background: var(--ui-surface);
-  border: 1px solid var(--ui-border);
-  border-radius: 18px;
-  border-top: 1px solid var(--ui-border);
-  bottom: auto;
-  box-shadow: none;
-  left: auto;
-  overflow-x: auto;
-  padding: 0 10px;
-  position: static;
-  right: auto;
-  white-space: nowrap;
-  width: 100%;
-  z-index: auto;
+  min-width: 0;
 }
 
 body.admin-menu-page .menu-tabs {
-  justify-content: flex-start;
-  min-width: max-content;
-  padding: 10px 0;
+  min-width: 0;
 }
 
 body.admin-menu-page .desktop-table,
@@ -1425,27 +1410,9 @@ body.owner-page .chart-bar-label {
   font-weight: 500;
 }
 
-body.owner-page .menu-tabs-container {
-  overflow-x: auto;
-  width: 100%;
-  -webkit-overflow-scrolling: touch;
-  background: var(--ui-surface);
-  border-top: 1px solid var(--ui-border);
-  bottom: 0;
-  box-shadow: var(--ui-shadow-soft);
-  left: 0;
-  position: fixed;
-  right: 0;
-  white-space: nowrap;
-  z-index: 100;
-}
+body.owner-page .menu-tabs-container { min-width: 0; }
 
-body.owner-page .menu-tabs {
-  display: inline-flex;
-  justify-content: center;
-  min-width: 100%;
-  padding: 10px 0;
-}
+body.owner-page .menu-tabs { min-width: 0; }
 
 body.owner-page .menu-tabs .tab-btn {
   background: var(--ui-surface-muted);
@@ -1770,45 +1737,14 @@ body.customer_orders-page .repeat-order-form {
   margin-top: 0;
 }
 
-body.customer_orders-page .menu-tabs-container {
-  overflow-x: auto;
-  width: 100%;
-  -webkit-overflow-scrolling: touch;
-  background: var(--ui-surface);
-  border-top: 1px solid var(--ui-border);
-  bottom: 0;
-  box-shadow: var(--ui-shadow-soft);
-  left: 0;
-  position: fixed;
-  right: 0;
-  white-space: nowrap;
-  z-index: 100;
-}
+body.customer_orders-page .menu-tabs-container { min-width: 0; }
 
 body.employee-page .menu-tabs-container,
-body.owner-page .menu-tabs-container {
-  overflow-x: auto;
-  width: 100%;
-  -webkit-overflow-scrolling: touch;
-  background: var(--ui-surface);
-  border-top: 1px solid var(--ui-border);
-  bottom: 0;
-  box-shadow: var(--ui-shadow-soft);
-  left: 0;
-  position: fixed;
-  right: 0;
-  white-space: nowrap;
-  z-index: 100;
-}
+body.owner-page .menu-tabs-container { min-width: 0; }
 
 body.customer_orders-page .menu-tabs,
 body.employee-page .menu-tabs,
-body.owner-page .menu-tabs {
-  display: inline-flex;
-  justify-content: center;
-  min-width: 100%;
-  padding: 10px 0;
-}
+body.owner-page .menu-tabs { min-width: 0; }
 
 body.customer_orders-page .menu-tabs .tab-btn,
 body.employee-page .menu-tabs .tab-btn,
@@ -1843,10 +1779,6 @@ body.owner-page .menu-tabs .tab-btn:hover {
 }
 
 body.account-page .menu-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
   min-width: 0;
 }
 
@@ -1867,17 +1799,6 @@ body.account-page .menu-tabs .tab-btn {
 }
 
 @media (max-width: 768px) {
-  body.account-page .menu-tabs {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
-  }
-
-  body.account-page .menu-tabs .tab-btn {
-    text-align: center;
-    width: 100%;
-  }
-
   body.customer_orders-page .order-header,
   body.employee-page .order-header {
     grid-template-columns: auto 1fr auto;
@@ -2889,28 +2810,11 @@ body.employee-page.admin-menu-page .menu-view-switch {
 }
 
 body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories {
-    background: var(--ui-surface);
-    border: 1px solid var(--ui-border);
-    border-radius: 18px;
-    border-top: 1px solid var(--ui-border);
-    bottom: auto;
-    box-shadow: none;
-    left: auto;
-    overflow-x: auto;
-    padding: 0 10px;
-    position: static;
-    right: auto;
-    width: 100%;
-    z-index: auto;
+    min-width: 0;
 }
 
 body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs {
-    display: inline-flex;
-    flex-wrap: nowrap;
-    gap: 0;
-    justify-content: flex-start;
-    min-width: max-content;
-    padding: 10px 0;
+    min-width: 0;
 }
 
 body.employee-page.admin-menu-page .mobile-table-actions {
@@ -2939,14 +2843,6 @@ body.employee-page.admin-menu-page .stop-btn {
 }
 
 @media (max-width: 768px) {
-    body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories {
-        padding: 0 8px;
-    }
-
-    body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs {
-        gap: 8px;
-    }
-
     body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .tab-btn {
         margin: 0;
     }
@@ -3015,7 +2911,7 @@ body.employee-page.admin-menu-page .admin-dishes-workspace > .admin-subsection-c
 body.employee-page.admin-menu-page #modifiersSection { max-width: 100%; }
 body.employee-page.admin-menu-page .admin-catalog-card { overflow: hidden; }
 body.employee-page.admin-menu-page .admin-catalog-toolbar { gap: 16px; margin-bottom: 18px; }
-body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories { max-width: 100%; overflow-x: auto; }
+body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories { min-width: 0; }
 body.employee-page.admin-menu-page .desktop-table { display: block; overflow-x: auto; }
 body.employee-page.admin-menu-page .desktop-table table { min-width: 760px; }
 body.employee-page.admin-menu-page .mobile-table-container { display: none; }
@@ -3153,15 +3049,11 @@ body.employee-page.admin-menu-page .admin-design-panel > .admin-form-group:has(.
   }
 
   body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories {
-    max-width: 100%;
-    overflow-x: auto;
-    width: 100%;
+    min-width: 0;
   }
 
   body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs {
-    display: inline-flex;
-    min-width: max-content;
-    width: max-content;
+    min-width: 0;
   }
 }
 /* admin-menu.php final visual pass: class-based layout stabilization */

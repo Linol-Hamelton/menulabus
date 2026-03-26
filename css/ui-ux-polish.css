@@ -476,9 +476,9 @@ body.menu-catalog-page .order-summary-btn {
 }
 
 body.menu-catalog-page .menu-tabs-container {
-  margin-inline: auto;
-  max-width: var(--shell-max-width);
-  padding-inline: var(--shell-gutter);
+  margin-inline: 0;
+  max-width: none;
+  padding-inline: 0;
 }
 
 body.menu-catalog-page .tab-pane {
@@ -1275,8 +1275,8 @@ body.qr-print-page .qr-item {
 
 body.menu-catalog-page .section.menu .menu-tabs-container,
 body.menu-catalog-page .menu-content .menu-tabs-container {
-  left: auto !important;
-  right: auto !important;
+  left: 0 !important;
+  right: 0 !important;
   top: auto !important;
   transform: none !important;
 }
@@ -1391,18 +1391,19 @@ body.admin-menu-page .menu-tabs-container.admin-menu-categories,
 body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories {
   background: transparent !important;
   border: 0 !important;
-  bottom: var(--bottom-tab-rail-offset) !important;
+  border-radius: 0 !important;
+  bottom: 0 !important;
   box-shadow: none !important;
-  left: 50% !important;
+  left: 0 !important;
   margin: 0 !important;
-  max-width: min(var(--bottom-tab-rail-width), calc(100vw - 24px)) !important;
+  max-width: none !important;
   overflow: visible !important;
   padding: 0 !important;
   position: fixed !important;
-  right: auto !important;
+  right: 0 !important;
   top: auto !important;
-  transform: translateX(-50%) !important;
-  width: min(var(--bottom-tab-rail-width), calc(100vw - 24px)) !important;
+  transform: none !important;
+  width: 100% !important;
   z-index: 9500 !important;
 }
 
@@ -1413,11 +1414,36 @@ body.owner-page .menu-tabs,
 body.menu-catalog-page .menu-tabs,
 body.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs,
 body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs {
+  align-items: center !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  border-top: 1px solid rgba(18, 18, 18, 0.08) !important;
+  box-shadow: 0 -14px 28px rgba(18, 18, 18, 0.08) !important;
+  display: flex !important;
   flex-wrap: nowrap !important;
+  gap: 10px;
+  justify-content: center !important;
+  margin: 0 !important;
+  min-width: 100% !important;
   overflow-x: auto !important;
   overscroll-behavior-x: contain;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)) !important;
   scrollbar-width: none;
+  width: 100% !important;
   white-space: nowrap !important;
+}
+
+@media (max-width: 1024px) {
+  body.account-page .menu-tabs,
+  body.customer_orders-page .menu-tabs,
+  body.employee-page .menu-tabs,
+  body.owner-page .menu-tabs,
+  body.menu-catalog-page .menu-tabs,
+  body.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs,
+  body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs {
+    justify-content: flex-start !important;
+  }
 }
 
 body.account-page .menu-tabs::-webkit-scrollbar,
