@@ -1346,25 +1346,63 @@ body.tenant-homepage .footer-bottom p {
   }
 }
 
+body.account-page,
+body.customer_orders-page,
+body.employee-page,
+body.owner-page,
+body.menu-catalog-page,
+body.admin-menu-page {
+  --bottom-tab-rail-offset: calc(12px + env(safe-area-inset-bottom, 0px));
+  --bottom-tab-rail-width: var(--shell-max-width);
+  --bottom-tab-rail-footprint: 88px;
+  --bottom-tab-rail-clearance: calc(var(--bottom-tab-rail-footprint) + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 768px) {
+  body.account-page,
+  body.customer_orders-page,
+  body.employee-page,
+  body.owner-page,
+  body.menu-catalog-page,
+  body.admin-menu-page {
+    --bottom-tab-rail-offset: calc(10px + env(safe-area-inset-bottom, 0px));
+    --bottom-tab-rail-footprint: 94px;
+  }
+}
+
+@media (max-width: 480px) {
+  body.account-page,
+  body.customer_orders-page,
+  body.employee-page,
+  body.owner-page,
+  body.menu-catalog-page,
+  body.admin-menu-page {
+    --bottom-tab-rail-offset: calc(8px + env(safe-area-inset-bottom, 0px));
+    --bottom-tab-rail-footprint: 102px;
+  }
+}
+
 body.account-page .menu-tabs-container,
 body.customer_orders-page .menu-tabs-container,
 body.employee-page .menu-tabs-container,
 body.owner-page .menu-tabs-container,
-body.menu-catalog-page .menu-tabs-container {
+body.menu-catalog-page .menu-tabs-container,
+body.admin-menu-page .menu-tabs-container.admin-menu-categories,
+body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories {
   background: transparent !important;
   border: 0 !important;
-  bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+  bottom: var(--bottom-tab-rail-offset) !important;
   box-shadow: none !important;
   left: 50% !important;
   margin: 0 !important;
-  max-width: min(var(--shell-max-width), calc(100vw - 24px)) !important;
+  max-width: min(var(--bottom-tab-rail-width), calc(100vw - 24px)) !important;
   overflow: visible !important;
   padding: 0 !important;
   position: fixed !important;
   right: auto !important;
   top: auto !important;
   transform: translateX(-50%) !important;
-  width: min(var(--shell-max-width), calc(100vw - 24px)) !important;
+  width: min(var(--bottom-tab-rail-width), calc(100vw - 24px)) !important;
   z-index: 9500 !important;
 }
 
@@ -1372,7 +1410,9 @@ body.account-page .menu-tabs,
 body.customer_orders-page .menu-tabs,
 body.employee-page .menu-tabs,
 body.owner-page .menu-tabs,
-body.menu-catalog-page .menu-tabs {
+body.menu-catalog-page .menu-tabs,
+body.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs,
+body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs {
   flex-wrap: nowrap !important;
   overflow-x: auto !important;
   overscroll-behavior-x: contain;
@@ -1384,7 +1424,9 @@ body.account-page .menu-tabs::-webkit-scrollbar,
 body.customer_orders-page .menu-tabs::-webkit-scrollbar,
 body.employee-page .menu-tabs::-webkit-scrollbar,
 body.owner-page .menu-tabs::-webkit-scrollbar,
-body.menu-catalog-page .menu-tabs::-webkit-scrollbar {
+body.menu-catalog-page .menu-tabs::-webkit-scrollbar,
+body.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs::-webkit-scrollbar,
+body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs::-webkit-scrollbar {
   display: none;
 }
 
@@ -1392,7 +1434,48 @@ body.account-page .menu-tabs .tab-btn,
 body.customer_orders-page .menu-tabs .tab-btn,
 body.employee-page .menu-tabs .tab-btn,
 body.owner-page .menu-tabs .tab-btn,
-body.menu-catalog-page .menu-tabs .tab-btn {
+body.menu-catalog-page .menu-tabs .tab-btn,
+body.admin-menu-page .menu-tabs-container.admin-menu-categories .tab-btn,
+body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .tab-btn {
   flex: 0 0 auto;
   white-space: nowrap;
+}
+
+body.account-page:not(.help-page):not(.admin-menu-page) .account-container,
+body.customer_orders-page .account-container,
+body.employee-page:not(.admin-menu-page) .account-container,
+body.owner-page .account-container {
+  padding-bottom: max(32px, var(--bottom-tab-rail-clearance)) !important;
+}
+
+body.account-page:not(.help-page):not(.admin-menu-page) .account-section:last-child {
+  padding-bottom: calc(var(--bottom-tab-rail-clearance) + 18px) !important;
+}
+
+body.account-page:not(.help-page):not(.admin-menu-page) button[name="update_profile"],
+body.account-page:not(.help-page):not(.admin-menu-page) button[name="change_password"],
+body.account-page:not(.help-page):not(.admin-menu-page) button[name="change_menu_view"] {
+  scroll-margin-bottom: calc(var(--bottom-tab-rail-clearance) + 18px);
+}
+
+body.menu-catalog-page #menu,
+body.menu-catalog-page .menu-content {
+  padding-bottom: max(36px, calc(var(--bottom-tab-rail-clearance) + 6px)) !important;
+}
+
+body.menu-catalog-page footer,
+body.menu-catalog-page .footer,
+body.menu-catalog-page .footer-bottom {
+  margin-bottom: calc(var(--bottom-tab-rail-clearance) + 12px) !important;
+  padding-bottom: calc(var(--bottom-tab-rail-clearance) + 8px) !important;
+}
+
+body.account-page:not(.help-page):not(.admin-menu-page) .account-container,
+body.customer_orders-page .account-container,
+body.employee-page:not(.admin-menu-page) .account-container,
+body.owner-page .account-container,
+body.menu-catalog-page #menu,
+body.menu-catalog-page .menu-content,
+body.admin-menu-page .account-form-container {
+  scroll-padding-bottom: calc(var(--bottom-tab-rail-clearance) + 18px);
 }

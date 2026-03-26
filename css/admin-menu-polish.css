@@ -4113,41 +4113,34 @@ body.cart-page .cart-summary-container.is-empty {
   }
 }
 
-body.admin-menu-page .menu-tabs-container,
+body.admin-menu-page,
+body.employee-page.admin-menu-page {
+  --bottom-tab-rail-width: 1240px;
+  --bottom-tab-rail-footprint: 96px;
+}
+
+body.admin-menu-page .account-form-container {
+  padding-bottom: calc(var(--bottom-tab-rail-clearance) + 18px) !important;
+}
+
+body.admin-menu-page .admin-form-container,
+body.admin-menu-page .admin-section-card,
+body.admin-menu-page .admin-catalog-card,
+body.admin-menu-page .admin-design-panel,
+body.admin-menu-page .admin-payment-panel,
+body.admin-menu-page .admin-system-panel,
+body.admin-menu-page .menu-tabs-container.admin-menu-categories,
 body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories {
-  background: transparent !important;
-  border: 0 !important;
-  bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
-  box-shadow: none !important;
-  left: 50% !important;
-  margin: 0 !important;
-  max-width: min(1240px, calc(100vw - 24px)) !important;
-  overflow: visible !important;
-  padding: 0 !important;
-  position: fixed !important;
-  right: auto !important;
-  top: auto !important;
-  transform: translateX(-50%) !important;
-  width: min(1240px, calc(100vw - 24px)) !important;
-  z-index: 9500 !important;
+  scroll-margin-bottom: calc(var(--bottom-tab-rail-clearance) + 18px);
 }
 
-body.admin-menu-page .menu-tabs,
-body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs {
-  flex-wrap: nowrap !important;
-  overflow-x: auto !important;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
-  white-space: nowrap !important;
-}
+@media (max-width: 768px) {
+  body.admin-menu-page,
+  body.employee-page.admin-menu-page {
+    --bottom-tab-rail-footprint: 102px;
+  }
 
-body.admin-menu-page .menu-tabs::-webkit-scrollbar,
-body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-body.admin-menu-page .menu-tabs .tab-btn,
-body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .tab-btn {
-  flex: 0 0 auto;
-  white-space: nowrap;
+  body.admin-menu-page .account-form-container {
+    padding-bottom: calc(var(--bottom-tab-rail-clearance) + 14px) !important;
+  }
 }
