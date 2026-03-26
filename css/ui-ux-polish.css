@@ -830,11 +830,17 @@ body.employee-page .employee-triage-filters {
   gap: 10px;
 }
 
+body.employee-page.admin-menu-page {
+  --admin-shell-inline-pad: 24px;
+}
+
 body.employee-page.admin-menu-page .account-header-bar .container,
 body.employee-page.admin-menu-page .admin-tabs-container,
 body.employee-page.admin-menu-page .account-form-container {
+  box-sizing: border-box;
   margin-inline: auto;
   max-width: var(--shell-max-width) !important;
+  padding-inline: var(--admin-shell-inline-pad) !important;
   width: min(var(--shell-max-width), calc(100% - (var(--shell-gutter) * 2))) !important;
 }
 
@@ -842,7 +848,11 @@ body.employee-page.admin-menu-page .admin-tabs-container {
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
-  padding: 0 !important;
+  padding-block: 0 !important;
+}
+
+body.employee-page.admin-menu-page .account-header-bar .section-header-menu {
+  margin: 0 0 28px !important;
 }
 
 body.employee-page.admin-menu-page .admin-tabs {
@@ -856,6 +866,19 @@ body.employee-page.admin-menu-page .admin-tabs {
   gap: 10px;
   justify-content: flex-start;
   padding: 10px;
+  width: 100%;
+}
+
+@media (max-width: 1199px) {
+  body.employee-page.admin-menu-page {
+    --admin-shell-inline-pad: 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  body.employee-page.admin-menu-page {
+    --admin-shell-inline-pad: 12px;
+  }
 }
 
 body.employee-page.admin-menu-page .admin-tab-btn {
