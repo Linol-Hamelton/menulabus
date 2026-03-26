@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-25`
+- Last reviewed: `2026-03-26`
 - Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
 - Current implementation notes:
   - Provider and tenant public UX are now clearly split.
@@ -12,7 +12,7 @@
   - Shared help and operational shell improvements are live and now extend through the common shell contract.
   - Shared stale-order lifecycle badges, thresholds, and cleanup actions now exist in customer, employee, and owner-facing operational views.
   - The final shared polish layer now covers provider and tenant shell density, public menu rails, help/QR/cart rhythm, and a deterministic visual release gate.
-  - The current shell contract uses a persistent bottom-docked tab rail for menu and internal navigation surfaces, while owner analytics now have a distinct report-toolbar treatment with clearer hierarchy between report tabs and period controls.
+  - The current shell contract uses a persistent edge-to-edge bottom-docked tab rail for menu and internal navigation surfaces: full-width, no rail rounding, centered on desktop, and horizontally scrollable on tablet/mobile. Owner analytics keep a distinct report-toolbar treatment with clearer hierarchy between report tabs and period controls.
 
 ## Goal
 
@@ -48,6 +48,7 @@ Improve quality, clarity, and conversion without breaking the ordering engine or
 - `help.php` now provides a shared role helper and product walkthrough surface
 - shared shell polish and desktop/mobile visual sign-off now protect provider and tenant account/admin flows from overlap and fixed-rail regressions
 - the owner report toolbar now separates report switching from period filtering with a stronger card hierarchy and cleaner spacing
+- the bottom tab rail now uses one shared geometry contract across provider/tenant menu, account, owner, employee, and admin-menu surfaces instead of page-specific fixed-bottom overrides
 
 ## What Is Still Open
 
