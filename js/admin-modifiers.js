@@ -6,11 +6,18 @@
     var csrf   = '';
     var groups = [];
 
+    function getCsrfToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.content
+            || document.querySelector('input[name="csrf_token"]')?.value
+            || document.body?.getAttribute('data-csrf-token')
+            || '';
+    }
+
     function init() {
         var wrap = document.getElementById('modifiersSection');
         if (!wrap) return;
         itemId = parseInt(wrap.dataset.itemId, 10) || 0;
-        csrf   = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        csrf   = getCsrfToken();
         if (!itemId) return;
         loadModifiers();
         document.getElementById('addModifierGroupBtn')
@@ -18,10 +25,11 @@
     }
 
     function api(body) {
+        var token = csrf || getCsrfToken();
         return fetch('/api/save-modifiers.php', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-            body: JSON.stringify(Object.assign({ csrf_token: csrf }, body))
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token },
+            body: JSON.stringify(Object.assign({ csrf_token: token }, body))
         }).then(function (r) { return r.json(); });
     }
 
