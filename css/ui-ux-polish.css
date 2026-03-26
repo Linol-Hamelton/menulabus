@@ -437,7 +437,7 @@ body.menu-catalog-page {
 }
 
 body.menu-catalog-page .menu-discovery-strip {
-  padding: 20px 0 18px;
+  padding: 3% 0 1%;
 }
 
 body.menu-catalog-page .menu-discovery-toolbar {
@@ -1481,9 +1481,13 @@ body.account-page:not(.help-page):not(.admin-menu-page) button[name="change_menu
   scroll-margin-bottom: calc(var(--bottom-tab-rail-clearance) + 18px);
 }
 
+body.menu-catalog-page .menu-content {
+  margin-bottom: 16px;
+}
+
 body.menu-catalog-page #menu,
 body.menu-catalog-page .menu-content {
-  padding-bottom: max(36px, calc(var(--bottom-tab-rail-clearance) + 6px)) !important;
+  padding-bottom: max(8px, calc(var(--bottom-tab-rail-clearance) - 96px)) !important;
 }
 
 body.menu-catalog-page footer,
