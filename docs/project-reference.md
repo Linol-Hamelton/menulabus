@@ -237,3 +237,4 @@ These surfaces are implemented in code but are audited repo-first unless a safe 
 - In the `dishes` workspace, the catalog list now renders before the update/editor card so operators see the active catalog immediately after the top admin tabs.
 - In the `admin-menu` catalog desktop table, the actions column now switches to a centered stacked-button layout in the `769px–978px` range so `Редактировать` and `Архивировать` stay readable instead of collapsing into an awkward inline cluster.
 - `admin-modifiers.js` now resolves CSRF the same way as the other admin JS surfaces: `meta[name=\"csrf-token\"]` first, then hidden `input[name=\"csrf_token\"]`, then `body[data-csrf-token]`.
+- `admin-menu.php` now versions `admin-modifiers.js` by filemtime instead of the coarse app version so CSP-safe immutable caching does not keep stale edit-mode JS after deploy.
