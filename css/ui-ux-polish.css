@@ -1107,11 +1107,11 @@ body.tenant-homepage .footer-bottom {
   }
 
   body.employee-page.admin-menu-page .admin-tabs {
-    flex-wrap: nowrap !important;
-    gap: 8px;
+    gap: 20px;
     overflow-x: auto;
-    padding-bottom: 12px;
+    padding: 20px;
     scrollbar-width: thin;
+    justify-content: center;
   }
 
   body.employee-page.admin-menu-page .admin-tab-btn {

@@ -52,6 +52,7 @@ Improve quality, clarity, and conversion without breaking the ordering engine or
 - the owner report toolbar now separates report switching from period filtering with a stronger card hierarchy and cleaner spacing
 - the bottom tab rail now uses one shared geometry contract across provider/tenant menu, account, owner, employee, and admin-menu surfaces instead of page-specific fixed-bottom overrides
 - `admin-menu.php` now also keeps one shared inline width for the section header actions, top admin tabs, and main editor/catalog cards, so the working column stays aligned on desktop, tablet, and mobile
+- in the `dishes` tab, the operator flow now shows the catalog surface before the update/editor surface, matching the primary browse-then-edit workflow
 
 ## What Is Still Open
 

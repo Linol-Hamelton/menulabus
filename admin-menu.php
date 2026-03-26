@@ -240,134 +240,6 @@ $savedDbFontsJson = htmlspecialchars(
         <!-- Dishes Tab -->
         <div class="admin-tab-pane active" id="dishes">
             <div class="admin-dishes-pane">
-            <section class="admin-form-container admin-section-card admin-dishes-editor">
-                <div class="admin-pane-header">
-                    <div class="admin-pane-header-copy">
-                        <p class="admin-pane-kicker">Каталог и наполнение</p>
-                        <p class="admin-pane-caption">Загрузка, ручное редактирование и управление текущим каталогом собраны в одном рабочем пространстве.</p>
-                    </div>
-                </div>
-                <div class="admin-dishes-workspace">
-                <h2><?= $editItem ? 'Редактировать' : 'Обновление' ?></h2>
-
-                <!-- Bulk upload -->
-                <section class="admin-form-group admin-subsection-card admin-block admin-block--csv">
-                    <h3>Из CSV</h3>
-                    <form method="POST" enctype="multipart/form-data">
-                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                        <a href="download-sample.php" download="Update.csv" class="download-button-container">Образец</a>
-                        <input type="file" name="csv_file" accept=".csv" required>
-                        <button type="submit" name="bulk_upload" class="checkout-btn">Загрузить</button>
-                    </form>
-                    <small>UTF-8 CSV. Полная синхронизация: позиции вне файла будут архивированы. Формат: external_id;name;description;composition;price;image;calories;protein;fat;carbs;category;available</small>
-                </section>
-
-                <div class="admin-subsection-card admin-block admin-block--manual">
-                <form method="POST">
-                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                    <input type="hidden" name="id" value="<?= $editItem['id'] ?? '' ?>">
-
-                    <div class="admin-form-group">
-                        <h3>Вручную</h3>
-                        <label>Название</label>
-                        <input type="text" name="name" value="<?= htmlspecialchars($editItem['name'] ?? '') ?>" required>
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label>Описание</label>
-                        <textarea name="description" rows="3"><?= htmlspecialchars($editItem['description'] ?? '') ?></textarea>
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label>Состав</label>
-                        <textarea name="composition" rows="2"><?= htmlspecialchars($editItem['composition'] ?? '') ?></textarea>
-                        <small>Разделяйте ингредиенты запятыми (например: "яйцо, мука, молоко")</small>
-                    </div>
-
-                    <!-- Калорийность и БЖУ -->
-                    <div class="admin-form-group">
-                        <label>Калорийность (ккал)</label>
-                        <input type="number" name="calories" value="<?= $editItem['calories'] ?? '' ?>">
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label>Белки (г)</label>
-                        <input type="number" name="protein" value="<?= $editItem['protein'] ?? '' ?>">
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label>Жиры (г)</label>
-                        <input type="number" name="fat" value="<?= $editItem['fat'] ?? '' ?>">
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label>Углеводы (г)</label>
-                        <input type="number" name="carbs" value="<?= $editItem['carbs'] ?? '' ?>">
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label>Цена (₽)</label>
-                        <input type="number" step="0.01" name="price" value="<?= $editItem['price'] ?? '' ?>" required>
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label>Изображение (./dir/name.jpg)</label>
-                        <input type="text" name="image" value="<?= htmlspecialchars($editItem['image'] ?? '') ?>">
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label>Категория</label>
-                        <input type="text" name="category" list="cats" value="<?= htmlspecialchars($editItem['category'] ?? '') ?>" required>
-                        <datalist id="cats">
-                            <?php foreach ($categories as $c): ?>
-                                <option value="<?= htmlspecialchars($c) ?>">
-                                <?php endforeach; ?>
-                        </datalist>
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label>
-                            <input type="checkbox" name="available" <?= isset($editItem['available']) && $editItem['available'] ? 'checked' : 'checked' ?>>
-                            Доступен
-                        </label>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="submit" class="checkout-btn"><?= $editItem ? 'Сохранить' : 'Добавить' ?></button>
-                        <?php if ($editItem): ?>
-                            <a href="admin-menu.php" class="admin-checkout-btn cancel">Отмена</a>
-                        <?php endif; ?>
-                    </div>
-                </form>
-                </div>
-                </div>
-
-                <?php if ($editItem): ?>
-                    <!-- ── Модификаторы (только при редактировании) ── -->
-                    <section class="admin-form-group admin-subsection-card admin-block admin-block--modifiers" id="modifiersSection" data-item-id="<?= (int)$editItem['id'] ?>">
-                        <h3>Модификаторы (варианты блюда)</h3>
-                        <p class="yk-desc">Например: «Степень прожарки» с вариантами Medium / Well-done, или «Добавки» с несколькими вариантами.</p>
-                        <div id="modifierGroupList"></div>
-                        <div class="mod-new-group-row">
-                            <input type="text" id="newGroupName" placeholder="Название группы" maxlength="100">
-                            <select id="newGroupType">
-                                <option value="radio">Один вариант (radio)</option>
-                                <option value="checkbox">Несколько (checkbox)</option>
-                            </select>
-                            <label>
-                                <input type="checkbox" id="newGroupRequired"> Обязательно
-                            </label>
-                            <button id="addModifierGroupBtn" class="checkout-btn">
-                                <svg class="btn-inline-icon" aria-hidden="true" viewBox="0 0 256 256">
-                                    <use href="/images/icons/phosphor-sprite.svg#plus"></use>
-                                </svg>
-                                <span>Группа</span>
-                            </button>
-                        </div>
-                    </section>
-                <?php endif; ?>
-            </section>
-
             <section class="admin-form-container admin-section-card admin-catalog-card admin-block admin-block--catalog">
             <div class="admin-catalog-toolbar">
                 <div class="form-actions menu-view-switch">
@@ -498,6 +370,135 @@ $savedDbFontsJson = htmlspecialchars(
                 </div>
             </div>
             </section>
+
+            <section class="admin-form-container admin-section-card admin-dishes-editor">
+                <div class="admin-pane-header">
+                    <div class="admin-pane-header-copy">
+                        <p class="admin-pane-kicker">Каталог и наполнение</p>
+                        <p class="admin-pane-caption">Загрузка, ручное редактирование и управление текущим каталогом собраны в одном рабочем пространстве.</p>
+                    </div>
+                </div>
+                <div class="admin-dishes-workspace">
+                <h2><?= $editItem ? 'Редактировать' : 'Обновление' ?></h2>
+
+                <!-- Bulk upload -->
+                <section class="admin-form-group admin-subsection-card admin-block admin-block--csv">
+                    <h3>Из CSV</h3>
+                    <form method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                        <a href="download-sample.php" download="Update.csv" class="download-button-container">Образец</a>
+                        <input type="file" name="csv_file" accept=".csv" required>
+                        <button type="submit" name="bulk_upload" class="checkout-btn">Загрузить</button>
+                    </form>
+                    <small>UTF-8 CSV. Полная синхронизация: позиции вне файла будут архивированы. Формат: external_id;name;description;composition;price;image;calories;protein;fat;carbs;category;available</small>
+                </section>
+
+                <div class="admin-subsection-card admin-block admin-block--manual">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                    <input type="hidden" name="id" value="<?= $editItem['id'] ?? '' ?>">
+
+                    <div class="admin-form-group">
+                        <h3>Вручную</h3>
+                        <label>Название</label>
+                        <input type="text" name="name" value="<?= htmlspecialchars($editItem['name'] ?? '') ?>" required>
+                    </div>
+
+                    <div class="admin-form-group">
+                        <label>Описание</label>
+                        <textarea name="description" rows="3"><?= htmlspecialchars($editItem['description'] ?? '') ?></textarea>
+                    </div>
+
+                    <div class="admin-form-group">
+                        <label>Состав</label>
+                        <textarea name="composition" rows="2"><?= htmlspecialchars($editItem['composition'] ?? '') ?></textarea>
+                        <small>Разделяйте ингредиенты запятыми (например: "яйцо, мука, молоко")</small>
+                    </div>
+
+                    <!-- Калорийность и БЖУ -->
+                    <div class="admin-form-group">
+                        <label>Калорийность (ккал)</label>
+                        <input type="number" name="calories" value="<?= $editItem['calories'] ?? '' ?>">
+                    </div>
+
+                    <div class="admin-form-group">
+                        <label>Белки (г)</label>
+                        <input type="number" name="protein" value="<?= $editItem['protein'] ?? '' ?>">
+                    </div>
+
+                    <div class="admin-form-group">
+                        <label>Жиры (г)</label>
+                        <input type="number" name="fat" value="<?= $editItem['fat'] ?? '' ?>">
+                    </div>
+
+                    <div class="admin-form-group">
+                        <label>Углеводы (г)</label>
+                        <input type="number" name="carbs" value="<?= $editItem['carbs'] ?? '' ?>">
+                    </div>
+
+                    <div class="admin-form-group">
+                        <label>Цена (₽)</label>
+                        <input type="number" step="0.01" name="price" value="<?= $editItem['price'] ?? '' ?>" required>
+                    </div>
+
+                    <div class="admin-form-group">
+                        <label>Изображение (./dir/name.jpg)</label>
+                        <input type="text" name="image" value="<?= htmlspecialchars($editItem['image'] ?? '') ?>">
+                    </div>
+
+                    <div class="admin-form-group">
+                        <label>Категория</label>
+                        <input type="text" name="category" list="cats" value="<?= htmlspecialchars($editItem['category'] ?? '') ?>" required>
+                        <datalist id="cats">
+                            <?php foreach ($categories as $c): ?>
+                                <option value="<?= htmlspecialchars($c) ?>">
+                                <?php endforeach; ?>
+                        </datalist>
+                    </div>
+
+                    <div class="admin-form-group">
+                        <label>
+                            <input type="checkbox" name="available" <?= isset($editItem['available']) && $editItem['available'] ? 'checked' : 'checked' ?>>
+                            Доступен
+                        </label>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="checkout-btn"><?= $editItem ? 'Сохранить' : 'Добавить' ?></button>
+                        <?php if ($editItem): ?>
+                            <a href="admin-menu.php" class="admin-checkout-btn cancel">Отмена</a>
+                        <?php endif; ?>
+                    </div>
+                </form>
+                </div>
+                </div>
+
+                <?php if ($editItem): ?>
+                    <!-- ── Модификаторы (только при редактировании) ── -->
+                    <section class="admin-form-group admin-subsection-card admin-block admin-block--modifiers" id="modifiersSection" data-item-id="<?= (int)$editItem['id'] ?>">
+                        <h3>Модификаторы (варианты блюда)</h3>
+                        <p class="yk-desc">Например: «Степень прожарки» с вариантами Medium / Well-done, или «Добавки» с несколькими вариантами.</p>
+                        <div id="modifierGroupList"></div>
+                        <div class="mod-new-group-row">
+                            <input type="text" id="newGroupName" placeholder="Название группы" maxlength="100">
+                            <select id="newGroupType">
+                                <option value="radio">Один вариант (radio)</option>
+                                <option value="checkbox">Несколько (checkbox)</option>
+                            </select>
+                            <label>
+                                <input type="checkbox" id="newGroupRequired"> Обязательно
+                            </label>
+                            <button id="addModifierGroupBtn" class="checkout-btn">
+                                <svg class="btn-inline-icon" aria-hidden="true" viewBox="0 0 256 256">
+                                    <use href="/images/icons/phosphor-sprite.svg#plus"></use>
+                                </svg>
+                                <span>Группа</span>
+                            </button>
+                        </div>
+                    </section>
+                <?php endif; ?>
+            </section>
+
             </div>
         </div>
 
