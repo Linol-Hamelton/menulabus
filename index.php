@@ -78,6 +78,7 @@ $tenantSecondaryLabel = $hasTenantContacts
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= $appVer ?>">
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= $appVer ?>">
     <link rel="stylesheet" href="/css/index-landing.css?v=<?= $appVer ?>">
+    <link rel="stylesheet" href="/css/index-hero.css?v=<?= $appVer ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= $appVer ?>">
     <title><?= $tenantMetaTitle ?></title>
 </head>
@@ -93,20 +94,15 @@ $tenantSecondaryLabel = $hasTenantContacts
                         srcset="/images/HDR_320.webp 320w, /images/HDR_640.webp 640w"
                         media="(max-width: 768px)"
                         type="image/webp">
-                    <source
-                        srcset="/images/HDR_1024.webp 1024w"
-                        media="(max-width: 1280px)"
-                        type="image/webp">
                     <img
-                        src="/images/HDR_1440.webp"
-                        srcset="/images/HDR_1440.webp 1440w"
+                        src="/images/HDR_640.webp"
+                        srcset="/images/HDR_640.webp 640w"
                         alt="Меню от <?= $siteName ?>"
                         loading="eager"
                         decoding="async">
                 </picture>
             </div>
             <div class="hero-content">
-                <span class="hero-eyebrow">Digital dining flow</span>
                 <h1><?= $siteName ?></h1>
                 <?php if ($tagline !== ''): ?>
                     <p><?= $tagline ?></p>
@@ -114,11 +110,6 @@ $tenantSecondaryLabel = $hasTenantContacts
                 <div class="hero-actions">
                     <a href="/menu.php" class="btn hero-btn-primary">Открыть меню</a>
                     <a href="#reservation" class="btn hero-btn-secondary">Оставить заявку</a>
-                </div>
-                <div class="hero-quick-points" aria-label="Быстрые преимущества">
-                    <span>QR-меню без лишних шагов</span>
-                    <span>Быстрый переход к заказу</span>
-                    <span>Консультация и внедрение под ресторан</span>
                 </div>
             </div>
         </section>
@@ -213,20 +204,15 @@ $tenantSecondaryLabel = $hasTenantContacts
                         srcset="/images/HDR_320.webp 320w, /images/HDR_640.webp 640w"
                         media="(max-width: 768px)"
                         type="image/webp">
-                    <source
-                        srcset="/images/HDR_1024.webp 1024w"
-                        media="(max-width: 1280px)"
-                        type="image/webp">
                     <img
-                        src="/images/HDR_1440.webp"
-                        srcset="/images/HDR_1440.webp 1440w"
+                        src="/images/HDR_640.webp"
+                        srcset="/images/HDR_640.webp 640w"
                         alt="<?= $siteName ?>"
                         loading="eager"
                         decoding="async">
                 </picture>
             </div>
             <div class="hero-content">
-                <span class="hero-eyebrow">Restaurant homepage</span>
                 <h1><?= $siteName ?></h1>
                 <?php if ($tenantLeadText !== ''): ?>
                     <p><?= $tenantLeadText ?></p>

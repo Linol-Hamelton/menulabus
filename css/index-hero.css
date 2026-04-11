@@ -1,0 +1,340 @@
+/* Hero — first screen of index.php
+   Scoped under body.index-landing-page / body.tenant-homepage so nothing else is affected.
+   Loaded after index-landing.css and ui-ux-polish.css — overrides earlier hero rules via source order. */
+
+body.index-landing-page .hero,
+body.tenant-homepage .hero {
+  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr;
+  height: auto;
+  min-height: 100svh;
+  min-height: 100vh;
+  overflow: hidden;
+  padding: clamp(96px, 12vh, 160px) 0 clamp(72px, 10vh, 128px);
+  position: relative;
+}
+
+body.index-landing-page .hero__bg,
+body.tenant-homepage .hero__bg {
+  inset: 0;
+  margin: 0;
+  overflow: hidden;
+  position: absolute;
+  z-index: 0;
+}
+
+body.index-landing-page .hero__bg picture,
+body.tenant-homepage .hero__bg picture {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+body.index-landing-page .hero__bg img,
+body.tenant-homepage .hero__bg img {
+  display: block;
+  filter: saturate(1.05) contrast(1.02);
+  height: 100%;
+  object-fit: cover;
+  transform-origin: center center;
+  width: 100%;
+  will-change: transform;
+}
+
+body.index-landing-page .hero::before,
+body.tenant-homepage .hero::before {
+  background:
+    radial-gradient(ellipse at 50% 35%, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.35) 55%, rgba(0, 0, 0, 0.72) 100%),
+    linear-gradient(180deg, rgba(8, 8, 10, 0.55) 0%, rgba(8, 8, 10, 0.2) 45%, rgba(8, 8, 10, 0.78) 100%);
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+}
+
+body.index-landing-page .hero::after,
+body.tenant-homepage .hero::after {
+  background:
+    radial-gradient(circle at 22% 28%, rgba(255, 226, 190, 0.16) 0%, rgba(255, 226, 190, 0) 42%),
+    radial-gradient(circle at 82% 72%, rgba(205, 23, 25, 0.18) 0%, rgba(205, 23, 25, 0) 48%);
+  content: "";
+  inset: -10%;
+  mix-blend-mode: screen;
+  opacity: 0.9;
+  pointer-events: none;
+  position: absolute;
+  will-change: transform, opacity;
+  z-index: 1;
+}
+
+body.index-landing-page .hero-content,
+body.tenant-homepage .hero-content {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(18px, 2.4vw, 28px);
+  margin: 0 auto;
+  max-width: 760px;
+  padding: 0 clamp(20px, 4vw, 40px);
+  position: relative;
+  text-align: center;
+  text-shadow: 0 2px 28px rgba(0, 0, 0, 0.45);
+  width: 100%;
+  z-index: 2;
+}
+
+body.index-landing-page .hero-content h1,
+body.tenant-homepage .hero-content h1 {
+  color: #fff;
+  font-size: clamp(2.8rem, 6.2vw, 5.4rem);
+  font-weight: 600;
+  height: auto;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+  margin: 0;
+  text-wrap: balance;
+}
+
+body.index-landing-page .hero-content p,
+body.tenant-homepage .hero-content p {
+  color: rgba(255, 255, 255, 0.84);
+  font-size: clamp(1rem, 1.35vw, 1.18rem);
+  font-weight: 400;
+  line-height: 1.6;
+  margin: 0 auto;
+  max-width: 44ch;
+  text-wrap: pretty;
+}
+
+body.index-landing-page .hero-actions,
+body.tenant-homepage .hero-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: center;
+  margin: clamp(8px, 1.6vw, 18px) auto 0;
+  width: fit-content;
+}
+
+body.index-landing-page .hero-btn-primary,
+body.tenant-homepage .hero-btn-primary,
+body.index-landing-page .hero-btn-secondary,
+body.tenant-homepage .hero-btn-secondary {
+  align-items: center;
+  border-radius: 14px;
+  display: inline-flex;
+  font-size: 0.98rem;
+  font-weight: 500;
+  justify-content: center;
+  letter-spacing: 0.01em;
+  min-height: 52px;
+  min-width: 180px;
+  padding: 0 26px;
+  transition: transform 0.25s ease, background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body.index-landing-page .hero-btn-primary:hover,
+body.tenant-homepage .hero-btn-primary:hover {
+  transform: translateY(-1px);
+}
+
+body.index-landing-page .hero-btn-secondary,
+body.tenant-homepage .hero-btn-secondary {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  box-shadow: none;
+  color: #fff;
+}
+
+body.index-landing-page .hero-btn-secondary:hover,
+body.tenant-homepage .hero-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.62);
+  transform: translateY(-1px);
+}
+
+body.index-landing-page .hero-quick-points,
+body.tenant-homepage .hero-quick-points {
+  align-items: center;
+  color: rgba(255, 255, 255, 0.72);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  gap: 6px 18px;
+  justify-content: center;
+  letter-spacing: 0.01em;
+  margin: clamp(6px, 1.2vw, 14px) auto 0;
+  max-width: 640px;
+  padding: 0;
+}
+
+body.index-landing-page .hero-quick-points span,
+body.tenant-homepage .hero-quick-points span {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+  font-size: inherit;
+  padding: 0;
+  position: relative;
+}
+
+body.index-landing-page .hero-quick-points span + span::before,
+body.tenant-homepage .hero-quick-points span + span::before {
+  content: "·";
+  display: inline-block;
+  margin-right: 18px;
+  opacity: 0.6;
+}
+
+/* Entrance + ambient animation — only when user hasn't requested reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes heroFadeUp {
+    0% {
+      opacity: 0;
+      transform: translate3d(0, 18px, 0);
+    }
+    100% {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  @keyframes heroKenBurns {
+    0% {
+      transform: scale(1.02) translate3d(0, 0, 0);
+    }
+    100% {
+      transform: scale(1.12) translate3d(-1.5%, -1%, 0);
+    }
+  }
+
+  @keyframes heroGlowDrift {
+    0% {
+      opacity: 0.7;
+      transform: translate3d(0, 0, 0);
+    }
+    50% {
+      opacity: 1;
+      transform: translate3d(2%, -1.5%, 0);
+    }
+    100% {
+      opacity: 0.7;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  @keyframes heroBgFade {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+
+  body.index-landing-page .hero__bg,
+  body.tenant-homepage .hero__bg {
+    animation: heroBgFade 1.2s ease-out both;
+  }
+
+  body.index-landing-page .hero__bg img,
+  body.tenant-homepage .hero__bg img {
+    animation: heroKenBurns 22s ease-in-out infinite alternate;
+  }
+
+  body.index-landing-page .hero::after,
+  body.tenant-homepage .hero::after {
+    animation: heroGlowDrift 16s ease-in-out infinite;
+  }
+
+  body.index-landing-page .hero-content > *,
+  body.tenant-homepage .hero-content > * {
+    animation: heroFadeUp 0.8s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+
+  body.index-landing-page .hero-content > h1,
+  body.tenant-homepage .hero-content > h1 {
+    animation-delay: 0.1s;
+  }
+
+  body.index-landing-page .hero-content > p,
+  body.tenant-homepage .hero-content > p {
+    animation-delay: 0.28s;
+  }
+
+  body.index-landing-page .hero-content > .hero-actions,
+  body.tenant-homepage .hero-content > .hero-actions {
+    animation-delay: 0.44s;
+  }
+
+  body.index-landing-page .hero-content > .hero-quick-points,
+  body.tenant-homepage .hero-content > .hero-quick-points {
+    animation-delay: 0.6s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.index-landing-page .hero__bg img,
+  body.tenant-homepage .hero__bg img {
+    animation: none;
+    transform: none;
+  }
+}
+
+/* Tighter rhythm on small screens. */
+@media (max-width: 768px) {
+  body.index-landing-page .hero,
+  body.tenant-homepage .hero {
+    min-height: 92svh;
+    padding: clamp(80px, 14vh, 120px) 0 clamp(56px, 10vh, 96px);
+  }
+
+  body.index-landing-page .hero-content,
+  body.tenant-homepage .hero-content {
+    gap: 18px;
+    max-width: 100%;
+    padding: 0 22px;
+  }
+
+  body.index-landing-page .hero-content h1,
+  body.tenant-homepage .hero-content h1 {
+    font-size: clamp(2.4rem, 9vw, 3.4rem);
+    line-height: 1.05;
+  }
+
+  body.index-landing-page .hero-content p,
+  body.tenant-homepage .hero-content p {
+    font-size: 1rem;
+  }
+
+  body.index-landing-page .hero-actions,
+  body.tenant-homepage .hero-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  body.index-landing-page .hero-btn-primary,
+  body.tenant-homepage .hero-btn-primary,
+  body.index-landing-page .hero-btn-secondary,
+  body.tenant-homepage .hero-btn-secondary {
+    min-width: min(280px, 100%);
+    width: 100%;
+  }
+
+  body.index-landing-page .hero-quick-points,
+  body.tenant-homepage .hero-quick-points {
+    font-size: 0.82rem;
+    gap: 4px 12px;
+  }
+
+  body.index-landing-page .hero-quick-points span + span::before,
+  body.tenant-homepage .hero-quick-points span + span::before {
+    margin-right: 12px;
+  }
+}
