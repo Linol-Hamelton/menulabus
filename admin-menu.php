@@ -682,6 +682,15 @@ $savedDbFontsJson = htmlspecialchars(
                                 Это информационное поле. Фактическое подключение домена и выбор tenant-БД теперь управляются через внешний tenant registry.
                             </small>
                         </label>
+                        <label class="admin-label">
+                            Ссылка на отзыв в Google
+                            <input type="url" id="brandGoogleReviewUrl" class="admin-input"
+                                value="<?= htmlspecialchars($bs('google_review_url')) ?>"
+                                maxlength="500" placeholder="https://g.page/r/.../review">
+                            <small class="brand-logo-hint">
+                                Ссылка, куда гостям предлагается опубликовать 5-звёздочный отзыв после завершения заказа. Если поле пустое — кнопка «Поделиться в Google» скрыта.
+                            </small>
+                        </label>
                         <label class="admin-label" id="hideBrandingLabel">
                             <input type="checkbox" id="brandHideBranding" <?= $bs('hide_labus_branding') === 'true' ? ' checked' : '' ?>>
                             Скрыть упоминание Labus в публичных страницах

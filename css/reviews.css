@@ -1,0 +1,269 @@
+/* reviews.css — customer review block on order-track.php
+ *
+ * Scoped under .review-section so rules don't leak into the rest of the
+ * tracker card. CSS-only star highlight: the radio inputs stay focusable
+ * but visually hidden, and hover/checked state propagates to the star glyph
+ * through :has() + ~ sibling selectors.
+ */
+
+.review-section {
+    margin-top: 24px;
+    padding: 20px 18px;
+    background: #fff;
+    border: 1px solid #ececec;
+    border-radius: 14px;
+    text-align: center;
+}
+
+.review-section--done {
+    background: #f6fbf6;
+    border-color: #c8e6c9;
+}
+
+.review-title {
+    margin: 0 0 6px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #212121;
+}
+
+.review-sub {
+    margin: 0 0 16px;
+    font-size: 14px;
+    color: #6b6b6b;
+}
+
+.review-existing-comment {
+    margin: 12px 0 0;
+    padding: 10px 14px;
+    background: #fff;
+    border-left: 3px solid #4caf50;
+    border-radius: 6px;
+    text-align: left;
+    font-size: 14px;
+    color: #333;
+}
+
+/* Star row */
+.review-stars {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 0;
+    margin: 0 0 14px;
+    border: none;
+}
+
+.review-star {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 4px;
+    transition: transform 0.12s ease;
+}
+
+.review-star:hover {
+    transform: scale(1.08);
+}
+
+.review-star-input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+}
+
+.review-star-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.review-star-glyph {
+    display: inline-flex;
+    color: #d9d9d9;
+    transition: color 0.12s ease;
+}
+
+/* Hover cascade: while hovering a star, every star up to and including
+ * the hovered one lights up. We use the :has() trick on the fieldset:
+ * when the fieldset is being hovered, we apply the hover color to stars
+ * that come BEFORE or AT the hovered position. Because there's no
+ * "preceding sibling" selector, we instead flip the approach:
+ *   default: all stars muted
+ *   fieldset:hover: all stars lit
+ *   star:hover ~ star: mute back
+ */
+.review-stars:hover .review-star-glyph {
+    color: #ffb300;
+}
+
+.review-star:hover ~ .review-star .review-star-glyph {
+    color: #d9d9d9;
+}
+
+/* Checked cascade: same trick, but persistent via :checked. */
+.review-stars:has(.review-star-input:checked) .review-star-glyph {
+    color: #ffb300;
+}
+
+.review-star-input:checked ~ .review-star-glyph {
+    color: #ffb300;
+}
+
+.review-star:has(~ .review-star .review-star-input:checked) .review-star-glyph {
+    color: #ffb300;
+}
+
+/* Focus ring for keyboard nav */
+.review-star-input:focus-visible ~ .review-star-glyph {
+    outline: 2px solid #2196f3;
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* Comment */
+.review-comment-label {
+    display: block;
+    text-align: left;
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 14px;
+}
+
+.review-comment-label > span {
+    display: block;
+    margin-bottom: 6px;
+}
+
+.review-comment {
+    width: 100%;
+    min-height: 84px;
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 14px;
+    color: #212121;
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.review-comment:focus {
+    outline: none;
+    border-color: #2196f3;
+    background: #fff;
+}
+
+/* Actions */
+.review-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.review-submit {
+    min-width: 160px;
+    padding: 10px 22px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    background: #cd1719;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.review-submit:hover:not(:disabled) {
+    background: #b3141a;
+}
+
+.review-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.review-status {
+    font-size: 13px;
+    color: #6b6b6b;
+}
+
+.review-status--error {
+    color: #cd1719;
+}
+
+.review-status--success {
+    color: #2e7d32;
+}
+
+/* Thank-you state (post-submit) */
+.review-thanks {
+    margin-top: 14px;
+    padding: 16px;
+    background: #f1f8e9;
+    border-radius: 10px;
+}
+
+.review-thanks--hidden {
+    display: none;
+}
+
+.review-thanks h4 {
+    margin: 0 0 6px;
+    font-size: 16px;
+    color: #2e7d32;
+}
+
+.review-thanks p {
+    margin: 0 0 10px;
+    font-size: 14px;
+    color: #4b4b4b;
+}
+
+.review-google-link {
+    display: inline-block;
+    padding: 8px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    background: #4285f4;
+    border-radius: 999px;
+    text-decoration: none;
+    transition: background 0.15s ease;
+}
+
+.review-google-link:hover {
+    background: #3367d6;
+}
+
+.review-google-link--hidden {
+    display: none;
+}
+
+/* Compact on narrow screens */
+@media (max-width: 480px) {
+    .review-section {
+        margin-left: -4px;
+        margin-right: -4px;
+        padding: 16px 14px;
+    }
+
+    .review-stars {
+        gap: 2px;
+    }
+
+    .review-star-glyph svg {
+        width: 28px;
+        height: 28px;
+    }
+}

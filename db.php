@@ -2930,6 +2930,99 @@ class Database
         }
     }
 
+    /**
+     * Store a customer review for a completed order.
+     *
+     * - order_id has a UNIQUE index at the DB layer; duplicate submissions
+     *   raise 23000 / Integrity constraint violation and are caught here so
+     *   the endpoint can report "already reviewed" without a fatal.
+     * - rating is clamped to 1..5 defensively even though reviews-migration
+     *   also enforces a CHECK constraint.
+     * - comment is hard-trimmed to 2000 chars; longer submissions are
+     *   truncated rather than rejected — this matches the append-only spirit
+     *   (we do not want the user to lose text mid-submit).
+     */
+    public function createReview(int $orderId, int $rating, ?string $comment, ?int $userId, ?string $ipHash): ?int
+    {
+        $rating = max(1, min(5, $rating));
+        if ($comment !== null) {
+            $comment = trim($comment);
+            if ($comment === '') {
+                $comment = null;
+            } elseif (mb_strlen($comment) > 2000) {
+                $comment = mb_substr($comment, 0, 2000);
+            }
+        }
+        try {
+            $stmt = $this->prepareCached("
+                INSERT INTO reviews (order_id, user_id, rating, comment, ip_hash, created_at)
+                VALUES (:order_id, :user_id, :rating, :comment, :ip_hash, NOW())
+            ");
+            $stmt->execute([
+                ':order_id' => $orderId,
+                ':user_id'  => $userId,
+                ':rating'   => $rating,
+                ':comment'  => $comment,
+                ':ip_hash'  => $ipHash,
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            // SQLSTATE 23000 = duplicate (unique key violation). Swallow so
+            // the endpoint can report "already reviewed" cleanly.
+            if ($e->getCode() === '23000') {
+                return null;
+            }
+            error_log("createReview error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getReviewByOrderId(int $orderId): ?array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, order_id, user_id, rating, comment, created_at
+                FROM reviews
+                WHERE order_id = :order_id
+                LIMIT 1
+            ");
+            $stmt->execute([':order_id' => $orderId]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log("getReviewByOrderId error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Owner-facing list: latest N reviews with a minimal join to orders so
+     * the admin surface can show the order total alongside the stars. The
+     * LEFT JOIN is intentional — orders deleted by a cleanup script would
+     * already have cascaded their reviews out, but a LEFT JOIN keeps the
+     * query robust against schema skew on old tenants.
+     */
+    public function getRecentReviews(int $limit = 50): array
+    {
+        $limit = max(1, min(200, $limit));
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT r.id, r.order_id, r.user_id, r.rating, r.comment, r.created_at,
+                       o.total AS order_total, o.status AS order_status
+                FROM reviews r
+                LEFT JOIN orders o ON o.id = r.order_id
+                ORDER BY r.created_at DESC, r.id DESC
+                LIMIT {$limit}
+            ");
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log("getRecentReviews error: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getConnection()
     {
         return $this->connection;

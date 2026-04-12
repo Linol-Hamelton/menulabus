@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-26`
+- Last reviewed: `2026-04-12`
 - Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
 - Current implementation notes:
   - Hostname-aware runtime and control-plane tenant resolution are implemented.
@@ -67,6 +67,7 @@ Current implementation:
 - Nginx frontend with FastCGI and selective cache/microcache configuration
 - PHP-FPM with documented pool-split templates (`web` / `api` / `sse`)
 - PWA shell and push-related code paths
+- Composer-managed third-party libraries under `vendor/` for the Web Push pipeline (Minishlink WebPush + transitive Symfony / web-token / Guzzle deps). PHPMailer is currently mid-migration: it is declared in [composer.json](../composer.json) (`phpmailer/phpmailer ^6.10`) **and** still ships as a vendored copy under `phpmailer/`. [mailer.php](../mailer.php) loads the Composer autoloader when `vendor/composer/autoload_real.php` is present and falls back to the vendored copy otherwise. Phase 2 of the migration (removing the vendored `phpmailer/` directory) is gated on every deploy host running `composer install` reliably — see audit B.10/E.5.2.
 
 ## 4. Request Architecture
 
@@ -89,52 +90,119 @@ Current implementation:
 
 ### 5.1 Provider deployment
 
-- `/` => provider B2B landing
-- `/index.php` => provider landing
-- `/menu.php` => demo menu / transactional surface
+- `/` → provider B2B landing (`index.php`)
+- `/index.php` → provider landing
+- `/menu.php` → demo menu / transactional surface
 
 ### 5.2 Tenant deployment
 
-- `/` => tenant public entry, configurable as restaurant homepage or redirect to `/menu.php`
-- `/menu.php` => primary transactional menu
-- `/cart.php`
-- `/create_new_order.php`, `/create_guest_order.php`
-- `/order-track.php`, `/order-status.php`
+Public + customer flow:
+
+- `/` → tenant public entry; controlled by `public_entry_mode` (`homepage` or `menu`)
+- `/menu.php` → primary transactional menu
+- `/cart.php` → cart + tips UI (see [tips.md](./tips.md))
+- `/create_new_order.php` → order create endpoint for authenticated customers
+- `/create_guest_order.php` → guest order create endpoint
+- `/order-track.php` → customer-facing order status page; on completed orders, renders the 1–5 star feedback submission block (see [reviews.md](./reviews.md))
+- `/order-status.php` → short-poll status fetch used by the tracker
+- `/save-review.php` → customer review submission endpoint (CSRF + session-scoped ownership; append-only). See [reviews.md](./reviews.md)
+- `/orders-sse.php` → server-sent events stream for live updates
+- `/ws-poll.php` → long-poll fallback for live updates
+- `/payment-return.php` → redirect landing after YooKassa / T-Bank payment
+- `/payment-webhook.php` → provider webhook receiver (YooKassa + T-Bank). See [payments-integration.md](./payments-integration.md)
+- `/confirm-cash-payment.php` → staff cash confirmation (idempotent). Token via header `Idempotency-Key`
+- `/generate-payment-link.php` → staff "Waiter link" generator (admin/owner/employee)
+- `/telegram-webhook.php` → bot callback handler for accept/reject buttons. See [telegram-bot-setup.md](./telegram-bot-setup.md)
+- `/telegram-notifications.php` → library include, not a standalone endpoint
+- `/download-sample.php`, `/qr.php` → auxiliary guest surfaces
+- `/manifest.php` → dynamic PWA manifest, rewritten from `/manifest.webmanifest`. See [pwa-and-push.md](./pwa-and-push.md)
+- `/sw.js`, `/offline.html` → service worker + offline fallback
+- `/dynamic-fonts.php`, `/auto-fonts.php` → brand font delivery
 
 ## 6. Backoffice
 
-- `/auth.php`, `/logout.php`, `/password-reset.php`
+Auth and account:
+
+- `/auth.php`, `/logout.php`, `/password-reset.php`, `/verify-email.php`
+- `/google-oauth-start.php`, `/google-oauth-callback.php`
+- `/vk-oauth-start.php`, `/vk-oauth-callback.php`
+- `/yandex-oauth-start.php`, `/yandex-oauth-callback.php`
 - `/account.php`
 - `/help.php`
-- `/owner.php`
-- `/employee.php`
-- `/admin-menu.php`
-- `/qr-print.php`
-- `/stale-order-cleanup.php`
+
+Owner / admin / employee surfaces:
+
+- `/owner.php` — dashboard, reports, ABC analysis, read-only "Отзывы" tab (last 50, see [reviews.md](./reviews.md))
+- `/employee.php` — live order board, cash confirmation
+- `/admin-menu.php` — catalog editor, categories, modifier editor (see [modifiers.md](./modifiers.md))
+- `/qr-print.php` — table QR code print sheet
+- `/stale-order-cleanup.php` — stale-order cleanup UI
+- `/onboarding.php` — 5-step wizard for first-run brand setup. See Section 4 of [tenant-launch-checklist.md](./tenant-launch-checklist.md)
+
+Settings writers (CSRF + role-gated):
+
+- `/save-brand.php`, `/save-colors.php`, `/save-fonts.php`, `/save-contact.php`
+- `/save-payment-settings.php` — YooKassa + T-Bank credentials allowlist (see [payments-integration.md](./payments-integration.md))
+- `/save-telegram-settings.php` — `telegram_chat_id` per tenant
+- `/toggle-available.php` — stop-list toggle; also fires Telegram alert
+- `/update_order_status.php` — employee state-machine transition, also triggers push (see [pwa-and-push.md](./pwa-and-push.md))
+- `/api/save-modifiers.php` — modifier group/option CRUD
+- `/api/save-push-subscription.php` — push subscription persistence
 
 ## 7. Operations and Diagnostics
 
-- `/monitor.php`
-- `/opcache-status.php`
-- `/clear-cache.php`
-- `/file-manager.php`
-- `scripts/api-smoke-runner.php`
-- `scripts/api-metrics-report.php`
-- `scripts/orders/cleanup-stale.php`
-- `scripts/tenant/smoke.php`
-- `scripts/tenant/launch.php`
-- `scripts/tenant/go-live.sh`
-- `scripts/perf/post-release-regression.cjs`
-- `scripts/perf/post-release-regression.sh`
-- `scripts/perf/full-ui-audit.cjs`
+Admin/ops web endpoints (auth-gated, root URLs stable, implementations delegated under `lib/ops/` or `lib/admin/`):
 
-These tools are retained as ops/security helpers and are not part of the normal public product surface.
-Root URLs stay stable, while the implementation for `monitor.php` and `opcache-status.php`
-is delegated to `lib/ops/monitor-page.php` and `lib/ops/opcache-status-page.php`.
-`clear-cache.php` and `file-manager.php` follow the same wrapper pattern via
-`lib/ops/clear-cache-endpoint.php` and `lib/admin/file-manager-endpoint.php`.
-The browser regression runner is also the release visual gate for shared shell and menu-surface polish.
-`scripts/perf/full-ui-audit.cjs` is the exhaustive companion runner for full production audits across roles, routes, desktop/mobile viewports, and order lifecycle coverage.
+- `/monitor.php` → `lib/ops/monitor-page.php`
+- `/opcache-status.php` → `lib/ops/opcache-status-page.php`
+- `/clear-cache.php` → `lib/ops/clear-cache-endpoint.php`
+- `/file-manager.php` → `lib/admin/file-manager-endpoint.php`
+
+Release + API scripts (CLI only, blocked from web by `location ^~ /scripts/ { return 404; }`):
+
+- `scripts/api-smoke-runner.php` — mobile API v1 end-to-end smoke (see [api-smoke.md](./api-smoke.md))
+- `scripts/api-metrics-report.php` — API traffic / latency summary
+- `scripts/validate-openapi.mjs` — OpenAPI contract validator (runs in `pre-push`)
+- `scripts/check-mojibake.php` — CP1251/Latin-1 encoding scanner
+- `scripts/fix_encoding.php` — one-shot encoding repair tool
+- `scripts/docs/check-doc-drift.sh` — docs freshness check (runs in `pre-push`)
+
+Orders / maintenance:
+
+- `scripts/orders/cleanup-stale.php` — CLI counterpart to `/stale-order-cleanup.php`
+- `scripts/db/backfill-order-items.php` — one-shot `order_items` backfill (see [db/backfill-order-items.md](./db/backfill-order-items.md))
+
+Tenant lifecycle:
+
+- `scripts/tenant/launch.php` — new tenant provisioning + schema bootstrap + seed + launch artifact
+- `scripts/tenant/go-live.sh` — one-shot server-side go-live wrapper around `launch.php` (see [deploy/custom-domain-go-live.md](./deploy/custom-domain-go-live.md))
+- `scripts/tenant/provision.php` — lower-level DB/runtime mapping
+- `scripts/tenant/seed.php`, `scripts/tenant/seed_profiles.php`, `scripts/tenant/data/restaurant_demo.php` — demo content seed profiles
+- `scripts/tenant/smoke.php` — provider+tenant post-deploy smoke
+
+Perf / regression:
+
+- `scripts/perf/load_test.py` — synthetic load driver
+- `scripts/perf/run-baseline.sh` — perf baseline capture
+- `scripts/perf/phase2-port-inventory.sh` — Phase 2 network hardening inventory
+- `scripts/perf/checkout-error-top.php` — top checkout errors report
+- `scripts/perf/security-smoke.sh`, `scripts/perf/security-smoke-daily.sh`, `scripts/perf/install-security-smoke-cron.sh`
+- `scripts/perf/post-release-regression.cjs`, `scripts/perf/post-release-regression.sh` — Playwright regression, wired into `post-merge` and `go-live.sh`
+- `scripts/perf/full-ui-audit.cjs` — exhaustive companion runner for full production audits across roles, routes, viewports, and order lifecycle
+
+Security:
+
+- `scripts/security/capture-baseline.sh` — HTTP header + response baseline capture for go-live diffs
+- `scripts/security/apply-network-policy.sh` — network-policy apply helper
+- `scripts/security/harden-ssh-fail2ban.sh` — SSH + fail2ban hardening
+- `scripts/security/monthly-review.sh` — monthly security review helper
+
+Deploy templates:
+
+- `deploy/nginx/custom-domain-http-bootstrap.conf` — HTTP-only vhost for ACME
+- `deploy/nginx/custom-domain-template.conf` — full HTTPS vhost template
+- `deploy/nginx/server-locations-pool-split.conf` — shared location fragment for the FPM pool split
+- `nginx-optimized.conf` — reference config
 
 ## 8. API v1 Surface
 
@@ -174,6 +242,7 @@ Settings-driven surface currently includes:
 - custom domain
 - hide-provider-branding flag
 - public-entry mode
+- Google review deep-link URL (`google_review_url`) — surfaces on 5-star review submissions (see [reviews.md](./reviews.md))
 
 Current implementation gap:
 

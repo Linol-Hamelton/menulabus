@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Implemented`
-- Last reviewed: `2026-03-23`
+- Last reviewed: `2026-04-12`
 - Current implementation notes:
   - The current presentation summary is reflected in the in-app helper page [`/help.php`](../help.php).
   - This document is the source version for sales demos, onboarding, and internal walkthroughs.
@@ -20,6 +20,7 @@
 - cart and checkout for delivery, takeaway, table, or bar scenarios
 - QR ordering for table service
 - account access, order history, and repeat-order flow
+- one-step feedback loop after order completion (1–5 stars + comment), with an optional "Поделиться в Google" deep-link for 5-star submissions
 
 ## What Staff Get
 
@@ -46,6 +47,7 @@
 - chart and table views
 - user oversight and role visibility
 - release/launch validation from the business side
+- read-only "Отзывы" tab surfacing the last 50 guest reviews with average rating
 
 ## White-Label Value
 

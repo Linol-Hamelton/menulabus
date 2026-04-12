@@ -20,6 +20,21 @@ $db = Database::getInstance();
 // Получаем пользователей для вкладки "Пользователи"
 $users = $db->getAllUsers();
 
+// Последние 50 отзывов для вкладки "Отзывы"
+$recentReviews = $db->getRecentReviews(50);
+$reviewRatingAvg = 0.0;
+$reviewRatingCount = 0;
+foreach ($recentReviews as $r) {
+    $rv = (int)($r['rating'] ?? 0);
+    if ($rv >= 1 && $rv <= 5) {
+        $reviewRatingAvg += $rv;
+        $reviewRatingCount++;
+    }
+}
+if ($reviewRatingCount > 0) {
+    $reviewRatingAvg = round($reviewRatingAvg / $reviewRatingCount, 1);
+}
+
 // Определяем активную вкладку
 $tab = $_GET['tab'] ?? 'stats';
 
@@ -393,6 +408,7 @@ if (!empty($report_data)) {
             <div class="admin-tabs">
                 <button type="button" class="admin-tab-btn <?= $tab === 'stats' ? 'active' : '' ?>" data-tab="stats">Статистика</button>
                 <button type="button" class="admin-tab-btn <?= $tab === 'users' ? 'active' : '' ?>" data-tab="users">Пользователи</button>
+                <button type="button" class="admin-tab-btn <?= $tab === 'reviews' ? 'active' : '' ?>" data-tab="reviews">Отзывы<?= $reviewRatingCount > 0 ? ' <span class="owner-tab-count">' . $reviewRatingCount . '</span>' : '' ?></button>
             </div>
         </div>
         <section class="admin-form-container">
@@ -700,6 +716,118 @@ if (!empty($report_data)) {
                             </div>
                         <?php endforeach; ?>
                     </div>
+                </div>
+            </div>
+            <div class="admin-tab-pane <?= $tab === 'reviews' ? 'active' : '' ?>" id="reviews">
+                <div class="owner-reviews-workspace">
+                    <div class="owner-workspace-header">
+                        <div>
+                            <p class="owner-workspace-kicker">Обратная связь</p>
+                            <h2>Отзывы гостей</h2>
+                        </div>
+                        <p class="owner-workspace-copy">
+                            Последние <?= (int)$reviewRatingCount ?> отзывов из максимально 50. Средняя оценка:
+                            <strong><?= $reviewRatingCount > 0 ? number_format($reviewRatingAvg, 1, '.', '') : '—' ?></strong>
+                            из 5. Отзывы сохраняются в режиме append-only и не редактируются из админки.
+                        </p>
+                    </div>
+                    <?php if (empty($recentReviews)): ?>
+                        <p class="owner-top-items-empty">Пока ни одного отзыва. Гости видят форму на странице трекинга заказа после того, как заказ завершён.</p>
+                    <?php else: ?>
+                        <div class="desktop-table owner-reviews-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th class="first-col">Дата</th>
+                                        <th>Заказ</th>
+                                        <th>Оценка</th>
+                                        <th>Сумма</th>
+                                        <th class="last-col">Комментарий</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($recentReviews as $review): ?>
+                                        <?php
+                                        $rv = max(0, min(5, (int)($review['rating'] ?? 0)));
+                                        $stars = str_repeat('★', $rv) . str_repeat('☆', 5 - $rv);
+                                        $createdAtStr = isset($review['created_at'])
+                                            ? date('d.m.Y H:i', strtotime((string)$review['created_at']))
+                                            : '';
+                                        $comment = (string)($review['comment'] ?? '');
+                                        $orderTotal = isset($review['order_total']) && $review['order_total'] !== null
+                                            ? number_format((float)$review['order_total'], 2, '.', ' ') . ' ₽'
+                                            : '—';
+                                        ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($createdAtStr) ?></td>
+                                            <td>
+                                                <a href="/order-track.php?id=<?= (int)$review['order_id'] ?>" target="_blank" rel="noopener">
+                                                    #<?= (int)$review['order_id'] ?>
+                                                </a>
+                                            </td>
+                                            <td class="owner-review-stars" aria-label="<?= $rv ?>/5">
+                                                <span class="owner-review-stars-glyph"><?= $stars ?></span>
+                                            </td>
+                                            <td><?= $orderTotal ?></td>
+                                            <td>
+                                                <?php if ($comment !== ''): ?>
+                                                    <?= nl2br(htmlspecialchars($comment)) ?>
+                                                <?php else: ?>
+                                                    <span class="owner-review-no-comment">—</span>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mobile-table-container">
+                            <div class="mobile-table">
+                                <?php foreach ($recentReviews as $review): ?>
+                                    <?php
+                                    $rv = max(0, min(5, (int)($review['rating'] ?? 0)));
+                                    $stars = str_repeat('★', $rv) . str_repeat('☆', 5 - $rv);
+                                    $createdAtStr = isset($review['created_at'])
+                                        ? date('d.m.Y H:i', strtotime((string)$review['created_at']))
+                                        : '';
+                                    $comment = (string)($review['comment'] ?? '');
+                                    $orderTotal = isset($review['order_total']) && $review['order_total'] !== null
+                                        ? number_format((float)$review['order_total'], 2, '.', ' ') . ' ₽'
+                                        : '—';
+                                    ?>
+                                    <div class="mobile-table-item">
+                                        <div class="mobile-table-row">
+                                            <span class="mobile-table-label">Дата:</span>
+                                            <span class="mobile-table-value"><?= htmlspecialchars($createdAtStr) ?></span>
+                                        </div>
+                                        <div class="mobile-table-row">
+                                            <span class="mobile-table-label">Заказ:</span>
+                                            <span class="mobile-table-value">
+                                                <a href="/order-track.php?id=<?= (int)$review['order_id'] ?>" target="_blank" rel="noopener">
+                                                    #<?= (int)$review['order_id'] ?>
+                                                </a>
+                                            </span>
+                                        </div>
+                                        <div class="mobile-table-row">
+                                            <span class="mobile-table-label">Оценка:</span>
+                                            <span class="mobile-table-value owner-review-stars-glyph"><?= $stars ?></span>
+                                        </div>
+                                        <div class="mobile-table-row">
+                                            <span class="mobile-table-label">Сумма:</span>
+                                            <span class="mobile-table-value"><?= $orderTotal ?></span>
+                                        </div>
+                                        <?php if ($comment !== ''): ?>
+                                            <div class="mobile-table-row">
+                                                <span class="mobile-table-label">Комментарий:</span>
+                                                <span class="mobile-table-value"><?= nl2br(htmlspecialchars($comment)) ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </section>

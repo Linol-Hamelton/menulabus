@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Implemented`
-- Last reviewed: `2026-03-25`
+- Last reviewed: `2026-04-12`
 - Current implementation notes:
   - This document captures the current `repo + live` audit baseline.
   - The audit is docs-first: runtime mismatches are recorded here and in roadmaps, not fixed in this cycle.
@@ -46,6 +46,7 @@
 | `/employee.php` | live employee queue / payment / QR flow | `employee.php`, `js/employee-*.js` | `project-reference`, helper docs | implemented |
 | `/customer_orders.php` | live order-history surface | `customer_orders.php` | partial | implemented |
 | `/qr-print.php` | live QR print surface | `qr-print.php` | partial | implemented |
+| reviews / feedback loop | completed-order tracker shows a 1–5 star submission block; owner page has read-only "Отзывы" tab with last 50 entries; 5-star submissions surface a Google review deep-link when `google_review_url` is set | `order-track.php`, `save-review.php`, `css/reviews.css`, `js/reviews.js`, `owner.php`, `sql/reviews-migration.sql`, `db.php::createReview/getRecentReviews/getReviewByOrderId` | `reviews` | implemented |
 | internal shell normalization | shared shell primitives now cover section heads, KPI cards and lifecycle badges; account pages also require version/update notices to stay non-blocking relative to shell controls | account/admin/owner/employee/cart/qr-print stack, `css/admin-menu-polish.css`, `css/version.min.css` | `ux-ui-improvement-roadmap`, `order-lifecycle-contract`, `project-reference` | partial |
 
 ## 4. Ops / Diagnostics

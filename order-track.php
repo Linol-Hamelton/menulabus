@@ -19,6 +19,23 @@ if (!$order) {
 
 $isLoggedIn = !empty($_SESSION['user_id']);
 
+// Stamp this order id as session-reviewable so /save-review.php accepts a
+// submission from the same session later. We deliberately keep this list
+// small (last 20) so a long-lived session doesn't accumulate state forever.
+$reviewableOrders = isset($_SESSION['reviewable_orders']) && is_array($_SESSION['reviewable_orders'])
+    ? $_SESSION['reviewable_orders']
+    : [];
+if (!in_array($orderId, $reviewableOrders, true)) {
+    $reviewableOrders[] = $orderId;
+    if (count($reviewableOrders) > 20) {
+        $reviewableOrders = array_slice($reviewableOrders, -20);
+    }
+    $_SESSION['reviewable_orders'] = $reviewableOrders;
+}
+
+$existingReview = $db->getReviewByOrderId($orderId);
+$csrfToken = $_SESSION['csrf_token'] ?? '';
+
 // Map status → step index
 $statusStepMap = [
     'принят'     => 0,
@@ -131,8 +148,10 @@ $appVersion = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Заказ #<?= $orderId ?> — <?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?></title>
+    <meta name="csrf-token" content="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/css/order-track.css?v=<?= $appVersion ?>">
+    <link rel="stylesheet" href="/css/reviews.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= $appVersion ?>">
     <style nonce="<?= $styleNonce ?>">
         .track-step-circle{color:#9e9e9e}
@@ -255,6 +274,63 @@ $appVersion = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
     <div class="track-created-at">
         Создан: <?= $createdAt ?>
     </div>
+
+    <?php
+    // Review submission block — only shown for orders in the terminal
+    // `завершён` state. If there's already a review in the DB, render a
+    // read-only thank-you panel. Otherwise render the star-picker form.
+    // The JS lives in /js/reviews.js and wires the form to /save-review.php.
+    $canSubmitReview = ($done && $existingReview === null);
+    $alreadyReviewed = ($done && $existingReview !== null);
+    ?>
+    <?php if ($canSubmitReview): ?>
+    <section class="review-section" id="reviewSection"
+             data-order-id="<?= $orderId ?>"
+             data-endpoint="/save-review.php">
+        <h3 class="review-title">Оцените заказ</h3>
+        <p class="review-sub">Ваша обратная связь помогает команде улучшать сервис.</p>
+        <form class="review-form" id="reviewForm" autocomplete="off">
+            <fieldset class="review-stars" aria-label="Оценка от 1 до 5">
+                <?php for ($i = 1; $i <= 5; $i++): ?>
+                    <label class="review-star" data-value="<?= $i ?>">
+                        <input type="radio" name="rating" value="<?= $i ?>" class="review-star-input">
+                        <span class="review-star-glyph" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 256 256" fill="currentColor"><path d="M234.29,114.85l-45,38.83L203,211a16,16,0,0,1-23.84,17.71L128,199.45,76.84,228.7A16,16,0,0,1,53,211l13.76-57.32-45-38.83A16,16,0,0,1,31.08,86l58.64-5.91,22.72-56.16a16,16,0,0,1,29.12,0l22.72,56.16,58.64,5.91a16,16,0,0,1,9.37,28.86Z"/></svg>
+                        </span>
+                        <span class="review-star-sr"><?= $i ?></span>
+                    </label>
+                <?php endfor; ?>
+            </fieldset>
+            <label class="review-comment-label">
+                <span>Комментарий (необязательно)</span>
+                <textarea name="comment" class="review-comment" maxlength="2000"
+                          placeholder="Что понравилось или что можно улучшить?"></textarea>
+            </label>
+            <div class="review-actions">
+                <button type="submit" class="review-submit" disabled>Отправить</button>
+                <span class="review-status" id="reviewStatus" role="status" aria-live="polite"></span>
+            </div>
+        </form>
+        <div class="review-thanks review-thanks--hidden" id="reviewThanks" aria-live="polite">
+            <h4>Спасибо за отзыв!</h4>
+            <p id="reviewThanksText">Ваша оценка сохранена.</p>
+            <a href="#" class="review-google-link review-google-link--hidden" id="reviewGoogleLink" target="_blank" rel="noopener">
+                Поделиться отзывом в Google
+            </a>
+        </div>
+    </section>
+    <?php elseif ($alreadyReviewed): ?>
+    <section class="review-section review-section--done">
+        <h3 class="review-title">Спасибо за отзыв!</h3>
+        <p class="review-sub">
+            Оценка: <strong><?= (int)$existingReview['rating'] ?>/5</strong>
+            · <?= htmlspecialchars(date('d.m.Y H:i', strtotime((string)$existingReview['created_at']))) ?>
+        </p>
+        <?php if (!empty($existingReview['comment'])): ?>
+            <blockquote class="review-existing-comment"><?= nl2br(htmlspecialchars((string)$existingReview['comment'])) ?></blockquote>
+        <?php endif; ?>
+    </section>
+    <?php endif; ?>
 </main>
 
 <!-- ── CTA ── -->
@@ -448,6 +524,8 @@ $appVersion = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
     <?php if ($done): ?>launchConfetti();<?php endif; ?>
 })();
 </script>
+
+<script src="/js/reviews.js?v=<?= $appVersion ?>" defer nonce="<?= $scriptNonce ?>"></script>
 
 </body>
 </html>

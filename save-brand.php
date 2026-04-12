@@ -41,6 +41,7 @@ $allowedKeys = [
     'hide_labus_branding' => 'bool',
     'telegram_chat_id' => 'text',
     'public_entry_mode' => 'enum',
+    'google_review_url' => 'url',
 ];
 
 $db = Database::getInstance();
@@ -55,7 +56,10 @@ foreach ($input['brand'] as $key => $value) {
     }
 
     $value = trim(strip_tags((string)$value));
-    if (mb_strlen($value) > 200) {
+    // Google review URLs ship with long placeid query strings — 500 char
+    // cap instead of the default 200 used for everything else.
+    $maxLen = ($key === 'google_review_url') ? 500 : 200;
+    if (mb_strlen($value) > $maxLen) {
         http_response_code(400);
         echo json_encode(['error' => "Value too long for key: $key"]);
         exit;
