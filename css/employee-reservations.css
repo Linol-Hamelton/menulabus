@@ -1,0 +1,175 @@
+.reservations-board {
+    padding: 12px 0;
+}
+
+.reservations-day {
+    margin: 18px 0 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: capitalize;
+    color: #444;
+    border-bottom: 1px solid #e5e5e5;
+    padding-bottom: 4px;
+}
+
+.reservations-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.reservation-card {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 12px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.reservation-card-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.reservation-time {
+    font-size: 16px;
+    font-weight: 600;
+    color: #222;
+}
+
+.reservation-table {
+    background: #f1f3f5;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.reservation-guests {
+    color: #666;
+    font-size: 13px;
+}
+
+.reservation-status-badge {
+    margin-left: auto;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #f1f3f5;
+    color: #444;
+    text-transform: lowercase;
+}
+
+.reservation-status-pending .reservation-status-badge {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.reservation-status-confirmed .reservation-status-badge {
+    background: #d4edda;
+    color: #155724;
+}
+
+.reservation-status-seated .reservation-status-badge {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.reservation-status-cancelled .reservation-status-badge,
+.reservation-status-no_show .reservation-status-badge {
+    background: #f5c6cb;
+    color: #721c24;
+}
+
+.reservation-status-cancelled,
+.reservation-status-no_show {
+    opacity: 0.65;
+}
+
+.reservation-card-body {
+    font-size: 13px;
+    color: #444;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.reservation-contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.reservation-contact a {
+    color: #0a66c2;
+    text-decoration: none;
+}
+
+.reservation-note {
+    color: #555;
+    font-style: italic;
+}
+
+.reservation-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.btn-resv-action {
+    border: 1px solid #c8d2dc;
+    background: #fff;
+    color: #1a3d61;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-resv-action:hover:not(:disabled) {
+    background: #1a3d61;
+    color: #fff;
+    border-color: #1a3d61;
+}
+
+.btn-resv-action.btn-resv-warn {
+    border-color: #d39e00;
+    color: #856404;
+}
+
+.btn-resv-action.btn-resv-warn:hover:not(:disabled) {
+    background: #d39e00;
+    color: #fff;
+}
+
+.btn-resv-action.btn-resv-danger {
+    border-color: #c82333;
+    color: #c82333;
+}
+
+.btn-resv-action.btn-resv-danger:hover:not(:disabled) {
+    background: #c82333;
+    color: #fff;
+    border-color: #c82333;
+}
+
+.btn-resv-action:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
+
+@media (max-width: 600px) {
+    .reservations-list {
+        grid-template-columns: 1fr;
+    }
+}

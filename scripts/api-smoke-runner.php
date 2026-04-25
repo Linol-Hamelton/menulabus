@@ -1,10 +1,15 @@
 <?php
 
+if (PHP_SAPI !== 'cli' && realpath((string)($_SERVER['SCRIPT_FILENAME'] ?? '')) === __FILE__) {
+    http_response_code(404);
+    exit;
+}
+
 /**
  * Simple API smoke runner.
  *
  * Usage:
- * php scripts/api-smoke-runner.php --base=https://menu.labus.pro --email=user@example.com --password=secret --run-order=1
+ * php scripts/api-smoke-runner.php --base=https://menu.labus.pro --email=user@example.com --password=secret --run-order=1 --run-reservation=1
  */
 
 $opts = getopt('', [
@@ -12,6 +17,7 @@ $opts = getopt('', [
     'email::',
     'password::',
     'run-order::',
+    'run-reservation::',
     'insecure::',
 ]);
 
@@ -19,6 +25,7 @@ $base = rtrim((string)($opts['base'] ?? 'https://menu.labus.pro'), '/');
 $email = (string)($opts['email'] ?? '');
 $password = (string)($opts['password'] ?? '');
 $runOrder = ((string)($opts['run-order'] ?? '0')) === '1';
+$runReservation = ((string)($opts['run-reservation'] ?? '0')) === '1';
 $insecure = ((string)($opts['insecure'] ?? '0')) === '1';
 
 $failures = 0;
@@ -189,6 +196,76 @@ if ($email !== '' && $password !== '') {
             $passes++;
         } else {
             $failures++;
+        }
+
+        // 6a) Optional reservation create (idempotency) + availability + cancel
+        if ($runReservation) {
+            $idemKey      = 'smoke-resv-' . time();
+            $tableLabel   = 'SMOKE-' . substr((string)bin2hex(random_bytes(3)), 0, 6);
+            // Use a far-future window so this can't collide with real bookings or
+            // be auto-cleaned. Same window for both calls so idempotency replays.
+            $startsAt     = '2099-12-31 13:00:00';
+            $endsAt       = '2099-12-31 14:00:00';
+            $resvPayload  = [
+                'table_label'  => $tableLabel,
+                'guests_count' => 2,
+                'starts_at'    => $startsAt,
+                'ends_at'      => $endsAt,
+                'note'         => 'smoke-runner',
+            ];
+
+            $first = http_json('POST', $base . '/api/v1/reservations/create.php', [
+                'Authorization: Bearer ' . $tokens['access_token'],
+                'Idempotency-Key: ' . $idemKey,
+            ], $resvPayload, $insecure);
+
+            $second = http_json('POST', $base . '/api/v1/reservations/create.php', [
+                'Authorization: Bearer ' . $tokens['access_token'],
+                'Idempotency-Key: ' . $idemKey,
+            ], $resvPayload, $insecure);
+
+            $firstId  = $first['json']['data']['reservation_id']  ?? null;
+            $secondId = $second['json']['data']['reservation_id'] ?? null;
+            $ok = $first['status'] === 201
+                && in_array($second['status'], [200, 201], true)
+                && $firstId && $secondId
+                && ((int)$firstId === (int)$secondId);
+            if (check_case('POST /api/v1/reservations/create.php (idempotency)', $ok, 'first=' . $first['status'] . ', second=' . $second['status'])) {
+                $passes++;
+            } else {
+                $failures++;
+            }
+
+            // Availability must include our just-created window for that table.
+            $availUrl = $base . '/api/v1/reservations/availability.php?'
+                . http_build_query(['table_label' => $tableLabel, 'date' => '2099-12-31']);
+            $avail = http_json('GET', $availUrl, [
+                'Authorization: Bearer ' . $tokens['access_token'],
+            ], null, $insecure);
+            $busy = $avail['json']['data']['busy'] ?? [];
+            $okAvail = $avail['errno'] === 0 && $avail['status'] === 200 && is_array($busy)
+                && count(array_filter($busy, static function (array $w) use ($startsAt, $endsAt): bool {
+                    return ($w['starts_at'] ?? '') === $startsAt && ($w['ends_at'] ?? '') === $endsAt;
+                })) >= 1;
+            if (check_case('GET /api/v1/reservations/availability.php', $okAvail, details_from_response($avail))) {
+                $passes++;
+            } else {
+                $failures++;
+            }
+
+            // Cancel cleans up the smoke row so the next run is conflict-free.
+            if ($firstId) {
+                $cancel = http_json('POST', $base . '/api/v1/reservations/cancel.php', [
+                    'Authorization: Bearer ' . $tokens['access_token'],
+                ], ['reservation_id' => (int)$firstId], $insecure);
+                $okCancel = $cancel['errno'] === 0 && $cancel['status'] === 200
+                    && (($cancel['json']['data']['status'] ?? '') === 'cancelled');
+                if (check_case('POST /api/v1/reservations/cancel.php', $okCancel, details_from_response($cancel))) {
+                    $passes++;
+                } else {
+                    $failures++;
+                }
+            }
         }
 
         // 6) Optional order create + idempotency replay

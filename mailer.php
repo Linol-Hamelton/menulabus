@@ -2,9 +2,30 @@
 require_once __DIR__ . '/session_init.php';
 require_once __DIR__ . '/db.php';
 
-require 'phpmailer/PHPMailer.php';
-require 'phpmailer/SMTP.php';
-require 'phpmailer/Exception.php';
+// PHPMailer loader — phase 1 of the Composer extraction (audit B.10/E.5.2):
+//
+// Prefer the Composer autoloader when the vendor tree is healthy. We check
+// the inner autoload_real.php instead of just vendor/autoload.php because
+// some checkouts have the wrapper file but a partially-stripped composer
+// state directory — requiring the wrapper in that case fatals at file load
+// time, which is uncatchable.
+//
+// Fallback path keeps the legacy vendored copy at phpmailer/ working until
+// `composer install` is verified on every deploy host. Once that's done,
+// the fallback block and the phpmailer/ directory itself can be deleted in
+// a follow-up commit.
+$cleanmenuComposerAutoload    = __DIR__ . '/vendor/autoload.php';
+$cleanmenuComposerHealthProbe = __DIR__ . '/vendor/composer/autoload_real.php';
+if (is_file($cleanmenuComposerAutoload) && is_file($cleanmenuComposerHealthProbe)) {
+    require_once $cleanmenuComposerAutoload;
+}
+unset($cleanmenuComposerAutoload, $cleanmenuComposerHealthProbe);
+
+if (!class_exists(\PHPMailer\PHPMailer\PHPMailer::class)) {
+    require_once __DIR__ . '/phpmailer/PHPMailer.php';
+    require_once __DIR__ . '/phpmailer/SMTP.php';
+    require_once __DIR__ . '/phpmailer/Exception.php';
+}
 
 use PHPMailer\PHPMailer\PHPMailer;
 //use PHPMailer\PHPMailer\Exception;

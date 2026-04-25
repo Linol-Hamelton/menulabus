@@ -79,6 +79,26 @@ if (!$orderId) {
     ]);
 }
 
+// KDS routing: same hook as create_new_order.php.
+try { $db->routeOrderItemsToStations((int)$orderId, $items); }
+catch (Throwable $kdsEx) { error_log('KDS routing error: ' . $kdsEx->getMessage()); }
+
+// Inventory deduction + low-stock webhook alert (Telegram ping is intentionally
+// skipped on the mobile-API path — same policy as order.created webhook).
+try {
+    $nowLow = $db->deductIngredientsForOrder((int)$orderId, $items);
+    if (!empty($nowLow)) {
+        $alertIds = $db->markIngredientsAlerted($nowLow, 60);
+        if (!empty($alertIds)) {
+            require_once __DIR__ . '/../../../lib/WebhookDispatcher.php';
+            foreach ($alertIds as $iid) {
+                $ing = $db->getIngredientById((int)$iid);
+                if ($ing) { WebhookDispatcher::dispatch('inventory.stock_low', $ing, $db); }
+            }
+        }
+    }
+} catch (Throwable $invEx) { error_log('Inventory deduction error: ' . $invEx->getMessage()); }
+
 $createdOrder = $db->getOrderById((int)$orderId);
 $createdStatus = (string)($createdOrder['status'] ?? '');
 

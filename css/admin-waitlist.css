@@ -1,0 +1,63 @@
+.waitlist-filter {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    margin: 10px 0 14px;
+}
+.waitlist-filter label {
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+    color: #555;
+    gap: 2px;
+}
+.waitlist-filter input[type="date"] {
+    padding: 6px 10px;
+    border: 1px solid #c8d2dc;
+    border-radius: 6px;
+    font-size: 13px;
+}
+.waitlist-empty {
+    padding: 20px;
+    text-align: center;
+    color: #6b7280;
+    background: #f8f9fa;
+    border: 1px dashed #c8d2dc;
+    border-radius: 8px;
+}
+.waitlist-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 8px;
+}
+.waitlist-table th,
+.waitlist-table td {
+    border: 1px solid #e5e5e5;
+    padding: 6px 8px;
+    vertical-align: middle;
+}
+.waitlist-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    text-align: left;
+}
+.waitlist-table .num-col { text-align: right; font-variant-numeric: tabular-nums; }
+.waitlist-actions { white-space: nowrap; }
+.waitlist-actions button { margin-right: 4px; }
+
+.waitlist-status-notified { background: #fff3cd; }
+.waitlist-status-notified:hover { background: #ffeeba; }
+
+.reservation-waitlist-offer {
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    border-radius: 8px;
+}
+.reservation-waitlist-offer p {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: #1e3a8a;
+}

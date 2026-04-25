@@ -1,5 +1,10 @@
 <?php
 
+if (PHP_SAPI !== 'cli' && realpath((string)($_SERVER['SCRIPT_FILENAME'] ?? '')) === __FILE__) {
+    http_response_code(404);
+    exit;
+}
+
 require_once dirname(__DIR__, 2) . '/tenant_runtime.php';
 require_once dirname(__DIR__, 2) . '/RedisCache.php';
 

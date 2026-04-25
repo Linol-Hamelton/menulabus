@@ -395,6 +395,9 @@ if (!empty($report_data)) {
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/owner-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/hotkeys.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/owner-analytics-v2.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/published-reviews.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
 </head>
 
@@ -409,6 +412,7 @@ if (!empty($report_data)) {
                 <button type="button" class="admin-tab-btn <?= $tab === 'stats' ? 'active' : '' ?>" data-tab="stats">Статистика</button>
                 <button type="button" class="admin-tab-btn <?= $tab === 'users' ? 'active' : '' ?>" data-tab="users">Пользователи</button>
                 <button type="button" class="admin-tab-btn <?= $tab === 'reviews' ? 'active' : '' ?>" data-tab="reviews">Отзывы<?= $reviewRatingCount > 0 ? ' <span class="owner-tab-count">' . $reviewRatingCount . '</span>' : '' ?></button>
+                <button type="button" class="admin-tab-btn <?= $tab === 'analytics-v2' ? 'active' : '' ?>" data-tab="analytics-v2">Аналитика</button>
             </div>
         </div>
         <section class="admin-form-container">
@@ -758,7 +762,7 @@ if (!empty($report_data)) {
                                             ? number_format((float)$review['order_total'], 2, '.', ' ') . ' ₽'
                                             : '—';
                                         ?>
-                                        <tr>
+                                        <tr data-review-id="<?= (int)$review['id'] ?>">
                                             <td><?= htmlspecialchars($createdAtStr) ?></td>
                                             <td>
                                                 <a href="/order-track.php?id=<?= (int)$review['order_id'] ?>" target="_blank" rel="noopener">
@@ -775,6 +779,16 @@ if (!empty($report_data)) {
                                                 <?php else: ?>
                                                     <span class="owner-review-no-comment">—</span>
                                                 <?php endif; ?>
+                                                <div class="owner-review-reply">
+                                                    <textarea class="owner-review-reply-text" placeholder="Ответ от ресторана…" maxlength="2000"><?= htmlspecialchars((string)($review['reply_text'] ?? '')) ?></textarea>
+                                                    <div class="owner-review-reply-row">
+                                                        <button type="button" class="admin-checkout-btn owner-review-reply-save">Сохранить ответ</button>
+                                                        <label class="owner-review-publish">
+                                                            <input type="checkbox" class="owner-review-publish-toggle" <?= !empty($review['published_at']) ? 'checked' : '' ?>>
+                                                            Опубликовать на сайте
+                                                        </label>
+                                                    </div>
+                                                </div>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -830,6 +844,72 @@ if (!empty($report_data)) {
                     <?php endif; ?>
                 </div>
             </div>
+
+            <div class="admin-tab-pane <?= $tab === 'analytics-v2' ? 'active' : '' ?>" id="analytics-v2">
+                <div class="owner-analytics-workspace">
+                    <div class="owner-workspace-header">
+                        <div>
+                            <p class="owner-workspace-kicker">Аналитика</p>
+                            <h2>Расширенные отчёты</h2>
+                            <p class="owner-workspace-copy">
+                                Маржа по блюдам, когорты клиентов, пиковые часы и прогноз выручки на следующую неделю.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="analytics-v2-controls">
+                        <label>С
+                            <input type="date" id="anFrom" value="<?= htmlspecialchars(date('Y-m-d', strtotime('-30 days'))) ?>">
+                        </label>
+                        <label>По
+                            <input type="date" id="anTo" value="<?= htmlspecialchars(date('Y-m-d')) ?>">
+                        </label>
+                        <label>Heatmap, дней
+                            <input type="number" id="anHeatDays" min="7" max="365" value="30" style="width: 80px">
+                        </label>
+                        <button type="button" class="checkout-btn" id="anApply">Пересчитать</button>
+                    </div>
+
+                    <div class="analytics-v2-grid">
+                        <div class="analytics-v2-card">
+                            <h3>Маржа по блюдам</h3>
+                            <div class="analytics-v2-hint">Топ по валовой марже в окне [С .. По]</div>
+                            <div class="analytics-v2-chart"><canvas id="anMarginsChart" height="200"></canvas></div>
+                            <div class="analytics-v2-table-wrap">
+                                <table class="analytics-v2-table">
+                                    <thead><tr><th>Блюдо</th><th>Продажи</th><th>Выручка</th><th>Маржа, %</th></tr></thead>
+                                    <tbody id="anMarginsTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="analytics-v2-card">
+                            <h3>Когорты клиентов</h3>
+                            <div class="analytics-v2-hint">% удержания в каждый последующий месяц</div>
+                            <div class="analytics-v2-table-wrap">
+                                <table class="analytics-v2-cohorts"><thead id="anCohortsHead"></thead><tbody id="anCohortsBody"></tbody></table>
+                            </div>
+                        </div>
+
+                        <div class="analytics-v2-card">
+                            <h3>Час × день (heatmap)</h3>
+                            <div class="analytics-v2-hint">Количество заказов за последние <span id="anHeatDaysLabel">30</span> дней</div>
+                            <div class="analytics-v2-heatmap-wrap">
+                                <table class="analytics-v2-heatmap" id="anHeatmap"></table>
+                            </div>
+                        </div>
+
+                        <div class="analytics-v2-card">
+                            <h3>Прогноз выручки</h3>
+                            <div class="analytics-v2-hint">EWMA по последним неделям; ориентировочное значение на следующую неделю</div>
+                            <div class="analytics-v2-forecast">
+                                <div class="analytics-v2-forecast-big"><span id="anForecastValue">—</span> <small>₽</small></div>
+                                <div class="analytics-v2-chart"><canvas id="anForecastChart" height="200"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
     </div>
     <textarea id="owner-page-data" hidden><?= htmlspecialchars(json_encode([
@@ -841,6 +921,9 @@ if (!empty($report_data)) {
     <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/owner.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/admin-tabs-repair.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/hotkeys.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/owner-analytics-v2.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/owner-review-moderation.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/push-notifications.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
 </body>
 

@@ -1,0 +1,103 @@
+.group-create-form,
+.group-join-form,
+.group-add-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+    margin: 12px 0;
+    padding: 14px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+}
+.group-create-form label,
+.group-join-form label,
+.group-add-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 12px;
+    color: #555;
+}
+.group-create-form input,
+.group-create-form select,
+.group-join-form input,
+.group-add-form input,
+.group-add-form select {
+    padding: 8px 10px;
+    border: 1px solid #c8d2dc;
+    border-radius: 6px;
+    font-size: 14px;
+    min-width: 120px;
+}
+.group-add-form select {
+    min-width: 200px;
+}
+.group-subtitle { color: #555; font-size: 14px; margin: 6px 0 14px; }
+.group-empty { color: #6b7280; padding: 14px; background: #f9fafb; border: 1px dashed #c8d2dc; border-radius: 8px; }
+
+.group-seat { margin-bottom: 14px; }
+.group-seat h4 { margin: 0 0 6px; font-size: 15px; color: #111827; }
+.group-seat-items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.group-seat-items li {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 10px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+}
+.group-seat-name { font-size: 14px; }
+.group-seat-price {
+    font-variant-numeric: tabular-nums;
+    color: #374151;
+    font-weight: 500;
+}
+.group-del {
+    background: transparent;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 2px 8px;
+    cursor: pointer;
+    color: #b91c1c;
+    font-size: 15px;
+    line-height: 1;
+}
+.group-del:hover { background: #fee2e2; }
+
+.group-total {
+    margin: 14px 0;
+    padding: 12px 14px;
+    background: #eef2ff;
+    border-radius: 8px;
+    font-size: 16px;
+    color: #1e3a8a;
+}
+
+.group-submit {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+    margin-top: 20px;
+    padding: 14px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+}
+.group-submit label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+}

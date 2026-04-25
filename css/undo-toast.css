@@ -1,0 +1,64 @@
+.undo-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 32px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 16px 10px 18px;
+    border-radius: 10px;
+    background: #1a3d61;
+    color: #fff;
+    font-size: 14px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    z-index: 10001;
+    min-width: 280px;
+    max-width: 90vw;
+    overflow: hidden;
+    animation: undo-toast-in 180ms ease-out;
+}
+
+@keyframes undo-toast-in {
+    from { transform: translateX(-50%) translateY(16px); opacity: 0; }
+    to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
+}
+
+.undo-toast-text {
+    flex: 1;
+    line-height: 1.35;
+}
+
+.undo-toast-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    color: #fff;
+    font-size: 13px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.undo-toast-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #fff;
+}
+
+.undo-toast-progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.7);
+    transform-origin: left center;
+    animation-name: undo-toast-progress;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+}
+
+@keyframes undo-toast-progress {
+    from { transform: scaleX(1); }
+    to   { transform: scaleX(0); }
+}

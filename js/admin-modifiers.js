@@ -121,7 +121,10 @@
 
     function deleteGroup(groupId) {
         if (!confirm('Удалить группу модификаторов?')) return;
-        api({ action: 'delete_group', group_id: groupId }).then(function () { loadModifiers(); });
+        api({ action: 'delete_group', group_id: groupId }).then(function () {
+            loadModifiers();
+            showUndoToast('modifier_groups', groupId, 'Группа модификаторов удалена');
+        });
     }
 
     function addOption(groupId, name, priceDelta) {
@@ -134,7 +137,34 @@
     }
 
     function deleteOption(optionId) {
-        api({ action: 'delete_option', option_id: optionId }).then(function () { loadModifiers(); });
+        api({ action: 'delete_option', option_id: optionId }).then(function () {
+            loadModifiers();
+            showUndoToast('modifier_options', optionId, 'Вариант удалён');
+        });
+    }
+
+    function showUndoToast(table, id, text) {
+        if (!window.CleanmenuUndoToast) return;
+        window.CleanmenuUndoToast.show({
+            text: text,
+            timeoutMs: 5000,
+            onUndo: function () {
+                var token = csrf || getCsrfToken();
+                fetch('/undo-delete.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token, 'Accept': 'application/json' },
+                    body: JSON.stringify({ table: table, id: id, csrf_token: token }),
+                    credentials: 'same-origin',
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data && data.success && data.restored) {
+                        loadModifiers();
+                    }
+                })
+                .catch(function () { /* noop */ });
+            },
+        });
     }
 
     function escHtml(str) {

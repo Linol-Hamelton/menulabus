@@ -3,14 +3,15 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-03-24`
+- Last reviewed: `2026-04-11`
 - Current implementation notes:
   - Tenant provisioning and seeding are scriptable.
   - Launch artifact generation is now scriptable through `scripts/tenant/launch.php`.
-  - One-command server-side go-live is now available through `scripts/tenant/go-live.sh`.
+  - One-command server-side go-live is now available through `scripts/tenant/go-live.sh`. The step-by-step operational runbook for it lives in [deploy/custom-domain-go-live.md](./deploy/custom-domain-go-live.md).
   - DNS ownership remains an external prerequisite before server-side go-live.
   - Brand settings now support separate address text, dedicated map URL, and explicit tenant public-entry mode.
   - Browser sign-off now includes a mandatory desktop/mobile visual screenshot set and checklist through `scripts/perf/post-release-regression.sh`.
+  - New owners can complete brand, logo, and color setup through the 5-step wizard at `/onboarding.php` — see Section 4 below.
 
 ## Purpose
 
@@ -125,6 +126,14 @@ Current implementation note:
 
 - if location CTA matters for launch quality, verify both the visible address text and the public map URL before go-live
 - if `public_entry_mode=menu`, verify that tenant `/` redirects to `/menu.php` and that branding still is correct there
+
+Self-service onboarding wizard:
+
+- new owners logging in for the first time land on `/onboarding.php` automatically; the wizard is a 5-step cover for the brand-setup fields above (restaurant name, logo URL, brand colors, QR download, done)
+- the wizard only runs until `settings.onboarding_done === true`; re-running after that is a no-op and the owner is redirected to `/owner.php`
+- owners can re-open `/onboarding.php` manually at any time — the step state is stored in the session, not in the DB, so it's safe to restart
+- launchers who pre-fill brand/contact via `go-live.sh` flags (`--contact-phone`, `--contact-address`, `--contact-map-url`, `--public-entry-mode`) can skip the wizard entirely by having the owner mark it done on first login
+- the wizard does **not** cover payment credentials, Telegram bot, OAuth, or PWA push — those are operator-only and must be set from the admin panel after go-live (see [payments-integration.md](./payments-integration.md), [telegram-bot-setup.md](./telegram-bot-setup.md), [pwa-and-push.md](./pwa-and-push.md))
 
 Public verification:
 

@@ -1,0 +1,106 @@
+.loyalty-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.loyalty-stat {
+    padding: 14px 16px;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.loyalty-stat-balance {
+    background: linear-gradient(135deg, #eef2ff, #ffffff);
+    border-color: #c7d2fe;
+}
+
+.loyalty-stat-tier {
+    background: linear-gradient(135deg, #fffbeb, #ffffff);
+    border-color: #fde68a;
+}
+
+.loyalty-stat-label {
+    font-size: 12px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.loyalty-stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.loyalty-stat-hint {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.loyalty-progress {
+    margin-bottom: 16px;
+}
+.loyalty-progress-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #4b5563;
+    margin-bottom: 6px;
+}
+.loyalty-progress-bar {
+    height: 8px;
+    background: #f1f3f5;
+    border-radius: 999px;
+    overflow: hidden;
+}
+.loyalty-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #22d3ee);
+    border-radius: 999px;
+    transition: width 0.4s ease;
+}
+
+.loyalty-history-title {
+    margin: 16px 0 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+.loyalty-history {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.loyalty-history-row {
+    display: grid;
+    grid-template-columns: 150px 1fr 80px;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 13px;
+}
+.loyalty-history-row-in .loyalty-history-delta { color: #15803d; font-weight: 600; }
+.loyalty-history-row-out .loyalty-history-delta { color: #b91c1c; font-weight: 600; }
+.loyalty-history-date { color: #6b7280; font-variant-numeric: tabular-nums; }
+.loyalty-history-delta { text-align: right; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 640px) {
+    .loyalty-history-row {
+        grid-template-columns: 1fr 80px;
+        row-gap: 4px;
+    }
+    .loyalty-history-date {
+        grid-column: 1 / -1;
+    }
+}

@@ -166,6 +166,22 @@ try {
         Idempotency::store($db->getConnection(), 'employee_cash_confirm', $idempotencyKey, $requestHash, $payload);
     }
 
+    // Loyalty accrual + payment.received webhook — mirrors payment-webhook.php.
+    try {
+        $paid = $db->getOrderById($orderId);
+        if ($paid) {
+            $uid = (int)($paid['user_id'] ?? 0);
+            $total = (float)($paid['total'] ?? 0);
+            if ($uid > 0 && $total > 0) {
+                $db->accrueLoyaltyPoints($uid, $orderId, $total);
+            }
+            require_once __DIR__ . '/lib/WebhookDispatcher.php';
+            WebhookDispatcher::dispatch('payment.received', $paid, $db);
+        }
+    } catch (Throwable $paidEx) {
+        error_log('order.paid hook (cash) error: ' . $paidEx->getMessage());
+    }
+
     $response = array_merge(['success' => true], $payload);
     http_response_code(200);
 } catch (Throwable $e) {

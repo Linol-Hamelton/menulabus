@@ -44,15 +44,29 @@ $includeHeaderCss = empty($GLOBALS['header_css_in_head']);
           <a href="<?= htmlspecialchars($contactMapUrl) ?>" target="_blank" rel="noopener">Приехать</a>
         </li>
         <?php endif; ?>
-        <li><a href="/menu.php">Меню</a></li>
+        <li><a href="/menu.php"><?= htmlspecialchars(t('nav.menu')) ?></a></li>
+        <li><a href="/reservation.php"><?= htmlspecialchars(t('nav.reservation')) ?></a></li>
+        <li><a href="/group.php"><?= htmlspecialchars(t('nav.group')) ?></a></li>
         <li class="cart-menu-item">
           <a href="/cart.php">
-            Заказ
+            <?= htmlspecialchars(t('nav.cart')) ?>
             <span id="cart-total-count" class="cart-counter">0</span>
           </a>
         </li>
         <li class="account-menu-item">
-          <a href="<?= $isLoggedIn ? '/account.php' : '/auth.php' ?>">Аккаунт</a>
+          <a href="<?= $isLoggedIn ? '/account.php' : '/auth.php' ?>"><?= htmlspecialchars(t('nav.account')) ?></a>
+        </li>
+        <li class="lang-picker-item">
+          <?php
+          $currentLang = I18n::locale();
+          $sep = strpos($_SERVER['REQUEST_URI'] ?? '/', '?') === false ? '?' : '&';
+          $base = strtok((string)($_SERVER['REQUEST_URI'] ?? '/'), '?');
+          ?>
+          <?php foreach (I18n::supported() as $code): ?>
+            <a class="lang-picker-link<?= $code === $currentLang ? ' active' : '' ?>"
+               href="<?= htmlspecialchars($base . '?lang=' . $code) ?>"
+               aria-label="<?= htmlspecialchars(t('language.' . $code)) ?>"><?= strtoupper($code) ?></a>
+          <?php endforeach; ?>
         </li>
       </ul>
     </nav>
@@ -64,4 +78,5 @@ $includeHeaderCss = empty($GLOBALS['header_css_in_head']);
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($appVersion) ?>">
   <?php endif; ?>
   <link rel="stylesheet" href="/css/ui-ux-polish.css?v=<?= htmlspecialchars($uiUxPolishVersion, ENT_QUOTES, 'UTF-8') ?>">
+  <link rel="stylesheet" href="/css/lang-picker.css?v=<?= htmlspecialchars($appVersion) ?>">
 </header>

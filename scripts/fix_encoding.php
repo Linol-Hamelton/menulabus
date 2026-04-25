@@ -1,4 +1,10 @@
 <?php
+
+if (PHP_SAPI !== 'cli' && realpath((string)($_SERVER['SCRIPT_FILENAME'] ?? '')) === __FILE__) {
+    http_response_code(404);
+    exit;
+}
+
 // Fix double-encoded UTF-8 in db.php
 $file = __DIR__ . '/../db.php';
 $content = file_get_contents($file);

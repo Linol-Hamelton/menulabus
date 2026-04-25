@@ -79,6 +79,7 @@ $orderId = (int)$order['id'];
 if ($apiStatus === 'succeeded') {
     $db->updateOrderPayment($orderId, $paymentId, 'paid');
     error_log("payment-webhook: order #$orderId payment SUCCEEDED");
+    cleanmenu_on_order_paid($db, $orderId);
 } elseif ($apiStatus === 'canceled') {
     $db->updateOrderPayment($orderId, $paymentId, 'cancelled');
     // Also mark order as rejected if it hasn't been processed yet
@@ -141,6 +142,7 @@ function handleTBankWebhook(): void
     if ($status === 'CONFIRMED') {
         $db->updateOrderPayment($orderId, $paymentId, 'paid', 'tbank_sbp');
         error_log("T-Bank webhook: order #$orderId payment CONFIRMED");
+        cleanmenu_on_order_paid($db, $orderId);
     } elseif (in_array($status, ['REJECTED', 'AUTH_FAIL', 'REVERSED'], true)) {
         $db->updateOrderPayment($orderId, $paymentId, 'cancelled', 'tbank_sbp');
         $order = $db->getOrderById($orderId);
@@ -154,7 +156,32 @@ function handleTBankWebhook(): void
     echo 'OK';
 }
 
-// ── Helper ─────────────────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Shared "this order just transitioned to paid" hook. Called from both the
+ * YooKassa and T-Bank handlers; confirm-cash-payment.php also calls this.
+ * Idempotent — the loyalty accrual itself checks for a prior accrual for
+ * (user_id, order_id), and the webhook dispatch is a one-time event per call.
+ */
+function cleanmenu_on_order_paid(Database $db, int $orderId): void
+{
+    try {
+        $order = $db->getOrderById($orderId);
+        if (!$order) return;
+
+        $userId = (int)($order['user_id'] ?? 0);
+        $total  = (float)($order['total'] ?? 0);
+        if ($userId > 0 && $total > 0) {
+            $db->accrueLoyaltyPoints($userId, $orderId, $total);
+        }
+
+        require_once __DIR__ . '/lib/WebhookDispatcher.php';
+        WebhookDispatcher::dispatch('payment.received', $order, $db);
+    } catch (Throwable $e) {
+        error_log('cleanmenu_on_order_paid error: ' . $e->getMessage());
+    }
+}
 
 /**
  * Fetch a payment object from the ЮKassa API to verify it.

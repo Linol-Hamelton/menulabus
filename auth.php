@@ -101,17 +101,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $errors[] = "Аккаунт не активирован. Проверьте вашу почту для подтверждения или обратитесь в поддержку.";
                 error_log("Failed login attempt - account not active for email: $email");
             } else {
+                // ── 2FA gate (Phase 9.3) ──────────────────────────────────────
+                // If 2FA is enabled for this user, hold the session in a
+                // pending state and show the TOTP form. The user_id is NOT
+                // written into the session until the second factor verifies.
+                $twofa = $db->getUser2FA((int)$user['id']);
+                if ($twofa && (int)$twofa['enabled'] === 1) {
+                    require_once __DIR__ . '/lib/Totp.php';
+                    require_once __DIR__ . '/lib/AuditLog.php';
+                    $code = trim((string)($_POST['totp_code'] ?? ''));
+                    $verified = $code !== '' && Totp::verify((string)$twofa['secret'], $code);
+                    if (!$verified && $code !== '') {
+                        // Try as backup code.
+                        $hashed = json_decode((string)($twofa['backup_codes_json'] ?? '[]'), true) ?: [];
+                        $left = Totp::consumeBackupCode($hashed, $code);
+                        if ($left !== null) {
+                            $verified = true;
+                            $db->markUser2FAUsed((int)$user['id'], $left);
+                            AuditLog::record('2fa.backup_used', 'user', (string)$user['id'], [], (int)$user['id']);
+                        }
+                    } elseif ($verified) {
+                        $db->markUser2FAUsed((int)$user['id']);
+                    }
+
+                    if (!$verified) {
+                        $errors[] = $code === ''
+                            ? "Введите 6-значный код из приложения-аутентификатора"
+                            : "Неверный код. Попробуйте ещё раз или используйте резервный код.";
+                        $awaitingTwoFA = true;
+                        $pendingEmail  = $email;
+                        $pendingPassword = $password; // posted back via hidden field
+                        AuditLog::record('login.2fa_failed', 'user', (string)$user['id'], ['email' => $email], (int)$user['id']);
+                        // Skip the rest of the login block — UI re-renders with the TOTP field.
+                        goto two_fa_render;
+                    }
+                    AuditLog::record('login.2fa_passed', 'user', (string)$user['id'], [], (int)$user['id']);
+                }
+
                 // =============================================================
-                // ИЗМЕНЯЕМ ЭТОТ БЛОК ДЛЯ ПРОДЛЕНИЯ СЕССИИ
+                // Стандартный block продления сессии
                 // =============================================================
-                
-                // Сохраняем данные сессии перед регенерацией
                 $sessionData = $_SESSION;
-                
-                // Регенерируем ID с удалением старой сессии (ВАЖНО для безопасности)
                 session_regenerate_id(true);
-                
-                // Восстанавливаем данные пользователя в новую сессию
                 $_SESSION = $sessionData;
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_email'] = $user['email'];
@@ -173,8 +204,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             error_log("Login error: " . $e->getMessage());
             $errors[] = "Произошла ошибка при входе";
         }
+        two_fa_render: // re-enter UI rendering with the 2FA form on screen
     }
 }
+
+// Defaults so the form renders cleanly on first GET as well.
+$awaitingTwoFA   = $awaitingTwoFA   ?? false;
+$pendingEmail    = $pendingEmail    ?? '';
+$pendingPassword = $pendingPassword ?? '';
 ?>
 
 <!DOCTYPE html>
@@ -311,13 +348,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php else: ?>
             <form class="auth-form" method="POST" autocomplete="on">
+                <?php if ($awaitingTwoFA): ?>
+                    <input type="hidden" name="email"    value="<?= htmlspecialchars($pendingEmail, ENT_QUOTES) ?>">
+                    <input type="hidden" name="password" value="<?= htmlspecialchars($pendingPassword, ENT_QUOTES) ?>">
+                    <div class="form-group">
+                        <label for="totp_code">Код из приложения</label>
+                        <input
+                            type="text"
+                            id="totp_code"
+                            name="totp_code"
+                            inputmode="numeric"
+                            pattern="[0-9A-Z\-]{6,14}"
+                            placeholder="123456 или резервный код"
+                            autocomplete="one-time-code"
+                            required
+                            autofocus
+                        >
+                        <p class="auth-hint">Введите 6-значный код из Google Authenticator / Authy / 1Password или один из резервных кодов.</p>
+                    </div>
+                <?php else: ?>
                 <div class="form-group">
                     <label for="login_email" class="visually-hidden"></label>
-                    <input 
-                        type="email" 
-                        id="login_email" 
-                        name="email" 
-                        placeholder="Email" 
+                    <input
+                        type="email"
+                        id="login_email"
+                        name="email"
+                        placeholder="Email"
                         required
                         autocomplete="email"
                         value="<?= isset($_POST['email']) ? htmlspecialchars($_POST['email']) : '' ?>"
@@ -325,11 +381,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 <div class="form-group has-password-visibility">
     <label for="login_password" class="visually-hidden"></label>
-    <input 
-        type="password" 
-        id="login_password" 
-        name="password" 
-        placeholder="Пароль" 
+    <input
+        type="password"
+        id="login_password"
+        name="password"
+        placeholder="Пароль"
         required
         autocomplete="current-password"
         minlength="8"
@@ -337,6 +393,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     >
     <div class="password-visibility" data-target="login_password" role="button" tabindex="0" aria-label="Show password"></div>
 </div>
+                <?php endif; ?>
                 <div class="form-group remember-me">
                     <input 
                         type="checkbox" 

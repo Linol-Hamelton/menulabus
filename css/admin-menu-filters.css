@@ -1,0 +1,89 @@
+.menu-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    background: #f8f9fa;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+}
+
+.menu-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 12px;
+    color: #555;
+}
+
+.menu-filter-group.menu-filter-search {
+    flex: 1 1 240px;
+    min-width: 180px;
+}
+
+.menu-filter-label {
+    font-weight: 500;
+}
+
+.menu-filter-bar input[type="search"],
+.menu-filter-bar select {
+    padding: 6px 10px;
+    border: 1px solid #c8d2dc;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #fff;
+    min-height: 32px;
+    color: #222;
+}
+
+.menu-filter-bar input[type="search"]:focus,
+.menu-filter-bar select:focus {
+    outline: none;
+    border-color: #1a3d61;
+}
+
+.menu-filter-reset {
+    padding: 6px 12px;
+    border: 1px solid #c8d2dc;
+    border-radius: 6px;
+    background: #fff;
+    color: #1a3d61;
+    font-size: 13px;
+    cursor: pointer;
+    min-height: 32px;
+}
+
+.menu-filter-reset:hover {
+    background: #1a3d61;
+    color: #fff;
+}
+
+.menu-filter-count {
+    margin-left: auto;
+    font-size: 12px;
+    color: #555;
+    align-self: center;
+}
+
+.menu-items-table tr.filter-hidden {
+    display: none !important;
+}
+
+/* When a custom sort (name/price) is active, drag handles lose meaning —
+   fade them so operators don't try to reorder what is effectively a view. */
+.menu-items-table tr.drag-disabled .drag-handle {
+    opacity: 0.25;
+    cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+    .menu-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .menu-filter-count {
+        margin-left: 0;
+    }
+}

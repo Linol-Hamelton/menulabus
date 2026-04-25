@@ -1,5 +1,10 @@
 <?php
 
+if (PHP_SAPI !== 'cli' && realpath((string)($_SERVER['SCRIPT_FILENAME'] ?? '')) === __FILE__) {
+    http_response_code(404);
+    exit;
+}
+
 $logFile = __DIR__ . '/../data/logs/api-performance.log';
 if (!file_exists($logFile)) {
     fwrite(STDERR, "Log file not found: {$logFile}\n");
@@ -34,4 +39,3 @@ echo "avg_ms=" . number_format($avg, 2, '.', '') . "\n";
 echo "p50_ms=" . number_format($p(50), 2, '.', '') . "\n";
 echo "p95_ms=" . number_format($p(95), 2, '.', '') . "\n";
 echo "p99_ms=" . number_format($p(99), 2, '.', '') . "\n";
-

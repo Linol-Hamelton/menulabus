@@ -1,0 +1,57 @@
+{
+    "nav": {
+        "menu": "Menu",
+        "reservation": "Booking",
+        "group": "Shared tab",
+        "cart": "Order",
+        "account": "Account",
+        "login": "Sign in",
+        "logout": "Sign out"
+    },
+    "common": {
+        "yes": "Yes",
+        "no": "No",
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "back": "Back",
+        "loading": "Loading…",
+        "error_network": "Network error. Please try again."
+    },
+    "language": {
+        "label": "Language",
+        "ru": "Русский",
+        "en": "English",
+        "kk": "Қазақша"
+    },
+    "cart": {
+        "title": "Order",
+        "empty": "Your cart is empty",
+        "checkout": "Place order",
+        "subtotal": "Subtotal",
+        "total": "Total",
+        "tips": "Tip"
+    },
+    "reservation": {
+        "title": "Table reservation",
+        "table": "Table",
+        "starts_at": "From",
+        "ends_at": "Until",
+        "guests": "Number of guests",
+        "guest_name": "Your name",
+        "guest_phone": "Contact phone",
+        "note_optional": "Note (optional)",
+        "submit": "Book",
+        "submit_again": "Book another",
+        "status_pending": "Awaiting confirmation",
+        "status_confirmed": "Confirmed",
+        "status_seated": "Guest seated"
+    },
+    "loyalty": {
+        "title": "Loyalty program",
+        "balance": "Points",
+        "tier": "Tier",
+        "total_spent": "Total spent",
+        "next_tier": "Next tier in"
+    }
+}

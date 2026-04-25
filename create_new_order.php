@@ -202,6 +202,41 @@ try {
 
         $paymentUrl = null;
 
+        // ── KDS routing: write order_item_status rows per (slot × station) ─
+        try {
+            $db->routeOrderItemsToStations((int)$orderId, $items);
+        } catch (Throwable $kdsEx) {
+            error_log('KDS routing error: ' . $kdsEx->getMessage());
+        }
+
+        // ── Inventory: deduct ingredients per recipe; alert on low stock ───
+        try {
+            $nowLowIds = $db->deductIngredientsForOrder((int)$orderId, $items);
+            if (!empty($nowLowIds)) {
+                $alertIds = $db->markIngredientsAlerted($nowLowIds, 60);
+                if (!empty($alertIds)) {
+                    require_once __DIR__ . '/config.php';
+                    require_once __DIR__ . '/telegram-notifications.php';
+                    require_once __DIR__ . '/lib/WebhookDispatcher.php';
+                    $tgChatId = json_decode($db->getSetting('telegram_chat_id') ?? 'null', true);
+                    foreach ($alertIds as $iid) {
+                        $ing = $db->getIngredientById((int)$iid);
+                        if (!$ing) continue;
+                        if ($tgChatId && defined('TELEGRAM_BOT_TOKEN') && TELEGRAM_BOT_TOKEN) {
+                            $text = '⚠️ <b>Низкий остаток:</b> ' . htmlspecialchars((string)$ing['name'])
+                                  . ' — ' . rtrim(rtrim(number_format((float)$ing['stock_qty'], 3, '.', ''), '0'), '.')
+                                  . ' ' . htmlspecialchars((string)$ing['unit'])
+                                  . ' (порог ' . rtrim(rtrim(number_format((float)$ing['reorder_threshold'], 3, '.', ''), '0'), '.') . ')';
+                            sendTelegramMessage((string)$tgChatId, $text);
+                        }
+                        WebhookDispatcher::dispatch('inventory.stock_low', $ing, $db);
+                    }
+                }
+            }
+        } catch (Throwable $invEx) {
+            error_log('Inventory deduction error: ' . $invEx->getMessage());
+        }
+
         // ── Telegram notification with Accept/Reject buttons ──────────────
         try {
             require_once __DIR__ . '/config.php';
@@ -210,6 +245,9 @@ try {
             if ($orderRow) {
                 $orderRow['tips'] = $tips;
                 sendOrderToTelegram((int)$orderId, $orderRow, $db);
+
+                require_once __DIR__ . '/lib/WebhookDispatcher.php';
+                WebhookDispatcher::dispatch('order.created', $orderRow, $db);
             }
         } catch (Throwable $tgEx) {
             error_log("Telegram notify error: " . $tgEx->getMessage());

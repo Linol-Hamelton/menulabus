@@ -11,6 +11,10 @@
 
 require_once __DIR__ . '/tenant_runtime.php';
 require_once __DIR__ . '/lib/tenant/launch-contract.php';
+// i18n is loaded eagerly so every template can call t() without an extra
+// require. Locale resolution itself is lazy and reads from /locales/*.json
+// only when t() is first invoked — bundles are cached per request.
+require_once __DIR__ . '/lib/I18n.php';
 
 $labusCtx = defined('LABUS_CTX') ? (string)LABUS_CTX : 'web';
 if (!in_array($labusCtx, ['web', 'api', 'sse'], true)) {

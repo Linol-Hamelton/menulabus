@@ -18,6 +18,11 @@
 
 declare(strict_types=1);
 
+if (PHP_SAPI !== 'cli' && realpath((string)($_SERVER['SCRIPT_FILENAME'] ?? '')) === __FILE__) {
+    http_response_code(404);
+    exit;
+}
+
 function argValue(array $argv, string $name, ?string $default = null): ?string {
     foreach ($argv as $a) {
         if (strpos($a, $name . '=') === 0) {
@@ -200,4 +205,3 @@ while (true) {
 }
 
 echo "done dry_run=" . ($dryRun ? "1" : "0") . " orders={$totalOrders} rows={$totalRows} last_id={$lastId}\n";
-

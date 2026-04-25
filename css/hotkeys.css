@@ -1,0 +1,70 @@
+.hotkeys-help-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(12, 20, 32, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+}
+
+.hotkeys-help-overlay[hidden] {
+    display: none;
+}
+
+.hotkeys-help-box {
+    background: #fff;
+    color: #222;
+    border-radius: 12px;
+    padding: 20px 24px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+    max-width: 420px;
+    width: 100%;
+}
+
+.hotkeys-help-box h3 {
+    margin: 0 0 12px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.hotkeys-help-list {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    row-gap: 10px;
+    column-gap: 12px;
+    margin: 0 0 14px;
+}
+
+.hotkeys-help-list dt {
+    margin: 0;
+}
+
+.hotkeys-help-list dd {
+    margin: 0;
+    font-size: 14px;
+    color: #444;
+    line-height: 1.35;
+}
+
+.hotkeys-help-list kbd {
+    display: inline-block;
+    min-width: 32px;
+    padding: 2px 8px;
+    border: 1px solid #c8d2dc;
+    border-radius: 4px;
+    background: #f7f8fa;
+    box-shadow: 0 1px 0 #c8d2dc;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px;
+    text-align: center;
+    color: #1a3d61;
+}
+
+.hotkeys-help-hint {
+    margin: 0;
+    font-size: 12px;
+    color: #666;
+    text-align: right;
+}

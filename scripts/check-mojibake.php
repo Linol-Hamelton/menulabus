@@ -2,6 +2,11 @@
 <?php
 declare(strict_types=1);
 
+if (PHP_SAPI !== 'cli' && realpath((string)($_SERVER['SCRIPT_FILENAME'] ?? '')) === __FILE__) {
+    http_response_code(404);
+    exit;
+}
+
 $repoRoot = realpath(__DIR__ . '/..') ?: getcwd();
 if ($repoRoot === false) {
     fwrite(STDERR, "[mojibake] Unable to resolve repository root.\n");

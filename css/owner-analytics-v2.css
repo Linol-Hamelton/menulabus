@@ -1,0 +1,141 @@
+.owner-analytics-workspace {
+    padding: 12px 0;
+}
+
+.analytics-v2-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    background: #f8f9fa;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+}
+.analytics-v2-controls label {
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+    color: #555;
+    gap: 2px;
+}
+.analytics-v2-controls input {
+    padding: 6px 10px;
+    border: 1px solid #c8d2dc;
+    border-radius: 6px;
+    font-size: 13px;
+    min-height: 30px;
+}
+
+.analytics-v2-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.analytics-v2-card {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    padding: 14px;
+}
+.analytics-v2-card h3 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 600;
+}
+.analytics-v2-hint {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 10px;
+}
+
+.analytics-v2-chart {
+    margin: 8px 0;
+}
+.analytics-v2-chart canvas { width: 100%; height: auto; }
+
+.analytics-v2-table-wrap {
+    max-height: 340px;
+    overflow: auto;
+}
+
+.analytics-v2-table,
+.analytics-v2-cohorts,
+.analytics-v2-heatmap {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.analytics-v2-table th,
+.analytics-v2-table td,
+.analytics-v2-cohorts th,
+.analytics-v2-cohorts td,
+.analytics-v2-heatmap th,
+.analytics-v2-heatmap td {
+    border: 1px solid #e5e5e5;
+    padding: 4px 6px;
+    text-align: left;
+}
+
+.analytics-v2-table th,
+.analytics-v2-cohorts th,
+.analytics-v2-heatmap th {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+
+.analytics-v2-table td.num,
+.analytics-v2-cohorts td.num,
+.analytics-v2-heatmap td {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.an-cat {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.an-margin-pill {
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 11px;
+}
+.an-margin-pill.ok   { background: #d4edda; color: #155724; }
+.an-margin-pill.warn { background: #fff3cd; color: #856404; }
+
+.an-cell-empty { color: #c0c6cd; background: #fafafa; }
+.an-empty { text-align: center; color: #6b7280; padding: 20px; }
+
+.analytics-v2-heatmap-wrap {
+    overflow-x: auto;
+}
+.analytics-v2-heatmap td {
+    min-width: 22px;
+    height: 24px;
+    font-size: 11px;
+    text-align: center;
+}
+
+.analytics-v2-forecast {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.analytics-v2-forecast-big {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1f2937;
+}
+.analytics-v2-forecast-big small { font-size: 16px; color: #6b7280; }
+
+@media (max-width: 900px) {
+    .analytics-v2-grid {
+        grid-template-columns: 1fr;
+    }
+}

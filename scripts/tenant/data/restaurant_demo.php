@@ -1,5 +1,10 @@
 <?php
 
+if (PHP_SAPI !== 'cli' && realpath((string)($_SERVER['SCRIPT_FILENAME'] ?? '')) === __FILE__) {
+    http_response_code(404);
+    exit;
+}
+
 return [
     'defaults' => [
         'brand_name' => 'Aster Bistro',

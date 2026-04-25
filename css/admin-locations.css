@@ -1,0 +1,57 @@
+.loc-intro {
+    color: #555;
+    margin: 12px 0;
+}
+.loc-intro code {
+    background: #f1f3f5;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.locations-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 8px;
+}
+.locations-table th,
+.locations-table td {
+    border: 1px solid #e5e5e5;
+    padding: 6px 8px;
+    vertical-align: middle;
+    text-align: left;
+}
+.locations-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+.locations-table .num-col {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.locations-table input[type="text"],
+.locations-table input[type="number"] {
+    padding: 4px 6px;
+    border: 1px solid #c8d2dc;
+    border-radius: 4px;
+    font-size: 13px;
+    width: 100%;
+    min-width: 50px;
+    box-sizing: border-box;
+}
+.loc-new-row td {
+    background: #f1f7fd;
+}
+.loc-legacy td {
+    background: #fff8e1;
+    color: #6b5400;
+    font-style: italic;
+}
+
+@media (max-width: 900px) {
+    .locations-table {
+        display: block;
+        overflow-x: auto;
+    }
+}

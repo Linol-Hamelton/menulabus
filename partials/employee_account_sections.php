@@ -366,5 +366,82 @@ $canRunStaleCleanup = in_array((string)($_SESSION['user_role'] ?? ''), ['owner',
                 </div>
             <?php endif; ?>
         </div>
+
+        <div class="orders-list tab-content <?= $activeTab === 'брони' ? 'active' : '' ?>" id="брони">
+            <?php
+            $resvFrom = date('Y-m-d 00:00:00');
+            $resvTo   = date('Y-m-d 00:00:00', strtotime('+8 days'));
+            $reservations = $db->getReservationsByRange($resvFrom, $resvTo);
+
+            $statusLabels = [
+                'pending'   => 'Ожидает',
+                'confirmed' => 'Подтверждена',
+                'seated'    => 'Гость за столом',
+                'cancelled' => 'Отменена',
+                'no_show'   => 'Не пришёл',
+            ];
+            ?>
+            <div class="reservations-board" data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
+                <?php if (empty($reservations)): ?>
+                    <p>На ближайшую неделю броней нет.</p>
+                <?php else: ?>
+                    <?php
+                    $byDay = [];
+                    foreach ($reservations as $r) {
+                        $dayKey = substr((string)$r['starts_at'], 0, 10);
+                        $byDay[$dayKey][] = $r;
+                    }
+                    ?>
+                    <?php foreach ($byDay as $day => $items): ?>
+                        <h3 class="reservations-day"><?= htmlspecialchars(date('d.m.Y, l', strtotime($day))) ?></h3>
+                        <ul class="reservations-list">
+                            <?php foreach ($items as $r): ?>
+                                <?php
+                                $startsTs = strtotime((string)$r['starts_at']);
+                                $endsTs   = strtotime((string)$r['ends_at']);
+                                $status   = (string)$r['status'];
+                                $statusLabel = $statusLabels[$status] ?? $status;
+                                ?>
+                                <li class="reservation-card reservation-status-<?= htmlspecialchars($status) ?>" data-reservation-id="<?= (int)$r['id'] ?>">
+                                    <div class="reservation-card-head">
+                                        <span class="reservation-time"><?= date('H:i', $startsTs) ?>–<?= date('H:i', $endsTs) ?></span>
+                                        <span class="reservation-table">Стол <?= htmlspecialchars((string)$r['table_label']) ?></span>
+                                        <span class="reservation-guests"><?= (int)$r['guests_count'] ?> гост.</span>
+                                        <span class="reservation-status-badge"><?= htmlspecialchars($statusLabel) ?></span>
+                                    </div>
+                                    <div class="reservation-card-body">
+                                        <?php if (!empty($r['guest_name']) || !empty($r['guest_phone'])): ?>
+                                            <div class="reservation-contact">
+                                                <?php if (!empty($r['guest_name'])): ?>
+                                                    <span><?= htmlspecialchars((string)$r['guest_name']) ?></span>
+                                                <?php endif; ?>
+                                                <?php if (!empty($r['guest_phone'])): ?>
+                                                    <a href="tel:<?= htmlspecialchars((string)$r['guest_phone']) ?>"><?= htmlspecialchars((string)$r['guest_phone']) ?></a>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($r['note'])): ?>
+                                            <div class="reservation-note">📝 <?= htmlspecialchars((string)$r['note']) ?></div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php if (in_array($status, ['pending', 'confirmed'], true)): ?>
+                                        <div class="reservation-actions">
+                                            <?php if ($status === 'pending'): ?>
+                                                <button type="button" class="btn-resv-action" data-resv-action="confirmed">Подтвердить</button>
+                                            <?php endif; ?>
+                                            <?php if ($status === 'confirmed'): ?>
+                                                <button type="button" class="btn-resv-action" data-resv-action="seated">Рассадить</button>
+                                                <button type="button" class="btn-resv-action btn-resv-warn" data-resv-action="no_show">Не пришёл</button>
+                                            <?php endif; ?>
+                                            <button type="button" class="btn-resv-action btn-resv-danger" data-resv-action="cancelled">Отменить</button>
+                                        </div>
+                                    <?php endif; ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
     </section>
 </div>

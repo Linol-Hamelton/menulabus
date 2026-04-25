@@ -474,7 +474,7 @@ class Database
             if ($category) {
                 $sql .= " AND category = :category";
             }
-            $sql .= " ORDER BY category, name";
+            $sql .= " ORDER BY category, sort_order, name";
 
             $stmt = $this->prepareCached($sql);
             if ($category) {
@@ -514,7 +514,7 @@ class Database
             if ($category) {
                 $sql .= " AND category = :category";
             }
-            $sql .= " ORDER BY category, name";
+            $sql .= " ORDER BY category, sort_order, name";
 
             $stmt = $this->prepareCached($sql);
             if ($category) {
@@ -531,6 +531,42 @@ class Database
         } catch (PDOException $e) {
             error_log("getArchivedMenuItems Error: " . $e->getMessage());
             return [];
+        }
+    }
+
+    /**
+     * Bulk update sort_order for a list of menu items.
+     * Input: map of [id => position]. Positions are integers; callers
+     * (admin drag-n-drop) typically pass 0,1,2,... in visual order.
+     *
+     * Runs inside a transaction so a mid-batch failure rolls the whole
+     * rearrangement back — partial reorderings are worse than no-op.
+     * Invalidates the Redis menu cache on success.
+     */
+    public function updateMenuItemsOrder(array $idToPosition): bool
+    {
+        if (empty($idToPosition)) {
+            return true;
+        }
+        try {
+            $this->connection->beginTransaction();
+            $stmt = $this->connection->prepare("UPDATE menu_items SET sort_order = :pos WHERE id = :id");
+            foreach ($idToPosition as $id => $position) {
+                $id = (int)$id;
+                $position = (int)$position;
+                if ($id <= 0) {
+                    continue;
+                }
+                $stmt->execute([':pos' => $position, ':id' => $id]);
+            }
+            $this->connection->commit();
+
+            $this->invalidateMenuCache();
+            return true;
+        } catch (PDOException $e) {
+            try { $this->connection->rollBack(); } catch (Throwable $ignored) {}
+            error_log('updateMenuItemsOrder error: ' . $e->getMessage());
+            return false;
         }
     }
 
@@ -678,6 +714,101 @@ class Database
         } catch (PDOException $e) {
             error_log("archiveMenuItem Error: " . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Bulk helpers for admin-menu multi-select actions (track 5.2).
+     * All three run under a single transaction so partial failures don't leave
+     * a half-applied UI. Filter `archived_at IS NULL` so an already-archived
+     * row can't be flipped through the bulk channel — archive state is
+     * managed by archive/restore only.
+     */
+    public function bulkSetMenuItemsAvailable(array $ids, bool $available): int
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn($v) => $v > 0)));
+        if (empty($ids)) {
+            return 0;
+        }
+        try {
+            $this->connection->beginTransaction();
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $stmt = $this->connection->prepare("
+                UPDATE menu_items
+                SET available = ?
+                WHERE id IN ({$placeholders})
+                  AND archived_at IS NULL
+            ");
+            $stmt->execute(array_merge([$available ? 1 : 0], $ids));
+            $affected = $stmt->rowCount();
+            $this->connection->commit();
+            if ($affected > 0) {
+                $this->invalidateMenuCache();
+            }
+            return $affected;
+        } catch (PDOException $e) {
+            try { $this->connection->rollBack(); } catch (Throwable $ignored) {}
+            error_log('bulkSetMenuItemsAvailable error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function bulkMoveMenuItemsToCategory(array $ids, string $category): int
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn($v) => $v > 0)));
+        $category = trim($category);
+        if (empty($ids) || $category === '') {
+            return 0;
+        }
+        try {
+            $this->connection->beginTransaction();
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $stmt = $this->connection->prepare("
+                UPDATE menu_items
+                SET category = ?, sort_order = 0
+                WHERE id IN ({$placeholders})
+                  AND archived_at IS NULL
+            ");
+            $stmt->execute(array_merge([$category], $ids));
+            $affected = $stmt->rowCount();
+            $this->connection->commit();
+            if ($affected > 0) {
+                $this->invalidateMenuCache();
+            }
+            return $affected;
+        } catch (PDOException $e) {
+            try { $this->connection->rollBack(); } catch (Throwable $ignored) {}
+            error_log('bulkMoveMenuItemsToCategory error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function bulkArchiveMenuItems(array $ids): int
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn($v) => $v > 0)));
+        if (empty($ids)) {
+            return 0;
+        }
+        try {
+            $this->connection->beginTransaction();
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $stmt = $this->connection->prepare("
+                UPDATE menu_items
+                SET archived_at = NOW(), available = 0
+                WHERE id IN ({$placeholders})
+                  AND archived_at IS NULL
+            ");
+            $stmt->execute($ids);
+            $affected = $stmt->rowCount();
+            $this->connection->commit();
+            if ($affected > 0) {
+                $this->invalidateMenuCache();
+            }
+            return $affected;
+        } catch (PDOException $e) {
+            try { $this->connection->rollBack(); } catch (Throwable $ignored) {}
+            error_log('bulkArchiveMenuItems error: ' . $e->getMessage());
+            return 0;
         }
     }
 
@@ -849,8 +980,9 @@ class Database
                 SELECT g.id AS group_id, g.name AS group_name, g.type, g.required,
                        o.id AS opt_id, o.name AS opt_name, o.price_delta
                 FROM modifier_groups g
-                JOIN modifier_options o ON o.group_id = g.id
+                JOIN modifier_options o ON o.group_id = g.id AND o.deleted_at IS NULL
                 WHERE g.item_id = :item_id
+                  AND g.deleted_at IS NULL
                 ORDER BY g.sort_order, o.sort_order
             ");
             $stmt->execute([':item_id' => $itemId]);
@@ -917,7 +1049,10 @@ class Database
     public function deleteModifierGroup(int $groupId): bool
     {
         try {
-            return $this->prepareCached("DELETE FROM modifier_groups WHERE id=:id")->execute([':id'=>$groupId]);
+            return $this->prepareCached("
+                UPDATE modifier_groups SET deleted_at = NOW()
+                WHERE id = :id AND deleted_at IS NULL
+            ")->execute([':id' => $groupId]);
         } catch (PDOException $e) {
             error_log("deleteModifierGroup Error: " . $e->getMessage());
             return false;
@@ -927,11 +1062,66 @@ class Database
     public function deleteModifierOption(int $optionId): bool
     {
         try {
-            return $this->prepareCached("DELETE FROM modifier_options WHERE id=:id")->execute([':id'=>$optionId]);
+            return $this->prepareCached("
+                UPDATE modifier_options SET deleted_at = NOW()
+                WHERE id = :id AND deleted_at IS NULL
+            ")->execute([':id' => $optionId]);
         } catch (PDOException $e) {
             error_log("deleteModifierOption Error: " . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Undo a soft-delete within the 30-second forgiveness window.
+     * Called by undo-delete.php. Returns true if a row was actually restored.
+     * The 30-second cap keeps "undo" from accidentally resurrecting items
+     * that an operator deleted hours ago and doesn't remember.
+     */
+    public function undoModifierDelete(string $table, int $id): bool
+    {
+        if (!in_array($table, ['modifier_groups', 'modifier_options'], true)) {
+            return false;
+        }
+        try {
+            $stmt = $this->connection->prepare("
+                UPDATE `{$table}`
+                SET deleted_at = NULL
+                WHERE id = :id
+                  AND deleted_at IS NOT NULL
+                  AND deleted_at > (NOW() - INTERVAL 30 SECOND)
+            ");
+            $stmt->execute([':id' => $id]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('undoModifierDelete error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Purge rows that were soft-deleted more than $daysOld days ago.
+     * Called from scripts/orders/purge-soft-deleted.php (cron).
+     * Returns [modifier_groups_deleted, modifier_options_deleted].
+     */
+    public function purgeSoftDeletedModifiers(int $daysOld = 7): array
+    {
+        $daysOld = max(1, min(365, $daysOld));
+        $result = ['modifier_groups' => 0, 'modifier_options' => 0];
+        foreach (array_keys($result) as $table) {
+            try {
+                $stmt = $this->connection->prepare("
+                    DELETE FROM `{$table}`
+                    WHERE deleted_at IS NOT NULL
+                      AND deleted_at < (NOW() - INTERVAL :days DAY)
+                ");
+                $stmt->execute([':days' => $daysOld]);
+                $result[$table] = $stmt->rowCount();
+            } catch (PDOException $e) {
+                error_log("purgeSoftDeletedModifiers ({$table}) error: " . $e->getMessage());
+            }
+        }
+        return $result;
     }
 
     public function getUniqueCategories()
@@ -3007,7 +3197,8 @@ class Database
         $limit = max(1, min(200, $limit));
         try {
             $stmt = $this->connection->prepare("
-                SELECT r.id, r.order_id, r.user_id, r.rating, r.comment, r.created_at,
+                SELECT r.id, r.order_id, r.user_id, r.rating, r.comment, r.reply_text,
+                       r.replied_at, r.published_at, r.created_at,
                        o.total AS order_total, o.status AS order_status
                 FROM reviews r
                 LEFT JOIN orders o ON o.id = r.order_id
@@ -3019,6 +3210,2944 @@ class Database
             return is_array($rows) ? $rows : [];
         } catch (PDOException $e) {
             error_log("getRecentReviews error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Review moderation (Phase 8.5). Owner writes a reply and/or toggles
+     * public visibility on the tenant homepage.
+     */
+    public function setReviewReply(int $reviewId, ?string $replyText): bool
+    {
+        $replyText = $replyText !== null ? trim($replyText) : null;
+        if ($replyText === '') $replyText = null;
+        if ($replyText !== null && mb_strlen($replyText) > 2000) {
+            $replyText = mb_substr($replyText, 0, 2000);
+        }
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE reviews
+                SET reply_text = :reply,
+                    replied_at = CASE WHEN :reply IS NULL THEN NULL ELSE COALESCE(replied_at, NOW()) END
+                WHERE id = :id
+            ");
+            return $stmt->execute([':reply' => $replyText, ':id' => $reviewId]);
+        } catch (PDOException $e) {
+            error_log('setReviewReply error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function setReviewPublished(int $reviewId, bool $published): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE reviews
+                SET published_at = CASE WHEN :pub = 1 THEN COALESCE(published_at, NOW()) ELSE NULL END
+                WHERE id = :id
+            ");
+            return $stmt->execute([':pub' => $published ? 1 : 0, ':id' => $reviewId]);
+        } catch (PDOException $e) {
+            error_log('setReviewPublished error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Public-facing review feed for the tenant homepage. Only published
+     * entries with rating >= $minRating; sorted newest-first.
+     */
+    public function getPublishedReviews(int $minRating = 4, int $limit = 20): array
+    {
+        $minRating = max(1, min(5, $minRating));
+        $limit = max(1, min(100, $limit));
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT id, rating, comment, reply_text, replied_at, published_at, created_at
+                FROM reviews
+                WHERE published_at IS NOT NULL
+                  AND rating >= :minR
+                ORDER BY published_at DESC, id DESC
+                LIMIT {$limit}
+            ");
+            $stmt->execute([':minR' => $minRating]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('getPublishedReviews error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Reservations — table booking system. See sql/reservations-migration.sql.
+     * Status keys are English ('pending','confirmed','seated','cancelled','no_show');
+     * UI layer is responsible for display localization.
+     */
+    public function createReservation(
+        string $tableLabel,
+        ?int $userId,
+        ?string $guestName,
+        ?string $guestPhone,
+        int $guestsCount,
+        string $startsAt,
+        string $endsAt,
+        ?string $note
+    ): ?int {
+        $tableLabel = trim($tableLabel);
+        $guestsCount = max(1, min(50, $guestsCount));
+        if ($guestName !== null) {
+            $guestName = trim($guestName);
+            if ($guestName === '') { $guestName = null; }
+        }
+        if ($guestPhone !== null) {
+            $guestPhone = trim($guestPhone);
+            if ($guestPhone === '') { $guestPhone = null; }
+        }
+        if ($note !== null) {
+            $note = trim($note);
+            if ($note === '') {
+                $note = null;
+            } elseif (mb_strlen($note) > 1000) {
+                $note = mb_substr($note, 0, 1000);
+            }
+        }
+        if ($tableLabel === '' || $startsAt === '' || $endsAt === '') {
+            return null;
+        }
+        if (strtotime($endsAt) <= strtotime($startsAt)) {
+            return null;
+        }
+        if (!$this->checkTableAvailable($tableLabel, $startsAt, $endsAt, null)) {
+            return null;
+        }
+        try {
+            $stmt = $this->prepareCached("
+                INSERT INTO reservations
+                    (table_label, user_id, guest_name, guest_phone, guests_count,
+                     starts_at, ends_at, status, note, created_at)
+                VALUES
+                    (:label, :user_id, :name, :phone, :guests,
+                     :starts, :ends, 'pending', :note, NOW())
+            ");
+            $stmt->execute([
+                ':label'   => $tableLabel,
+                ':user_id' => $userId,
+                ':name'    => $guestName,
+                ':phone'   => $guestPhone,
+                ':guests'  => $guestsCount,
+                ':starts'  => $startsAt,
+                ':ends'    => $endsAt,
+                ':note'    => $note,
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log("createReservation error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getReservationById(int $id): ?array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, table_label, user_id, guest_name, guest_phone,
+                       guests_count, starts_at, ends_at, status, note,
+                       created_at, confirmed_at
+                FROM reservations
+                WHERE id = :id
+                LIMIT 1
+            ");
+            $stmt->execute([':id' => $id]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log("getReservationById error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getReservationsByRange(string $fromDate, string $toDate): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, table_label, user_id, guest_name, guest_phone,
+                       guests_count, starts_at, ends_at, status, note,
+                       created_at, confirmed_at
+                FROM reservations
+                WHERE starts_at >= :from AND starts_at < :to
+                ORDER BY starts_at ASC, table_label ASC
+            ");
+            $stmt->execute([':from' => $fromDate, ':to' => $toDate]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log("getReservationsByRange error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getUpcomingReservationsByUser(int $userId, int $limit = 20): array
+    {
+        $limit = max(1, min(100, $limit));
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT id, table_label, guests_count, starts_at, ends_at, status, note, created_at
+                FROM reservations
+                WHERE user_id = :uid
+                  AND ends_at >= NOW()
+                  AND status IN ('pending','confirmed','seated')
+                ORDER BY starts_at ASC
+                LIMIT {$limit}
+            ");
+            $stmt->execute([':uid' => $userId]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log("getUpcomingReservationsByUser error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function updateReservationStatus(int $id, string $status): bool
+    {
+        $allowed = ['pending','confirmed','seated','cancelled','no_show'];
+        if (!in_array($status, $allowed, true)) {
+            return false;
+        }
+        $setConfirmed = $status === 'confirmed' ? ', confirmed_at = NOW()' : '';
+        try {
+            $stmt = $this->connection->prepare("
+                UPDATE reservations
+                SET status = :status{$setConfirmed}
+                WHERE id = :id
+            ");
+            return $stmt->execute([':status' => $status, ':id' => $id]);
+        } catch (PDOException $e) {
+            error_log("updateReservationStatus error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Conflict check for a (table_label, starts_at, ends_at) triple.
+     * Returns true when the slot is free, false when an active reservation
+     * overlaps. Cancelled/no_show rows are ignored. Pass $excludeId to skip
+     * a specific row (used when editing an existing reservation).
+     */
+    public function checkTableAvailable(
+        string $tableLabel,
+        string $startsAt,
+        string $endsAt,
+        ?int $excludeId = null
+    ): bool {
+        try {
+            $sql = "
+                SELECT 1
+                FROM reservations
+                WHERE table_label = :label
+                  AND status IN ('pending','confirmed','seated')
+                  AND starts_at < :ends
+                  AND ends_at > :starts
+            ";
+            $params = [
+                ':label'  => $tableLabel,
+                ':starts' => $startsAt,
+                ':ends'   => $endsAt,
+            ];
+            if ($excludeId !== null) {
+                $sql .= " AND id <> :exclude";
+                $params[':exclude'] = $excludeId;
+            }
+            $sql .= " LIMIT 1";
+            $stmt = $this->connection->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchColumn() === false;
+        } catch (PDOException $e) {
+            error_log("checkTableAvailable error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Kitchen Display System — see sql/kds-migration.sql and docs/kds.md.
+     * Status machine: queued → cooking → ready (or → cancelled at any point).
+     */
+    public function listKitchenStations(bool $activeOnly = false): array
+    {
+        try {
+            $sql = "SELECT id, label, slug, active, sort_order, created_at, updated_at
+                    FROM kitchen_stations";
+            if ($activeOnly) {
+                $sql .= " WHERE active = 1";
+            }
+            $sql .= " ORDER BY sort_order ASC, id ASC";
+            $stmt = $this->connection->prepare($sql);
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listKitchenStations error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getKitchenStationById(int $id): ?array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, label, slug, active, sort_order, created_at, updated_at
+                FROM kitchen_stations
+                WHERE id = :id
+                LIMIT 1
+            ");
+            $stmt->execute([':id' => $id]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getKitchenStationById error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function saveKitchenStation(?int $id, string $label, string $slug, bool $active, int $sortOrder): ?int
+    {
+        $label = trim($label);
+        $slug  = trim(strtolower($slug));
+        if ($label === '' || $slug === '' || !preg_match('/^[a-z0-9_-]{1,32}$/', $slug)) {
+            return null;
+        }
+        try {
+            if ($id !== null && $id > 0) {
+                $stmt = $this->prepareCached("
+                    UPDATE kitchen_stations
+                    SET label = :label, slug = :slug, active = :active, sort_order = :sort
+                    WHERE id = :id
+                ");
+                $stmt->execute([
+                    ':label'  => $label,
+                    ':slug'   => $slug,
+                    ':active' => $active ? 1 : 0,
+                    ':sort'   => $sortOrder,
+                    ':id'     => $id,
+                ]);
+                return $id;
+            }
+            $stmt = $this->prepareCached("
+                INSERT INTO kitchen_stations (label, slug, active, sort_order)
+                VALUES (:label, :slug, :active, :sort)
+            ");
+            $stmt->execute([
+                ':label'  => $label,
+                ':slug'   => $slug,
+                ':active' => $active ? 1 : 0,
+                ':sort'   => $sortOrder,
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('saveKitchenStation error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function deleteKitchenStation(int $id): bool
+    {
+        try {
+            $stmt = $this->prepareCached("DELETE FROM kitchen_stations WHERE id = :id");
+            return $stmt->execute([':id' => $id]);
+        } catch (PDOException $e) {
+            error_log('deleteKitchenStation error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getMenuItemStations(int $menuItemId): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT s.id, s.label, s.slug
+                FROM menu_item_stations mis
+                JOIN kitchen_stations s ON s.id = mis.station_id
+                WHERE mis.menu_item_id = :id AND s.active = 1
+                ORDER BY s.sort_order ASC, s.id ASC
+            ");
+            $stmt->execute([':id' => $menuItemId]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('getMenuItemStations error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Replace the set of stations a menu item routes to.
+     * Passing an empty array detaches the item from all stations — it will
+     * then land in the "unrouted" queue that every KDS board surfaces.
+     */
+    public function setMenuItemStations(int $menuItemId, array $stationIds): bool
+    {
+        $stationIds = array_values(array_unique(array_filter(
+            array_map('intval', $stationIds),
+            static fn($v) => $v > 0
+        )));
+        try {
+            $this->connection->beginTransaction();
+            $del = $this->prepareCached("DELETE FROM menu_item_stations WHERE menu_item_id = :id");
+            $del->execute([':id' => $menuItemId]);
+            if (!empty($stationIds)) {
+                $ins = $this->connection->prepare("
+                    INSERT INTO menu_item_stations (menu_item_id, station_id)
+                    VALUES (:item, :station)
+                ");
+                foreach ($stationIds as $stationId) {
+                    $ins->execute([':item' => $menuItemId, ':station' => $stationId]);
+                }
+            }
+            $this->connection->commit();
+            return true;
+        } catch (PDOException $e) {
+            try { $this->connection->rollBack(); } catch (Throwable $ignored) {}
+            error_log('setMenuItemStations error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Called once per new order after the orders row is inserted.
+     * For each item slot, resolve its stations via menu_item_stations and
+     * write one order_item_status row per (slot, station). Items whose menu
+     * row has no station mapping still get one row with station_id=NULL so
+     * they show up on the "unrouted" tab and aren't silently lost.
+     *
+     * Returns the number of status rows written. Safe to call more than once:
+     * existing rows for (order_id, item_index, station_id) are left alone —
+     * a unique-by-hand dedup is done at the application level because MySQL
+     * cannot UNIQUE over a nullable column reliably across engines.
+     */
+    public function routeOrderItemsToStations(int $orderId, array $items): int
+    {
+        if ($orderId <= 0 || empty($items)) {
+            return 0;
+        }
+        try {
+            $existing = $this->connection->prepare("
+                SELECT item_index, COALESCE(station_id, 0) AS station_id
+                FROM order_item_status
+                WHERE order_id = :id
+            ");
+            $existing->execute([':id' => $orderId]);
+            $already = [];
+            foreach ($existing->fetchAll() as $row) {
+                $already[(int)$row['item_index']][(int)$row['station_id']] = true;
+            }
+
+            $ins = $this->connection->prepare("
+                INSERT INTO order_item_status
+                    (order_id, item_index, menu_item_id, item_name, quantity, station_id, status, created_at)
+                VALUES
+                    (:oid, :idx, :mid, :name, :qty, :station, 'queued', NOW())
+            ");
+
+            $written = 0;
+            foreach (array_values($items) as $i => $item) {
+                $menuItemId = isset($item['id']) ? (int)$item['id'] : 0;
+                $itemName   = isset($item['name']) ? (string)$item['name'] : null;
+                $qty        = isset($item['quantity']) ? max(1, (int)$item['quantity']) : 1;
+
+                $stations = $menuItemId > 0 ? $this->getMenuItemStations($menuItemId) : [];
+
+                if (empty($stations)) {
+                    if (!empty($already[$i][0])) continue;
+                    $ins->execute([
+                        ':oid'     => $orderId,
+                        ':idx'     => $i,
+                        ':mid'     => $menuItemId ?: null,
+                        ':name'    => $itemName,
+                        ':qty'     => $qty,
+                        ':station' => null,
+                    ]);
+                    $written++;
+                    continue;
+                }
+
+                foreach ($stations as $station) {
+                    $sid = (int)$station['id'];
+                    if (!empty($already[$i][$sid])) continue;
+                    $ins->execute([
+                        ':oid'     => $orderId,
+                        ':idx'     => $i,
+                        ':mid'     => $menuItemId ?: null,
+                        ':name'    => $itemName,
+                        ':qty'     => $qty,
+                        ':station' => $sid,
+                    ]);
+                    $written++;
+                }
+            }
+            return $written;
+        } catch (PDOException $e) {
+            error_log('routeOrderItemsToStations error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Active queue for a station (what the kitchen tablet shows).
+     * $stationId === null means the "unrouted" tab — items without a station.
+     */
+    public function getKdsBoardForStation(?int $stationId): array
+    {
+        try {
+            $where = $stationId === null
+                ? "ois.station_id IS NULL"
+                : "ois.station_id = :sid";
+            $stmt = $this->connection->prepare("
+                SELECT ois.id, ois.order_id, ois.item_index, ois.menu_item_id,
+                       ois.item_name, ois.quantity, ois.status,
+                       ois.started_at, ois.ready_at, ois.created_at,
+                       o.status AS order_status,
+                       o.delivery_type, o.delivery_details,
+                       o.created_at AS order_created_at
+                FROM order_item_status ois
+                JOIN orders o ON o.id = ois.order_id
+                WHERE {$where}
+                  AND ois.status IN ('queued', 'cooking')
+                  AND o.status NOT IN ('завершён', 'отказ')
+                ORDER BY o.created_at ASC, ois.item_index ASC
+            ");
+            if ($stationId !== null) {
+                $stmt->execute([':sid' => $stationId]);
+            } else {
+                $stmt->execute();
+            }
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('getKdsBoardForStation error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Move a single slot forward. Returns true when the row was actually
+     * flipped (helps callers distinguish "already there" from "invalid").
+     * Stamps started_at on first cooking transition and ready_at on ready.
+     */
+    public function advanceKdsItemStatus(int $statusRowId, string $newStatus): bool
+    {
+        if (!in_array($newStatus, ['queued', 'cooking', 'ready', 'cancelled'], true)) {
+            return false;
+        }
+        $extra = '';
+        if ($newStatus === 'cooking') {
+            $extra = ", started_at = COALESCE(started_at, NOW())";
+        } elseif ($newStatus === 'ready') {
+            $extra = ", ready_at = NOW(), started_at = COALESCE(started_at, NOW())";
+        }
+        try {
+            $stmt = $this->connection->prepare("
+                UPDATE order_item_status
+                SET status = :status{$extra}
+                WHERE id = :id AND status <> :status
+            ");
+            $stmt->execute([':status' => $newStatus, ':id' => $statusRowId]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('advanceKdsItemStatus error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * True when every non-cancelled order_item_status row for this order is
+     * `ready`. Called right after a successful advanceKdsItemStatus($x, 'ready')
+     * so we can fire the `order.ready` webhook / Telegram ping exactly once.
+     * Returns false on DB error rather than a misleading true.
+     */
+    public function isOrderFullyReady(int $orderId): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT
+                    SUM(CASE WHEN status <> 'cancelled' THEN 1 ELSE 0 END) AS active_rows,
+                    SUM(CASE WHEN status = 'ready' THEN 1 ELSE 0 END) AS ready_rows
+                FROM order_item_status
+                WHERE order_id = :id
+            ");
+            $stmt->execute([':id' => $orderId]);
+            $row = $stmt->fetch();
+            $active = (int)($row['active_rows'] ?? 0);
+            $ready  = (int)($row['ready_rows'] ?? 0);
+            return $active > 0 && $active === $ready;
+        } catch (PDOException $e) {
+            error_log('isOrderFullyReady error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getKdsLastUpdateTs(?int $stationId): int
+    {
+        try {
+            $where = $stationId === null ? "station_id IS NULL" : "station_id = :sid";
+            $stmt = $this->connection->prepare("
+                SELECT UNIX_TIMESTAMP(MAX(updated_at)) FROM order_item_status WHERE {$where}
+            ");
+            if ($stationId !== null) {
+                $stmt->execute([':sid' => $stationId]);
+            } else {
+                $stmt->execute();
+            }
+            return (int)($stmt->fetchColumn() ?: 0);
+        } catch (PDOException $e) {
+            error_log('getKdsLastUpdateTs error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Inventory — see sql/inventory-migration.sql and docs/inventory.md.
+     * Deduction is transactional; partial application would corrupt the audit log.
+     */
+    public function listIngredients(bool $includeArchived = false): array
+    {
+        try {
+            $sql = "SELECT i.id, i.name, i.unit, i.stock_qty, i.reorder_threshold,
+                           i.cost_per_unit, i.supplier_id, i.archived_at,
+                           i.last_alerted_at, i.created_at, i.updated_at,
+                           s.name AS supplier_name
+                    FROM ingredients i
+                    LEFT JOIN suppliers s ON s.id = i.supplier_id";
+            if (!$includeArchived) {
+                $sql .= " WHERE i.archived_at IS NULL";
+            }
+            $sql .= " ORDER BY i.name ASC";
+            $stmt = $this->connection->prepare($sql);
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listIngredients error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getIngredientById(int $id): ?array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, name, unit, stock_qty, reorder_threshold, cost_per_unit,
+                       supplier_id, archived_at, last_alerted_at, created_at, updated_at
+                FROM ingredients
+                WHERE id = :id
+                LIMIT 1
+            ");
+            $stmt->execute([':id' => $id]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getIngredientById error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function saveIngredient(
+        ?int $id,
+        string $name,
+        string $unit,
+        float $stockQty,
+        float $reorderThreshold,
+        float $costPerUnit,
+        ?int $supplierId
+    ): ?int {
+        $name = trim($name);
+        $unit = trim($unit);
+        if ($name === '' || $unit === '' || mb_strlen($name) > 255 || mb_strlen($unit) > 16) {
+            return null;
+        }
+        if ($stockQty < 0 || $reorderThreshold < 0 || $costPerUnit < 0) {
+            return null;
+        }
+        try {
+            if ($id !== null && $id > 0) {
+                $stmt = $this->prepareCached("
+                    UPDATE ingredients
+                    SET name = :name, unit = :unit, stock_qty = :qty,
+                        reorder_threshold = :threshold, cost_per_unit = :cost,
+                        supplier_id = :supplier
+                    WHERE id = :id
+                ");
+                $stmt->execute([
+                    ':name'     => $name,
+                    ':unit'     => $unit,
+                    ':qty'      => $stockQty,
+                    ':threshold'=> $reorderThreshold,
+                    ':cost'     => $costPerUnit,
+                    ':supplier' => $supplierId,
+                    ':id'       => $id,
+                ]);
+                return $id;
+            }
+            $stmt = $this->prepareCached("
+                INSERT INTO ingredients
+                    (name, unit, stock_qty, reorder_threshold, cost_per_unit, supplier_id)
+                VALUES
+                    (:name, :unit, :qty, :threshold, :cost, :supplier)
+            ");
+            $stmt->execute([
+                ':name'     => $name,
+                ':unit'     => $unit,
+                ':qty'      => $stockQty,
+                ':threshold'=> $reorderThreshold,
+                ':cost'     => $costPerUnit,
+                ':supplier' => $supplierId,
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('saveIngredient error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function archiveIngredient(int $id): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE ingredients SET archived_at = NOW()
+                WHERE id = :id AND archived_at IS NULL
+            ");
+            $stmt->execute([':id' => $id]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('archiveIngredient error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function restoreIngredient(int $id): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE ingredients SET archived_at = NULL
+                WHERE id = :id AND archived_at IS NOT NULL
+            ");
+            $stmt->execute([':id' => $id]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('restoreIngredient error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function adjustIngredientStock(int $id, float $delta, string $reason, ?string $note = null, ?int $userId = null): bool
+    {
+        if (!in_array($reason, ['adjustment', 'receipt', 'waste', 'stocktake', 'undo'], true)) {
+            return false;
+        }
+        try {
+            $this->connection->beginTransaction();
+            $upd = $this->prepareCached("
+                UPDATE ingredients SET stock_qty = stock_qty + :delta WHERE id = :id AND archived_at IS NULL
+            ");
+            $upd->execute([':delta' => $delta, ':id' => $id]);
+            if ($upd->rowCount() === 0) {
+                $this->connection->rollBack();
+                return false;
+            }
+            $log = $this->prepareCached("
+                INSERT INTO stock_movements (ingredient_id, delta, reason, note, created_by, created_at)
+                VALUES (:iid, :delta, :reason, :note, :uid, NOW())
+            ");
+            $log->execute([
+                ':iid'    => $id,
+                ':delta'  => $delta,
+                ':reason' => $reason,
+                ':note'   => $note !== null && $note !== '' ? $note : null,
+                ':uid'    => $userId,
+            ]);
+            $this->connection->commit();
+            return true;
+        } catch (PDOException $e) {
+            try { $this->connection->rollBack(); } catch (Throwable $ignored) {}
+            error_log('adjustIngredientStock error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function listSuppliers(bool $includeArchived = false): array
+    {
+        try {
+            $sql = "SELECT id, name, contact, notes, archived_at, created_at, updated_at FROM suppliers";
+            if (!$includeArchived) {
+                $sql .= " WHERE archived_at IS NULL";
+            }
+            $sql .= " ORDER BY name ASC";
+            $stmt = $this->connection->prepare($sql);
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listSuppliers error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function saveSupplier(?int $id, string $name, ?string $contact, ?string $notes): ?int
+    {
+        $name = trim($name);
+        if ($name === '' || mb_strlen($name) > 255) {
+            return null;
+        }
+        $contact = $contact !== null ? trim($contact) : null;
+        if ($contact === '') { $contact = null; }
+        $notes = $notes !== null ? trim($notes) : null;
+        if ($notes === '') { $notes = null; }
+        try {
+            if ($id !== null && $id > 0) {
+                $stmt = $this->prepareCached("
+                    UPDATE suppliers SET name = :name, contact = :contact, notes = :notes
+                    WHERE id = :id
+                ");
+                $stmt->execute([':name' => $name, ':contact' => $contact, ':notes' => $notes, ':id' => $id]);
+                return $id;
+            }
+            $stmt = $this->prepareCached("
+                INSERT INTO suppliers (name, contact, notes) VALUES (:name, :contact, :notes)
+            ");
+            $stmt->execute([':name' => $name, ':contact' => $contact, ':notes' => $notes]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('saveSupplier error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getRecipeForMenuItem(int $menuItemId): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT r.ingredient_id, r.quantity,
+                       i.name AS ingredient_name, i.unit, i.stock_qty, i.cost_per_unit
+                FROM recipes r
+                JOIN ingredients i ON i.id = r.ingredient_id
+                WHERE r.menu_item_id = :id AND i.archived_at IS NULL
+                ORDER BY i.name ASC
+            ");
+            $stmt->execute([':id' => $menuItemId]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('getRecipeForMenuItem error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Replace the entire recipe for a menu item.
+     * Input: map of [ingredient_id => quantity]; quantities must be > 0.
+     * Any ingredient_id not in the map is removed from the recipe.
+     */
+    public function setRecipeForMenuItem(int $menuItemId, array $ingredientToQty): bool
+    {
+        try {
+            $this->connection->beginTransaction();
+            $del = $this->prepareCached("DELETE FROM recipes WHERE menu_item_id = :id");
+            $del->execute([':id' => $menuItemId]);
+
+            if (!empty($ingredientToQty)) {
+                $ins = $this->connection->prepare("
+                    INSERT INTO recipes (menu_item_id, ingredient_id, quantity)
+                    VALUES (:mid, :iid, :qty)
+                ");
+                foreach ($ingredientToQty as $ingredientId => $qty) {
+                    $ingredientId = (int)$ingredientId;
+                    $qty = (float)$qty;
+                    if ($ingredientId <= 0 || $qty <= 0) continue;
+                    $ins->execute([':mid' => $menuItemId, ':iid' => $ingredientId, ':qty' => $qty]);
+                }
+            }
+            $this->connection->commit();
+            return true;
+        } catch (PDOException $e) {
+            try { $this->connection->rollBack(); } catch (Throwable $ignored) {}
+            error_log('setRecipeForMenuItem error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * For each item slot in the order, look up its recipe and subtract
+     * (recipe.quantity × slot.quantity) from each ingredient. Writes one
+     * stock_movements row per ingredient change so the audit log stays
+     * per-ingredient (not per-order).
+     *
+     * Fully transactional: either the whole order's recipes apply or nothing.
+     * Returns the list of newly-low-stock ingredient ids — caller can fan
+     * those out as Telegram / webhook alerts without reopening a transaction.
+     */
+    public function deductIngredientsForOrder(int $orderId, array $items): array
+    {
+        if ($orderId <= 0 || empty($items)) {
+            return [];
+        }
+        // First: build a per-ingredient aggregate so a dish that appears
+        // twice in the same order only hits one UPDATE per ingredient.
+        $aggregate = []; // ingredient_id => total_delta (negative)
+        $perIngredientItemId = []; // ingredient_id => menu_item_id that pushed it last
+        foreach ($items as $item) {
+            $menuItemId = isset($item['id']) ? (int)$item['id'] : 0;
+            $qty        = isset($item['quantity']) ? max(1, (int)$item['quantity']) : 1;
+            if ($menuItemId <= 0) continue;
+            $recipe = $this->getRecipeForMenuItem($menuItemId);
+            foreach ($recipe as $row) {
+                $iid = (int)$row['ingredient_id'];
+                $delta = -1 * ((float)$row['quantity']) * $qty;
+                $aggregate[$iid] = ($aggregate[$iid] ?? 0) + $delta;
+                $perIngredientItemId[$iid] = $menuItemId;
+            }
+        }
+
+        if (empty($aggregate)) {
+            return [];
+        }
+
+        $nowLow = [];
+
+        try {
+            $this->connection->beginTransaction();
+            $upd = $this->prepareCached("
+                UPDATE ingredients
+                SET stock_qty = stock_qty + :delta
+                WHERE id = :id AND archived_at IS NULL
+            ");
+            $log = $this->prepareCached("
+                INSERT INTO stock_movements
+                    (ingredient_id, delta, reason, order_id, menu_item_id, created_at)
+                VALUES
+                    (:iid, :delta, 'order', :oid, :mid, NOW())
+            ");
+            $probe = $this->prepareCached("
+                SELECT stock_qty, reorder_threshold
+                FROM ingredients
+                WHERE id = :id AND archived_at IS NULL
+            ");
+
+            foreach ($aggregate as $iid => $delta) {
+                $upd->execute([':delta' => $delta, ':id' => $iid]);
+                $log->execute([
+                    ':iid'   => $iid,
+                    ':delta' => $delta,
+                    ':oid'   => $orderId,
+                    ':mid'   => $perIngredientItemId[$iid] ?? null,
+                ]);
+
+                $probe->execute([':id' => $iid]);
+                $snap = $probe->fetch();
+                if ($snap && (float)$snap['stock_qty'] <= (float)$snap['reorder_threshold']
+                    && (float)$snap['reorder_threshold'] > 0) {
+                    $nowLow[] = (int)$iid;
+                }
+            }
+            $this->connection->commit();
+        } catch (PDOException $e) {
+            try { $this->connection->rollBack(); } catch (Throwable $ignored) {}
+            error_log('deductIngredientsForOrder error: ' . $e->getMessage());
+            return [];
+        }
+
+        return $nowLow;
+    }
+
+    /**
+     * Low-stock list with throttling awareness: callers that send alerts
+     * should check `last_alerted_at` so Telegram is not spammed every minute.
+     */
+    public function listLowStockIngredients(int $limit = 100): array
+    {
+        $limit = max(1, min(500, $limit));
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT id, name, unit, stock_qty, reorder_threshold, last_alerted_at
+                FROM ingredients
+                WHERE archived_at IS NULL
+                  AND reorder_threshold > 0
+                  AND stock_qty <= reorder_threshold
+                ORDER BY (stock_qty / NULLIF(reorder_threshold, 0)) ASC, name ASC
+                LIMIT {$limit}
+            ");
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listLowStockIngredients error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Throttle helper: set last_alerted_at=NOW() for the given ingredients
+     * so the next deduct does not re-fire the alert within the cooldown.
+     * Returns the subset of ids that were actually stamped (i.e. whose
+     * last_alerted_at was older than $cooldownMin or NULL).
+     */
+    public function markIngredientsAlerted(array $ingredientIds, int $cooldownMin = 60): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ingredientIds), static fn($v) => $v > 0)));
+        if (empty($ids)) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        try {
+            $sel = $this->connection->prepare("
+                SELECT id FROM ingredients
+                WHERE id IN ({$placeholders})
+                  AND (last_alerted_at IS NULL OR last_alerted_at < (NOW() - INTERVAL ? MINUTE))
+            ");
+            $sel->execute(array_merge($ids, [$cooldownMin]));
+            $ready = array_map('intval', $sel->fetchAll(PDO::FETCH_COLUMN, 0));
+            if (empty($ready)) {
+                return [];
+            }
+            $upPh = implode(',', array_fill(0, count($ready), '?'));
+            $upd = $this->connection->prepare("
+                UPDATE ingredients SET last_alerted_at = NOW() WHERE id IN ({$upPh})
+            ");
+            $upd->execute($ready);
+            return $ready;
+        } catch (PDOException $e) {
+            error_log('markIngredientsAlerted error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getStockMovementsForIngredient(int $ingredientId, int $limit = 50): array
+    {
+        $limit = max(1, min(500, $limit));
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT id, delta, reason, note, order_id, menu_item_id, created_by, created_at
+                FROM stock_movements
+                WHERE ingredient_id = :id
+                ORDER BY id DESC
+                LIMIT {$limit}
+            ");
+            $stmt->execute([':id' => $ingredientId]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('getStockMovementsForIngredient error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Loyalty program — see sql/loyalty-migration.sql and docs/loyalty.md.
+     * All points / promo math runs in decimal to keep rounding transparent.
+     */
+    public function listLoyaltyTiers(bool $includeArchived = false): array
+    {
+        try {
+            $sql = "SELECT id, name, min_spent, cashback_pct, sort_order, archived_at, created_at, updated_at
+                    FROM loyalty_tiers";
+            if (!$includeArchived) {
+                $sql .= " WHERE archived_at IS NULL";
+            }
+            $sql .= " ORDER BY min_spent ASC, sort_order ASC, id ASC";
+            $stmt = $this->connection->prepare($sql);
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listLoyaltyTiers error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function saveLoyaltyTier(?int $id, string $name, float $minSpent, float $cashbackPct, int $sortOrder): ?int
+    {
+        $name = trim($name);
+        if ($name === '' || mb_strlen($name) > 64) return null;
+        if ($minSpent < 0 || $cashbackPct < 0 || $cashbackPct > 100) return null;
+        try {
+            if ($id !== null && $id > 0) {
+                $stmt = $this->prepareCached("
+                    UPDATE loyalty_tiers
+                    SET name = :name, min_spent = :mspent, cashback_pct = :cb, sort_order = :so
+                    WHERE id = :id
+                ");
+                $stmt->execute([':name' => $name, ':mspent' => $minSpent, ':cb' => $cashbackPct, ':so' => $sortOrder, ':id' => $id]);
+                return $id;
+            }
+            $stmt = $this->prepareCached("
+                INSERT INTO loyalty_tiers (name, min_spent, cashback_pct, sort_order)
+                VALUES (:name, :mspent, :cb, :so)
+            ");
+            $stmt->execute([':name' => $name, ':mspent' => $minSpent, ':cb' => $cashbackPct, ':so' => $sortOrder]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('saveLoyaltyTier error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function archiveLoyaltyTier(int $id): bool
+    {
+        try {
+            $stmt = $this->prepareCached("UPDATE loyalty_tiers SET archived_at = NOW() WHERE id = :id AND archived_at IS NULL");
+            $stmt->execute([':id' => $id]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('archiveLoyaltyTier error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Resolve the tier a user has earned based on lifetime total_spent.
+     * Picks the highest tier whose min_spent ≤ spent. Returns null if no tiers defined.
+     */
+    public function resolveTierForSpent(float $spent): ?array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, name, min_spent, cashback_pct, sort_order
+                FROM loyalty_tiers
+                WHERE archived_at IS NULL AND min_spent <= :spent
+                ORDER BY min_spent DESC, id DESC
+                LIMIT 1
+            ");
+            $stmt->execute([':spent' => $spent]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('resolveTierForSpent error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getOrCreateLoyaltyAccount(int $userId): ?array
+    {
+        if ($userId <= 0) return null;
+        try {
+            $stmt = $this->prepareCached("
+                SELECT user_id, points_balance, total_spent, tier_id, created_at, updated_at
+                FROM loyalty_accounts WHERE user_id = :uid
+            ");
+            $stmt->execute([':uid' => $userId]);
+            $row = $stmt->fetch();
+            if ($row) return $row;
+
+            $ins = $this->prepareCached("
+                INSERT INTO loyalty_accounts (user_id) VALUES (:uid)
+            ");
+            $ins->execute([':uid' => $userId]);
+            $stmt->execute([':uid' => $userId]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getOrCreateLoyaltyAccount error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Accrue points for an order. Called from order.paid hooks. Transactional:
+     *   - Update total_spent by order total.
+     *   - Resolve new tier; store tier_id on the account.
+     *   - Compute points = order_total × tier.cashback_pct / 100.
+     *   - Insert loyalty_transactions row with reason='accrual'.
+     *   - Update points_balance.
+     *
+     * Returns the points awarded (may be 0 if no tier is defined). Idempotent
+     * by (user_id, order_id) — a second call with the same order is a no-op.
+     */
+    public function accrueLoyaltyPoints(int $userId, int $orderId, float $orderTotal): float
+    {
+        if ($userId <= 0 || $orderId <= 0 || $orderTotal <= 0) return 0.0;
+        try {
+            $this->connection->beginTransaction();
+
+            // Idempotency: accrual row already exists for this order.
+            $probe = $this->prepareCached("
+                SELECT id FROM loyalty_transactions
+                WHERE user_id = :uid AND order_id = :oid AND reason = 'accrual'
+                LIMIT 1
+            ");
+            $probe->execute([':uid' => $userId, ':oid' => $orderId]);
+            if ($probe->fetchColumn() !== false) {
+                $this->connection->commit();
+                return 0.0;
+            }
+
+            $this->prepareCached("INSERT IGNORE INTO loyalty_accounts (user_id) VALUES (:uid)")
+                ->execute([':uid' => $userId]);
+
+            $acc = $this->prepareCached("SELECT total_spent FROM loyalty_accounts WHERE user_id = :uid FOR UPDATE");
+            $acc->execute([':uid' => $userId]);
+            $prevSpent = (float)($acc->fetchColumn() ?: 0);
+
+            $newSpent = $prevSpent + $orderTotal;
+            $tier = $this->resolveTierForSpent($newSpent);
+            $cashbackPct = $tier ? (float)$tier['cashback_pct'] : 0.0;
+            $tierId = $tier ? (int)$tier['id'] : null;
+            $points = round($orderTotal * $cashbackPct / 100.0, 2);
+
+            $upd = $this->prepareCached("
+                UPDATE loyalty_accounts
+                SET total_spent = :spent,
+                    tier_id = :tid,
+                    points_balance = points_balance + :pts
+                WHERE user_id = :uid
+            ");
+            $upd->execute([':spent' => $newSpent, ':tid' => $tierId, ':pts' => $points, ':uid' => $userId]);
+
+            if ($points > 0) {
+                $log = $this->prepareCached("
+                    INSERT INTO loyalty_transactions (user_id, points_delta, reason, order_id, created_at)
+                    VALUES (:uid, :pts, 'accrual', :oid, NOW())
+                ");
+                $log->execute([':uid' => $userId, ':pts' => $points, ':oid' => $orderId]);
+            }
+
+            $this->connection->commit();
+            return $points;
+        } catch (PDOException $e) {
+            try { $this->connection->rollBack(); } catch (Throwable $ignored) {}
+            error_log('accrueLoyaltyPoints error: ' . $e->getMessage());
+            return 0.0;
+        }
+    }
+
+    /**
+     * Redeem points. Transactional + locks the row with FOR UPDATE to avoid
+     * double-spend under concurrent cart checkouts. Returns true when the
+     * points were actually subtracted. 'amount' is in points (which equal ₽
+     * 1:1 in the default config; tenants can re-interpret later if they want
+     * a different ratio).
+     */
+    public function redeemLoyaltyPoints(int $userId, float $amount, ?int $orderId = null, ?string $note = null): bool
+    {
+        if ($userId <= 0 || $amount <= 0) return false;
+        try {
+            $this->connection->beginTransaction();
+            $sel = $this->prepareCached("SELECT points_balance FROM loyalty_accounts WHERE user_id = :uid FOR UPDATE");
+            $sel->execute([':uid' => $userId]);
+            $balance = (float)($sel->fetchColumn() ?: 0);
+            if ($balance < $amount) {
+                $this->connection->rollBack();
+                return false;
+            }
+            $upd = $this->prepareCached("
+                UPDATE loyalty_accounts SET points_balance = points_balance - :amt
+                WHERE user_id = :uid
+            ");
+            $upd->execute([':amt' => $amount, ':uid' => $userId]);
+            $log = $this->prepareCached("
+                INSERT INTO loyalty_transactions (user_id, points_delta, reason, order_id, note, created_at)
+                VALUES (:uid, :delta, 'redeem', :oid, :note, NOW())
+            ");
+            $log->execute([':uid' => $userId, ':delta' => -$amount, ':oid' => $orderId, ':note' => $note]);
+            $this->connection->commit();
+            return true;
+        } catch (PDOException $e) {
+            try { $this->connection->rollBack(); } catch (Throwable $ignored) {}
+            error_log('redeemLoyaltyPoints error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getUserLoyaltyState(int $userId): array
+    {
+        $empty = [
+            'points_balance' => 0.0,
+            'total_spent'    => 0.0,
+            'tier_name'      => null,
+            'tier_cashback_pct' => 0.0,
+            'next_tier_name' => null,
+            'next_tier_at'   => null,
+        ];
+        if ($userId <= 0) return $empty;
+        try {
+            $stmt = $this->prepareCached("
+                SELECT la.points_balance, la.total_spent, t.id AS tier_id, t.name AS tier_name, t.cashback_pct
+                FROM loyalty_accounts la
+                LEFT JOIN loyalty_tiers t ON t.id = la.tier_id
+                WHERE la.user_id = :uid
+                LIMIT 1
+            ");
+            $stmt->execute([':uid' => $userId]);
+            $row = $stmt->fetch();
+            if (!$row) return $empty;
+
+            $state = [
+                'points_balance'    => (float)$row['points_balance'],
+                'total_spent'       => (float)$row['total_spent'],
+                'tier_name'         => $row['tier_name'],
+                'tier_cashback_pct' => (float)($row['cashback_pct'] ?? 0),
+                'next_tier_name'    => null,
+                'next_tier_at'      => null,
+            ];
+
+            // Next tier = smallest min_spent strictly greater than current total_spent.
+            $next = $this->prepareCached("
+                SELECT name, min_spent FROM loyalty_tiers
+                WHERE archived_at IS NULL AND min_spent > :spent
+                ORDER BY min_spent ASC LIMIT 1
+            ");
+            $next->execute([':spent' => $state['total_spent']]);
+            $nextRow = $next->fetch();
+            if ($nextRow) {
+                $state['next_tier_name'] = (string)$nextRow['name'];
+                $state['next_tier_at']   = (float)$nextRow['min_spent'];
+            }
+            return $state;
+        } catch (PDOException $e) {
+            error_log('getUserLoyaltyState error: ' . $e->getMessage());
+            return $empty;
+        }
+    }
+
+    public function getUserLoyaltyHistory(int $userId, int $limit = 50): array
+    {
+        $limit = max(1, min(500, $limit));
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT id, points_delta, reason, order_id, note, created_at
+                FROM loyalty_transactions
+                WHERE user_id = :uid
+                ORDER BY id DESC
+                LIMIT {$limit}
+            ");
+            $stmt->execute([':uid' => $userId]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('getUserLoyaltyHistory error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function listPromoCodes(bool $includeArchived = false): array
+    {
+        try {
+            $sql = "SELECT id, code, discount_pct, discount_amount, min_order_total,
+                           valid_from, valid_to, usage_limit, used_count, description,
+                           archived_at, created_at, updated_at
+                    FROM promo_codes";
+            if (!$includeArchived) {
+                $sql .= " WHERE archived_at IS NULL";
+            }
+            $sql .= " ORDER BY created_at DESC, id DESC";
+            $stmt = $this->connection->prepare($sql);
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listPromoCodes error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function savePromoCode(
+        ?int $id,
+        string $code,
+        ?float $discountPct,
+        ?float $discountAmount,
+        float $minOrderTotal,
+        ?string $validFrom,
+        ?string $validTo,
+        int $usageLimit,
+        ?string $description
+    ): ?int {
+        $code = trim(strtoupper($code));
+        if ($code === '' || !preg_match('/^[A-Z0-9_-]{2,64}$/', $code)) return null;
+        if (($discountPct === null || $discountPct <= 0) && ($discountAmount === null || $discountAmount <= 0)) return null;
+        if ($discountPct !== null && $discountAmount !== null && $discountPct > 0 && $discountAmount > 0) return null;
+        if ($discountPct !== null && ($discountPct < 0 || $discountPct > 100)) return null;
+        if ($discountAmount !== null && $discountAmount < 0) return null;
+        if ($minOrderTotal < 0 || $usageLimit < 0) return null;
+
+        try {
+            if ($id !== null && $id > 0) {
+                $stmt = $this->prepareCached("
+                    UPDATE promo_codes
+                    SET code = :code, discount_pct = :pct, discount_amount = :amt,
+                        min_order_total = :minTotal, valid_from = :vf, valid_to = :vt,
+                        usage_limit = :ul, description = :desc
+                    WHERE id = :id
+                ");
+                $stmt->execute([
+                    ':code' => $code, ':pct' => $discountPct, ':amt' => $discountAmount,
+                    ':minTotal' => $minOrderTotal,
+                    ':vf' => $validFrom !== '' ? $validFrom : null,
+                    ':vt' => $validTo !== '' ? $validTo : null,
+                    ':ul' => $usageLimit, ':desc' => $description,
+                    ':id' => $id,
+                ]);
+                return $id;
+            }
+            $stmt = $this->prepareCached("
+                INSERT INTO promo_codes
+                    (code, discount_pct, discount_amount, min_order_total, valid_from, valid_to, usage_limit, description)
+                VALUES
+                    (:code, :pct, :amt, :minTotal, :vf, :vt, :ul, :desc)
+            ");
+            $stmt->execute([
+                ':code' => $code, ':pct' => $discountPct, ':amt' => $discountAmount,
+                ':minTotal' => $minOrderTotal,
+                ':vf' => $validFrom !== '' ? $validFrom : null,
+                ':vt' => $validTo !== '' ? $validTo : null,
+                ':ul' => $usageLimit, ':desc' => $description,
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('savePromoCode error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function archivePromoCode(int $id): bool
+    {
+        try {
+            $stmt = $this->prepareCached("UPDATE promo_codes SET archived_at = NOW() WHERE id = :id AND archived_at IS NULL");
+            $stmt->execute([':id' => $id]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('archivePromoCode error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Validate and compute a promo discount for the given cart total.
+     * Returns either
+     *   ['ok' => true, 'discount' => <rub>, 'new_total' => <rub>, 'promo_id' => int, 'code' => string]
+     * or
+     *   ['ok' => false, 'error' => '<slug>']
+     *
+     * This is a PURE read-plus-math call — it does NOT increment used_count.
+     * Commit the usage via incrementPromoCodeUsage() once the order is created.
+     */
+    public function evaluatePromoCode(string $code, float $orderTotal): array
+    {
+        $code = trim(strtoupper($code));
+        if ($code === '') return ['ok' => false, 'error' => 'empty'];
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, code, discount_pct, discount_amount, min_order_total,
+                       valid_from, valid_to, usage_limit, used_count
+                FROM promo_codes
+                WHERE code = :code AND archived_at IS NULL
+                LIMIT 1
+            ");
+            $stmt->execute([':code' => $code]);
+            $row = $stmt->fetch();
+            if (!$row) return ['ok' => false, 'error' => 'not_found'];
+
+            $now = time();
+            if (!empty($row['valid_from']) && strtotime((string)$row['valid_from']) > $now) {
+                return ['ok' => false, 'error' => 'not_yet_valid'];
+            }
+            if (!empty($row['valid_to']) && strtotime((string)$row['valid_to']) < $now) {
+                return ['ok' => false, 'error' => 'expired'];
+            }
+            if ((int)$row['usage_limit'] > 0 && (int)$row['used_count'] >= (int)$row['usage_limit']) {
+                return ['ok' => false, 'error' => 'limit_reached'];
+            }
+            if ($orderTotal < (float)$row['min_order_total']) {
+                return ['ok' => false, 'error' => 'below_min_total', 'min' => (float)$row['min_order_total']];
+            }
+
+            if ($row['discount_pct'] !== null && (float)$row['discount_pct'] > 0) {
+                $discount = round($orderTotal * ((float)$row['discount_pct']) / 100.0, 2);
+            } else {
+                $discount = round((float)($row['discount_amount'] ?? 0), 2);
+            }
+            $discount = max(0.0, min($discount, $orderTotal));
+            $newTotal = round($orderTotal - $discount, 2);
+            return [
+                'ok'        => true,
+                'promo_id'  => (int)$row['id'],
+                'code'      => (string)$row['code'],
+                'discount'  => $discount,
+                'new_total' => $newTotal,
+            ];
+        } catch (PDOException $e) {
+            error_log('evaluatePromoCode error: ' . $e->getMessage());
+            return ['ok' => false, 'error' => 'db_error'];
+        }
+    }
+
+    public function incrementPromoCodeUsage(int $promoId): bool
+    {
+        if ($promoId <= 0) return false;
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE promo_codes
+                SET used_count = used_count + 1
+                WHERE id = :id
+                  AND archived_at IS NULL
+                  AND (usage_limit = 0 OR used_count < usage_limit)
+            ");
+            $stmt->execute([':id' => $promoId]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('incrementPromoCodeUsage error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Enhanced analytics (Phase 6.4). Read-only — safe for owner surface.
+     * No implicit "last 30 days" default so the owner can drill any window.
+     *
+     * Per-dish margin: revenue = sum(price × qty from orders.items JSON blob),
+     * cogs = sum(current menu_items.cost × qty). History-accurate for price
+     * (snapshotted in the blob) but uses current cost — freezing per-order
+     * cogs is a follow-up.
+     */
+    public function getDishMargins(string $fromDt, string $toDt, int $limit = 50): array
+    {
+        $limit = max(1, min(500, $limit));
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT
+                    mi.id,
+                    mi.name,
+                    mi.category,
+                    mi.cost AS current_cost,
+                    agg.units_sold,
+                    agg.revenue,
+                    ROUND(agg.units_sold * mi.cost, 2) AS cogs,
+                    ROUND(agg.revenue - agg.units_sold * mi.cost, 2) AS gross_margin,
+                    CASE WHEN agg.revenue > 0
+                         THEN ROUND((agg.revenue - agg.units_sold * mi.cost) / agg.revenue * 100, 2)
+                         ELSE 0 END AS gross_margin_pct
+                FROM menu_items mi
+                JOIN (
+                    SELECT
+                        CAST(JSON_UNQUOTE(JSON_EXTRACT(i.item, '$.id')) AS UNSIGNED) AS item_id,
+                        SUM(CAST(JSON_UNQUOTE(JSON_EXTRACT(i.item, '$.quantity')) AS UNSIGNED)) AS units_sold,
+                        SUM(
+                            CAST(JSON_UNQUOTE(JSON_EXTRACT(i.item, '$.price')) AS DECIMAL(10,2))
+                            * CAST(JSON_UNQUOTE(JSON_EXTRACT(i.item, '$.quantity')) AS UNSIGNED)
+                        ) AS revenue
+                    FROM orders o
+                    JOIN JSON_TABLE(o.items, '$[*]' COLUMNS (item JSON PATH '$')) i
+                    WHERE o.created_at >= :fromDt
+                      AND o.created_at <  :toDt
+                      AND o.status NOT IN ('отказ')
+                    GROUP BY item_id
+                ) agg ON agg.item_id = mi.id
+                ORDER BY gross_margin DESC
+                LIMIT {$limit}
+            ");
+            $stmt->execute([':fromDt' => $fromDt, ':toDt' => $toDt]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('getDishMargins error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Cohort retention matrix: rows = month of first order, columns = months-since-cohort.
+     * Each cell = distinct active users from that cohort in that month. Capped at
+     * `$cohortsLimit` rows × 13 columns (0..12 months).
+     */
+    public function getCustomerCohorts(int $cohortsLimit = 12): array
+    {
+        $cohortsLimit = max(1, min(24, $cohortsLimit));
+        try {
+            $stmt = $this->connection->prepare("
+                WITH first_orders AS (
+                    SELECT user_id, DATE_FORMAT(MIN(created_at), '%Y-%m') AS cohort
+                    FROM orders
+                    WHERE user_id IS NOT NULL AND status NOT IN ('отказ')
+                    GROUP BY user_id
+                ),
+                activity AS (
+                    SELECT fo.cohort,
+                           PERIOD_DIFF(DATE_FORMAT(o.created_at, '%Y%m'),
+                                       DATE_FORMAT(STR_TO_DATE(CONCAT(fo.cohort, '-01'), '%Y-%m-%d'), '%Y%m')) AS months_out,
+                           o.user_id
+                    FROM orders o
+                    JOIN first_orders fo ON fo.user_id = o.user_id
+                    WHERE o.status NOT IN ('отказ')
+                )
+                SELECT cohort, months_out, COUNT(DISTINCT user_id) AS active_users
+                FROM activity
+                GROUP BY cohort, months_out
+                ORDER BY cohort DESC, months_out ASC
+            ");
+            $stmt->execute();
+            $raw = $stmt->fetchAll();
+
+            $byCohort = [];
+            foreach ($raw as $r) {
+                $c = (string)$r['cohort'];
+                $byCohort[$c] = $byCohort[$c] ?? ['cohort' => $c, 'size' => 0, 'retention' => []];
+                $mo = max(0, min(12, (int)$r['months_out']));
+                $byCohort[$c]['retention'][$mo] = (int)$r['active_users'];
+                if ($mo === 0) {
+                    $byCohort[$c]['size'] = (int)$r['active_users'];
+                }
+            }
+
+            $normalized = [];
+            foreach ($byCohort as $row) {
+                $retention = [];
+                for ($mo = 0; $mo <= 12; $mo++) {
+                    $retention[] = (int)($row['retention'][$mo] ?? 0);
+                }
+                $row['retention'] = $retention;
+                $normalized[] = $row;
+            }
+            return array_slice($normalized, 0, $cohortsLimit);
+        } catch (PDOException $e) {
+            error_log('getCustomerCohorts error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Day-of-week × hour heatmap. Values = order count. DOW uses WEEKDAY()
+     * convention (0=Monday, 6=Sunday).
+     */
+    public function getHourlyHeatmap(int $days = 30): array
+    {
+        $days = max(1, min(365, $days));
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT WEEKDAY(created_at) AS dow,
+                       HOUR(created_at) AS hour,
+                       COUNT(*) AS orders
+                FROM orders
+                WHERE created_at >= (NOW() - INTERVAL :days DAY)
+                  AND status NOT IN ('отказ')
+                GROUP BY WEEKDAY(created_at), HOUR(created_at)
+            ");
+            $stmt->execute([':days' => $days]);
+            $rows = $stmt->fetchAll();
+
+            $grid = array_fill(0, 7, array_fill(0, 24, 0));
+            $max = 0;
+            foreach ($rows as $r) {
+                $d = (int)$r['dow']; $h = (int)$r['hour']; $c = (int)$r['orders'];
+                if ($d >= 0 && $d <= 6 && $h >= 0 && $h <= 23) {
+                    $grid[$d][$h] = $c;
+                    if ($c > $max) $max = $c;
+                }
+            }
+            return ['grid' => $grid, 'max' => $max, 'days' => $days];
+        } catch (PDOException $e) {
+            error_log('getHourlyHeatmap error: ' . $e->getMessage());
+            return ['grid' => array_fill(0, 7, array_fill(0, 24, 0)), 'max' => 0, 'days' => $days];
+        }
+    }
+
+    /**
+     * EWMA forecast (alpha=0.5) of next-week revenue from the last `$weeksBack`
+     * completed weeks. Directional signal, not a serious forecast.
+     */
+    public function forecastNextWeekRevenue(int $weeksBack = 8): array
+    {
+        $weeksBack = max(4, min(24, $weeksBack));
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT YEARWEEK(created_at, 3) AS yw, SUM(total) AS revenue
+                FROM orders
+                WHERE created_at >= (NOW() - INTERVAL :weeks WEEK)
+                  AND status NOT IN ('отказ')
+                GROUP BY YEARWEEK(created_at, 3)
+                ORDER BY yw ASC
+            ");
+            $stmt->execute([':weeks' => $weeksBack]);
+            $rows = $stmt->fetchAll();
+
+            $alpha = 0.5;
+            $ewma = 0.0;
+            $series = [];
+            foreach ($rows as $r) {
+                $rev = (float)$r['revenue'];
+                $ewma = count($series) === 0 ? $rev : ($alpha * $rev + (1 - $alpha) * $ewma);
+                $series[] = ['week' => (string)$r['yw'], 'revenue' => $rev];
+            }
+
+            return ['weekly' => $series, 'forecast' => round($ewma, 2), 'alpha' => $alpha];
+        } catch (PDOException $e) {
+            error_log('forecastNextWeekRevenue error: ' . $e->getMessage());
+            return ['weekly' => [], 'forecast' => 0.0, 'alpha' => 0.5];
+        }
+    }
+
+    /**
+     * Marketing automation (Phase 8.1). Owner builds a tiny segment + email,
+     * hits Send. Materialization happens at queue time; the actual send loop
+     * lives in scripts/marketing-worker.php so the admin call stays fast.
+     */
+    public function listMarketingCampaigns(int $limit = 50): array
+    {
+        $limit = max(1, min(200, $limit));
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT id, name, channel, subject, status, scheduled_at, started_at, finished_at, created_at,
+                       (SELECT COUNT(*) FROM marketing_sends ms WHERE ms.campaign_id = mc.id) AS sends_count,
+                       (SELECT COUNT(*) FROM marketing_sends ms WHERE ms.campaign_id = mc.id AND ms.status = 'sent') AS sent_count
+                FROM marketing_campaigns mc
+                ORDER BY id DESC
+                LIMIT {$limit}
+            ");
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listMarketingCampaigns error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getMarketingCampaign(int $id): ?array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, name, channel, subject, body_text, body_html, segment_json, status,
+                       scheduled_at, started_at, finished_at, created_by, created_at, updated_at
+                FROM marketing_campaigns WHERE id = :id LIMIT 1
+            ");
+            $stmt->execute([':id' => $id]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getMarketingCampaign error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function saveMarketingCampaign(?int $id, string $name, string $channel, ?string $subject, string $bodyText, ?string $bodyHtml, array $segment, ?string $scheduledAt, ?int $createdBy): ?int
+    {
+        $name = trim($name);
+        $channel = trim($channel);
+        $subject = $subject !== null ? trim($subject) : null;
+        if ($subject === '') $subject = null;
+        $bodyText = trim($bodyText);
+        $bodyHtml = $bodyHtml !== null ? trim($bodyHtml) : null;
+        if ($bodyHtml === '') $bodyHtml = null;
+        if ($name === '' || $bodyText === '') return null;
+        if (!in_array($channel, ['email', 'push', 'telegram'], true)) return null;
+        $segmentJson = json_encode($segment, JSON_UNESCAPED_UNICODE);
+
+        try {
+            if ($id !== null && $id > 0) {
+                $stmt = $this->prepareCached("
+                    UPDATE marketing_campaigns
+                    SET name = :name, channel = :ch, subject = :subj,
+                        body_text = :bt, body_html = :bh, segment_json = :seg,
+                        scheduled_at = :sched
+                    WHERE id = :id AND status IN ('draft', 'queued')
+                ");
+                $stmt->execute([
+                    ':name' => $name, ':ch' => $channel, ':subj' => $subject,
+                    ':bt' => $bodyText, ':bh' => $bodyHtml, ':seg' => $segmentJson,
+                    ':sched' => $scheduledAt !== '' ? $scheduledAt : null,
+                    ':id' => $id,
+                ]);
+                return $id;
+            }
+            $stmt = $this->prepareCached("
+                INSERT INTO marketing_campaigns
+                    (name, channel, subject, body_text, body_html, segment_json, status, scheduled_at, created_by)
+                VALUES
+                    (:name, :ch, :subj, :bt, :bh, :seg, 'draft', :sched, :by)
+            ");
+            $stmt->execute([
+                ':name' => $name, ':ch' => $channel, ':subj' => $subject,
+                ':bt' => $bodyText, ':bh' => $bodyHtml, ':seg' => $segmentJson,
+                ':sched' => $scheduledAt !== '' ? $scheduledAt : null,
+                ':by' => $createdBy,
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('saveMarketingCampaign error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function updateMarketingCampaignStatus(int $id, string $newStatus): bool
+    {
+        if (!in_array($newStatus, ['draft', 'queued', 'sending', 'sent', 'failed', 'cancelled'], true)) return false;
+        $sets = ['status = :status'];
+        if ($newStatus === 'sending') $sets[] = 'started_at = COALESCE(started_at, NOW())';
+        if (in_array($newStatus, ['sent', 'failed', 'cancelled'], true)) {
+            $sets[] = 'finished_at = COALESCE(finished_at, NOW())';
+        }
+        try {
+            $stmt = $this->connection->prepare("UPDATE marketing_campaigns SET " . implode(', ', $sets) . " WHERE id = :id");
+            return $stmt->execute([':status' => $newStatus, ':id' => $id]);
+        } catch (PDOException $e) {
+            error_log('updateMarketingCampaignStatus error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Resolve segment_json into a list of user_id targets.
+     * Supported types: all / min_orders / loyalty_tier / birthday_today / manual.
+     */
+    public function resolveMarketingSegment(array $segment): array
+    {
+        $type = (string)($segment['type'] ?? 'all');
+        try {
+            switch ($type) {
+                case 'manual':
+                    $ids = array_values(array_filter(array_map('intval', $segment['user_ids'] ?? []), static fn($v) => $v > 0));
+                    return array_values(array_unique($ids));
+                case 'min_orders':
+                    $threshold = max(1, (int)($segment['threshold'] ?? 1));
+                    $stmt = $this->connection->prepare("
+                        SELECT u.id FROM users u
+                        JOIN (
+                            SELECT user_id, COUNT(*) AS cnt
+                            FROM orders WHERE status NOT IN ('отказ') AND user_id IS NOT NULL
+                            GROUP BY user_id
+                        ) o ON o.user_id = u.id AND o.cnt >= :t
+                        WHERE u.is_active = 1 AND u.email IS NOT NULL
+                    ");
+                    $stmt->execute([':t' => $threshold]);
+                    return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN, 0));
+                case 'loyalty_tier':
+                    $tierId = (int)($segment['tier_id'] ?? 0);
+                    if ($tierId <= 0) return [];
+                    $stmt = $this->connection->prepare("
+                        SELECT u.id FROM users u
+                        JOIN loyalty_accounts la ON la.user_id = u.id
+                        WHERE la.tier_id = :tid AND u.is_active = 1 AND u.email IS NOT NULL
+                    ");
+                    $stmt->execute([':tid' => $tierId]);
+                    return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN, 0));
+                case 'birthday_today':
+                    try {
+                        $stmt = $this->connection->prepare("
+                            SELECT id FROM users
+                            WHERE is_active = 1 AND email IS NOT NULL
+                              AND DATE_FORMAT(birth_date, '%m-%d') = DATE_FORMAT(CURDATE(), '%m-%d')
+                        ");
+                        $stmt->execute();
+                        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN, 0));
+                    } catch (PDOException $e) {
+                        return [];
+                    }
+                case 'all':
+                default:
+                    $stmt = $this->connection->prepare("SELECT id FROM users WHERE is_active = 1 AND email IS NOT NULL");
+                    $stmt->execute();
+                    return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN, 0));
+            }
+        } catch (PDOException $e) {
+            error_log('resolveMarketingSegment error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function queueMarketingCampaign(int $campaignId): int
+    {
+        $campaign = $this->getMarketingCampaign($campaignId);
+        if (!$campaign || !in_array($campaign['status'], ['draft', 'queued'], true)) return 0;
+        $segment = json_decode((string)$campaign['segment_json'], true) ?: ['type' => 'all'];
+        $userIds = $this->resolveMarketingSegment($segment);
+        if (empty($userIds)) {
+            $this->updateMarketingCampaignStatus($campaignId, 'queued');
+            return 0;
+        }
+        try {
+            $stmt = $this->connection->prepare("
+                INSERT IGNORE INTO marketing_sends (campaign_id, user_id, channel, status, queued_at)
+                VALUES (:cid, :uid, :ch, 'queued', NOW())
+            ");
+            $count = 0;
+            foreach ($userIds as $uid) {
+                $ok = $stmt->execute([':cid' => $campaignId, ':uid' => $uid, ':ch' => $campaign['channel']]);
+                if ($ok && $stmt->rowCount() > 0) $count++;
+            }
+            $this->updateMarketingCampaignStatus($campaignId, 'queued');
+            return $count;
+        } catch (PDOException $e) {
+            error_log('queueMarketingCampaign error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function getNextQueuedMarketingSends(int $batch = 50): array
+    {
+        $batch = max(1, min(500, $batch));
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT ms.id, ms.campaign_id, ms.user_id, ms.channel,
+                       u.email, u.name AS user_name,
+                       mc.subject, mc.body_text, mc.body_html
+                FROM marketing_sends ms
+                JOIN users u ON u.id = ms.user_id
+                JOIN marketing_campaigns mc ON mc.id = ms.campaign_id
+                WHERE ms.status = 'queued'
+                ORDER BY ms.id ASC
+                LIMIT {$batch}
+            ");
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('getNextQueuedMarketingSends error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function markMarketingSendDelivered(int $sendId): bool
+    {
+        try {
+            $stmt = $this->prepareCached("UPDATE marketing_sends SET status = 'sent', sent_at = NOW() WHERE id = :id");
+            return $stmt->execute([':id' => $sendId]);
+        } catch (PDOException $e) {
+            error_log('markMarketingSendDelivered error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function markMarketingSendFailed(int $sendId, string $excerpt): bool
+    {
+        try {
+            $stmt = $this->prepareCached("UPDATE marketing_sends SET status = 'failed', error_excerpt = :e WHERE id = :id");
+            return $stmt->execute([':e' => mb_substr($excerpt, 0, 500), ':id' => $sendId]);
+        } catch (PDOException $e) {
+            error_log('markMarketingSendFailed error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Two-factor auth (Phase 9.3). One row per user that has set up TOTP.
+     * `enabled = 0` while the user is in the setup wizard but hasn't yet
+     * confirmed by entering a valid code; flips to 1 on first successful
+     * verify. `secret` is a base32 string (Totp::generateSecret() result).
+     */
+    public function getUser2FA(int $userId): ?array
+    {
+        if ($userId <= 0) return null;
+        try {
+            $stmt = $this->prepareCached("
+                SELECT user_id, secret, enabled, backup_codes_json, last_used_at, created_at, updated_at
+                FROM user_2fa WHERE user_id = :uid LIMIT 1
+            ");
+            $stmt->execute([':uid' => $userId]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getUser2FA error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function saveUser2FA(int $userId, string $secret, bool $enabled, ?array $backupCodesHashed = null): bool
+    {
+        if ($userId <= 0 || $secret === '') return false;
+        try {
+            $existing = $this->getUser2FA($userId);
+            $codesJson = $backupCodesHashed !== null ? json_encode($backupCodesHashed, JSON_UNESCAPED_UNICODE) : null;
+            if ($existing) {
+                $sql = "UPDATE user_2fa SET secret = :s, enabled = :en";
+                $params = [':s' => $secret, ':en' => $enabled ? 1 : 0, ':uid' => $userId];
+                if ($backupCodesHashed !== null) {
+                    $sql .= ", backup_codes_json = :codes";
+                    $params[':codes'] = $codesJson;
+                }
+                $sql .= " WHERE user_id = :uid";
+                $stmt = $this->connection->prepare($sql);
+                return $stmt->execute($params);
+            }
+            $stmt = $this->prepareCached("
+                INSERT INTO user_2fa (user_id, secret, enabled, backup_codes_json)
+                VALUES (:uid, :s, :en, :codes)
+            ");
+            return $stmt->execute([
+                ':uid' => $userId, ':s' => $secret,
+                ':en' => $enabled ? 1 : 0, ':codes' => $codesJson,
+            ]);
+        } catch (PDOException $e) {
+            error_log('saveUser2FA error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function deleteUser2FA(int $userId): bool
+    {
+        if ($userId <= 0) return false;
+        try {
+            $stmt = $this->prepareCached("DELETE FROM user_2fa WHERE user_id = :uid");
+            return $stmt->execute([':uid' => $userId]);
+        } catch (PDOException $e) {
+            error_log('deleteUser2FA error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function markUser2FAUsed(int $userId, ?array $newBackupCodesHashed = null): bool
+    {
+        if ($userId <= 0) return false;
+        try {
+            $sql = "UPDATE user_2fa SET last_used_at = NOW()";
+            $params = [':uid' => $userId];
+            if ($newBackupCodesHashed !== null) {
+                $sql .= ", backup_codes_json = :codes";
+                $params[':codes'] = json_encode($newBackupCodesHashed, JSON_UNESCAPED_UNICODE);
+            }
+            $sql .= " WHERE user_id = :uid";
+            $stmt = $this->connection->prepare($sql);
+            return $stmt->execute($params);
+        } catch (PDOException $e) {
+            error_log('markUser2FAUsed error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Staff management (Phase 7.4). Shifts + clock-in/out + tip splits.
+     * All per-user references use ON DELETE SET NULL — offboarding does not
+     * erase pay history.
+     */
+    public function listShifts(?string $fromDt = null, ?string $toDt = null, ?int $userId = null): array
+    {
+        $clauses = ['1=1'];
+        $params  = [];
+        if ($fromDt !== null) { $clauses[] = 's.starts_at >= :from'; $params[':from'] = $fromDt; }
+        if ($toDt   !== null) { $clauses[] = 's.starts_at <  :to';   $params[':to']   = $toDt;   }
+        if ($userId !== null) { $clauses[] = 's.user_id = :uid';     $params[':uid']  = $userId; }
+        $where = implode(' AND ', $clauses);
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT s.id, s.user_id, u.name AS user_name, s.role, s.location_id,
+                       s.starts_at, s.ends_at, s.note, s.created_at
+                FROM shifts s
+                LEFT JOIN users u ON u.id = s.user_id
+                WHERE {$where}
+                ORDER BY s.starts_at ASC, s.id ASC
+            ");
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listShifts error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function saveShift(?int $id, ?int $userId, string $role, ?int $locationId, string $startsAt, string $endsAt, ?string $note): ?int
+    {
+        $role = trim($role);
+        if ($role === '' || mb_strlen($role) > 32) return null;
+        if (strtotime($endsAt) <= strtotime($startsAt)) return null;
+        $note = $note !== null ? trim($note) : null;
+        if ($note === '') $note = null;
+        try {
+            if ($id !== null && $id > 0) {
+                $stmt = $this->prepareCached("
+                    UPDATE shifts
+                    SET user_id = :uid, role = :role, location_id = :loc,
+                        starts_at = :start, ends_at = :end, note = :note
+                    WHERE id = :id
+                ");
+                $stmt->execute([
+                    ':uid' => $userId, ':role' => $role, ':loc' => $locationId,
+                    ':start' => $startsAt, ':end' => $endsAt, ':note' => $note,
+                    ':id' => $id,
+                ]);
+                return $id;
+            }
+            $stmt = $this->prepareCached("
+                INSERT INTO shifts (user_id, role, location_id, starts_at, ends_at, note)
+                VALUES (:uid, :role, :loc, :start, :end, :note)
+            ");
+            $stmt->execute([
+                ':uid' => $userId, ':role' => $role, ':loc' => $locationId,
+                ':start' => $startsAt, ':end' => $endsAt, ':note' => $note,
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('saveShift error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function deleteShift(int $id): bool
+    {
+        try {
+            $stmt = $this->prepareCached("DELETE FROM shifts WHERE id = :id");
+            return $stmt->execute([':id' => $id]);
+        } catch (PDOException $e) {
+            error_log('deleteShift error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function clockIn(int $userId, ?int $shiftId = null): ?int
+    {
+        try {
+            $probe = $this->prepareCached("
+                SELECT id FROM time_entries WHERE user_id = :uid AND clocked_out_at IS NULL LIMIT 1
+            ");
+            $probe->execute([':uid' => $userId]);
+            $openId = $probe->fetchColumn();
+            if ($openId !== false) return (int)$openId;
+
+            $stmt = $this->prepareCached("
+                INSERT INTO time_entries (user_id, shift_id, clocked_in_at)
+                VALUES (:uid, :sid, NOW())
+            ");
+            $stmt->execute([':uid' => $userId, ':sid' => $shiftId]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('clockIn error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function clockOut(int $userId, ?string $note = null): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE time_entries
+                SET clocked_out_at = NOW(),
+                    minutes = TIMESTAMPDIFF(MINUTE, clocked_in_at, NOW()),
+                    note = COALESCE(:note, note)
+                WHERE user_id = :uid AND clocked_out_at IS NULL
+                ORDER BY clocked_in_at DESC
+                LIMIT 1
+            ");
+            $stmt->execute([':uid' => $userId, ':note' => $note]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('clockOut error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getOpenTimeEntry(int $userId): ?array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, user_id, shift_id, clocked_in_at
+                FROM time_entries WHERE user_id = :uid AND clocked_out_at IS NULL LIMIT 1
+            ");
+            $stmt->execute([':uid' => $userId]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getOpenTimeEntry error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getTimeWorkedByUser(string $fromDt, string $toDt): array
+    {
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT user_id,
+                       SUM(
+                           COALESCE(
+                               minutes,
+                               TIMESTAMPDIFF(MINUTE, clocked_in_at, COALESCE(clocked_out_at, NOW()))
+                           )
+                       ) AS minutes_worked
+                FROM time_entries
+                WHERE clocked_in_at >= :from AND clocked_in_at < :to
+                GROUP BY user_id
+            ");
+            $stmt->execute([':from' => $fromDt, ':to' => $toDt]);
+            $rows = $stmt->fetchAll();
+            $result = [];
+            foreach ($rows as $r) {
+                $result[(int)$r['user_id']] = (int)$r['minutes_worked'];
+            }
+            return $result;
+        } catch (PDOException $e) {
+            error_log('getTimeWorkedByUser error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getTipsPoolForPeriod(string $fromDt, string $toDt): float
+    {
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT COALESCE(SUM(tips), 0) FROM orders
+                WHERE created_at >= :from AND created_at < :to
+                  AND payment_status = 'paid'
+            ");
+            $stmt->execute([':from' => $fromDt, ':to' => $toDt]);
+            return (float)($stmt->fetchColumn() ?: 0);
+        } catch (PDOException $e) {
+            error_log('getTipsPoolForPeriod error: ' . $e->getMessage());
+            return 0.0;
+        }
+    }
+
+    public function saveTipSplit(string $fromDt, string $toDt, float $pool, array $allocation, ?int $createdBy = null): ?int
+    {
+        if (strtotime($toDt) <= strtotime($fromDt) || $pool < 0) return null;
+        try {
+            $stmt = $this->prepareCached("
+                INSERT INTO tip_splits (period_from, period_to, tips_pool, allocation_json, created_by)
+                VALUES (:from, :to, :pool, :alloc, :by)
+            ");
+            $stmt->execute([
+                ':from'  => $fromDt,
+                ':to'    => $toDt,
+                ':pool'  => $pool,
+                ':alloc' => json_encode($allocation, JSON_UNESCAPED_UNICODE),
+                ':by'    => $createdBy,
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('saveTipSplit error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function listTipSplits(int $limit = 20): array
+    {
+        $limit = max(1, min(100, $limit));
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT id, period_from, period_to, tips_pool, allocation_json, created_by, created_at
+                FROM tip_splits ORDER BY id DESC LIMIT {$limit}
+            ");
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listTipSplits error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Group ordering (Phase 8.3). Shared tab at a physical table — a host
+     * scans a QR, gets a group code, other guests join via /group/<code>
+     * and add items tied to their seat label. Items sit in a staging table
+     * until the host "submits", at which point they become real orders.
+     */
+    public function createGroupOrder(?int $hostUserId, ?string $tableLabel, ?int $locationId): ?array
+    {
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $code = strtolower(rtrim(strtr(base64_encode(random_bytes(6)), '+/', '-_'), '='));
+            $code = substr($code, 0, 8);
+            try {
+                $stmt = $this->prepareCached("
+                    INSERT INTO group_orders (code, host_user_id, table_label, location_id, status)
+                    VALUES (:code, :uid, :tbl, :loc, 'open')
+                ");
+                $stmt->execute([
+                    ':code' => $code,
+                    ':uid'  => $hostUserId,
+                    ':tbl'  => $tableLabel !== null && $tableLabel !== '' ? $tableLabel : null,
+                    ':loc'  => $locationId,
+                ]);
+                return ['id' => (int)$this->connection->lastInsertId(), 'code' => $code];
+            } catch (PDOException $e) {
+                if (strpos($e->getMessage(), 'uniq_group_orders_code') !== false) continue;
+                error_log('createGroupOrder error: ' . $e->getMessage());
+                return null;
+            }
+        }
+        return null;
+    }
+
+    public function getGroupOrderByCode(string $code): ?array
+    {
+        $code = trim(strtolower($code));
+        if ($code === '' || !preg_match('/^[a-z0-9_-]{3,16}$/', $code)) return null;
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, code, host_user_id, table_label, location_id, status,
+                       submitted_at, created_at, updated_at
+                FROM group_orders WHERE code = :code LIMIT 1
+            ");
+            $stmt->execute([':code' => $code]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getGroupOrderByCode error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function addGroupOrderItem(int $groupOrderId, string $seatLabel, int $menuItemId, int $qty, ?string $note, ?int $addedBy): ?int
+    {
+        $seatLabel = trim($seatLabel);
+        $note = $note !== null ? trim($note) : null;
+        if ($note === '') $note = null;
+        if ($seatLabel === '' || mb_strlen($seatLabel) > 64) return null;
+        if ($menuItemId <= 0 || $qty < 1 || $qty > 99) return null;
+
+        $lookup = $this->prepareCached("SELECT name, price FROM menu_items WHERE id = :id AND archived_at IS NULL LIMIT 1");
+        $lookup->execute([':id' => $menuItemId]);
+        $mi = $lookup->fetch();
+        if (!$mi) return null;
+
+        try {
+            $stmt = $this->prepareCached("
+                INSERT INTO group_order_items (group_order_id, seat_label, menu_item_id, item_name, quantity, unit_price, note, added_by)
+                VALUES (:gid, :seat, :mid, :name, :qty, :price, :note, :uid)
+            ");
+            $stmt->execute([
+                ':gid'   => $groupOrderId,
+                ':seat'  => $seatLabel,
+                ':mid'   => $menuItemId,
+                ':name'  => (string)$mi['name'],
+                ':qty'   => $qty,
+                ':price' => (float)$mi['price'],
+                ':note'  => $note,
+                ':uid'   => $addedBy,
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('addGroupOrderItem error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function removeGroupOrderItem(int $itemRowId, int $groupOrderId): bool
+    {
+        try {
+            $stmt = $this->prepareCached("DELETE FROM group_order_items WHERE id = :id AND group_order_id = :gid");
+            return $stmt->execute([':id' => $itemRowId, ':gid' => $groupOrderId]);
+        } catch (PDOException $e) {
+            error_log('removeGroupOrderItem error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getGroupOrderItems(int $groupOrderId): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, seat_label, menu_item_id, item_name, quantity, unit_price, note, added_by, created_at
+                FROM group_order_items
+                WHERE group_order_id = :gid
+                ORDER BY seat_label ASC, created_at ASC
+            ");
+            $stmt->execute([':gid' => $groupOrderId]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('getGroupOrderItems error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Freeze the group into real orders. Modes:
+     *   'single'   = one Order with all items.
+     *   'per_seat' = one Order per seat_label (split bill).
+     */
+    public function submitGroupOrder(int $groupOrderId, string $mode = 'single'): ?array
+    {
+        if (!in_array($mode, ['single', 'per_seat'], true)) return null;
+        try {
+            $group = $this->prepareCached("SELECT * FROM group_orders WHERE id = :id LIMIT 1");
+            $group->execute([':id' => $groupOrderId]);
+            $groupRow = $group->fetch();
+            if (!$groupRow || $groupRow['status'] !== 'open') return null;
+
+            $items = $this->getGroupOrderItems($groupOrderId);
+            if (empty($items)) return null;
+
+            $tableLabel = (string)($groupRow['table_label'] ?? '');
+            $hostUserId = $groupRow['host_user_id'] !== null ? (int)$groupRow['host_user_id'] : null;
+
+            $this->connection->beginTransaction();
+            $createdOrderIds = [];
+
+            $createOrder = function (array $lines) use (&$createdOrderIds, $hostUserId, $tableLabel) {
+                $itemsForOrder = [];
+                $total = 0.0;
+                foreach ($lines as $row) {
+                    $qty = (int)$row['quantity'];
+                    $price = (float)$row['unit_price'];
+                    $total += $qty * $price;
+                    $itemsForOrder[] = [
+                        'id'       => (int)$row['menu_item_id'],
+                        'name'     => (string)$row['item_name'],
+                        'price'    => $price,
+                        'quantity' => $qty,
+                    ];
+                }
+                $ins = $this->connection->prepare("
+                    INSERT INTO orders (user_id, items, total, status, delivery_type, delivery_details, created_at)
+                    VALUES (:uid, :items, :total, 'Приём', 'table', :tbl, NOW())
+                ");
+                $ins->execute([
+                    ':uid'   => $hostUserId,
+                    ':items' => json_encode($itemsForOrder, JSON_UNESCAPED_UNICODE),
+                    ':total' => $total,
+                    ':tbl'   => $tableLabel,
+                ]);
+                $createdOrderIds[] = (int)$this->connection->lastInsertId();
+            };
+
+            if ($mode === 'single') {
+                $createOrder($items);
+            } else {
+                $bySeat = [];
+                foreach ($items as $row) {
+                    $bySeat[(string)$row['seat_label']][] = $row;
+                }
+                foreach ($bySeat as $lines) {
+                    $createOrder($lines);
+                }
+            }
+
+            $this->prepareCached("UPDATE group_orders SET status = 'submitted', submitted_at = NOW() WHERE id = :id")
+                ->execute([':id' => $groupOrderId]);
+
+            $this->connection->commit();
+            return $createdOrderIds;
+        } catch (PDOException $e) {
+            try { $this->connection->rollBack(); } catch (Throwable $ignored) {}
+            error_log('submitGroupOrder error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Waitlist entries (Phase 8.4). Guests who couldn't find an open slot in
+     * Reservations land here; staff sees the queue and notifies guests as
+     * tables free up.
+     */
+    public function createWaitlistEntry(
+        ?int $userId,
+        ?string $guestName,
+        string $guestPhone,
+        int $guestsCount,
+        string $preferredDate,
+        ?string $preferredTime,
+        ?int $locationId,
+        ?string $note
+    ): ?int {
+        $guestName  = $guestName !== null ? trim($guestName) : null;
+        $guestPhone = trim($guestPhone);
+        $note       = $note !== null ? trim($note) : null;
+        if ($guestName === '') $guestName = null;
+        if ($note === '')      $note = null;
+        if ($guestPhone === '' || mb_strlen($guestPhone) > 32) return null;
+        if ($guestsCount < 1 || $guestsCount > 50) return null;
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $preferredDate)) return null;
+        if ($preferredTime !== null && $preferredTime !== ''
+            && !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $preferredTime)) return null;
+        if ($preferredTime === '') $preferredTime = null;
+
+        try {
+            $stmt = $this->prepareCached("
+                INSERT INTO waitlist_entries
+                    (user_id, guest_name, guest_phone, guests_count,
+                     preferred_date, preferred_time, location_id, note, status, created_at)
+                VALUES
+                    (:uid, :name, :phone, :guests, :date, :time, :loc, :note, 'waiting', NOW())
+            ");
+            $stmt->execute([
+                ':uid'    => $userId,
+                ':name'   => $guestName,
+                ':phone'  => $guestPhone,
+                ':guests' => $guestsCount,
+                ':date'   => $preferredDate,
+                ':time'   => $preferredTime,
+                ':loc'    => $locationId,
+                ':note'   => $note,
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('createWaitlistEntry error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getWaitlistEntry(int $id): ?array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, user_id, guest_name, guest_phone, guests_count,
+                       preferred_date, preferred_time, location_id, note, status,
+                       notified_at, resolved_at, created_at, updated_at
+                FROM waitlist_entries
+                WHERE id = :id LIMIT 1
+            ");
+            $stmt->execute([':id' => $id]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getWaitlistEntry error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function listActiveWaitlist(?string $date = null, ?int $locationId = null): array
+    {
+        $clauses = ["status IN ('waiting', 'notified')"];
+        $params  = [];
+        if ($date !== null && $date !== '') {
+            $clauses[] = "preferred_date = :date";
+            $params[':date'] = $date;
+        }
+        if ($locationId !== null) {
+            $clauses[] = "location_id = :loc";
+            $params[':loc'] = $locationId;
+        }
+        $where = implode(' AND ', $clauses);
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT id, user_id, guest_name, guest_phone, guests_count,
+                       preferred_date, preferred_time, location_id, note, status,
+                       notified_at, created_at
+                FROM waitlist_entries
+                WHERE {$where}
+                ORDER BY preferred_date ASC, preferred_time ASC, created_at ASC
+            ");
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listActiveWaitlist error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function updateWaitlistStatus(int $id, string $newStatus): bool
+    {
+        $allowed = ['waiting', 'notified', 'seated', 'cancelled', 'expired'];
+        if (!in_array($newStatus, $allowed, true)) return false;
+
+        $sets = ['status = :status'];
+        $params = [':status' => $newStatus, ':id' => $id];
+        if ($newStatus === 'notified') {
+            $sets[] = 'notified_at = COALESCE(notified_at, NOW())';
+        }
+        if (in_array($newStatus, ['seated', 'cancelled', 'expired'], true)) {
+            $sets[] = 'resolved_at = COALESCE(resolved_at, NOW())';
+        }
+        $sql = "UPDATE waitlist_entries SET " . implode(', ', $sets) . " WHERE id = :id";
+        try {
+            $stmt = $this->connection->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('updateWaitlistStatus error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Multi-location (Phase 6.5). Physical restaurants within a single tenant DB.
+     * Scope filtering on orders/menu/reservations stays opt-in — callers that
+     * don't pass a location continue to see everything, preserving backward
+     * compatibility with all pre-6.5 code paths.
+     */
+    public function listLocations(bool $activeOnly = false): array
+    {
+        try {
+            $sql = "SELECT id, name, address, phone, timezone, active, sort_order, created_at, updated_at
+                    FROM locations";
+            if ($activeOnly) {
+                $sql .= " WHERE active = 1";
+            }
+            $sql .= " ORDER BY sort_order ASC, id ASC";
+            $stmt = $this->connection->prepare($sql);
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listLocations error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getLocationById(int $id): ?array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, name, address, phone, timezone, active, sort_order, created_at, updated_at
+                FROM locations WHERE id = :id LIMIT 1
+            ");
+            $stmt->execute([':id' => $id]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getLocationById error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function saveLocation(?int $id, string $name, ?string $address, ?string $phone, string $timezone, bool $active, int $sortOrder): ?int
+    {
+        $name = trim($name);
+        $timezone = trim($timezone);
+        if ($name === '' || mb_strlen($name) > 255) return null;
+        if ($timezone === '' || mb_strlen($timezone) > 64) return null;
+        $address = $address !== null ? trim($address) : null;
+        if ($address === '') $address = null;
+        $phone = $phone !== null ? trim($phone) : null;
+        if ($phone === '') $phone = null;
+        try {
+            if ($id !== null && $id > 0) {
+                $stmt = $this->prepareCached("
+                    UPDATE locations
+                    SET name = :name, address = :addr, phone = :phone,
+                        timezone = :tz, active = :active, sort_order = :so
+                    WHERE id = :id
+                ");
+                $stmt->execute([
+                    ':name' => $name, ':addr' => $address, ':phone' => $phone,
+                    ':tz' => $timezone, ':active' => $active ? 1 : 0, ':so' => $sortOrder,
+                    ':id' => $id,
+                ]);
+                return $id;
+            }
+            $stmt = $this->prepareCached("
+                INSERT INTO locations (name, address, phone, timezone, active, sort_order)
+                VALUES (:name, :addr, :phone, :tz, :active, :so)
+            ");
+            $stmt->execute([
+                ':name' => $name, ':addr' => $address, ':phone' => $phone,
+                ':tz' => $timezone, ':active' => $active ? 1 : 0, ':so' => $sortOrder,
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('saveLocation error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function deleteLocation(int $id): bool
+    {
+        // Soft handling: if the location has orders/reservations/menu_items, we
+        // flip active=0 instead of hard delete so existing history stays intact.
+        try {
+            $stmt = $this->prepareCached("UPDATE locations SET active = 0 WHERE id = :id");
+            return $stmt->execute([':id' => $id]);
+        } catch (PDOException $e) {
+            error_log('deleteLocation error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Per-location revenue summary for a window. Used by the chain-wide report
+     * in /owner.php. Orders with NULL location_id are grouped under
+     * pseudo-id 0 ("Без локации") so pre-migration history stays visible.
+     */
+    public function getOrdersByLocationSummary(string $fromDt, string $toDt): array
+    {
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT COALESCE(o.location_id, 0) AS location_id,
+                       l.name AS location_name,
+                       COUNT(*) AS orders_count,
+                       SUM(o.total) AS revenue
+                FROM orders o
+                LEFT JOIN locations l ON l.id = o.location_id
+                WHERE o.created_at >= :fromDt
+                  AND o.created_at <  :toDt
+                  AND o.status NOT IN ('отказ')
+                GROUP BY COALESCE(o.location_id, 0), l.name
+                ORDER BY revenue DESC
+            ");
+            $stmt->execute([':fromDt' => $fromDt, ':toDt' => $toDt]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('getOrdersByLocationSummary error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Outgoing webhooks — see sql/webhooks-migration.sql and
+     * docs/webhook-integration.md.
+     */
+    public function listWebhooks(?bool $activeOnly = null): array
+    {
+        try {
+            $sql = "SELECT id, event_type, target_url, secret, active, description,
+                           created_at, updated_at
+                    FROM outgoing_webhooks";
+            $params = [];
+            if ($activeOnly !== null) {
+                $sql .= " WHERE active = :active";
+                $params[':active'] = $activeOnly ? 1 : 0;
+            }
+            $sql .= " ORDER BY event_type ASC, id ASC";
+            $stmt = $this->connection->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listWebhooks error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getActiveWebhooksForEvent(string $eventType): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, event_type, target_url, secret
+                FROM outgoing_webhooks
+                WHERE event_type = :event AND active = 1
+            ");
+            $stmt->execute([':event' => $eventType]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('getActiveWebhooksForEvent error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function createWebhook(string $eventType, string $targetUrl, string $secret, ?string $description = null, bool $active = true): ?int
+    {
+        $eventType = trim($eventType);
+        $targetUrl = trim($targetUrl);
+        if ($eventType === '' || $targetUrl === '' || $secret === '') {
+            return null;
+        }
+        try {
+            $stmt = $this->prepareCached("
+                INSERT INTO outgoing_webhooks (event_type, target_url, secret, description, active)
+                VALUES (:event, :url, :secret, :description, :active)
+            ");
+            $stmt->execute([
+                ':event'       => $eventType,
+                ':url'         => $targetUrl,
+                ':secret'      => $secret,
+                ':description' => $description !== null && $description !== '' ? $description : null,
+                ':active'      => $active ? 1 : 0,
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('createWebhook error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function updateWebhook(int $id, ?string $eventType = null, ?string $targetUrl = null, ?string $description = null, ?bool $active = null): bool
+    {
+        $sets = [];
+        $params = [':id' => $id];
+        if ($eventType !== null) { $sets[] = 'event_type = :event'; $params[':event'] = $eventType; }
+        if ($targetUrl !== null) { $sets[] = 'target_url = :url';   $params[':url']   = $targetUrl; }
+        if ($description !== null) {
+            $sets[] = 'description = :description';
+            $params[':description'] = $description !== '' ? $description : null;
+        }
+        if ($active !== null) { $sets[] = 'active = :active'; $params[':active'] = $active ? 1 : 0; }
+        if (empty($sets)) {
+            return true;
+        }
+        try {
+            $stmt = $this->connection->prepare("UPDATE outgoing_webhooks SET " . implode(', ', $sets) . " WHERE id = :id");
+            return $stmt->execute($params);
+        } catch (PDOException $e) {
+            error_log('updateWebhook error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function deleteWebhook(int $id): bool
+    {
+        try {
+            $stmt = $this->prepareCached("DELETE FROM outgoing_webhooks WHERE id = :id");
+            return $stmt->execute([':id' => $id]);
+        } catch (PDOException $e) {
+            error_log('deleteWebhook error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function enqueueWebhookDelivery(int $webhookId, string $eventType, array $payload): ?int
+    {
+        try {
+            $stmt = $this->prepareCached("
+                INSERT INTO webhook_deliveries (webhook_id, event_type, payload_json, status, created_at)
+                VALUES (:webhook_id, :event, :payload, 'queued', NOW())
+            ");
+            $stmt->execute([
+                ':webhook_id' => $webhookId,
+                ':event'      => $eventType,
+                ':payload'    => json_encode($payload, JSON_UNESCAPED_UNICODE),
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('enqueueWebhookDelivery error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Pop-style fetch for the worker: returns up to $limit rows that are
+     * eligible for sending (queued, or failed past their next_retry_at and
+     * still under the attempt cap). Marks them 'sending' atomically so two
+     * concurrent workers don't race on the same row.
+     */
+    public function claimDueWebhookDeliveries(int $limit = 20, int $maxAttempts = 5): array
+    {
+        $limit = max(1, min(100, $limit));
+        try {
+            $this->connection->beginTransaction();
+
+            $sel = $this->connection->prepare("
+                SELECT id FROM webhook_deliveries
+                WHERE attempts < :max
+                  AND (
+                        status = 'queued'
+                        OR (status = 'failed' AND (next_retry_at IS NULL OR next_retry_at <= NOW()))
+                      )
+                ORDER BY id ASC
+                LIMIT {$limit}
+                FOR UPDATE
+            ");
+            $sel->execute([':max' => $maxAttempts]);
+            $ids = array_map('intval', $sel->fetchAll(PDO::FETCH_COLUMN, 0));
+
+            if (empty($ids)) {
+                $this->connection->commit();
+                return [];
+            }
+
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $upd = $this->connection->prepare("
+                UPDATE webhook_deliveries
+                SET status = 'sending'
+                WHERE id IN ({$placeholders})
+            ");
+            $upd->execute($ids);
+
+            $loadSql = "
+                SELECT d.id, d.webhook_id, d.event_type, d.payload_json, d.attempts,
+                       w.target_url, w.secret
+                FROM webhook_deliveries d
+                JOIN outgoing_webhooks w ON w.id = d.webhook_id
+                WHERE d.id IN ({$placeholders})
+                ORDER BY d.id ASC
+            ";
+            $load = $this->connection->prepare($loadSql);
+            $load->execute($ids);
+            $rows = $load->fetchAll();
+
+            $this->connection->commit();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            try { $this->connection->rollBack(); } catch (Throwable $ignored) {}
+            error_log('claimDueWebhookDeliveries error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function markWebhookDelivered(int $deliveryId, int $responseCode, string $responseExcerpt): bool
+    {
+        $excerpt = mb_substr($responseExcerpt, 0, 2000);
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE webhook_deliveries
+                SET status = 'delivered',
+                    response_code = :code,
+                    response_excerpt = :excerpt,
+                    attempts = attempts + 1,
+                    delivered_at = NOW(),
+                    next_retry_at = NULL
+                WHERE id = :id
+            ");
+            return $stmt->execute([
+                ':code'    => $responseCode,
+                ':excerpt' => $excerpt,
+                ':id'      => $deliveryId,
+            ]);
+        } catch (PDOException $e) {
+            error_log('markWebhookDelivered error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Mark a delivery attempt as failed and schedule the next retry.
+     * Backoff: 60s, 300s, 1800s, 7200s, then 'dropped'.
+     */
+    public function markWebhookFailed(int $deliveryId, ?int $responseCode, string $responseExcerpt, int $maxAttempts = 5): bool
+    {
+        $excerpt = mb_substr($responseExcerpt, 0, 2000);
+        $backoff = [60, 300, 1800, 7200];
+        try {
+            $stmt = $this->prepareCached("SELECT attempts FROM webhook_deliveries WHERE id = :id");
+            $stmt->execute([':id' => $deliveryId]);
+            $currentAttempts = (int)$stmt->fetchColumn();
+            $nextAttempt = $currentAttempts + 1;
+
+            if ($nextAttempt >= $maxAttempts) {
+                $upd = $this->prepareCached("
+                    UPDATE webhook_deliveries
+                    SET status = 'dropped',
+                        response_code = :code,
+                        response_excerpt = :excerpt,
+                        attempts = :attempts,
+                        next_retry_at = NULL
+                    WHERE id = :id
+                ");
+                return $upd->execute([
+                    ':code'     => $responseCode,
+                    ':excerpt'  => $excerpt,
+                    ':attempts' => $nextAttempt,
+                    ':id'       => $deliveryId,
+                ]);
+            }
+
+            $delaySec = $backoff[min($currentAttempts, count($backoff) - 1)];
+            $upd = $this->prepareCached("
+                UPDATE webhook_deliveries
+                SET status = 'failed',
+                    response_code = :code,
+                    response_excerpt = :excerpt,
+                    attempts = :attempts,
+                    next_retry_at = DATE_ADD(NOW(), INTERVAL :delay SECOND)
+                WHERE id = :id
+            ");
+            return $upd->execute([
+                ':code'     => $responseCode,
+                ':excerpt'  => $excerpt,
+                ':attempts' => $nextAttempt,
+                ':delay'    => $delaySec,
+                ':id'       => $deliveryId,
+            ]);
+        } catch (PDOException $e) {
+            error_log('markWebhookFailed error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getRecentWebhookDeliveries(int $webhookId, int $limit = 20): array
+    {
+        $limit = max(1, min(200, $limit));
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT id, event_type, status, response_code, response_excerpt,
+                       attempts, next_retry_at, created_at, delivered_at
+                FROM webhook_deliveries
+                WHERE webhook_id = :id
+                ORDER BY id DESC
+                LIMIT {$limit}
+            ");
+            $stmt->execute([':id' => $webhookId]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('getRecentWebhookDeliveries error: ' . $e->getMessage());
             return [];
         }
     }

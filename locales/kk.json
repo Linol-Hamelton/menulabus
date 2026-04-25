@@ -1,0 +1,57 @@
+{
+    "nav": {
+        "menu": "Мәзір",
+        "reservation": "Брондау",
+        "group": "Ортақ үстел",
+        "cart": "Тапсырыс",
+        "account": "Аккаунт",
+        "login": "Кіру",
+        "logout": "Шығу"
+    },
+    "common": {
+        "yes": "Иә",
+        "no": "Жоқ",
+        "save": "Сақтау",
+        "cancel": "Болдырмау",
+        "delete": "Жою",
+        "back": "Артқа",
+        "loading": "Жүктелуде…",
+        "error_network": "Желі қатесі. Қайталап көріңіз."
+    },
+    "language": {
+        "label": "Тіл",
+        "ru": "Русский",
+        "en": "English",
+        "kk": "Қазақша"
+    },
+    "cart": {
+        "title": "Тапсырыс",
+        "empty": "Себет әзірге бос",
+        "checkout": "Тапсырысты ресімдеу",
+        "subtotal": "Аралық қорытынды",
+        "total": "Барлығы",
+        "tips": "Шай"
+    },
+    "reservation": {
+        "title": "Үстелді брондау",
+        "table": "Үстел",
+        "starts_at": "Басталу",
+        "ends_at": "Аяқталу",
+        "guests": "Қонақ саны",
+        "guest_name": "Атыңыз",
+        "guest_phone": "Байланыс телефоны",
+        "note_optional": "Ескертпе (міндетті емес)",
+        "submit": "Брондау",
+        "submit_again": "Тағы брондау",
+        "status_pending": "Растауды күтуде",
+        "status_confirmed": "Расталды",
+        "status_seated": "Қонақ орналасты"
+    },
+    "loyalty": {
+        "title": "Адалдық бағдарламасы",
+        "balance": "Ұпайлар",
+        "tier": "Деңгей",
+        "total_spent": "Барлығы жұмсалды",
+        "next_tier": "Келесі деңгейге"
+    }
+}

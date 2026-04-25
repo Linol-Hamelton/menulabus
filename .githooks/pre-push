@@ -121,6 +121,21 @@ if [ -n "$PHP_BIN" ]; then
   fi
 fi
 
+# PHPUnit gate: lifecycle contract + idempotency + createOrder regression.
+# The pure-PHP lifecycle suite always runs. MySQL-coupled tests
+# (IdempotencyTest, CreateOrderTest) self-skip when
+# CLEANMENU_TEST_MYSQL_DSN is not exported — no extra config needed.
+if [ -n "$PHP_BIN" ]; then
+  phpunit_entry="vendor/phpunit/phpunit/phpunit"
+  if [ -f "$phpunit_entry" ]; then
+    echo "[pre-push] Running PHPUnit unit suite..."
+    "$PHP_BIN" "$phpunit_entry" --testsuite unit
+    echo "[pre-push] PHPUnit OK"
+  else
+    echo "[pre-push] vendor/phpunit not installed; run 'composer install' to enable the test gate"
+  fi
+fi
+
 if [ "$push_main" -eq 1 ] || [ "$push_release" -eq 1 ]; then
   echo "[pre-push] Running docs drift check for release/main push..."
   bash scripts/docs/check-doc-drift.sh "${pushed_ranges[@]}"

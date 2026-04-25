@@ -1,0 +1,104 @@
+.menu-items-table .bulk-col {
+    width: 32px;
+    padding: 4px 6px !important;
+    text-align: center;
+}
+
+.menu-items-table .bulk-col input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+}
+
+.bulk-action-bar {
+    position: sticky;
+    top: 8px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    border-radius: 10px;
+    background: #1a3d61;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(26, 61, 97, 0.18);
+}
+
+.bulk-action-bar[hidden] {
+    display: none;
+}
+
+.bulk-action-count {
+    font-size: 13px;
+    opacity: 0.95;
+}
+
+.bulk-action-count strong {
+    font-size: 15px;
+    margin-left: 2px;
+}
+
+.bulk-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.bulk-action-btn,
+.bulk-action-select {
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.bulk-action-btn:hover:not(:disabled),
+.bulk-action-select:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+.bulk-action-btn:disabled,
+.bulk-action-select:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
+
+.bulk-action-btn-secondary {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: transparent;
+}
+
+.bulk-action-btn-danger {
+    border-color: #ff8a8a;
+    background: rgba(200, 35, 51, 0.25);
+}
+
+.bulk-action-btn-danger:hover:not(:disabled) {
+    background: #c82333;
+    border-color: #c82333;
+}
+
+.bulk-action-select option {
+    color: #222;
+    background: #fff;
+}
+
+@media (max-width: 700px) {
+    .menu-items-table .bulk-col {
+        display: none;
+    }
+    .bulk-action-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .bulk-action-buttons {
+        margin-left: 0;
+    }
+}

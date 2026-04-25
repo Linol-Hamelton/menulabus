@@ -2,6 +2,7 @@
 require_once __DIR__ . '/session_init.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/mailer.php';
+require_once __DIR__ . '/lib/Csrf.php';
 
 $db = Database::getInstance();
 $errors = [];
@@ -10,6 +11,7 @@ $token = $_GET['token'] ?? '';
 $mode = $token ? 'reset' : 'request';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    Csrf::requireValid();
     if ($mode === 'request') {
         // Запрос на сброс пароля
         $email = trim($_POST['email']);
@@ -111,6 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         <?php if ($mode === 'reset'): ?>
             <form method="POST">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(Csrf::token()) ?>">
                 <div class="form-group">
                     <input type="password" name="password" placeholder="Новый пароль" required>
                 </div>
@@ -121,6 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </form>
         <?php else: ?>
             <form method="POST">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(Csrf::token()) ?>">
                 <div class="form-group">
                     <input type="email" name="email" placeholder="Ваш email" required>
                 </div>

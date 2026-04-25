@@ -1,0 +1,85 @@
+.menu-items-table .drag-col {
+    width: 24px;
+    padding: 0 !important;
+}
+
+.menu-items-table .drag-handle {
+    width: 24px;
+    padding: 8px 2px !important;
+    text-align: center;
+    color: #a0a8b0;
+    cursor: grab;
+    user-select: none;
+    font-size: 14px;
+    line-height: 1;
+    letter-spacing: -2px;
+}
+
+.menu-items-table .drag-handle:active,
+.menu-items-table tr.is-dragging .drag-handle {
+    cursor: grabbing;
+}
+
+.menu-items-table tr.sortable-row {
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.menu-items-table tr.sortable-row:hover {
+    background: #f8f9fa;
+}
+
+.menu-items-table tr.sortable-row.is-dragging {
+    opacity: 0.45;
+    background: #e8f1fb;
+}
+
+.menu-items-table tr.sortable-row.drop-above {
+    box-shadow: 0 -2px 0 0 #1a3d61 inset;
+}
+
+.menu-items-table tr.sortable-row.drop-below {
+    box-shadow: 0 2px 0 0 #1a3d61 inset;
+}
+
+.menu-sort-toast {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.menu-sort-toast[hidden] {
+    display: none;
+}
+
+.menu-sort-toast-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.menu-sort-toast-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.menu-sort-toast-info {
+    background: #e2e3e5;
+    color: #383d41;
+    border: 1px solid #d6d8db;
+}
+
+@media (max-width: 600px) {
+    .menu-items-table .drag-col,
+    .menu-items-table .drag-handle {
+        display: none;
+    }
+    .menu-items-table tr.sortable-row {
+        cursor: default;
+    }
+}

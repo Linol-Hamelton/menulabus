@@ -5,6 +5,11 @@
  * Также проверяет наличие столбца items_count перед добавлением.
  */
 
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
+
 require_once __DIR__ . '/db.php';
 
 $db = Database::getInstance();

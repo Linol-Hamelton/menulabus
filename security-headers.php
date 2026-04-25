@@ -32,11 +32,21 @@ if (!headers_sent()) {
     // Cross-Origin-Opener-Policy
     header('Cross-Origin-Opener-Policy: same-origin');
 
-    // Content-Security-Policy
-    // Базовая политика, можно расширить под конкретные нужды
-    header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;");
-
-    // Дополнительный заголовок для отключения MIME-типа
-    header('X-Content-Type-Options: nosniff');
+    // Content-Security-Policy — strict fallback baseline.
+    // session_init.php overrides this with a nonce-aware policy on pages it loads.
+    // Pages that bypass session_init (JSON webhooks, CLI helpers) inherit this safe default.
+    header("Content-Security-Policy: " . implode('; ', [
+        "default-src 'none'",
+        "script-src 'self'",
+        "style-src 'self'",
+        "img-src 'self' data: blob:",
+        "font-src 'self'",
+        "connect-src 'self'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+        "object-src 'none'",
+        "manifest-src 'self'",
+    ]));
 }
 ?>

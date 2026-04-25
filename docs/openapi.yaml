@@ -12,6 +12,7 @@ tags:
   - name: Geo
   - name: Orders
   - name: Push
+  - name: Reservations
 
 paths:
   /api/v1/menu.php:
@@ -273,6 +274,114 @@ paths:
           $ref: "#/components/responses/ApiError403"
         "404":
           $ref: "#/components/responses/ApiError404"
+
+  /api/v1/reservations/create.php:
+    post:
+      tags: [Reservations]
+      summary: Create a table reservation (idempotent)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: false
+          schema:
+            type: string
+            maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReservationCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationCreateResponse"
+        "200":
+          description: OK (idempotency replay)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationCreateResponse"
+        "400":
+          $ref: "#/components/responses/ApiError400"
+        "401":
+          $ref: "#/components/responses/ApiError401"
+        "409":
+          $ref: "#/components/responses/ApiError409"
+        "500":
+          $ref: "#/components/responses/ApiError500"
+
+  /api/v1/reservations/availability.php:
+    get:
+      tags: [Reservations]
+      summary: List busy time windows for a single table on a single day
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: table_label
+          required: true
+          schema:
+            type: string
+            maxLength: 64
+        - in: query
+          name: date
+          required: true
+          schema:
+            type: string
+            pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationAvailabilityResponse"
+        "400":
+          $ref: "#/components/responses/ApiError400"
+        "401":
+          $ref: "#/components/responses/ApiError401"
+
+  /api/v1/reservations/cancel.php:
+    post:
+      tags: [Reservations]
+      summary: Cancel an existing reservation
+      description: >
+        Customers can cancel only their own reservations.
+        Staff (employee/admin/owner) can cancel any reservation.
+        Only `pending` and `confirmed` reservations are cancellable.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReservationCancelRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationCancelResponse"
+        "400":
+          $ref: "#/components/responses/ApiError400"
+        "401":
+          $ref: "#/components/responses/ApiError401"
+        "403":
+          $ref: "#/components/responses/ApiError403"
+        "404":
+          $ref: "#/components/responses/ApiError404"
+        "409":
+          $ref: "#/components/responses/ApiError409"
+        "500":
+          $ref: "#/components/responses/ApiError500"
 
   /api/v1/push/subscribe.php:
     post:
@@ -689,3 +798,98 @@ components:
               required: [saved]
               properties:
                 saved: { type: boolean, example: true }
+
+    ReservationStatus:
+      type: string
+      enum: [pending, confirmed, seated, cancelled, no_show]
+
+    ReservationCreateRequest:
+      type: object
+      required: [table_label, guests_count, starts_at, ends_at]
+      properties:
+        table_label:
+          type: string
+          maxLength: 64
+          example: "T3"
+        guests_count:
+          type: integer
+          minimum: 1
+          maximum: 50
+        starts_at:
+          type: string
+          description: "Tenant-local datetime, e.g. '2099-04-25 19:00:00'."
+          example: "2099-04-25 19:00:00"
+        ends_at:
+          type: string
+          example: "2099-04-25 21:00:00"
+        guest_name:
+          type: string
+          nullable: true
+        guest_phone:
+          type: string
+          nullable: true
+        note:
+          type: string
+          nullable: true
+          maxLength: 1000
+
+    ReservationCreateResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiSuccess"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [reservation_id, status, table_label, starts_at, ends_at]
+              properties:
+                reservation_id: { type: integer }
+                status:         { $ref: "#/components/schemas/ReservationStatus" }
+                table_label:    { type: string }
+                starts_at:      { type: string }
+                ends_at:        { type: string }
+
+    ReservationBusyWindow:
+      type: object
+      required: [starts_at, ends_at, status]
+      properties:
+        starts_at: { type: string }
+        ends_at:   { type: string }
+        status:    { $ref: "#/components/schemas/ReservationStatus" }
+
+    ReservationAvailabilityResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiSuccess"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [table_label, date, busy]
+              properties:
+                table_label: { type: string }
+                date:        { type: string }
+                busy:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ReservationBusyWindow"
+
+    ReservationCancelRequest:
+      type: object
+      required: [reservation_id]
+      properties:
+        reservation_id:
+          type: integer
+          minimum: 1
+
+    ReservationCancelResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiSuccess"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [reservation_id, status]
+              properties:
+                reservation_id: { type: integer }
+                status:
+                  type: string
+                  enum: [cancelled]

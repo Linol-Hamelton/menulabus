@@ -213,6 +213,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php if ($canManageUpdates && $activeTab === 'updates'): ?>
     <link rel="stylesheet" href="/css/version.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <?php endif; ?>
+    <link rel="stylesheet" href="/css/loyalty-card.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/account-2fa.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <title>Личный кабинет | <?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?></title>
 
@@ -250,6 +252,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <div class="account-sections">
+            <?php if ($activeTab === 'profile' && !empty($user['id'])): ?>
+                <?php
+                $loyaltyState = $db->getUserLoyaltyState((int)$user['id']);
+                $loyaltyHistory = $db->getUserLoyaltyHistory((int)$user['id'], 10);
+                if ((float)$loyaltyState['points_balance'] > 0
+                    || (float)$loyaltyState['total_spent'] > 0
+                    || $loyaltyState['tier_name'] !== null
+                    || !empty($loyaltyHistory)):
+                    require __DIR__ . '/partials/account_loyalty_card.php';
+                endif;
+                require __DIR__ . '/partials/account_security_section.php';
+                ?>
+            <?php endif; ?>
             <?php if ($activeTab === 'profile'): ?>
             <section class="account-section">
                                 <div class="account-section-head">
@@ -383,6 +398,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="/js/cart.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/account.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/account-2fa.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <?php if ($canManageUpdates && $activeTab === 'updates'): ?>
     <script src="/js/version-checker.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <?php endif; ?>

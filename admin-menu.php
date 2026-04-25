@@ -205,6 +205,12 @@ $savedDbFontsJson = htmlspecialchars(
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($adminMenuCssVersion, ENT_QUOTES, 'UTF-8') ?>">
+    <link rel="stylesheet" href="/css/admin-menu-sort.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/admin-menu-bulk.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/admin-menu-filters.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/undo-toast.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/admin-recipe.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/hotkeys.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= $appVersion ?>">
     <title>Блюда | <?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?></title>
 
@@ -259,11 +265,64 @@ $savedDbFontsJson = htmlspecialchars(
                 </div>
             </div>
 
+            <?php if (!$showArchived): ?>
+                <div class="menu-filter-bar" id="menuFilterBar">
+                    <label class="menu-filter-group menu-filter-search">
+                        <span class="menu-filter-label">Поиск</span>
+                        <input type="search" name="search" id="menuFilterSearch" placeholder="Название или ID" autocomplete="off">
+                    </label>
+                    <label class="menu-filter-group">
+                        <span class="menu-filter-label">Наличие</span>
+                        <select id="menuFilterAvailability">
+                            <option value="all">Все</option>
+                            <option value="available">В продаже</option>
+                            <option value="stop">Стоп</option>
+                        </select>
+                    </label>
+                    <label class="menu-filter-group">
+                        <span class="menu-filter-label">Сортировка</span>
+                        <select id="menuFilterSort">
+                            <option value="default">По умолчанию</option>
+                            <option value="name_asc">Название ↑</option>
+                            <option value="name_desc">Название ↓</option>
+                            <option value="price_asc">Цена ↑</option>
+                            <option value="price_desc">Цена ↓</option>
+                        </select>
+                    </label>
+                    <button type="button" class="menu-filter-reset" id="menuFilterReset">Сбросить</button>
+                    <span class="menu-filter-count" id="menuFilterCount" hidden></span>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!$showArchived): ?>
+                <div id="bulkActionBar" class="bulk-action-bar" hidden>
+                    <span class="bulk-action-count">Выбрано: <strong id="bulkActionCount">0</strong></span>
+                    <div class="bulk-action-buttons">
+                        <button type="button" class="bulk-action-btn" data-bulk-action="show">Показать</button>
+                        <button type="button" class="bulk-action-btn" data-bulk-action="hide">Скрыть (стоп)</button>
+                        <select class="bulk-action-select" id="bulkMoveCategory" aria-label="Перенести в категорию">
+                            <option value="">Перенести в категорию…</option>
+                            <?php foreach ($categories as $cat): ?>
+                                <option value="<?= htmlspecialchars($cat) ?>"><?= htmlspecialchars($cat) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <button type="button" class="bulk-action-btn bulk-action-btn-danger" data-bulk-action="archive">Архивировать</button>
+                        <button type="button" class="bulk-action-btn bulk-action-btn-secondary" data-bulk-action="clear">Сбросить</button>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <!-- DESKTOP TABLE -->
             <div class="desktop-table">
-                <table>
+                <table class="menu-items-table" data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
                     <thead>
                         <tr>
+                            <?php if (!$showArchived): ?>
+                                <th class="drag-col" aria-label="Порядок"></th>
+                                <th class="bulk-col">
+                                    <input type="checkbox" class="bulk-select-all" aria-label="Выбрать все">
+                                </th>
+                            <?php endif; ?>
                             <th class="first-col">ID</th>
                             <th>Название</th>
                             <th>Категория</th>
@@ -274,7 +333,16 @@ $savedDbFontsJson = htmlspecialchars(
                     </thead>
                     <tbody>
                         <?php foreach ($items as $it): ?>
-                            <tr class="menu-table tab-row" data-category="<?= htmlspecialchars($it['category']) ?>">
+                            <tr class="menu-table tab-row<?= $showArchived ? '' : ' sortable-row' ?>"
+                                data-category="<?= htmlspecialchars($it['category']) ?>"
+                                data-item-id="<?= (int)$it['id'] ?>"
+                                <?php if (!$showArchived): ?>draggable="true"<?php endif; ?>>
+                                <?php if (!$showArchived): ?>
+                                    <td class="drag-handle" title="Перетащите, чтобы изменить порядок">⋮⋮</td>
+                                    <td class="bulk-col">
+                                        <input type="checkbox" class="bulk-select-row" aria-label="Выбрать строку" value="<?= (int)$it['id'] ?>">
+                                    </td>
+                                <?php endif; ?>
                                 <td><?= $it['id'] ?></td>
                                 <td><?= htmlspecialchars($it['name']) ?></td>
                                 <td><?= htmlspecialchars($it['category']) ?></td>
@@ -309,7 +377,7 @@ $savedDbFontsJson = htmlspecialchars(
                             </tr>
                         <?php endforeach; ?>
                         <tr class="last-row">
-                            <td colspan="6"></td>
+                            <td colspan="<?= $showArchived ? 6 : 8 ?>"></td>
                         </tr>
                     </tbody>
                 </table>
@@ -403,7 +471,7 @@ $savedDbFontsJson = htmlspecialchars(
                     <div class="admin-form-group">
                         <h3>Вручную</h3>
                         <label>Название</label>
-                        <input type="text" name="name" value="<?= htmlspecialchars($editItem['name'] ?? '') ?>" required>
+                        <input type="text" name="name" value="<?= htmlspecialchars($editItem['name'] ?? '') ?>" required data-hotkey-new>
                     </div>
 
                     <div class="admin-form-group">
@@ -497,6 +565,30 @@ $savedDbFontsJson = htmlspecialchars(
                                 <span>Группа</span>
                             </button>
                         </div>
+                    </section>
+
+                    <!-- ── Рецепт: ингредиенты и их количество ── -->
+                    <section class="admin-form-group admin-subsection-card admin-block admin-block--recipe" id="recipeSection" data-item-id="<?= (int)$editItem['id'] ?>">
+                        <h3>Рецепт (списание со склада)</h3>
+                        <p class="yk-desc">
+                            Когда заказ приходит, эти количества автоматически списываются со склада.
+                            Управление ингредиентами — <a href="/admin-inventory.php" target="_blank" rel="noopener">в «Складе»</a>.
+                        </p>
+                        <div id="recipeRows" class="recipe-rows"></div>
+                        <div class="recipe-add-row">
+                            <select id="recipeAddIngredient">
+                                <option value="">Выбрать ингредиент…</option>
+                                <?php foreach ($db->listIngredients(false) as $ing): ?>
+                                    <option value="<?= (int)$ing['id'] ?>" data-unit="<?= htmlspecialchars((string)$ing['unit']) ?>">
+                                        <?= htmlspecialchars((string)$ing['name']) ?> (<?= htmlspecialchars((string)$ing['unit']) ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <input type="number" step="0.001" min="0" id="recipeAddQty" placeholder="Кол-во" style="width: 100px">
+                            <button type="button" id="recipeAddBtn" class="checkout-btn">Добавить</button>
+                            <button type="button" id="recipeSaveBtn" class="checkout-btn admin-checkout-btn">Сохранить рецепт</button>
+                        </div>
+                        <div id="recipeSaveMsg" class="recipe-save-msg" hidden></div>
                     </section>
                 <?php endif; ?>
             </section>
@@ -958,6 +1050,12 @@ $savedDbFontsJson = htmlspecialchars(
     <script src="/js/file-manager.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/admin-modifiers.js?v=<?= htmlspecialchars($adminModifiersJsVersion, ENT_QUOTES, 'UTF-8') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/admin-tabs-repair.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/undo-toast.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/admin-recipe.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/admin-menu-sort.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/admin-menu-bulk.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/admin-menu-filters.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/hotkeys.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/security.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/cart.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>

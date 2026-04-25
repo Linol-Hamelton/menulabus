@@ -1,0 +1,121 @@
+.inv-intro {
+    color: #555;
+    margin: 12px 0;
+}
+.inv-intro code {
+    background: #f1f3f5;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.inv-low-banner {
+    padding: 10px 14px;
+    background: #fff3cd;
+    border: 1px solid #ffeeba;
+    border-radius: 8px;
+    margin: 12px 0;
+    font-size: 13px;
+    color: #856404;
+}
+.inv-low-chip {
+    display: inline-block;
+    margin: 2px 4px;
+    padding: 2px 8px;
+    background: #fff;
+    border-radius: 999px;
+    border: 1px solid #f0d58c;
+}
+
+.inv-table-wrapper {
+    overflow-x: auto;
+    margin-top: 12px;
+}
+
+.inv-ingredients-table,
+.inv-history-table,
+.inv-suppliers-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.inv-ingredients-table th,
+.inv-ingredients-table td,
+.inv-history-table th,
+.inv-history-table td,
+.inv-suppliers-table th,
+.inv-suppliers-table td {
+    border: 1px solid #e5e5e5;
+    padding: 6px 8px;
+    vertical-align: middle;
+    text-align: left;
+}
+
+.inv-ingredients-table th,
+.inv-history-table th,
+.inv-suppliers-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+
+.inv-ingredients-table .num-col,
+.inv-history-table td:nth-child(2) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.inv-ingredients-table input[type="text"],
+.inv-ingredients-table input[type="number"],
+.inv-ingredients-table select,
+.inv-suppliers-table input[type="text"] {
+    padding: 4px 6px;
+    border: 1px solid #c8d2dc;
+    border-radius: 4px;
+    font-size: 13px;
+    width: 100%;
+    min-width: 50px;
+}
+
+.inv-stock-cell {
+    display: inline-block;
+    min-width: 70px;
+    padding: 2px 8px;
+    background: #f1f3f5;
+    border-radius: 4px;
+    font-weight: 600;
+    margin-right: 4px;
+}
+
+.inv-row-low .inv-stock-cell {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.inv-row-archived {
+    opacity: 0.55;
+}
+
+.inv-new-row td {
+    background: #f1f7fd;
+}
+
+.inv-actions-cell {
+    white-space: nowrap;
+}
+.inv-actions-cell button {
+    margin-right: 2px;
+}
+
+.inv-history-panel {
+    margin-top: 18px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e5e5;
+}
+.inv-history-meta {
+    color: #555;
+    font-size: 13px;
+    margin: 6px 0;
+}
+.inv-mv-out td:nth-child(2) { color: #c82333; }
+.inv-mv-in td:nth-child(2) { color: #155724; }
