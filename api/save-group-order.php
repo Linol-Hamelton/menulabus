@@ -106,8 +106,67 @@ switch ($action) {
             echo json_encode(['success' => false, 'error' => 'submit_failed']);
             exit;
         }
+
+        // Cross-cutting hooks for every spawned order — mirrors the contract
+        // that create_new_order.php enforces. Without these, group orders
+        // would silently bypass KDS routing, inventory deduction, the
+        // order.created webhook, and the staff Telegram ping.
+        require_once __DIR__ . '/../lib/WebhookDispatcher.php';
+        require_once __DIR__ . '/../config.php';
+        require_once __DIR__ . '/../telegram-notifications.php';
+
+        $tgChatId = json_decode($db->getSetting('telegram_chat_id') ?? 'null', true);
+
+        foreach ($orderIds as $oid) {
+            try {
+                $orderRow = $db->getOrderById((int)$oid);
+                if (!$orderRow) continue;
+
+                $orderItems = is_string($orderRow['items'] ?? null)
+                    ? (json_decode((string)$orderRow['items'], true) ?: [])
+                    : (array)($orderRow['items'] ?? []);
+
+                // KDS routing per spawned order.
+                try { $db->routeOrderItemsToStations((int)$oid, $orderItems); }
+                catch (Throwable $kdsEx) { error_log('group submit KDS error: ' . $kdsEx->getMessage()); }
+
+                // Inventory deduction + low-stock alerts.
+                try {
+                    $nowLow = $db->deductIngredientsForOrder((int)$oid, $orderItems);
+                    if (!empty($nowLow)) {
+                        $alertIds = $db->markIngredientsAlerted($nowLow, 60);
+                        foreach ($alertIds as $iid) {
+                            $ing = $db->getIngredientById((int)$iid);
+                            if (!$ing) continue;
+                            if ($tgChatId && defined('TELEGRAM_BOT_TOKEN') && TELEGRAM_BOT_TOKEN) {
+                                $text = '⚠️ <b>Низкий остаток:</b> ' . htmlspecialchars((string)$ing['name'])
+                                      . ' — ' . rtrim(rtrim(number_format((float)$ing['stock_qty'], 3, '.', ''), '0'), '.')
+                                      . ' ' . htmlspecialchars((string)$ing['unit']);
+                                sendTelegramMessage((string)$tgChatId, $text);
+                            }
+                            WebhookDispatcher::dispatch('inventory.stock_low', $ing, $db);
+                        }
+                    }
+                } catch (Throwable $invEx) { error_log('group submit inventory error: ' . $invEx->getMessage()); }
+
+                // Telegram order card with accept/reject buttons.
+                try {
+                    if ($tgChatId && defined('TELEGRAM_BOT_TOKEN') && TELEGRAM_BOT_TOKEN) {
+                        sendOrderToTelegram((int)$oid, $orderRow, $db);
+                    }
+                } catch (Throwable $tgEx) { error_log('group submit telegram error: ' . $tgEx->getMessage()); }
+
+                // order.created webhook for external integrations.
+                try { WebhookDispatcher::dispatch('order.created', $orderRow, $db); }
+                catch (Throwable $whEx) { error_log('group submit webhook error: ' . $whEx->getMessage()); }
+            } catch (Throwable $hookEx) {
+                error_log('group submit per-order hook error: ' . $hookEx->getMessage());
+            }
+        }
+
+        // Group-level event: lets a consumer correlate all spawned orders to
+        // the original shared tab.
         try {
-            require_once __DIR__ . '/../lib/WebhookDispatcher.php';
             WebhookDispatcher::dispatch('group_order.submitted', [
                 'group_code' => $group['code'],
                 'order_ids'  => $orderIds,

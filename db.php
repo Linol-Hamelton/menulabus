@@ -5079,28 +5079,85 @@ class Database
         }
     }
 
-    public function getNextQueuedMarketingSends(int $batch = 50): array
+    /**
+     * Atomic claim — flips a batch of 'queued' sends to 'sending' inside one
+     * transaction (SELECT ... FOR UPDATE) so two workers can't pick the same
+     * row twice. Worker then calls markMarketingSendDelivered or
+     * markMarketingSendFailed for each. If a worker crashes between claim
+     * and outcome, the row is left in 'sending' and a follow-up reaper
+     * (markStuckSendingMarketingFailed) recovers it.
+     */
+    public function claimDueMarketingSends(int $batch = 50): array
     {
         $batch = max(1, min(500, $batch));
         try {
-            $stmt = $this->connection->prepare("
+            $this->connection->beginTransaction();
+            $sel = $this->connection->prepare("
+                SELECT id FROM marketing_sends
+                WHERE status = 'queued'
+                ORDER BY id ASC
+                LIMIT {$batch}
+                FOR UPDATE
+            ");
+            $sel->execute();
+            $ids = array_map('intval', $sel->fetchAll(PDO::FETCH_COLUMN, 0));
+            if (empty($ids)) {
+                $this->connection->commit();
+                return [];
+            }
+            $ph = implode(',', array_fill(0, count($ids), '?'));
+            $upd = $this->connection->prepare("UPDATE marketing_sends SET status = 'sending' WHERE id IN ({$ph})");
+            $upd->execute($ids);
+
+            $load = $this->connection->prepare("
                 SELECT ms.id, ms.campaign_id, ms.user_id, ms.channel,
                        u.email, u.name AS user_name,
                        mc.subject, mc.body_text, mc.body_html
                 FROM marketing_sends ms
                 JOIN users u ON u.id = ms.user_id
                 JOIN marketing_campaigns mc ON mc.id = ms.campaign_id
-                WHERE ms.status = 'queued'
+                WHERE ms.id IN ({$ph})
                 ORDER BY ms.id ASC
-                LIMIT {$batch}
             ");
-            $stmt->execute();
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $load->execute($ids);
+            $rows = $load->fetchAll(PDO::FETCH_ASSOC);
+
+            $this->connection->commit();
             return is_array($rows) ? $rows : [];
         } catch (PDOException $e) {
-            error_log('getNextQueuedMarketingSends error: ' . $e->getMessage());
+            try { $this->connection->rollBack(); } catch (Throwable $ignored) {}
+            error_log('claimDueMarketingSends error: ' . $e->getMessage());
             return [];
         }
+    }
+
+    /**
+     * Recovery for rows stuck in 'sending' for more than $minutes (worker
+     * crash between claim and outcome). Flips them back to 'queued' so the
+     * next worker run picks them up.
+     */
+    public function reapStuckMarketingSends(int $minutes = 10): int
+    {
+        $minutes = max(1, min(1440, $minutes));
+        try {
+            $stmt = $this->connection->prepare("
+                UPDATE marketing_sends
+                SET status = 'queued'
+                WHERE status = 'sending'
+                  AND queued_at < (NOW() - INTERVAL :m MINUTE)
+            ");
+            $stmt->execute([':m' => $minutes]);
+            return $stmt->rowCount();
+        } catch (PDOException $e) {
+            error_log('reapStuckMarketingSends error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /** @deprecated use claimDueMarketingSends() — kept for backward compat. */
+    public function getNextQueuedMarketingSends(int $batch = 50): array
+    {
+        return $this->claimDueMarketingSends($batch);
     }
 
     public function markMarketingSendDelivered(int $sendId): bool

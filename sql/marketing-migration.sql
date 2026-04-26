@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS marketing_sends (
     PRIMARY KEY (id),
     UNIQUE KEY uniq_marketing_send (campaign_id, user_id),
     KEY idx_marketing_send_status (status, queued_at),
-    CONSTRAINT chk_marketing_send_status CHECK (status IN ('queued', 'sent', 'failed', 'skipped')),
+    CONSTRAINT chk_marketing_send_status CHECK (status IN ('queued', 'sending', 'sent', 'failed', 'skipped')),
     CONSTRAINT fk_marketing_send_campaign FOREIGN KEY (campaign_id) REFERENCES marketing_campaigns(id) ON DELETE CASCADE,
     CONSTRAINT fk_marketing_send_user     FOREIGN KEY (user_id)     REFERENCES users(id)               ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

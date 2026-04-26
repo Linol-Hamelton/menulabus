@@ -36,8 +36,17 @@ $processed = 0;
 $delivered = 0;
 $failed    = 0;
 
+// Recover any sends stuck in 'sending' from a prior crashed worker — must
+// run before the claim loop so reaped rows become claimable in this pass.
+$reaped = $db->reapStuckMarketingSends(10);
+if ($reaped > 0) {
+    fwrite(STDOUT, "marketing-worker reaped {$reaped} stuck 'sending' rows back to 'queued'\n");
+}
+
 do {
-    $rows = $db->getNextQueuedMarketingSends($batch);
+    // Atomic claim: SELECT … FOR UPDATE flips status to 'sending' inside one
+    // transaction so two workers can't pick the same row twice.
+    $rows = $db->claimDueMarketingSends($batch);
     if (empty($rows)) {
         if (!$loop) break;
         sleep($sleepSec);
@@ -57,11 +66,17 @@ do {
                     }
                     require_once __DIR__ . '/../mailer.php';
                     $mailer = new Mailer();
-                    $sent = $mailer->send(
+                    // Mailer exposes sendEmail($to, $subject, $body) — see mailer.php.
+                    // The HTML body wins when provided; otherwise the plain text
+                    // is wrapped in nl2br + htmlspecialchars so PHPMailer's
+                    // isHTML() path renders cleanly.
+                    $body = !empty($row['body_html'])
+                        ? (string)$row['body_html']
+                        : nl2br(htmlspecialchars((string)$row['body_text']));
+                    $sent = $mailer->sendEmail(
                         (string)$row['email'],
                         (string)($row['subject'] ?? 'Сообщение от ресторана'),
-                        !empty($row['body_html']) ? (string)$row['body_html'] : nl2br(htmlspecialchars((string)$row['body_text'])),
-                        (string)($row['user_name'] ?? '')
+                        $body
                     );
                     if ($sent) {
                         $db->markMarketingSendDelivered($sendId);

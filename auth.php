@@ -86,58 +86,99 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     } elseif ($mode === 'login') {
-        // Обработка входа
-        $email = trim($_POST['email'] ?? '');
-        $password = $_POST['password'] ?? '';
+        // ── 2FA second step (Phase 9.3) ───────────────────────────────────────
+        // Decision: is this the password step OR the TOTP-only step?
+        // We're in the TOTP-only step iff a pending 2FA session is set AND it
+        // hasn't expired (5-min window). The TOTP-only POST must NOT contain
+        // a password — that's the whole point of this branch: the password
+        // never round-trips back to the client.
+        $pending2fa = $_SESSION['pending_2fa'] ?? null;
+        $isPending2FAStep = is_array($pending2fa)
+            && isset($pending2fa['user_id'], $pending2fa['expires_at'])
+            && (int)$pending2fa['expires_at'] > time()
+            && isset($_POST['totp_code'])
+            && empty($_POST['password']);
+
+        $user = null;
+        $email = '';
 
         try {
-            $user = $db->getUserByEmail($email);
-            
-            if (!$user) {
-                $errors[] = "Неверный email или пароль";
-            } elseif (!password_verify($password, $user['password_hash'])) {
-                $errors[] = "Неверный email или пароль";
-            } elseif (!$user['is_active']) {
-                $errors[] = "Аккаунт не активирован. Проверьте вашу почту для подтверждения или обратитесь в поддержку.";
-                error_log("Failed login attempt - account not active for email: $email");
+            if ($isPending2FAStep) {
+                $user = $db->getUserById((int)$pending2fa['user_id']);
+                $email = (string)($user['email'] ?? '');
             } else {
-                // ── 2FA gate (Phase 9.3) ──────────────────────────────────────
-                // If 2FA is enabled for this user, hold the session in a
-                // pending state and show the TOTP form. The user_id is NOT
-                // written into the session until the second factor verifies.
+                // Fresh login — clear any stale pending state.
+                unset($_SESSION['pending_2fa']);
+
+                $email = trim($_POST['email'] ?? '');
+                $password = $_POST['password'] ?? '';
+
+                $user = $db->getUserByEmail($email);
+                if (!$user) {
+                    $errors[] = "Неверный email или пароль";
+                } elseif (!password_verify($password, $user['password_hash'])) {
+                    $errors[] = "Неверный email или пароль";
+                    $user = null;
+                } elseif (!$user['is_active']) {
+                    $errors[] = "Аккаунт не активирован. Проверьте вашу почту для подтверждения или обратитесь в поддержку.";
+                    error_log("Failed login attempt - account not active for email: $email");
+                    $user = null;
+                }
+            }
+
+            if ($user && !empty($user['is_active'])) {
+                // 2FA gate — server-only state (no password leak to DOM).
                 $twofa = $db->getUser2FA((int)$user['id']);
-                if ($twofa && (int)$twofa['enabled'] === 1) {
+                $needsTwoFA = $twofa && (int)$twofa['enabled'] === 1;
+
+                if ($needsTwoFA) {
                     require_once __DIR__ . '/lib/Totp.php';
                     require_once __DIR__ . '/lib/AuditLog.php';
+
                     $code = trim((string)($_POST['totp_code'] ?? ''));
-                    $verified = $code !== '' && Totp::verify((string)$twofa['secret'], $code);
-                    if (!$verified && $code !== '') {
-                        // Try as backup code.
-                        $hashed = json_decode((string)($twofa['backup_codes_json'] ?? '[]'), true) ?: [];
-                        $left = Totp::consumeBackupCode($hashed, $code);
-                        if ($left !== null) {
-                            $verified = true;
-                            $db->markUser2FAUsed((int)$user['id'], $left);
-                            AuditLog::record('2fa.backup_used', 'user', (string)$user['id'], [], (int)$user['id']);
+                    $verified = false;
+
+                    if ($isPending2FAStep || $code !== '') {
+                        $verified = $code !== '' && Totp::verify((string)$twofa['secret'], $code);
+                        if (!$verified && $code !== '') {
+                            $hashed = json_decode((string)($twofa['backup_codes_json'] ?? '[]'), true) ?: [];
+                            $left = Totp::consumeBackupCode($hashed, $code);
+                            if ($left !== null) {
+                                $verified = true;
+                                $db->markUser2FAUsed((int)$user['id'], $left);
+                                AuditLog::record('2fa.backup_used', 'user', (string)$user['id'], [], (int)$user['id']);
+                            }
+                        } elseif ($verified) {
+                            $db->markUser2FAUsed((int)$user['id']);
                         }
-                    } elseif ($verified) {
-                        $db->markUser2FAUsed((int)$user['id']);
                     }
 
                     if (!$verified) {
-                        $errors[] = $code === ''
-                            ? "Введите 6-значный код из приложения-аутентификатора"
-                            : "Неверный код. Попробуйте ещё раз или используйте резервный код.";
+                        // Park the user in pending state (server-only) and
+                        // re-render with the TOTP field, no password in DOM.
+                        $_SESSION['pending_2fa'] = [
+                            'user_id'    => (int)$user['id'],
+                            'expires_at' => time() + 300, // 5 minutes
+                        ];
+                        if ($code === '') {
+                            // First time we hit this branch — no error, just prompt.
+                            $errors = []; // Don't surface the "wrong password" empty-state.
+                        } else {
+                            $errors[] = "Неверный код. Попробуйте ещё раз или используйте резервный код.";
+                            AuditLog::record('login.2fa_failed', 'user', (string)$user['id'], ['email' => $email], (int)$user['id']);
+                        }
                         $awaitingTwoFA = true;
                         $pendingEmail  = $email;
-                        $pendingPassword = $password; // posted back via hidden field
-                        AuditLog::record('login.2fa_failed', 'user', (string)$user['id'], ['email' => $email], (int)$user['id']);
-                        // Skip the rest of the login block — UI re-renders with the TOTP field.
-                        goto two_fa_render;
+                        // Skip the rest of the login block; UI re-renders with the TOTP field.
+                        $user = null; // signal "don't finalize login"
+                    } else {
+                        AuditLog::record('login.2fa_passed', 'user', (string)$user['id'], [], (int)$user['id']);
+                        unset($_SESSION['pending_2fa']);
                     }
-                    AuditLog::record('login.2fa_passed', 'user', (string)$user['id'], [], (int)$user['id']);
                 }
+            }
 
+            if ($user && !empty($user['is_active'])) {
                 // =============================================================
                 // Стандартный block продления сессии
                 // =============================================================
@@ -204,14 +245,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             error_log("Login error: " . $e->getMessage());
             $errors[] = "Произошла ошибка при входе";
         }
-        two_fa_render: // re-enter UI rendering with the 2FA form on screen
     }
 }
 
 // Defaults so the form renders cleanly on first GET as well.
-$awaitingTwoFA   = $awaitingTwoFA   ?? false;
-$pendingEmail    = $pendingEmail    ?? '';
-$pendingPassword = $pendingPassword ?? '';
+// $pendingPassword is gone — the 2FA second step now reads its user from
+// $_SESSION['pending_2fa'] (server-only), not from a hidden form field.
+$awaitingTwoFA = $awaitingTwoFA ?? false;
+$pendingEmail  = $pendingEmail  ?? '';
 ?>
 
 <!DOCTYPE html>
@@ -349,8 +390,7 @@ $pendingPassword = $pendingPassword ?? '';
         <?php else: ?>
             <form class="auth-form" method="POST" autocomplete="on">
                 <?php if ($awaitingTwoFA): ?>
-                    <input type="hidden" name="email"    value="<?= htmlspecialchars($pendingEmail, ENT_QUOTES) ?>">
-                    <input type="hidden" name="password" value="<?= htmlspecialchars($pendingPassword, ENT_QUOTES) ?>">
+                    <?php /* No hidden password — pending_2fa is held server-side in $_SESSION. */ ?>
                     <div class="form-group">
                         <label for="totp_code">Код из приложения</label>
                         <input
@@ -364,7 +404,13 @@ $pendingPassword = $pendingPassword ?? '';
                             required
                             autofocus
                         >
-                        <p class="auth-hint">Введите 6-значный код из Google Authenticator / Authy / 1Password или один из резервных кодов.</p>
+                        <p class="auth-hint">
+                            Шаг 2 из 2. Введите 6-значный код из Google Authenticator / Authy / 1Password
+                            <?php if ($pendingEmail !== ''): ?>
+                                для аккаунта <strong><?= htmlspecialchars($pendingEmail) ?></strong>
+                            <?php endif; ?>
+                            или один из резервных кодов. Окно — 5 минут.
+                        </p>
                     </div>
                 <?php else: ?>
                 <div class="form-group">
