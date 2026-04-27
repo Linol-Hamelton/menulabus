@@ -3,10 +3,15 @@
     "openapi:validate": "node scripts/validate-openapi.mjs",
     "optimize:css": "postcss \"css/*.css\" --dir .tmp-css-optimized --no-map",
     "optimize:css:check": "postcss \"css/*.css\" --dir .tmp-css-check --no-map",
-    "optimize:css:replace": "postcss \"css/*.css\" --replace --no-map"
+    "optimize:css:replace": "postcss \"css/*.css\" --replace --no-map",
+    "visual": "playwright test",
+    "visual:headed": "playwright test --headed",
+    "visual:update": "playwright test --update-snapshots",
+    "visual:report": "playwright show-report"
   },
   "devDependencies": {
     "@apidevtools/swagger-parser": "^10.1.1",
+    "@playwright/test": "^1.59.1",
     "autoprefixer": "^10.4.24",
     "cssnano": "^7.1.2",
     "esbuild": "^0.27.3",

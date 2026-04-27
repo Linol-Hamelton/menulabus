@@ -99,6 +99,11 @@ artifacts/
 playwright-report/
 test-results/
 tmp_phosphor/
+# Stored owner login state for Playwright (do NOT commit)
+tests/visual/.auth/
+# Diff artifacts from snapshot mismatches
+tests/visual/**/*-actual.png
+tests/visual/**/*-diff.png
 
 # Git hooks local runtime files
 .githooks/*.log
