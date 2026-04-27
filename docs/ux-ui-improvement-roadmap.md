@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Partial`
-- Last reviewed: `2026-04-11`
+- Last reviewed: `2026-04-27`
 - Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
 - Current implementation notes:
   - Provider and tenant public UX are now clearly split.
@@ -19,6 +19,7 @@
   - The modifiers editor on `admin-menu.php?edit=*` now uses the same CSRF token fallback chain as the other admin JS modules, so edit-mode API calls no longer depend on a page-level meta tag being present.
   - The `admin-modifiers.js` asset is now filemtime-versioned from `admin-menu.php`, so deploys invalidate stale immutable browser cache for the edit-mode modifiers UI.
   - The `index.php` first screen (provider and tenant hero) is rebuilt around a calmer, breathier layout: the translucent card, eyebrow label, and static provider quick-points are removed, H1/subtitle/CTAs fade up with a short stagger, and the background uses a slow ken-burns loop. Motion is fully suppressed under `prefers-reduced-motion: reduce`. All new rules live in a scoped `css/index-hero.css` so existing hero consumers and later landing sections are untouched. Broken `HDR_1024`/`HDR_1440` picture sources were also dropped to eliminate desktop 404s after the earlier asset cleanup.
+  - The shared `header.php` no longer wraps to a second row on desktop. After Phase 7 added reservation, group ordering, and a language picker, eight nav items × `margin: 0 50px` exceeded the desktop padding box and `flex-wrap: wrap` pushed half the items to a second line. The secondary items (reservation, group, language picker) now collapse into a single `<li class="nav-more">` whose `.nav-more-menu` is an absolute-positioned dropdown above 1251px and `display: contents` below it (so the existing burger menu still renders all items in its flat column with no DOM duplication). Toggle logic lives in `js/header-more.js` (external, defer, CSP-nonced); click-outside and Escape close the menu, `aria-expanded` reflects state. Dropdown chrome runs entirely on existing tokens (`--ui-surface`, `--ui-border`, `--shell-radius-soft`, `--shell-shadow-soft`); `lang-picker.css` is migrated off hardcoded `rgba(15,23,42,…)` to `--ui-surface-muted` / `--ui-border` / `--ui-text` for the same reason. New `nav.more` translation key added to `locales/{ru,en,kk}.json`.
 
 ## Goal
 

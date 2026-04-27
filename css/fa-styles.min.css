@@ -1381,6 +1381,14 @@ body.cart-page #menu {
   justify-content: space-between;
   padding: 0 8%;
 }
+@media (min-width: 1251px) {
+  /* On desktop the burger isn't shown, so wrapping was creating a
+     two-row header. Force a single row; nav-more dropdown absorbs overflow. */
+  .header-inner {
+    flex-wrap: nowrap;
+    gap: 24px;
+  }
+}
 .image {
   height: auto;
   max-width: 100%;
@@ -1411,8 +1419,10 @@ body.cart-page #menu {
 }
 .nav ul li {
   justify-content: center;
-  margin: 0 50px;
+  margin: 0 18px;
   text-align: center;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .nav ul li a {
   color: var(--text-color);
@@ -1422,6 +1432,97 @@ body.cart-page #menu {
 }
 .nav ul li a:hover {
   color: var(--primary-color);
+}
+
+/* "Ещё" dropdown — desktop only.
+   On mobile (<= 1250px) the wrapper dissolves so the secondary items
+   render flat inside the existing burger-menu column. */
+.nav-more,
+.nav-more-menu {
+  display: contents;
+}
+.nav-more-toggle {
+  display: none;
+}
+@media (min-width: 1251px) {
+  .nav-more {
+    display: list-item;
+    position: relative;
+  }
+  .nav-more-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 0;
+    color: var(--text-color);
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.3s ease;
+  }
+  .nav-more-toggle:hover,
+  .nav-more-toggle:focus-visible {
+    color: var(--primary-color);
+    outline: none;
+  }
+  .nav-more-toggle .nav-more-caret {
+    font-size: 0.85em;
+    line-height: 1;
+    transition: transform 0.2s ease;
+  }
+  .nav-more.is-open .nav-more-toggle .nav-more-caret {
+    transform: rotate(180deg);
+  }
+  .nav-more-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    min-width: 220px;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--shell-radius-soft);
+    box-shadow: var(--shell-shadow-soft);
+    margin: 12px 0 0;
+    padding: 8px 0;
+    list-style: none;
+    z-index: 100;
+  }
+  .nav-more.is-open .nav-more-menu {
+    display: block;
+  }
+  .nav-more-menu li {
+    margin: 0;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .nav-more-menu a {
+    display: block;
+    padding: 10px 18px;
+    color: var(--ui-text);
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+  .nav-more-menu a:hover,
+  .nav-more-menu a:focus-visible {
+    background: var(--ui-surface-muted);
+    color: var(--primary-color);
+    outline: none;
+  }
+  .nav-more-menu .lang-picker-item {
+    border-top: 1px solid var(--ui-border);
+    margin-top: 4px;
+    padding: 8px 12px 4px;
+    display: flex;
+    gap: 6px;
+    justify-content: flex-start;
+  }
+  .nav-more-menu .lang-picker-item .lang-picker-link {
+    padding: 4px 10px;
+  }
 }
 .phone a {
   color: var(--white);

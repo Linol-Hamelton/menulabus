@@ -45,8 +45,6 @@ $includeHeaderCss = empty($GLOBALS['header_css_in_head']);
         </li>
         <?php endif; ?>
         <li><a href="/menu.php"><?= htmlspecialchars(t('nav.menu')) ?></a></li>
-        <li><a href="/reservation.php"><?= htmlspecialchars(t('nav.reservation')) ?></a></li>
-        <li><a href="/group.php"><?= htmlspecialchars(t('nav.group')) ?></a></li>
         <li class="cart-menu-item">
           <a href="/cart.php">
             <?= htmlspecialchars(t('nav.cart')) ?>
@@ -56,17 +54,27 @@ $includeHeaderCss = empty($GLOBALS['header_css_in_head']);
         <li class="account-menu-item">
           <a href="<?= $isLoggedIn ? '/account.php' : '/auth.php' ?>"><?= htmlspecialchars(t('nav.account')) ?></a>
         </li>
-        <li class="lang-picker-item">
-          <?php
-          $currentLang = I18n::locale();
-          $sep = strpos($_SERVER['REQUEST_URI'] ?? '/', '?') === false ? '?' : '&';
-          $base = strtok((string)($_SERVER['REQUEST_URI'] ?? '/'), '?');
-          ?>
-          <?php foreach (I18n::supported() as $code): ?>
-            <a class="lang-picker-link<?= $code === $currentLang ? ' active' : '' ?>"
-               href="<?= htmlspecialchars($base . '?lang=' . $code) ?>"
-               aria-label="<?= htmlspecialchars(t('language.' . $code)) ?>"><?= strtoupper($code) ?></a>
-          <?php endforeach; ?>
+        <li class="nav-more">
+          <button type="button" class="nav-more-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="nav-more-menu">
+            <?= htmlspecialchars(t('nav.more')) ?>
+            <span class="nav-more-caret" aria-hidden="true">▾</span>
+          </button>
+          <ul class="nav-more-menu" id="nav-more-menu" role="menu">
+            <li role="none"><a role="menuitem" href="/reservation.php"><?= htmlspecialchars(t('nav.reservation')) ?></a></li>
+            <li role="none"><a role="menuitem" href="/group.php"><?= htmlspecialchars(t('nav.group')) ?></a></li>
+            <li role="none" class="lang-picker-item">
+              <?php
+              $currentLang = I18n::locale();
+              $base = strtok((string)($_SERVER['REQUEST_URI'] ?? '/'), '?');
+              ?>
+              <?php foreach (I18n::supported() as $code): ?>
+                <a role="menuitem"
+                   class="lang-picker-link<?= $code === $currentLang ? ' active' : '' ?>"
+                   href="<?= htmlspecialchars($base . '?lang=' . $code) ?>"
+                   aria-label="<?= htmlspecialchars(t('language.' . $code)) ?>"><?= strtoupper($code) ?></a>
+              <?php endforeach; ?>
+            </li>
+          </ul>
         </li>
       </ul>
     </nav>
@@ -79,4 +87,5 @@ $includeHeaderCss = empty($GLOBALS['header_css_in_head']);
   <?php endif; ?>
   <link rel="stylesheet" href="/css/ui-ux-polish.css?v=<?= htmlspecialchars($uiUxPolishVersion, ENT_QUOTES, 'UTF-8') ?>">
   <link rel="stylesheet" href="/css/lang-picker.css?v=<?= htmlspecialchars($appVersion) ?>">
+  <script src="/js/header-more.js?v=<?= htmlspecialchars($appVersion) ?>" defer<?= isset($GLOBALS['scriptNonce']) ? ' nonce="' . htmlspecialchars((string)$GLOBALS['scriptNonce']) . '"' : '' ?>></script>
 </header>

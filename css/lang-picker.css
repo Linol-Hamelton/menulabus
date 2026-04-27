@@ -1,4 +1,8 @@
-/* Language picker — Phase 7.3 i18n MVP. */
+/* Language picker — Phase 7.3 i18n MVP.
+   Renders inline inside header nav on mobile, absorbed into the
+   "Ещё ▾" dropdown on desktop (see fa-styles.min.css `.nav-more-menu`).
+   All colors flow through design tokens so the picker recolors with
+   the tenant brand. */
 
 .nav .lang-picker-item {
     display: flex;
@@ -18,16 +22,18 @@
     font-weight: 600;
     letter-spacing: 0.05em;
     line-height: 1.4;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .lang-picker-link:hover {
     border-color: currentColor;
+    color: var(--primary-color);
 }
 
 .lang-picker-link.active {
-    background: rgba(15, 23, 42, 0.1);
-    border-color: rgba(15, 23, 42, 0.2);
+    background: var(--ui-surface-muted);
+    border-color: var(--ui-border);
+    color: var(--ui-text);
 }
 
 @media (max-width: 600px) {
