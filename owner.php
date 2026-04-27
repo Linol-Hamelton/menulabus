@@ -425,11 +425,11 @@ if (!empty($report_data)) {
                         </div>
                         <p class="owner-workspace-copy">KPI, отчёт, графики и отчётные срезы собраны в одном рабочем пространстве.</p>
                         <div class="account-section-actions">
-                            <a href="employee.php" class="back-to-menu-btn">Открыть заказы</a>
+                            <a href="employee.php" class="checkout-btn">Открыть заказы</a>
                             <form method="POST" action="/stale-order-cleanup.php" class="account-inline-form">
                                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                                 <input type="hidden" name="return_to" value="owner.php">
-                                <button type="submit" class="checkout-btn" <?= (int)($ownerOrderLifecycle['stale'] ?? 0) <= 0 ? 'disabled' : '' ?>>
+                                <button type="submit" class="checkout-btn checkout-btn-secondary owner-stale-cleanup-btn" <?= (int)($ownerOrderLifecycle['stale'] ?? 0) <= 0 ? 'disabled' : '' ?>>
                                     Закрыть просроченные<?= (int)($ownerOrderLifecycle['stale'] ?? 0) > 0 ? ' (' . (int)$ownerOrderLifecycle['stale'] . ')' : '' ?>
                                 </button>
                             </form>

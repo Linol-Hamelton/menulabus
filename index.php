@@ -156,8 +156,8 @@ $tenantSecondaryLabel = $hasTenantContacts
                                 media="(max-width: 1280px)"
                                 type="image/webp">
                             <img
-                                src="/images/HDR1_1440.webp"
-                                srcset="/images/HDR1_1440.webp 1440w"
+                                src="/images/HDR1_1024.webp"
+                                srcset="/images/HDR1_1024.webp 1440w"
                                 loading="lazy"
                                 decoding="async"
                                 alt="Меню от <?= $siteName ?>"
@@ -285,8 +285,8 @@ $tenantSecondaryLabel = $hasTenantContacts
                                     media="(max-width: 1280px)"
                                     type="image/webp">
                                 <img
-                                    src="/images/HDR1_1440.webp"
-                                    srcset="/images/HDR1_1440.webp 1440w"
+                                    src="/images/HDR1_1024.webp"
+                                    srcset="/images/HDR1_1024.webp 1440w"
                                     loading="lazy"
                                     decoding="async"
                                     alt="<?= $siteName ?>"

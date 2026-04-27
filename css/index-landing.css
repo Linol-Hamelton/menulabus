@@ -360,9 +360,11 @@
     max-width: 640px;
   }
 
-  .landing-entry-grid {
-    grid-template-columns: 1fr;
-  }
+  /* Phase 9.8: was `.landing-entry-grid { grid-template-columns: 1fr }`
+     here — collapsed cards to 1-column at 992px which made tablet
+     viewports (768-991px) waste half the row. Now we keep 2-col down
+     to 768 (see separate @media block below) and only fall to 1-col
+     on real mobile. */
 
   .landing-entry-strip {
     margin-top: -36px;
@@ -390,6 +392,12 @@
 }
 
 @media (max-width: 768px) {
+  /* Phase 9.8: keep 2-col cards down to 769px (tablet); fall to 1-col
+     only on real mobile (≤768px). */
+  .landing-entry-grid {
+    grid-template-columns: 1fr;
+  }
+
   .index-landing-page .container {
     width: min(1180px, calc(100% - 24px));
   }

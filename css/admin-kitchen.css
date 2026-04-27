@@ -110,3 +110,23 @@
 /* Save state hints — kept as soft local tints; readable against any brand. */
 .routing-row-saving { background: #fffbe5; }
 .routing-row-saved  { background: #d4edda; transition: background 0.8s ease; }
+
+/* Phase 9.6: empty state when there are no stations yet — was a 1-column
+   table with 700px of dead whitespace to its right. */
+.kitchen-routing-empty {
+    margin-top: 12px;
+    padding: 32px 20px;
+    text-align: center;
+    background: var(--ui-surface-muted);
+    border: 1px dashed var(--ui-border);
+    border-radius: 12px;
+    color: var(--ui-text);
+}
+.kitchen-routing-empty p {
+    margin: 0 0 6px;
+    font-size: 14px;
+}
+.kitchen-routing-empty .kitchen-routing-empty-hint {
+    color: var(--ui-text-muted);
+    font-size: 13px;
+}

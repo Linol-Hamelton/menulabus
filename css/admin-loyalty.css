@@ -67,3 +67,25 @@
         overflow-x: auto;
     }
 }
+
+/* Phase 9.7 — empty-state copy when no promo codes exist; the table
+   below collapses to just its new-row, which now reads as "fill this
+   to create the first" rather than "edit the existing row". */
+.loyalty-promos-empty {
+    margin: 8px 0 12px;
+    padding: 16px 18px;
+    background: var(--ui-surface-muted);
+    border: 1px dashed var(--ui-border);
+    border-radius: 10px;
+    color: var(--ui-text);
+}
+.loyalty-promos-empty p {
+    margin: 0;
+    font-size: 14px;
+}
+.loyalty-promos-table--new-only thead {
+    /* When there are no existing promos, the table body is just one
+       editable "create new" row. The header row is still useful to label
+       the inputs, but the leading "ID" column reads better as a fixed em-dash. */
+    opacity: 0.85;
+}

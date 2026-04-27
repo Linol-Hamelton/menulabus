@@ -95,7 +95,13 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                 <small>Либо процент, либо фиксированная сумма — не одновременно.</small>
             </div>
 
-            <table class="loyalty-promos-table" id="loyaltyPromosTable">
+            <?php if (empty($promos)): ?>
+                <div class="loyalty-promos-empty">
+                    <p>Промо-кодов ещё нет. Заполните строку ниже, чтобы создать первый.</p>
+                </div>
+            <?php endif; ?>
+
+            <table class="loyalty-promos-table<?= empty($promos) ? ' loyalty-promos-table--new-only' : '' ?>" id="loyaltyPromosTable">
                 <thead>
                     <tr>
                         <th>ID</th>

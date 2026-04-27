@@ -1,5 +1,5 @@
 {
-  "version": "1.4.4",
+  "version": "1.4.5",
   "release_date": "2026-04-27",
   "changelog": "Phase 9 audit follow-up sweep (B1-B9 + C1). 9.1: menu.php drops Cache-Control: public to stop poison-caching the cookieless 500 race. 9.2: bottom-dock tab rail flows inline with content on desktop (≥1025px) instead of overlaying — fixed-bottom positioning kept on mobile/tablet (≤1024px). [Phase 8 history below.] Phase 8 visual unification: header collapses secondary nav into 'Ещё ▾' dropdown (single-row desktop, mobile-untouched); 13 page-specific stylesheets migrated to design tokens (KDS dark theme, all admin surfaces flow tenant brand); inline style='width' replaced with data-w attributes (CSP cleanup); Playwright visual regression suite. Hot-fixes in 1.4.2: (1) header-more.js binds click directly to the toggle button — other globals stop event bubbling so the document-level handler never fired; (2) script tag drops the empty nonce attribute when scriptNonce is unset; (3) one straggler inline style on owner.php (analytics heatmap days input) migrated to data-w='sm'.",
   "critical": true

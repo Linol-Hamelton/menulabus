@@ -108,6 +108,11 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
             </div>
             <?php if (empty($menuItems)): ?>
                 <p>Меню пока пустое.</p>
+            <?php elseif (empty($stations)): ?>
+                <div class="kitchen-routing-empty">
+                    <p>Сначала создайте станции выше — затем здесь появится матрица маршрутизации блюд.</p>
+                    <p class="kitchen-routing-empty-hint">После добавления первой станции таблица покажет, какие блюда отправлять на какую станцию.</p>
+                </div>
             <?php else: ?>
                 <div class="routing-table-wrapper">
                     <table class="kitchen-routing-table" id="kitchenRoutingTable">

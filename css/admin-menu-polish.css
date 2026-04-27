@@ -3886,6 +3886,27 @@ body.cart-page .checkout-btn-secondary:hover {
   color: var(--ui-text);
 }
 
+/* Phase 9.5 — owner workspace stale-order cleanup is a *secondary*
+   action: visually subordinate to the primary "Открыть заказы" CTA.
+   Outline variant in brand color so it reads as "available, not
+   urgent" — when count > 0 it carries the count as a chip-pill. */
+body.owner-page .owner-stale-cleanup-btn {
+  background: var(--ui-surface);
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  box-shadow: none;
+}
+body.owner-page .owner-stale-cleanup-btn:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: var(--ui-accent-contrast, #fff);
+}
+body.owner-page .owner-stale-cleanup-btn:disabled {
+  border-color: var(--ui-border);
+  color: var(--ui-text-muted);
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 body.cart-page .menu-content-empty {
   max-width: 840px;
 }
