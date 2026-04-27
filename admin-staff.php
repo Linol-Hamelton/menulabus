@@ -105,7 +105,7 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                                     <?php endforeach; ?>
                                 </select>
                             </td>
-                            <td><input type="text" class="s-role" value="<?= htmlspecialchars((string)$s['role']) ?>" maxlength="32" style="width: 100px"></td>
+                            <td><input type="text" class="s-role" value="<?= htmlspecialchars((string)$s['role']) ?>" maxlength="32" data-w="lg"></td>
                             <td><input type="datetime-local" class="s-start" value="<?= htmlspecialchars(str_replace(' ', 'T', (string)$s['starts_at'])) ?>"></td>
                             <td><input type="datetime-local" class="s-end" value="<?= htmlspecialchars(str_replace(' ', 'T', (string)$s['ends_at'])) ?>"></td>
                             <td><input type="text" class="s-note" value="<?= htmlspecialchars((string)($s['note'] ?? '')) ?>" maxlength="255"></td>
@@ -125,7 +125,7 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                                 <?php endforeach; ?>
                             </select>
                         </td>
-                        <td><input type="text" class="s-role" placeholder="waiter" maxlength="32" style="width: 100px"></td>
+                        <td><input type="text" class="s-role" placeholder="waiter" maxlength="32" data-w="lg"></td>
                         <td><input type="datetime-local" class="s-start"></td>
                         <td><input type="datetime-local" class="s-end"></td>
                         <td><input type="text" class="s-note" placeholder="" maxlength="255"></td>

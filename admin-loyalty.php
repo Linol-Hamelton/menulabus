@@ -70,7 +70,7 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                             <td><input type="text" class="t-name" value="<?= htmlspecialchars((string)$t['name']) ?>" maxlength="64"></td>
                             <td class="num-col"><input type="number" class="t-min" step="0.01" min="0" value="<?= htmlspecialchars((string)$t['min_spent']) ?>"></td>
                             <td class="num-col"><input type="number" class="t-cb" step="0.01" min="0" max="100" value="<?= htmlspecialchars((string)$t['cashback_pct']) ?>"></td>
-                            <td class="num-col"><input type="number" class="t-sort" step="1" min="0" value="<?= (int)$t['sort_order'] ?>" style="width: 60px"></td>
+                            <td class="num-col"><input type="number" class="t-sort" step="1" min="0" value="<?= (int)$t['sort_order'] ?>" data-w="2xs"></td>
                             <td>
                                 <button type="button" class="admin-checkout-btn btn-t-save">Сохранить</button>
                                 <button type="button" class="admin-checkout-btn cancel btn-t-archive">Архив</button>
@@ -82,7 +82,7 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                         <td><input type="text" class="t-name" placeholder="Silver" maxlength="64"></td>
                         <td class="num-col"><input type="number" class="t-min" step="0.01" min="0" value="0"></td>
                         <td class="num-col"><input type="number" class="t-cb" step="0.01" min="0" max="100" value="0"></td>
-                        <td class="num-col"><input type="number" class="t-sort" step="1" min="0" value="0" style="width: 60px"></td>
+                        <td class="num-col"><input type="number" class="t-sort" step="1" min="0" value="0" data-w="2xs"></td>
                         <td><button type="button" class="admin-checkout-btn btn-t-save">Создать</button></td>
                     </tr>
                 </tbody>
@@ -115,13 +115,13 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                     <?php foreach ($promos as $p): ?>
                         <tr data-promo-id="<?= (int)$p['id'] ?>">
                             <td>#<?= (int)$p['id'] ?></td>
-                            <td><input type="text" class="p-code" value="<?= htmlspecialchars((string)$p['code']) ?>" maxlength="64" style="text-transform: uppercase; width: 140px"></td>
-                            <td class="num-col"><input type="number" step="0.01" min="0" max="100" class="p-pct" value="<?= $p['discount_pct'] !== null ? htmlspecialchars((string)$p['discount_pct']) : '' ?>" style="width: 70px"></td>
-                            <td class="num-col"><input type="number" step="0.01" min="0" class="p-amt" value="<?= $p['discount_amount'] !== null ? htmlspecialchars((string)$p['discount_amount']) : '' ?>" style="width: 80px"></td>
-                            <td class="num-col"><input type="number" step="0.01" min="0" class="p-min-total" value="<?= htmlspecialchars((string)$p['min_order_total']) ?>" style="width: 80px"></td>
+                            <td><input type="text" class="p-code" value="<?= htmlspecialchars((string)$p['code']) ?>" maxlength="64" data-w="xl" data-uppercase=""></td>
+                            <td class="num-col"><input type="number" step="0.01" min="0" max="100" class="p-pct" value="<?= $p['discount_pct'] !== null ? htmlspecialchars((string)$p['discount_pct']) : '' ?>" data-w="xs"></td>
+                            <td class="num-col"><input type="number" step="0.01" min="0" class="p-amt" value="<?= $p['discount_amount'] !== null ? htmlspecialchars((string)$p['discount_amount']) : '' ?>" data-w="sm"></td>
+                            <td class="num-col"><input type="number" step="0.01" min="0" class="p-min-total" value="<?= htmlspecialchars((string)$p['min_order_total']) ?>" data-w="sm"></td>
                             <td><input type="datetime-local" class="p-from" value="<?= $p['valid_from'] ? htmlspecialchars(str_replace(' ', 'T', (string)$p['valid_from'])) : '' ?>"></td>
                             <td><input type="datetime-local" class="p-to" value="<?= $p['valid_to'] ? htmlspecialchars(str_replace(' ', 'T', (string)$p['valid_to'])) : '' ?>"></td>
-                            <td class="num-col"><input type="number" step="1" min="0" class="p-limit" value="<?= (int)$p['usage_limit'] ?>" style="width: 70px"></td>
+                            <td class="num-col"><input type="number" step="1" min="0" class="p-limit" value="<?= (int)$p['usage_limit'] ?>" data-w="xs"></td>
                             <td class="num-col"><?= (int)$p['used_count'] ?></td>
                             <td><input type="text" class="p-desc" value="<?= htmlspecialchars((string)($p['description'] ?? '')) ?>" maxlength="255"></td>
                             <td>
@@ -132,13 +132,13 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                     <?php endforeach; ?>
                     <tr class="loyalty-new-row" data-promo-id="">
                         <td>—</td>
-                        <td><input type="text" class="p-code" placeholder="NEWCODE" maxlength="64" style="text-transform: uppercase; width: 140px"></td>
-                        <td class="num-col"><input type="number" step="0.01" min="0" max="100" class="p-pct" placeholder="10" style="width: 70px"></td>
-                        <td class="num-col"><input type="number" step="0.01" min="0" class="p-amt" placeholder="" style="width: 80px"></td>
-                        <td class="num-col"><input type="number" step="0.01" min="0" class="p-min-total" value="0" style="width: 80px"></td>
+                        <td><input type="text" class="p-code" placeholder="NEWCODE" maxlength="64" data-w="xl" data-uppercase=""></td>
+                        <td class="num-col"><input type="number" step="0.01" min="0" max="100" class="p-pct" placeholder="10" data-w="xs"></td>
+                        <td class="num-col"><input type="number" step="0.01" min="0" class="p-amt" placeholder="" data-w="sm"></td>
+                        <td class="num-col"><input type="number" step="0.01" min="0" class="p-min-total" value="0" data-w="sm"></td>
                         <td><input type="datetime-local" class="p-from"></td>
                         <td><input type="datetime-local" class="p-to"></td>
-                        <td class="num-col"><input type="number" step="1" min="0" class="p-limit" value="0" style="width: 70px"></td>
+                        <td class="num-col"><input type="number" step="1" min="0" class="p-limit" value="0" data-w="xs"></td>
                         <td class="num-col">0</td>
                         <td><input type="text" class="p-desc" placeholder="Промо-кампания" maxlength="255"></td>
                         <td><button type="button" class="admin-checkout-btn btn-p-save">Создать</button></td>

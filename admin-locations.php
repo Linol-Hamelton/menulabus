@@ -78,10 +78,10 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                             <td><input type="text" class="l-name" value="<?= htmlspecialchars((string)$l['name']) ?>" maxlength="255"></td>
                             <td><input type="text" class="l-address" value="<?= htmlspecialchars((string)($l['address'] ?? '')) ?>" maxlength="500"></td>
                             <td><input type="text" class="l-phone" value="<?= htmlspecialchars((string)($l['phone'] ?? '')) ?>" maxlength="32"></td>
-                            <td><input type="text" class="l-tz" value="<?= htmlspecialchars((string)$l['timezone']) ?>" maxlength="64" style="width: 140px"></td>
+                            <td><input type="text" class="l-tz" value="<?= htmlspecialchars((string)$l['timezone']) ?>" maxlength="64" data-w="xl"></td>
                             <td class="num-col"><?= (int)$s['orders_count'] ?></td>
                             <td class="num-col"><?= number_format((float)$s['revenue'], 0, '.', ' ') ?> ₽</td>
-                            <td><input type="number" class="l-sort" value="<?= (int)$l['sort_order'] ?>" min="0" max="999" style="width: 60px"></td>
+                            <td><input type="number" class="l-sort" value="<?= (int)$l['sort_order'] ?>" min="0" max="999" data-w="2xs"></td>
                             <td><input type="checkbox" class="l-active" <?= (int)$l['active'] === 1 ? 'checked' : '' ?>></td>
                             <td>
                                 <button type="button" class="admin-checkout-btn btn-l-save">Сохранить</button>
@@ -103,10 +103,10 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                         <td><input type="text" class="l-name" placeholder="Центр" maxlength="255"></td>
                         <td><input type="text" class="l-address" placeholder="улица, дом" maxlength="500"></td>
                         <td><input type="text" class="l-phone" placeholder="+7..." maxlength="32"></td>
-                        <td><input type="text" class="l-tz" value="Europe/Moscow" maxlength="64" style="width: 140px"></td>
+                        <td><input type="text" class="l-tz" value="Europe/Moscow" maxlength="64" data-w="xl"></td>
                         <td class="num-col">—</td>
                         <td class="num-col">—</td>
-                        <td><input type="number" class="l-sort" value="0" min="0" max="999" style="width: 60px"></td>
+                        <td><input type="number" class="l-sort" value="0" min="0" max="999" data-w="2xs"></td>
                         <td><input type="checkbox" class="l-active" checked></td>
                         <td><button type="button" class="admin-checkout-btn btn-l-save">Создать</button></td>
                     </tr>

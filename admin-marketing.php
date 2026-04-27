@@ -69,7 +69,7 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                     <legend>Сегмент</legend>
                     <label><input type="radio" name="mkSeg" value="all" checked> Все активные с email</label>
                     <label><input type="radio" name="mkSeg" value="min_orders"> Постоянные (≥ N заказов)
-                        <input type="number" id="mkSegThreshold" value="3" min="1" max="100" style="width: 60px">
+                        <input type="number" id="mkSegThreshold" value="3" min="1" max="100" data-w="2xs">
                     </label>
                     <label><input type="radio" name="mkSeg" value="loyalty_tier"> Тир лояльности
                         <select id="mkSegTier">

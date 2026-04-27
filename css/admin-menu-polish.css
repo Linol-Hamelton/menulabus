@@ -4070,3 +4070,17 @@ body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories {
 .owner-review-no-comment {
     color: #9e9e9e;
 }
+
+/* ── input width utility attributes ──────────────────────────────────────
+   Replaces inline `style="width:Xpx"` on table inputs across admin-*.php.
+   Using attribute selectors instead of utility classes avoids merging
+   into per-input class lists (which would have to be edited per file).
+   Keeps strict CSP clean: no `style=""` left on the element. */
+[data-w="3xs"] { width: 56px; }
+[data-w="2xs"] { width: 60px; }
+[data-w="xs"]  { width: 70px; }
+[data-w="sm"]  { width: 80px; }
+[data-w="md"]  { width: 90px; }
+[data-w="lg"]  { width: 100px; }
+[data-w="xl"]  { width: 140px; }
+[data-uppercase] { text-transform: uppercase; }

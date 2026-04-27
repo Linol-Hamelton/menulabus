@@ -79,7 +79,7 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                             <td>#<?= (int)$s['id'] ?></td>
                             <td><input type="text" class="st-label" value="<?= htmlspecialchars((string)$s['label']) ?>" maxlength="64"></td>
                             <td><input type="text" class="st-slug" value="<?= htmlspecialchars((string)$s['slug']) ?>" maxlength="32" pattern="[a-z0-9_-]{1,32}"></td>
-                            <td><input type="number" class="st-sort" value="<?= (int)$s['sort_order'] ?>" min="0" max="999" style="width: 60px"></td>
+                            <td><input type="number" class="st-sort" value="<?= (int)$s['sort_order'] ?>" min="0" max="999" data-w="2xs"></td>
                             <td><input type="checkbox" class="st-active" <?= (int)$s['active'] === 1 ? 'checked' : '' ?>></td>
                             <td>
                                 <button type="button" class="admin-checkout-btn btn-st-save">Сохранить</button>
@@ -91,7 +91,7 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                         <td>—</td>
                         <td><input type="text" class="st-label" placeholder="Название" maxlength="64"></td>
                         <td><input type="text" class="st-slug" placeholder="slug (a-z0-9_-)" maxlength="32" pattern="[a-z0-9_-]{1,32}"></td>
-                        <td><input type="number" class="st-sort" value="0" min="0" max="999" style="width: 60px"></td>
+                        <td><input type="number" class="st-sort" value="0" min="0" max="999" data-w="2xs"></td>
                         <td><input type="checkbox" class="st-active" checked></td>
                         <td>
                             <button type="button" class="admin-checkout-btn btn-st-save">Создать</button>

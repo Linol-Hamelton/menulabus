@@ -91,14 +91,14 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                                 class="<?= $isArchived ? 'inv-row-archived' : '' ?> <?= $isLow ? 'inv-row-low' : '' ?>">
                                 <td>#<?= (int)$i['id'] ?></td>
                                 <td><input type="text" class="inv-name" value="<?= htmlspecialchars((string)$i['name']) ?>" maxlength="255"></td>
-                                <td><input type="text" class="inv-unit" value="<?= htmlspecialchars((string)$i['unit']) ?>" maxlength="16" style="width: 56px"></td>
+                                <td><input type="text" class="inv-unit" value="<?= htmlspecialchars((string)$i['unit']) ?>" maxlength="16" data-w="3xs"></td>
                                 <td class="num-col">
                                     <span class="inv-stock-cell"><?= rtrim(rtrim(number_format((float)$i['stock_qty'], 3, '.', ''), '0'), '.') ?></span>
-                                    <input type="number" step="0.001" class="inv-adjust-delta" placeholder="±" style="width: 70px">
+                                    <input type="number" step="0.001" class="inv-adjust-delta" placeholder="±" data-w="xs">
                                     <button type="button" class="admin-checkout-btn btn-inv-apply" data-adjust-action="apply">Применить</button>
                                 </td>
-                                <td class="num-col"><input type="number" step="0.001" class="inv-threshold" value="<?= rtrim(rtrim(number_format((float)$i['reorder_threshold'], 3, '.', ''), '0'), '.') ?>" min="0" style="width: 80px"></td>
-                                <td class="num-col"><input type="number" step="0.0001" class="inv-cost" value="<?= rtrim(rtrim(number_format((float)$i['cost_per_unit'], 4, '.', ''), '0'), '.') ?>" min="0" style="width: 90px"></td>
+                                <td class="num-col"><input type="number" step="0.001" class="inv-threshold" value="<?= rtrim(rtrim(number_format((float)$i['reorder_threshold'], 3, '.', ''), '0'), '.') ?>" min="0" data-w="sm"></td>
+                                <td class="num-col"><input type="number" step="0.0001" class="inv-cost" value="<?= rtrim(rtrim(number_format((float)$i['cost_per_unit'], 4, '.', ''), '0'), '.') ?>" min="0" data-w="md"></td>
                                 <td>
                                     <select class="inv-supplier">
                                         <option value="">—</option>
@@ -124,10 +124,10 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                         <tr class="inv-new-row" data-ingredient-id="">
                             <td>—</td>
                             <td><input type="text" class="inv-name" placeholder="Название" maxlength="255"></td>
-                            <td><input type="text" class="inv-unit" placeholder="шт" value="шт" maxlength="16" style="width: 56px"></td>
-                            <td class="num-col"><input type="number" step="0.001" class="inv-new-stock" value="0" min="0" style="width: 90px"></td>
-                            <td class="num-col"><input type="number" step="0.001" class="inv-threshold" value="0" min="0" style="width: 80px"></td>
-                            <td class="num-col"><input type="number" step="0.0001" class="inv-cost" value="0" min="0" style="width: 90px"></td>
+                            <td><input type="text" class="inv-unit" placeholder="шт" value="шт" maxlength="16" data-w="3xs"></td>
+                            <td class="num-col"><input type="number" step="0.001" class="inv-new-stock" value="0" min="0" data-w="md"></td>
+                            <td class="num-col"><input type="number" step="0.001" class="inv-threshold" value="0" min="0" data-w="sm"></td>
+                            <td class="num-col"><input type="number" step="0.0001" class="inv-cost" value="0" min="0" data-w="md"></td>
                             <td>
                                 <select class="inv-supplier">
                                     <option value="">—</option>

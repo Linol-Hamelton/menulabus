@@ -584,7 +584,7 @@ $savedDbFontsJson = htmlspecialchars(
                                     </option>
                                 <?php endforeach; ?>
                             </select>
-                            <input type="number" step="0.001" min="0" id="recipeAddQty" placeholder="Кол-во" style="width: 100px">
+                            <input type="number" step="0.001" min="0" id="recipeAddQty" placeholder="Кол-во" data-w="lg">
                             <button type="button" id="recipeAddBtn" class="checkout-btn">Добавить</button>
                             <button type="button" id="recipeSaveBtn" class="checkout-btn admin-checkout-btn">Сохранить рецепт</button>
                         </div>
