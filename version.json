@@ -1,6 +1,6 @@
 {
-  "version": "1.4.14",
+  "version": "1.4.15",
   "release_date": "2026-04-27",
-  "changelog": "Polish 12.6 a11y first-pass: header burger button is now a real <button> with aria-label/aria-expanded/aria-controls (was a non-focusable <div>); Esc closes the mobile nav; .mobile-menu-btn has a focus-visible ring. Header 'Ещё ▾' dropdown gets full keyboard nav: ArrowDown opens and focuses first item, ArrowUp/ArrowDown step, Home/End jump to first/last, Esc closes and returns focus to the toggle. group-order delete button gets aria-label + title. nav.toggle_menu translation keys added to ru/en/kk locales.",
+  "changelog": "Polish 12.6 a11y second-pass: new js/focus-trap.js helper exposes window.FocusTrap.activate/deactivate/isActive — wraps Tab/Shift+Tab inside a modal, restores focus to the previously-focused element on close, optional onEscape callback. Wired into employee.php payLinkModal (open/close paths in js/employee-payments.js call activate/deactivate). Modal markup gets role=\"dialog\" aria-modal=\"true\" aria-labelledby pointing at the now-id'd <h3>. Cart and menu composition modals will follow in a separate commit.",
   "critical": false
 }

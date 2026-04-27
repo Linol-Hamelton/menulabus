@@ -149,6 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php require __DIR__ . '/partials/employee_account_sections.php'; ?>
     </div>
     <script src="/js/security.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/focus-trap.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/cart.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/app.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/account.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
@@ -162,10 +163,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <?php if ($paymentEnabled): ?>
 <!-- Модальное окно: ссылка на оплату от сотрудника -->
-<div id="payLinkModal" data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
+<div id="payLinkModal" role="dialog" aria-modal="true" aria-labelledby="payLinkTitle" data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
     <div class="modal-box">
         <button id="payLinkClose" class="btn-close-modal" aria-label="Закрыть">&times;</button>
-        <h3>Ссылка на оплату</h3>
+        <h3 id="payLinkTitle">Ссылка на оплату</h3>
         <div id="payLinkSpinner" class="modal-spinner">Создаём ссылку…</div>
         <div id="payLinkContent" hidden>
             <p class="modal-hint">Покажите QR-код гостю или отправьте ссылку:</p>

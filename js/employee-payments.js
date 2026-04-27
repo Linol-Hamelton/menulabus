@@ -69,10 +69,16 @@
       errorEl.hidden = true;
       errorEl.textContent = '';
       copyMsg.hidden = true;
+      if (window.FocusTrap) {
+        window.FocusTrap.activate(modal, { onEscape: close });
+      }
     }
 
     function close() {
       modal.classList.remove('active');
+      if (window.FocusTrap) {
+        window.FocusTrap.deactivate(modal);
+      }
     }
 
     function showError(message) {
