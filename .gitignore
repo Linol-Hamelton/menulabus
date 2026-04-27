@@ -105,6 +105,9 @@ tests/visual/.auth/
 tests/visual/**/*-actual.png
 tests/visual/**/*-diff.png
 
+# Local audit screenshots (regeneratable via Playwright suite)
+audit-screens/*.png
+
 # Git hooks local runtime files
 .githooks/*.log
 .githooks/.state/
