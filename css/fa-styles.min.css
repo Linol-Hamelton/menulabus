@@ -15,7 +15,7 @@
   --ui-danger: var(--accent-color, #b3261e);
   --ui-success: var(--agree, #2e7d32);
   --ui-focus-ring: var(--primary-color, #cd1719);
-  --ui-focus-shadow: rgba(205, 23, 25, 0.22);
+  --ui-focus-shadow: rgba(var(--primary-color-rgb), 0.22);
   --ui-shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.08);
   --ui-shadow-hover: 0 4px 14px rgba(0, 0, 0, 0.16);
   --ui-disabled-bg: var(--ui-surface-muted);

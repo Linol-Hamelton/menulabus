@@ -342,7 +342,7 @@
   border-bottom: none;
 }
 .file-item.folder {
-  background-color: rgba(205, 23, 25, 0.05);
+  background-color: rgba(var(--primary-color-rgb), 0.05);
 }
 .file-item.empty,
 .file-item.error {
@@ -543,7 +543,7 @@
 .account-owner:hover,
 .account-owner:focus-visible {
   background: var(--ui-surface);
-  border-color: rgba(205, 23, 25, 0.28);
+  border-color: rgba(var(--primary-color-rgb), 0.28);
   box-shadow: var(--ui-shadow-soft);
   color: var(--ui-text);
   transform: translateY(-1px);
@@ -690,7 +690,7 @@ body.customer_orders-page .customer-orders-list {
 }
 body.customer_orders-page .customer-orders-empty {
   align-items: flex-start;
-  background: linear-gradient(180deg, rgba(205, 23, 25, 0.04) 0%, rgba(205, 23, 25, 0.01) 100%), var(--ui-surface);
+  background: linear-gradient(180deg, rgba(var(--primary-color-rgb), 0.04) 0%, rgba(var(--primary-color-rgb), 0.01) 100%), var(--ui-surface);
   border: 1px solid var(--ui-border);
   border-radius: 25px;
   display: flex;
@@ -744,7 +744,7 @@ body.customer_orders-page .order-status-chip {
   padding: 6px 12px;
 }
 body.customer_orders-page .order-status-chip.is-intake {
-  background: rgba(205, 23, 25, 0.10);
+  background: rgba(var(--primary-color-rgb), 0.10);
   color: var(--primary-color);
 }
 body.customer_orders-page .order-status-chip.is-cooking {

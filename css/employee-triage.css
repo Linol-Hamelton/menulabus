@@ -90,8 +90,8 @@ body.employee-page .employee-triage-search__input {
 }
 
 body.employee-page .employee-triage-search__input:focus {
-  border-color: rgba(205, 23, 25, 0.45);
-  box-shadow: 0 0 0 4px rgba(205, 23, 25, 0.08);
+  border-color: rgba(var(--primary-color-rgb), 0.45);
+  box-shadow: 0 0 0 4px rgba(var(--primary-color-rgb), 0.08);
   outline: none;
 }
 
@@ -251,7 +251,7 @@ body.employee-page .employee-order-age--warning {
 }
 
 body.employee-page .employee-order-age--critical {
-  background: rgba(205, 23, 25, 0.14);
+  background: rgba(var(--primary-color-rgb), 0.14);
   color: #9f1012;
 }
 
@@ -324,7 +324,7 @@ body.employee-page .employee-order-glance__item--details {
 }
 
 body.employee-page .employee-order-glance__item--action {
-  background: rgba(205, 23, 25, 0.08);
+  background: rgba(var(--primary-color-rgb), 0.08);
   color: #7f1112;
 }
 
@@ -343,7 +343,7 @@ body.employee-page .employee-order-glance__item--payment-paid {
 }
 
 body.employee-page .employee-order-glance__item--payment-failed {
-  background: rgba(205, 23, 25, 0.14);
+  background: rgba(var(--primary-color-rgb), 0.14);
   color: #9f1012;
 }
 
@@ -425,7 +425,7 @@ body.employee-page .employee-order-card .status-btn {
 }
 
 body.employee-page .employee-order-card .status-btn-r {
-  box-shadow: 0 10px 24px rgba(205, 23, 25, 0.14);
+  box-shadow: 0 10px 24px rgba(var(--primary-color-rgb), 0.14);
 }
 
 @media (max-width: 900px) {

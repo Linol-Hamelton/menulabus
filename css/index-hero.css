@@ -58,7 +58,7 @@ body.index-landing-page .hero::after,
 body.tenant-homepage .hero::after {
   background:
     radial-gradient(circle at 22% 28%, rgba(255, 226, 190, 0.16) 0%, rgba(255, 226, 190, 0) 42%),
-    radial-gradient(circle at 82% 72%, rgba(205, 23, 25, 0.18) 0%, rgba(205, 23, 25, 0) 48%);
+    radial-gradient(circle at 82% 72%, rgba(var(--primary-color-rgb), 0.18) 0%, rgba(var(--primary-color-rgb), 0) 48%);
   content: "";
   inset: -10%;
   mix-blend-mode: screen;

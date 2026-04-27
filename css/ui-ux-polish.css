@@ -143,8 +143,8 @@ body.account-page :is(.form-group input[type="email"], .form-group input[type="t
 body.employee-page.admin-menu-page .admin-form-group :is(input, textarea, select):focus,
 body.qr-print-page .qr-count-input:focus {
   background: #fff;
-  border-color: rgba(205, 23, 25, 0.42);
-  box-shadow: 0 0 0 4px rgba(205, 23, 25, 0.08);
+  border-color: rgba(var(--primary-color-rgb), 0.42);
+  box-shadow: 0 0 0 4px rgba(var(--primary-color-rgb), 0.08);
   outline: none;
 }
 
@@ -224,7 +224,7 @@ body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .t
 body.menu-catalog-page .menu-tabs .tab-btn.active,
 body.menu-catalog-page .menu-tabs .tab-btn:hover {
   background: var(--shell-chip-active-bg);
-  border-color: rgba(205, 23, 25, 0.22);
+  border-color: rgba(var(--primary-color-rgb), 0.22);
   box-shadow: var(--shell-chip-active-shadow);
   color: #171411;
 }
@@ -470,7 +470,7 @@ body.menu-catalog-page .section-header-menu {
 
 body.menu-catalog-page .order-summary-btn {
   border-radius: 18px;
-  box-shadow: 0 18px 34px rgba(205, 23, 25, 0.16);
+  box-shadow: 0 18px 34px rgba(var(--primary-color-rgb), 0.16);
   font-weight: 700;
   min-height: 50px;
 }
@@ -510,7 +510,7 @@ body.menu-catalog-page :is(.cart-item-price, .menu-item .price) {
 
 body.menu-catalog-page .buy {
   border-radius: 16px;
-  box-shadow: 0 12px 26px rgba(205, 23, 25, 0.14);
+  box-shadow: 0 12px 26px rgba(var(--primary-color-rgb), 0.14);
   min-height: 44px;
   min-width: 44px;
 }
@@ -896,7 +896,7 @@ body.employee-page.admin-menu-page .admin-tab-btn.active,
 body.employee-page.admin-menu-page .admin-tab-btn:hover,
 body.employee-page.admin-menu-page .admin-tab-btn:focus-visible {
   background: var(--shell-chip-active-bg);
-  border-color: rgba(205, 23, 25, 0.22);
+  border-color: rgba(var(--primary-color-rgb), 0.22);
   box-shadow: var(--shell-chip-active-shadow);
   color: #171411;
 }
@@ -1234,7 +1234,7 @@ body.account-page .account-header-bar .section-header-nav-actions .checkout-btn:
 body.account-page .account-header-bar .section-header-quick-actions a:hover,
 body.account-page .account-header-bar .section-header-quick-actions a:focus-visible {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(205, 23, 25, 0.18);
+  border-color: rgba(var(--primary-color-rgb), 0.18);
   color: #171411;
 }
 

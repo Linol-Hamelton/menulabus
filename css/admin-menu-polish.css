@@ -3928,8 +3928,8 @@ body.cart-page .empty-cart-card {
 
 body.cart-page .empty-cart-icon {
   align-items: center;
-  background: linear-gradient(135deg, rgba(205, 23, 25, 0.12), rgba(205, 23, 25, 0.04));
-  border: 1px solid rgba(205, 23, 25, 0.16);
+  background: linear-gradient(135deg, rgba(var(--primary-color-rgb), 0.12), rgba(var(--primary-color-rgb), 0.04));
+  border: 1px solid rgba(var(--primary-color-rgb), 0.16);
   border-radius: 18px;
   color: var(--ui-accent);
   display: inline-flex;
