@@ -1,5 +1,12 @@
 <?php
-header('Cache-Control: public, max-age=600, s-maxage=600');
+// NOTE: previous `Cache-Control: public, max-age=600, s-maxage=600` was a
+// poison-cache trap. menu.php depends on session state (cart count, user
+// role, auto-fonts cookie), so a public cache stored 10-minute responses
+// keyed without PHPSESSID. Cookieless first-hits (cron-smoke, monitors)
+// raced session_init.php and got a 500 — nginx then served that cached
+// 500 to everyone, including authenticated browsers. session_init.php
+// already emits `no-store, no-cache, must-revalidate` which is the
+// correct posture for any session-bearing surface.
 require_once __DIR__ . '/session_init.php';
 
 $appVersion = $_SESSION['app_version'] ?? '1.0.0';
