@@ -224,3 +224,87 @@ Rules for security changes:
 3. Run smoke after each step.
 4. Observe production before the next step.
 5. If stop criteria triggers, rollback immediately.
+
+## Deploy Pitfalls (learned 2026-04-27)
+
+### Never use `echo … | crontab -u $user -` to add a single line
+
+`crontab -u $user -` reads stdin as the **entire new crontab** and replaces
+whatever was there. Piping a single `echo` line wipes the rest of the user's
+cron — webhook-worker, marketing-worker, purge-soft-deleted, and the
+FastPanel scheduler line all disappear silently. The `# >>> cleanmenu cron >>>` /
+`# <<< cleanmenu cron <<<` markers only help if the surrounding code is
+preserved. To insert one line:
+
+```bash
+crontab -u "$WEBUSER" -l \
+  | awk '/^# <<< cleanmenu cron <<</ && !d { print "<NEW LINE>"; d=1 } { print }' \
+  | crontab -u "$WEBUSER" -
+```
+
+Or write the whole block in a here-doc when restoring after a wipe.
+
+### Avoid `if` inside an nginx `location` that also has `fastcgi_cache`
+
+The site config used to swap the FastCGI script via:
+
+```nginx
+location = /menu.php {
+    set $menu_script /menu.php;
+    if ($http_cookie !~* "PHPSESSID") { set $menu_script /menu-public.php; }
+    fastcgi_cache CAFECACHE;
+    fastcgi_cache_min_uses 2;
+    fastcgi_cache_revalidate on;
+    ...
+}
+```
+
+`if` inside `location` creates an "implicit nested location" (see
+[https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#if](https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#if))
+that does not inherit FastCGI parameters and caching state correctly.
+With `fastcgi_cache + min_uses + revalidate` on the same location, the
+response body silently goes to 0 bytes — headers still go out, so the
+client sees `200 OK` with an empty body, and HTTP/2 closes the stream
+with `INTERNAL_ERROR`.
+
+The clean fix is an http-level `map` and a single `set` inside the
+location:
+
+```nginx
+# in http {} (top of the per-site conf is fine)
+map $http_cookie $menu_target_script {
+    default       /menu-public.php;
+    "~*PHPSESSID" /menu.php;
+}
+
+# inside the location
+location = /menu.php {
+    set $menu_script $menu_target_script;
+    ...
+}
+```
+
+### Mirror live conf back to the FastPanel template
+
+FastPanel keeps a parallel copy at
+`/etc/nginx/fastpanel2-available/<user>/<host>.conf` and may regenerate
+the live `fastpanel2-sites/...` copy from it via the UI. After any
+manual edit to the live conf, mirror it back:
+
+```bash
+cp /etc/nginx/fastpanel2-sites/<user>/<host>.conf \
+   /etc/nginx/fastpanel2-available/<user>/<host>.conf
+```
+
+### Create cache zone directories before nginx reload
+
+The site declares two `fastcgi_cache_path` zones at `/var/cache/nginx/`.
+That parent dir does not exist on a fresh FastPanel host, so the master
+process logs `[emerg] mkdir() ".../fastcgi_cafe" failed (2: No such file
+or directory)` on every reload and the cache zones never create. Cache
+is silently disabled. Create the dirs once per host:
+
+```bash
+mkdir -p /var/cache/nginx/fastcgi_cafe /var/cache/nginx/fastcgi_api_micro
+chown -R www-data:www-data /var/cache/nginx/fastcgi_cafe /var/cache/nginx/fastcgi_api_micro
+```
