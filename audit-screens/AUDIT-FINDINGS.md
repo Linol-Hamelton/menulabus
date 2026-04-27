@@ -161,6 +161,62 @@ not a fatal.
 
 ---
 
+## Phase 11 sweep — admin shell completeness + DB write verification
+
+Added 2026-04-27 after the user reported `/admin-staff.php` gaps and an
+inactive burger, plus a general request to validate every interactive
+element with real DB-mutating click-throughs.
+
+### Found regressions (FIXED in commit 3a28b54, v1.4.9)
+
+**P1. `js/app.min.js` missing on 8 Phase 6-10 admin pages.**
+Only `admin-menu.php` (Phase 1-5) included it. Every Phase 6-10
+admin page (admin-kitchen, admin-inventory, admin-loyalty,
+admin-locations, admin-marketing, admin-staff, admin-webhooks,
+admin-waitlist) shipped without — so the `.mobile-menu-btn` toggle
+(burger handler lives in app.min.js) was inert on every Phase 6-10
+admin surface. Mobile users could not open the navigation drawer.
+
+**Fix:** added `<script src="/js/app.min.js?v=…" defer nonce="…">`
+next to the existing `security.min.js` include on all 8 pages.
+
+**P2. `.account-section` table overflow on mobile.**
+`/admin-staff.php` on 375px viewport rendered as a 40%-of-viewport
+column with 60% white margin to the right. Root cause: the
+`.staff-shifts-table` cumulative columns were 744px wide, forcing
+`.account-section` → `.account-container` to widen. Same shape
+existed in inventory / loyalty / kitchen / marketing tables.
+
+**Fix (global guard in `css/admin-menu-polish.css`):**
+At `(max-width: 768px)`, every direct-child `<table>` of
+`body.admin-page .account-section` (and the `inv-table-wrapper` /
+`routing-table-wrapper`) becomes `display: block; overflow-x: auto;
+max-width: 100%;` so its row scrolls horizontally INSIDE the card
+instead of forcing the card to the table width. `.staff-filter`,
+`.staff-tips-form`, `.waitlist-filter`, `.webhook-form .form-row`
+get `flex-wrap: wrap` so multi-input rows stack vertically.
+
+### Verified live (Playwright MCP)
+
+| Surface | Action | Result |
+|---|---|---|
+| /admin-staff mobile-375 | bodyWidth check | **361 ≤ 375** (was 791 → overflow gone) |
+| /admin-staff mobile-375 | burger click | `.mobile-menu-btn.active` + `.nav` display:flex |
+| /admin-kitchen | "Создать" station "Горячий цех/hot/sort=1" | row `data-station-id="1"` persisted in DB after page reload |
+| /admin-loyalty | "Создать" tier "Bronze, 1000₽, 3%" | row `data-tier-id="1"` persisted, name "Bronze", min_spent 1000.00, cashback_pct 3.00 |
+| /admin-loyalty | "Создать" promo "TEST10, 10%, 500₽ min, lim=100" | row `data-promo-id="1"` persisted with full payload |
+| /admin-locations | "Создать" location "Центр / Тверская, 12 / +7964… / Europe/Moscow" | row `data-location-id="1"` persisted |
+| /admin-inventory | "Создать" ingredient "Мука пшеничная, г, 5000, threshold 500, cost 0.05" | row `data-ingredient-id="1"` persisted |
+| /admin-marketing | "Сохранить как черновик" "Phase 11 Test Campaign / email" | row `data-campaign-id="1"` in `mk-table` after reload |
+| /admin-webhooks | "Создать" subscription `order.created → webhook.site/test-phase-11` | row in `.webhooks-table` after reload, action buttons (История / Сменить ключ / Удалить) wired |
+| /admin-staff | "Начать смену" | status `На смене с 2026-04-27 20:41:59`, button flipped to "Закончить смену". "Закончить смену" → status reverted. |
+| /kds.php | After station #1 creation | empty-state replaced with two selectable cards: "Горячий цех" + "Без маршрута" |
+
+**All 7 admin DB-write surfaces produce server-side persisted rows
+that survive a page reload.** Click-through audit closed.
+
+---
+
 ## Phase 9 sweep — all 9 pre-existing issues + C1 FIXED
 
 Added 2026-04-27 after the user requested a sequential pass through B1-B9 + C1
