@@ -114,3 +114,7 @@ Still outside completed scope:
 2. Execute and verify the SSH/fail2ban rollout on the target host.
 3. Keep auth-gate and menu-only exposure locks in smoke coverage after each release.
 4. Start a monthly security review cadence and store artifacts from `scripts/security/monthly-review.sh`.
+
+## CSRF Coverage (Polish 12.2 — 2026-04-27)
+
+`save-project-name.php` and `send_message.php` now route through `Csrf::requireValid()` like `password-reset.php`. These were the last two state-mutating endpoints reachable from the authenticated UI that did not validate CSRF tokens — `save-project-name.php` accepts a session-scoped project name from `admin-menu.php`'s file manager, and `send_message.php` is the Telegram-bridge for the legacy reservation form on `index.php`. The two minified callers (`js/file-manager.min.js` `saveProjectName` and `js/app.min.js` `initReservationForm`) read the page-level `<meta name="csrf-token">` and forward it as `X-CSRF-Token` header plus `csrf_token` body field; both `admin-menu.php` and `index.php` now emit the meta tag in `<head>`. Server returns `403 {"success": false, "error": "csrf_mismatch"}` on missing/mismatched token.

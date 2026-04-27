@@ -201,6 +201,7 @@ $savedDbFontsJson = htmlspecialchars(
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
     <link rel="manifest" href="/manifest.php?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= $appVersion ?>">

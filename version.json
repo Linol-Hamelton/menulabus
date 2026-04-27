@@ -1,6 +1,6 @@
 {
-  "version": "1.4.10",
+  "version": "1.4.11",
   "release_date": "2026-04-27",
-  "changelog": "Polish 12.1: token sweep across employee-triage, owner-styles, index-landing, order-track stylesheets — hardcoded #121212 / rgba(18,18,18,…) migrated to var(--secondary-color) / rgba(var(--secondary-color-rgb), …) so tenant secondary-color override propagates through employee shell, owner page, homepage marketing, and customer order-track timeline (~55 occurrences). Pre-push hook now runs npm run visual on push to main / release/* with graceful skip when Playwright/chromium/.env.local are not configured locally; CLEANMENU_NO_VISUAL=1 escape hatch for one-off bypass.",
+  "changelog": "Polish 12.2.1+12.2.2: CSRF token validation added to save-project-name.php (admin-menu project rename) and send_message.php (Telegram bridge for legacy reservation form on index.php). Both client paths now read the page-level meta csrf-token and forward it as X-CSRF-Token header + body field; servers call Csrf::requireValid() and reject 403 on mismatch. Closes the last two state-mutating endpoints that were unauthenticated in the strict CSP baseline.",
   "critical": false
 }

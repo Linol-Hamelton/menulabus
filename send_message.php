@@ -1,9 +1,12 @@
 <?php
 require_once __DIR__ . '/session_init.php';
+require_once __DIR__ . '/lib/Csrf.php';
 require_once __DIR__ . '/../config.php';
 
 // ✅ Add API-specific headers:
 header('Content-Type: application/json');
+
+Csrf::requireValid();
 
 // Получаем данные из POST-запроса
 $input = json_decode(file_get_contents('php://input'), true);
