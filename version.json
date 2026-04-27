@@ -1,6 +1,6 @@
 {
-  "version": "1.4.15",
+  "version": "1.4.16",
   "release_date": "2026-04-27",
-  "changelog": "Polish 12.6 a11y second-pass: new js/focus-trap.js helper exposes window.FocusTrap.activate/deactivate/isActive — wraps Tab/Shift+Tab inside a modal, restores focus to the previously-focused element on close, optional onEscape callback. Wired into employee.php payLinkModal (open/close paths in js/employee-payments.js call activate/deactivate). Modal markup gets role=\"dialog\" aria-modal=\"true\" aria-labelledby pointing at the now-id'd <h3>. Cart and menu composition modals will follow in a separate commit.",
+  "changelog": "Polish 12.6 a11y third-pass: focus-trap helper now globally available via header.php (loaded on every page that pulls header), so any modal can call window.FocusTrap.activate/deactivate without a per-page script include. Modifier modal in js/menu-modifiers.js now activates the trap on open and deactivates on close; modal markup gets role=\"dialog\" aria-modal=\"true\" aria-labelledby. Composition modal in js/app.min.js (showCompositionModal/closeCompositionModal) wired to the same helper. Removed the now-redundant explicit focus-trap.js include from employee.php.",
   "critical": false
 }

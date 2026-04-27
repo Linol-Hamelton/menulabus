@@ -9,6 +9,9 @@
         modal = document.createElement('div');
         modal.id = 'modifiersModal';
         modal.className = 'delivery';
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('aria-labelledby', 'modModalTitle');
         modal.innerHTML =
             '<div class="delivery-content">' +
                 '<h3 id="modModalTitle">Настройте заказ</h3>' +
@@ -30,6 +33,9 @@
         document.getElementById('modModalTitle').textContent = item.name;
         renderGroups(groups, item.price);
         modal.classList.add('active');
+        if (window.FocusTrap) {
+            window.FocusTrap.activate(modal, { onEscape: closeModal });
+        }
         document.getElementById('modModalConfirm').onclick = function () {
             var result = collectSelections(groups, item.price);
             if (result === null) return; // validation failed
@@ -40,7 +46,11 @@
 
     function closeModal() {
         var modal = document.getElementById('modifiersModal');
-        if (modal) modal.classList.remove('active');
+        if (!modal) return;
+        modal.classList.remove('active');
+        if (window.FocusTrap) {
+            window.FocusTrap.deactivate(modal);
+        }
     }
 
     function renderGroups(groups, basePrice) {
