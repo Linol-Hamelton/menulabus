@@ -180,6 +180,20 @@ CLEANMENU_TEST_MYSQL_PASS=... \
 composer test
 ```
 
+## Availability Picker (Polish 12.2.4, 2026-04-27)
+
+`/reservation.php` now shows a read-only "busy slots" panel under the
+date pickers. The panel is hydrated by `js/reservation-availability.js`,
+which fetches `/reservation_availability.php?table_label=…&date=YYYY-MM-DD`
+(the new session-based mirror of `api/v1/reservations/availability.php`)
+each time the user types a table label or picks a start datetime.
+Fetches are debounced 250ms and the in-flight request aborts when a
+newer one starts. The picker is informational only — the form still
+submits to `create_reservation.php`, which is the authoritative gate
+and returns `409 slot_taken` on overlap. Empty result shows
+"Стол свободен на YYYY-MM-DD"; otherwise renders the busy ranges as
+pill-style chips.
+
 ## 2-Hour Telegram Reminder (Polish 12.2.3, 2026-04-27)
 
 `scripts/reservation-reminder-worker.php` is a CLI cron worker that scans

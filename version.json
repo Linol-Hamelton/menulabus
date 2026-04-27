@@ -1,6 +1,6 @@
 {
-  "version": "1.4.12",
+  "version": "1.4.13",
   "release_date": "2026-04-27",
-  "changelog": "Polish 12.2.3: Reservation 2-hour reminder worker. New scripts/reservation-reminder-worker.php picks up active reservations starting in NOW()+110m..130m (20-min window so missed cron ticks still catch the row), sends one Telegram message per row to the tenant chat, then stamps reservations.reminder_sent_at via Database::markReservationReminderSent() so the row is never reminded twice. Migration sql/reservation-reminder-migration.sql adds reminder_sent_at DATETIME NULL via INFORMATION_SCHEMA-guarded ALTER. Cron */5 * * * *.",
+  "changelog": "Polish 12.2.4: Availability picker on /reservation.php. New js/reservation-availability.js hooks the table_label and starts_at fields, debounce-fetches /reservation_availability.php (session-based mirror of api/v1/reservations/availability.php — no bearer needed for guest customers), renders busy ranges as a read-only pill list under the date inputs. Picker is informational; create_reservation.php remains the authoritative slot conflict gate (409 slot_taken).",
   "critical": false
 }

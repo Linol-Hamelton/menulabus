@@ -86,6 +86,8 @@ $minDateTime = date('Y-m-d\TH:i', time() + 30 * 60);
                     </label>
                 </div>
 
+                <div id="reservationBusySlots" class="reservation-busy-slots" hidden aria-live="polite"></div>
+
                 <label class="form-group">
                     <span class="form-label">Сколько гостей</span>
                     <input type="number" name="guests_count" required min="1" max="50" value="2">
@@ -145,5 +147,6 @@ $minDateTime = date('Y-m-d\TH:i', time() + 30 * 60);
 
     <script src="/js/security.min.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/reservation-form.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/reservation-availability.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
 </body>
 </html>
