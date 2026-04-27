@@ -1,6 +1,6 @@
 {
-  "version": "1.4.0",
-  "release_date": "2026-04-12",
-  "changelog": "Reviews / feedback loop: 1-5 star submission block on completed order tracker, owner read-only Отзывы tab, optional Google review deep-link for 5-star submissions. Append-only reviews table (UNIQUE per order). Migration: sql/reviews-migration.sql.",
+  "version": "1.4.1",
+  "release_date": "2026-04-27",
+  "changelog": "Phase 8 visual unification: header collapses secondary nav into 'Ещё ▾' dropdown (single-row desktop, mobile-untouched); 13 page-specific stylesheets migrated to design tokens (KDS dark theme, all admin surfaces flow tenant brand); inline style='width' replaced with data-w attributes (CSP cleanup); Playwright visual regression suite. Critical hot-fix in this version: '.nav .nav-more' CSS specificity boost so the dropdown stays closed by default (prior 1.4.0+5697e19 shipped with the dropdown stuck open).",
   "critical": true
 }
