@@ -1,6 +1,6 @@
 {
-  "version": "1.4.1",
+  "version": "1.4.2",
   "release_date": "2026-04-27",
-  "changelog": "Phase 8 visual unification: header collapses secondary nav into 'Ещё ▾' dropdown (single-row desktop, mobile-untouched); 13 page-specific stylesheets migrated to design tokens (KDS dark theme, all admin surfaces flow tenant brand); inline style='width' replaced with data-w attributes (CSP cleanup); Playwright visual regression suite. Critical hot-fix in this version: '.nav .nav-more' CSS specificity boost so the dropdown stays closed by default (prior 1.4.0+5697e19 shipped with the dropdown stuck open).",
+  "changelog": "Phase 8 visual unification: header collapses secondary nav into 'Ещё ▾' dropdown (single-row desktop, mobile-untouched); 13 page-specific stylesheets migrated to design tokens (KDS dark theme, all admin surfaces flow tenant brand); inline style='width' replaced with data-w attributes (CSP cleanup); Playwright visual regression suite. Hot-fixes in 1.4.2: (1) header-more.js binds click directly to the toggle button — other globals stop event bubbling so the document-level handler never fired; (2) script tag drops the empty nonce attribute when scriptNonce is unset; (3) one straggler inline style on owner.php (analytics heatmap days input) migrated to data-w='sm'.",
   "critical": true
 }

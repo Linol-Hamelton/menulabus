@@ -1,48 +1,62 @@
 // Header "Ещё ▾" dropdown — desktop only.
 // On mobile (<= 1250px) the wrapper dissolves via `display: contents`,
 // so all we need to do is wire the toggle button + outside-click + Escape.
+//
+// IMPORTANT: another global click handler (mobile burger / cart sync /
+// app.min.js) calls e.stopPropagation() somewhere upstream — a document-
+// level click handler never sees the toggle event. So we bind the open
+// handler DIRECTLY to the button instead. Outside-click / ESC stay on
+// document because they don't depend on the toggle's bubbling.
 (function () {
   'use strict';
 
-  function closeMenu(more) {
-    if (!more) return;
-    more.classList.remove('is-open');
-    var btn = more.querySelector('.nav-more-toggle');
-    if (btn) btn.setAttribute('aria-expanded', 'false');
-  }
+  function init() {
+    var toggles = document.querySelectorAll('.nav-more-toggle');
+    if (!toggles.length) return;
 
-  function openMenu(more) {
-    if (!more) return;
-    more.classList.add('is-open');
-    var btn = more.querySelector('.nav-more-toggle');
-    if (btn) btn.setAttribute('aria-expanded', 'true');
-  }
-
-  document.addEventListener('click', function (e) {
-    var toggle = e.target.closest('.nav-more-toggle');
-    var openMore = document.querySelector('.nav-more.is-open');
-
-    if (toggle) {
-      e.preventDefault();
-      var more = toggle.closest('.nav-more');
-      var willOpen = !more.classList.contains('is-open');
-      if (openMore && openMore !== more) closeMenu(openMore);
-      if (willOpen) openMenu(more); else closeMenu(more);
-      return;
+    function closeAll(except) {
+      document.querySelectorAll('.nav-more.is-open').forEach(function (m) {
+        if (m === except) return;
+        m.classList.remove('is-open');
+        var btn = m.querySelector('.nav-more-toggle');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+      });
     }
 
-    // click outside any open menu → close it
-    if (openMore && !e.target.closest('.nav-more-menu')) {
-      closeMenu(openMore);
-    }
-  });
+    toggles.forEach(function (toggle) {
+      toggle.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var more = toggle.closest('.nav-more');
+        var willOpen = !more.classList.contains('is-open');
+        closeAll(more);
+        more.classList.toggle('is-open', willOpen);
+        toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      });
+    });
 
-  document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Escape') return;
-    var openMore = document.querySelector('.nav-more.is-open');
-    if (!openMore) return;
-    closeMenu(openMore);
-    var btn = openMore.querySelector('.nav-more-toggle');
-    if (btn) btn.focus();
-  });
+    // Click outside any open menu → close. Capture phase so we win against
+    // other handlers that stop propagation.
+    document.addEventListener('click', function (e) {
+      var openMore = document.querySelector('.nav-more.is-open');
+      if (!openMore) return;
+      if (e.target.closest('.nav-more')) return; // click inside menu/toggle
+      closeAll(null);
+    }, true);
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      var openMore = document.querySelector('.nav-more.is-open');
+      if (!openMore) return;
+      closeAll(null);
+      var btn = openMore.querySelector('.nav-more-toggle');
+      if (btn) btn.focus();
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();

@@ -865,7 +865,7 @@ if (!empty($report_data)) {
                             <input type="date" id="anTo" value="<?= htmlspecialchars(date('Y-m-d')) ?>">
                         </label>
                         <label>Heatmap, дней
-                            <input type="number" id="anHeatDays" min="7" max="365" value="30" style="width: 80px">
+                            <input type="number" id="anHeatDays" min="7" max="365" value="30" data-w="sm">
                         </label>
                         <button type="button" class="checkout-btn" id="anApply">Пересчитать</button>
                     </div>
