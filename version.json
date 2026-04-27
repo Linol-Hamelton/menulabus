@@ -1,6 +1,6 @@
 {
-  "version": "1.4.22",
+  "version": "1.4.23",
   "release_date": "2026-04-28",
-  "changelog": "Phase 7.4 v2: Staff Management v2. New shift_swap_requests table + 5 DB methods (createShiftSwapRequest, listShiftSwapRequests, offerToTakeShift, approveShiftSwap [transactional reassignment], denyShiftSwap, cancelShiftSwap). Single endpoint POST /api/shift-swap-action.php covers all 5 lifecycle transitions (request/offer/approve/deny/cancel) with role-gated approve/deny. New CLI scripts/payroll-export.php emits a per-employee CSV (hours / base_pay / tips_pooled / tips_manual / total) for a --period=YYYY-MM or --from/--to range. Migration sql/staff-v2-migration.sql also adds tips_distribution_rules + tips_manual_overrides for per-period override of the default equal-by-hours split. Docs in docs/staff-v2.md.",
+  "changelog": "Phase 7.3 i18n expansion: locales/{ru,en,kk}.json each gain ~80 new keys covering common.* (save/cancel/edit/archive/etc.), account.* (tabs + form labels), owner.* (workspace + tabs), admin.* (9 admin pages), errors.* (auth/forbidden/csrf/validation). New scripts/i18n-extract-strings.php scanner walks PHP/JS, surfaces hardcoded Cyrillic candidates, prints top-30 most-repeated strings and top-20 most-affected files. Skips already-migrated lines (containing t(), SQL keywords, or below min-len). JSON output via --json --out=PATH. Docs in docs/i18n.md cover architecture, lookup chain, surface coverage, migration workflow, gaps.",
   "critical": false
 }
