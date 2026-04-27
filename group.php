@@ -133,7 +133,7 @@ $seatCookie = $_COOKIE['cleanmenu_group_seat'] ?? '';
                                         <span class="group-seat-name"><?= htmlspecialchars((string)$si['item_name']) ?> × <?= (int)$si['quantity'] ?></span>
                                         <span class="group-seat-price"><?= number_format((int)$si['quantity'] * (float)$si['unit_price'], 0, '.', ' ') ?> ₽</span>
                                         <?php if ($group['status'] === 'open'): ?>
-                                            <button type="button" class="group-del">×</button>
+                                            <button type="button" class="group-del" aria-label="Удалить позицию" title="Удалить позицию">×</button>
                                         <?php endif; ?>
                                     </li>
                                 <?php endforeach; ?>

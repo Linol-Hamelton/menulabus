@@ -1,6 +1,6 @@
 {
-  "version": "1.4.13",
+  "version": "1.4.14",
   "release_date": "2026-04-27",
-  "changelog": "Polish 12.2.4: Availability picker on /reservation.php. New js/reservation-availability.js hooks the table_label and starts_at fields, debounce-fetches /reservation_availability.php (session-based mirror of api/v1/reservations/availability.php — no bearer needed for guest customers), renders busy ranges as a read-only pill list under the date inputs. Picker is informational; create_reservation.php remains the authoritative slot conflict gate (409 slot_taken).",
+  "changelog": "Polish 12.6 a11y first-pass: header burger button is now a real <button> with aria-label/aria-expanded/aria-controls (was a non-focusable <div>); Esc closes the mobile nav; .mobile-menu-btn has a focus-visible ring. Header 'Ещё ▾' dropdown gets full keyboard nav: ArrowDown opens and focuses first item, ArrowUp/ArrowDown step, Home/End jump to first/last, Esc closes and returns focus to the toggle. group-order delete button gets aria-label + title. nav.toggle_menu translation keys added to ru/en/kk locales.",
   "critical": false
 }

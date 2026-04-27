@@ -36,12 +36,15 @@ $includeHeaderCss = empty($GLOBALS['header_css_in_head']);
         <?php endif; ?>
       </a>
     </div>
-    <div class="mobile-menu-btn">
+    <button type="button" class="mobile-menu-btn"
+            aria-label="<?= htmlspecialchars(t('nav.toggle_menu')) ?>"
+            aria-expanded="false"
+            aria-controls="primary-nav">
       <span class="burger-line"></span>
       <span class="burger-line"></span>
       <span class="burger-line"></span>
-    </div>
-    <nav class="nav">
+    </button>
+    <nav class="nav" id="primary-nav">
       <ul>
         <?php if ($contactPhone !== ''): ?>
         <li><a href="tel:<?= htmlspecialchars($contactPhone) ?>">Позвонить</a></li>

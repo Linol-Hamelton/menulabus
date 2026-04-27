@@ -23,6 +23,24 @@
       });
     }
 
+    function items(more) {
+      return Array.prototype.slice.call(
+        more.querySelectorAll('.nav-more-menu [role="menuitem"]')
+      ).filter(function (n) { return !n.hasAttribute('disabled'); });
+    }
+
+    function focusItem(more, dir) {
+      var list = items(more);
+      if (!list.length) return;
+      var current = list.indexOf(document.activeElement);
+      var next;
+      if (dir === 'first')      next = 0;
+      else if (dir === 'last')  next = list.length - 1;
+      else if (dir === 'next')  next = current < 0 ? 0 : (current + 1) % list.length;
+      else if (dir === 'prev')  next = current <= 0 ? list.length - 1 : current - 1;
+      list[next].focus();
+    }
+
     toggles.forEach(function (toggle) {
       toggle.addEventListener('click', function (e) {
         e.preventDefault();
@@ -32,6 +50,18 @@
         closeAll(more);
         more.classList.toggle('is-open', willOpen);
         toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        if (willOpen) focusItem(more, 'first');
+      });
+
+      toggle.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+        e.preventDefault();
+        var more = toggle.closest('.nav-more');
+        if (!more.classList.contains('is-open')) {
+          more.classList.add('is-open');
+          toggle.setAttribute('aria-expanded', 'true');
+        }
+        focusItem(more, e.key === 'ArrowDown' ? 'first' : 'last');
       });
     });
 
@@ -45,12 +75,20 @@
     }, true);
 
     document.addEventListener('keydown', function (e) {
-      if (e.key !== 'Escape') return;
       var openMore = document.querySelector('.nav-more.is-open');
       if (!openMore) return;
-      closeAll(null);
-      var btn = openMore.querySelector('.nav-more-toggle');
-      if (btn) btn.focus();
+      if (e.key === 'Escape') {
+        closeAll(null);
+        var btn = openMore.querySelector('.nav-more-toggle');
+        if (btn) btn.focus();
+        return;
+      }
+      // Arrow nav inside the open menu.
+      if (!openMore.contains(document.activeElement)) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); focusItem(openMore, 'next'); }
+      else if (e.key === 'ArrowUp')   { e.preventDefault(); focusItem(openMore, 'prev'); }
+      else if (e.key === 'Home')      { e.preventDefault(); focusItem(openMore, 'first'); }
+      else if (e.key === 'End')       { e.preventDefault(); focusItem(openMore, 'last'); }
     });
   }
 

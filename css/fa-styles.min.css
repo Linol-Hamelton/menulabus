@@ -122,15 +122,22 @@ a {
   vertical-align: middle;
 }
 .mobile-menu-btn {
+  background: transparent;
+  border: 0;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   height: 20px;
   justify-content: space-between;
   margin-left: 15px;
+  padding: 0;
   position: relative;
   width: 22px;
   z-index: 1001;
+}
+.mobile-menu-btn:focus-visible {
+  outline: 2px solid var(--ui-accent, #2563eb);
+  outline-offset: 4px;
 }
 .burger-line {
   background-color: var(--white);
