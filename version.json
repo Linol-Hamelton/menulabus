@@ -1,6 +1,6 @@
 {
-  "version": "1.4.16",
+  "version": "1.4.17",
   "release_date": "2026-04-27",
-  "changelog": "Polish 12.6 a11y third-pass: focus-trap helper now globally available via header.php (loaded on every page that pulls header), so any modal can call window.FocusTrap.activate/deactivate without a per-page script include. Modifier modal in js/menu-modifiers.js now activates the trap on open and deactivates on close; modal markup gets role=\"dialog\" aria-modal=\"true\" aria-labelledby. Composition modal in js/app.min.js (showCompositionModal/closeCompositionModal) wired to the same helper. Removed the now-redundant explicit focus-trap.js include from employee.php.",
+  "changelog": "Polish 12.6 a11y fourth-pass: cart deliveryModal and guestOrderModal show/hide handlers in js/cart.min.js now activate/deactivate window.FocusTrap on open/close (Escape closes the modal and returns focus to the previously-focused element). cart.php markup gets role=\"dialog\" aria-modal=\"true\" aria-labelledby. menu-alt.php and menu-content-info.php compositionModal markup get the same dialog roles (modal-labelledby points at #modalTitle). All five modals across the app are now keyboard-accessible.",
   "critical": false
 }

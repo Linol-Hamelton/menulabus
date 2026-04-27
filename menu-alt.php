@@ -29,7 +29,7 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
 
 <body>
 <?php endif; ?>
-    <div id="compositionModal" class="delivery-modal">
+    <div id="compositionModal" class="delivery-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="delivery-modal-content">
             <div>
                 <img id="modalImage" src="" loading="lazy"

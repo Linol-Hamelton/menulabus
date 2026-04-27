@@ -97,9 +97,9 @@ unset($_SESSION['qr_table']);
     </section>
 
     <!-- Модальное окно выбора типа доставки (измененная версия) -->
-    <div id="deliveryModal" class="delivery">
+    <div id="deliveryModal" class="delivery" role="dialog" aria-modal="true" aria-labelledby="deliveryModalTitle">
         <div class="delivery-content">
-            <h3>Выберите тип получения заказа</h3>
+            <h3 id="deliveryModalTitle">Выберите тип получения заказа</h3>
             <div class="delivery-options">
                 <div class="delivery-option" data-type="bar">
                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M201.18,40H54.82a8,8,0,0,0-5.65,13.66L120,124.69V200H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16H136V124.69l70.83-71A8,8,0,0,0,201.18,40Zm-20.57,16L128,108.69,75.39,56Z"/></svg>
@@ -190,9 +190,9 @@ unset($_SESSION['qr_table']);
     </div>
 
     <!-- Модальное окно для неавторизованных пользователей -->
-    <div id="guestOrderModal" class="delivery">
+    <div id="guestOrderModal" class="delivery" role="dialog" aria-modal="true" aria-labelledby="guestOrderModalTitle">
         <div class="delivery-content">
-            <h3>Оформить заказ</h3>
+            <h3 id="guestOrderModalTitle">Оформить заказ</h3>
             <p>Вы не авторизованы. Вы можете:</p>
             <div class="delivery-options">
                 <div id="guestLoginBtn" class="delivery-option" data-action="login">Войти</div>
