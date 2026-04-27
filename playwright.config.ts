@@ -79,10 +79,15 @@ export default defineConfig({
       },
       dependencies: ['setup'],
     },
+    // tablet-768 / mobile-375 use Pixel 5 / Pixel 7 (Chrome on Android,
+     // chromium-based) instead of iPad/iPhone (webkit). The breakpoint
+     // behavior is what matters for visual regression — touch caps and
+     // user-agent are secondary, and not requiring webkit keeps the
+     // browser footprint at chromium-only on dev machines and CI.
     {
       name: 'tablet-768',
       use: {
-        ...devices['iPad (gen 7)'],
+        ...devices['Pixel 5'],
         viewport: { width: 768, height: 1024 },
         storageState: STORAGE_STATE,
       },
@@ -91,7 +96,7 @@ export default defineConfig({
     {
       name: 'mobile-375',
       use: {
-        ...devices['iPhone 12'],
+        ...devices['Pixel 5'],
         viewport: { width: 375, height: 667 },
         storageState: STORAGE_STATE,
       },
