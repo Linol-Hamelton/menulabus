@@ -1437,56 +1437,67 @@ body.admin-menu-page {
   }
 }
 
-body.account-page .menu-tabs-container,
-body.customer_orders-page .menu-tabs-container,
-body.employee-page .menu-tabs-container,
-body.owner-page .menu-tabs-container,
-body.menu-catalog-page .menu-tabs-container,
-body.admin-menu-page .menu-tabs-container.admin-menu-categories,
-body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories {
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  bottom: 0 !important;
-  box-shadow: none !important;
-  left: 0 !important;
-  margin: 0 !important;
-  max-width: none !important;
-  overflow: visible !important;
-  padding: 0 !important;
-  position: fixed !important;
-  right: 0 !important;
-  top: auto !important;
-  transform: none !important;
-  width: 100% !important;
-  z-index: 9500 !important;
+/* Bottom-dock tab rail is fixed-bottom on mobile/tablet (≤1024px) only.
+   On desktop (≥1025px) the rail flows inline with the page so it doesn't
+   overlay the form/analytics card below it (Phase 9.2 fix for B2/B3).
+   Desktop falls through to `position: static !important` declared earlier
+   in this file (~line 170). */
+@media (max-width: 1024px) {
+  body.account-page .menu-tabs-container,
+  body.customer_orders-page .menu-tabs-container,
+  body.employee-page .menu-tabs-container,
+  body.owner-page .menu-tabs-container,
+  body.menu-catalog-page .menu-tabs-container,
+  body.admin-menu-page .menu-tabs-container.admin-menu-categories,
+  body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    bottom: 0 !important;
+    box-shadow: none !important;
+    left: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    position: fixed !important;
+    right: 0 !important;
+    top: auto !important;
+    transform: none !important;
+    width: 100% !important;
+    z-index: 9500 !important;
+  }
 }
 
-body.account-page .menu-tabs,
-body.customer_orders-page .menu-tabs,
-body.employee-page .menu-tabs,
-body.owner-page .menu-tabs,
-body.menu-catalog-page .menu-tabs,
-body.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs,
-body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs {
-  align-items: center !important;
-  background: rgba(255, 255, 255, 0.94) !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  border-top: 1px solid rgba(18, 18, 18, 0.08) !important;
-  box-shadow: 0 -14px 28px rgba(18, 18, 18, 0.08) !important;
-  display: flex !important;
-  flex-wrap: nowrap !important;
-  gap: 10px;
-  justify-content: center !important;
-  margin: 0 !important;
-  min-width: 100% !important;
-  overflow-x: auto !important;
-  overscroll-behavior-x: contain;
-  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)) !important;
-  scrollbar-width: none;
-  width: 100% !important;
-  white-space: nowrap !important;
+/* Inner bar styling (background, border-top, shadow) — mobile/tablet only.
+   Desktop falls through to inline tab styling from earlier in the file. */
+@media (max-width: 1024px) {
+  body.account-page .menu-tabs,
+  body.customer_orders-page .menu-tabs,
+  body.employee-page .menu-tabs,
+  body.owner-page .menu-tabs,
+  body.menu-catalog-page .menu-tabs,
+  body.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs,
+  body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs {
+    align-items: center !important;
+    background: rgba(255, 255, 255, 0.94) !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    border-top: 1px solid rgba(18, 18, 18, 0.08) !important;
+    box-shadow: 0 -14px 28px rgba(18, 18, 18, 0.08) !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 10px;
+    justify-content: center !important;
+    margin: 0 !important;
+    min-width: 100% !important;
+    overflow-x: auto !important;
+    overscroll-behavior-x: contain;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+    scrollbar-width: none;
+    width: 100% !important;
+    white-space: nowrap !important;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -1522,37 +1533,44 @@ body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .t
   white-space: nowrap;
 }
 
-body.account-page:not(.help-page):not(.admin-menu-page) .account-container,
-body.customer_orders-page .account-container,
-body.employee-page:not(.admin-menu-page) .account-container,
-body.owner-page .account-container {
-  padding-bottom: max(32px, var(--bottom-tab-rail-clearance)) !important;
-}
+/* Bottom-tab-rail clearance only matters when the rail is fixed-bottom.
+   Wrap the padding-bottom + scroll-margin in the same mobile/tablet
+   media query so desktop doesn't carry 88px of dead space. */
+@media (max-width: 1024px) {
+  body.account-page:not(.help-page):not(.admin-menu-page) .account-container,
+  body.customer_orders-page .account-container,
+  body.employee-page:not(.admin-menu-page) .account-container,
+  body.owner-page .account-container {
+    padding-bottom: max(32px, var(--bottom-tab-rail-clearance)) !important;
+  }
 
-body.account-page:not(.help-page):not(.admin-menu-page) .account-section:last-child {
-  padding-bottom: calc(var(--bottom-tab-rail-clearance) + 18px) !important;
-}
+  body.account-page:not(.help-page):not(.admin-menu-page) .account-section:last-child {
+    padding-bottom: calc(var(--bottom-tab-rail-clearance) + 18px) !important;
+  }
 
-body.account-page:not(.help-page):not(.admin-menu-page) button[name="update_profile"],
-body.account-page:not(.help-page):not(.admin-menu-page) button[name="change_password"],
-body.account-page:not(.help-page):not(.admin-menu-page) button[name="change_menu_view"] {
-  scroll-margin-bottom: calc(var(--bottom-tab-rail-clearance) + 18px);
+  body.account-page:not(.help-page):not(.admin-menu-page) button[name="update_profile"],
+  body.account-page:not(.help-page):not(.admin-menu-page) button[name="change_password"],
+  body.account-page:not(.help-page):not(.admin-menu-page) button[name="change_menu_view"] {
+    scroll-margin-bottom: calc(var(--bottom-tab-rail-clearance) + 18px);
+  }
 }
 
 body.menu-catalog-page .menu-content {
   margin-bottom: 16px;
 }
 
-body.menu-catalog-page #menu,
-body.menu-catalog-page .menu-content {
-  padding-bottom: max(8px, calc(var(--bottom-tab-rail-clearance) - 96px)) !important;
-}
+@media (max-width: 1024px) {
+  body.menu-catalog-page #menu,
+  body.menu-catalog-page .menu-content {
+    padding-bottom: max(8px, calc(var(--bottom-tab-rail-clearance) - 96px)) !important;
+  }
 
-body.menu-catalog-page footer,
-body.menu-catalog-page .footer,
-body.menu-catalog-page .footer-bottom {
-  margin-bottom: calc(var(--bottom-tab-rail-clearance) + 12px) !important;
-  padding-bottom: calc(var(--bottom-tab-rail-clearance) + 8px) !important;
+  body.menu-catalog-page footer,
+  body.menu-catalog-page .footer,
+  body.menu-catalog-page .footer-bottom {
+    margin-bottom: calc(var(--bottom-tab-rail-clearance) + 12px) !important;
+    padding-bottom: calc(var(--bottom-tab-rail-clearance) + 8px) !important;
+  }
 }
 
 body.account-page:not(.help-page):not(.admin-menu-page) .account-container,
