@@ -262,6 +262,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     || !empty($loyaltyHistory)):
                     require __DIR__ . '/partials/account_loyalty_card.php';
                 endif;
+                ?>
+            <?php endif; ?>
+            <?php if ($activeTab === 'security' && !empty($user['id'])): ?>
+                <?php
+                // 2FA wizard belongs to the security tab (Phase 10.5 fix —
+                // was previously rendered on the profile tab next to the
+                // loyalty card, which split account-management UX between
+                // two tabs and left the password change form on its own).
                 require __DIR__ . '/partials/account_security_section.php';
                 ?>
             <?php endif; ?>
@@ -386,7 +394,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php if (!empty($versionInfo['changelog'])): ?>
             <div class="form-group">
                 <label>Что нового:</label><br>
-                <p><?= htmlspecialchars((string)$versionInfo['changelog']) ?></p>
+                <?php
+                // Phase 10.7: normalise both real and literal newlines in changelog,
+                // then nl2br for readable rendering. Was: raw htmlspecialchars left
+                // residual `\r\n` literals visible at the end of the text when the
+                // JSON string contained escape sequences as text.
+                $changelog = (string)$versionInfo['changelog'];
+                $changelog = str_replace(['\\r\\n', '\\n', '\\r', "\r\n", "\r"], "\n", $changelog);
+                $changelog = trim($changelog);
+                ?>
+                <p><?= nl2br(htmlspecialchars($changelog)) ?></p>
             </div>
             <?php endif; ?>
             <div class="section-header-menu">`r`n                <a href="logout.php" class="back-to-menu-btn">Выйти</a>

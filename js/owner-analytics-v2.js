@@ -92,9 +92,10 @@
                 if (idx > 12) return;
                 if (count === 0 && idx !== 0) { tr += '<td class="num an-cell-empty">—</td>'; return; }
                 var pct = size > 0 ? Math.round((count / size) * 100) : 0;
-                var bg = 'hsl(220, 80%, ' + Math.max(30, 90 - pct * 0.6) + '%)';
-                var fg = pct > 40 ? '#fff' : '#111';
-                tr += '<td class="num" style="background:' + bg + ';color:' + fg + '" title="' + count + ' активных">' + pct + '%</td>';
+                // CSP-safe: bucket 0..5 instead of inline `style="background:hsl(...)"`.
+                // Real colors live in css/owner-analytics-v2.css under [data-heat="N"].
+                var bucket = bucketFromPct(pct / 100);
+                tr += '<td class="num" data-heat="' + bucket + '" title="' + count + ' активных">' + pct + '%</td>';
             });
             tr += '</tr>';
             cohortsBody.innerHTML += tr;
@@ -119,13 +120,29 @@
             for (var hh = 0; hh < 24; hh++) {
                 var v = (grid[d] && grid[d][hh]) || 0;
                 var pct = max > 0 ? v / max : 0;
-                var bg = v === 0 ? '#f8fafc' : 'hsl(220, 80%, ' + Math.max(25, 85 - pct * 55) + '%)';
-                var fg = pct > 0.4 ? '#fff' : '#111';
-                body += '<td style="background:' + bg + ';color:' + fg + '" title="' + v + ' заказов">' + (v > 0 ? v : '') + '</td>';
+                // CSP-safe heat bucket — see [data-heat="N"] rules in
+                // css/owner-analytics-v2.css. v=0 → bucket 0 (empty).
+                var bucket = v === 0 ? 0 : bucketFromPct(pct);
+                body += '<td data-heat="' + bucket + '" title="' + v + ' заказов">' + (v > 0 ? v : '') + '</td>';
             }
             body += '</tr>';
         }
         heatmapEl.innerHTML += body + '</tbody>';
+    }
+
+    /**
+     * Maps a 0..1 ratio into one of 6 heat buckets (0=empty, 1=lowest, 5=hottest).
+     * The associated background colors live in CSS via [data-heat="N"] selectors,
+     * so the JS layer never needs `el.style.background = ...` (which strict CSP
+     * `style-src 'self' 'nonce-…'` blocks for synthetic-event/JS-set inline styles).
+     */
+    function bucketFromPct(pct) {
+        if (pct <= 0)    return 0;
+        if (pct < 0.20)  return 1;
+        if (pct < 0.40)  return 2;
+        if (pct < 0.60)  return 3;
+        if (pct < 0.80)  return 4;
+        return 5;
     }
 
     function renderForecast(f) {

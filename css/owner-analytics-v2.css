@@ -117,6 +117,43 @@
 .an-margin-pill.warn { background: #fff3cd; color: #856404; }
 
 .an-cell-empty { color: var(--ui-text-muted); background: var(--ui-surface-muted); }
+
+/* Phase 10.5: heatmap / cohort retention buckets.
+   JS classifies cells into one of 6 buckets (0..5) and writes `data-heat="N"`.
+   Pre-defined colors here keep the layer CSP-clean (style-src 'self' 'nonce-…'
+   blocks JS-set inline `style.background` even with --css-variable indirection).
+   The HSL ramp matches the original dynamic formula
+   `hsl(220, 80%, max(25, 85 - pct*55)%)` discretized into 6 stops. */
+.analytics-v2-cohorts td[data-heat="0"],
+.analytics-v2-heatmap td[data-heat="0"] {
+    background: var(--ui-surface-muted);
+    color: var(--ui-text-muted);
+}
+.analytics-v2-cohorts td[data-heat="1"],
+.analytics-v2-heatmap td[data-heat="1"] {
+    background: hsl(220, 80%, 78%);
+    color: #111;
+}
+.analytics-v2-cohorts td[data-heat="2"],
+.analytics-v2-heatmap td[data-heat="2"] {
+    background: hsl(220, 80%, 65%);
+    color: #111;
+}
+.analytics-v2-cohorts td[data-heat="3"],
+.analytics-v2-heatmap td[data-heat="3"] {
+    background: hsl(220, 80%, 52%);
+    color: #fff;
+}
+.analytics-v2-cohorts td[data-heat="4"],
+.analytics-v2-heatmap td[data-heat="4"] {
+    background: hsl(220, 80%, 39%);
+    color: #fff;
+}
+.analytics-v2-cohorts td[data-heat="5"],
+.analytics-v2-heatmap td[data-heat="5"] {
+    background: hsl(220, 80%, 30%);
+    color: #fff;
+}
 .an-empty {
     text-align: center;
     color: var(--ui-text-muted);
