@@ -4110,3 +4110,33 @@ body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories {
 [data-w="lg"]  { width: 100px; }
 [data-w="xl"]  { width: 140px; }
 [data-uppercase] { text-transform: uppercase; }
+
+/* Phase 11.2 — global admin table overflow guard.
+   Every Phase 6-10 admin page renders `<table>` inside `.account-section`.
+   On mobile (≤768px) the cumulative column widths blow past the
+   viewport, pushing the section card to the actual content width
+   instead of staying within the shell. This shifts the rest of the
+   page into a 40%-of-viewport column with a giant white margin on
+   the right.
+
+   Fix: any direct-child `<table>` of `.account-section` becomes
+   horizontally-scrollable on mobile. The card itself keeps its
+   parent-defined width (`.account-container { width: 100% }`); only
+   the table scrolls inside it. */
+@media (max-width: 768px) {
+  body.admin-page .account-section > table,
+  body.admin-page .account-section > .table-wrapper > table,
+  body.admin-page .routing-table-wrapper,
+  body.admin-page .inv-table-wrapper {
+    display: block;
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+  body.admin-page .staff-filter,
+  body.admin-page .staff-tips-form,
+  body.admin-page .waitlist-filter,
+  body.admin-page .webhook-form .form-row {
+    flex-wrap: wrap;
+  }
+}

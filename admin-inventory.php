@@ -201,6 +201,7 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
     </div>
 
     <script src="/js/security.min.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/app.min.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/admin-inventory.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
 </body>
 </html>

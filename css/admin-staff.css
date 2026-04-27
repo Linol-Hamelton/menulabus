@@ -29,6 +29,28 @@
     font-size: 13px;
     margin-top: 8px;
 }
+
+/* Phase 11.2: tables overflow on mobile (staff-shifts-table 744px in
+   318px viewport). Switch to display: block + overflow-x: auto so
+   the inner row scrolls horizontally inside the card instead of
+   widening the card itself. */
+@media (max-width: 768px) {
+    .staff-shifts-table,
+    .staff-tips-table {
+        display: block;
+        overflow-x: auto;
+        max-width: 100%;
+    }
+    .staff-filter,
+    .staff-tips-form {
+        flex-wrap: wrap;
+    }
+    .staff-filter > *,
+    .staff-tips-form > * {
+        min-width: 0;
+        max-width: 100%;
+    }
+}
 .staff-shifts-table th,
 .staff-shifts-table td,
 .staff-tips-table th,
