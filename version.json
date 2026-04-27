@@ -1,6 +1,6 @@
 {
-  "version": "1.4.18",
+  "version": "1.4.19",
   "release_date": "2026-04-27",
-  "changelog": "Polish 12.6 a11y fifth-pass: new css/a11y.css loaded globally via header.php — adds a token-based :focus-visible ring on every interactive element so keyboard users see where they are, .sr-only utility for screen-reader-only labels, .skip-link helper that surfaces on focus, prefers-reduced-motion respect for opt-in elements, and a focus boundary on [role=\"dialog\"] for modal fallback paths. Default token contrast verified: --ui-text on --ui-surface = ~14.6:1 (AAA), --ui-text-muted on --ui-surface = ~4.86:1 (AA pass), --ui-text-muted on --ui-surface-muted = ~4.55:1 (AA pass).",
+  "changelog": "Polish 12.3: new scripts/seed-data.php CLI seeds a fresh tenant DB with 20 realistic menu items from tests/fixtures/menu-sample.csv plus N test customers (default 5) and N random orders (default 10). Customers are upserted by email (seed{1..N}@cleanmenu-seed.test) so re-runs don't duplicate. Orders pick 1-3 random items, random delivery type, and a sprinkled status. --dry-run reports without writing. Useful for fresh-tenant demos, Lighthouse runs that need real data, and the KDS end-to-end smoke flow.",
   "critical": false
 }
