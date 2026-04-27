@@ -1,6 +1,6 @@
 {
-  "version": "1.4.21",
+  "version": "1.4.22",
   "release_date": "2026-04-28",
-  "changelog": "Phase 7.5: split-bill payments scaffolding. New table group_payment_intents tracks per-payer chunks of a group_orders row; group_orders.split_mode picks host (legacy) / per_seat / equal. New POST /api/group-create-payment-intent.php endpoint takes (group_code, payer_label, optional seat_label, optional share_count) and returns a YooKassa confirmation_url for that payer's share. payment-webhook.php now recognises metadata.kind='group_intent' and reconciles aggregate paid total — when SUM(paid intents) >= group total it fires cleanmenu_on_order_paid for every underlying order so loyalty + fiscal receipts run per guest. 9 new DB methods on Database (getGroupOrderTotal/getGroupSeatTotal/listGroupPaymentIntents/createGroupPaymentIntent/attachYkPaymentIdToGroupIntent/markGroupPaymentIntentPaid/getGroupPaidTotal/setGroupOrderSplitMode/markGroupOrderPaid). UI picker on /group.php pending in a follow-up.",
+  "changelog": "Phase 7.4 v2: Staff Management v2. New shift_swap_requests table + 5 DB methods (createShiftSwapRequest, listShiftSwapRequests, offerToTakeShift, approveShiftSwap [transactional reassignment], denyShiftSwap, cancelShiftSwap). Single endpoint POST /api/shift-swap-action.php covers all 5 lifecycle transitions (request/offer/approve/deny/cancel) with role-gated approve/deny. New CLI scripts/payroll-export.php emits a per-employee CSV (hours / base_pay / tips_pooled / tips_manual / total) for a --period=YYYY-MM or --from/--to range. Migration sql/staff-v2-migration.sql also adds tips_distribution_rules + tips_manual_overrides for per-period override of the default equal-by-hours split. Docs in docs/staff-v2.md.",
   "critical": false
 }

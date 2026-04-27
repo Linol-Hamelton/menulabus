@@ -5330,6 +5330,154 @@ class Database
      * All per-user references use ON DELETE SET NULL — offboarding does not
      * erase pay history.
      */
+    /**
+     * Staff Management v2 (Phase 7.4) — shift-swap requests.
+     * Workflow:
+     *   1. employee createShiftSwapRequest($shiftId, $note) → status 'open'
+     *   2. another employee offerToTakeShift($swapId) → 'volunteer_offered'
+     *   3. manager approveShiftSwap($swapId, $managerId) reassigns the
+     *      shift to the volunteer and stamps decided_at + decided_by.
+     *      denyShiftSwap rejects without reassigning.
+     *   4. requester can cancelShiftSwap before any decision.
+     */
+    public function createShiftSwapRequest(int $shiftId, int $requesterId, ?string $note): ?int
+    {
+        try {
+            $stmt = $this->prepareCached("
+                INSERT INTO shift_swap_requests (shift_id, requester_id, note)
+                VALUES (:sid, :rid, :note)
+            ");
+            $stmt->execute([
+                ':sid' => $shiftId, ':rid' => $requesterId,
+                ':note' => $note !== null ? mb_substr($note, 0, 255) : null,
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('createShiftSwapRequest error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function listShiftSwapRequests(?string $status = null, ?int $userId = null): array
+    {
+        $clauses = ['1=1'];
+        $params  = [];
+        if ($status !== null) { $clauses[] = 'ssr.status = :s'; $params[':s'] = $status; }
+        if ($userId !== null) {
+            $clauses[] = '(ssr.requester_id = :u OR ssr.volunteer_id = :u)';
+            $params[':u'] = $userId;
+        }
+        $where = implode(' AND ', $clauses);
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT ssr.id, ssr.shift_id, ssr.requester_id, ssr.volunteer_id,
+                       ssr.status, ssr.note, ssr.requested_at, ssr.decided_at, ssr.decided_by,
+                       s.starts_at, s.ends_at, s.role, s.location_id,
+                       ur.name AS requester_name,
+                       uv.name AS volunteer_name
+                FROM shift_swap_requests ssr
+                JOIN shifts s ON s.id = ssr.shift_id
+                LEFT JOIN users ur ON ur.id = ssr.requester_id
+                LEFT JOIN users uv ON uv.id = ssr.volunteer_id
+                WHERE {$where}
+                ORDER BY ssr.requested_at DESC
+            ");
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listShiftSwapRequests error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function offerToTakeShift(int $swapId, int $volunteerId): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE shift_swap_requests
+                SET volunteer_id = :v, status = 'volunteer_offered'
+                WHERE id = :id AND status = 'open' AND requester_id <> :v
+            ");
+            $stmt->execute([':v' => $volunteerId, ':id' => $swapId]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('offerToTakeShift error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function approveShiftSwap(int $swapId, int $managerId): bool
+    {
+        try {
+            $this->connection->beginTransaction();
+
+            $sel = $this->prepareCached(
+                "SELECT shift_id, volunteer_id FROM shift_swap_requests
+                 WHERE id = :id AND status = 'volunteer_offered'
+                 FOR UPDATE"
+            );
+            $sel->execute([':id' => $swapId]);
+            $swap = $sel->fetch();
+            if (!$swap || empty($swap['volunteer_id'])) {
+                $this->connection->rollBack();
+                return false;
+            }
+
+            $up = $this->prepareCached(
+                "UPDATE shifts SET user_id = :u WHERE id = :sid"
+            );
+            $up->execute([':u' => $swap['volunteer_id'], ':sid' => $swap['shift_id']]);
+
+            $upS = $this->prepareCached(
+                "UPDATE shift_swap_requests
+                 SET status = 'approved', decided_at = NOW(), decided_by = :m
+                 WHERE id = :id"
+            );
+            $upS->execute([':m' => $managerId, ':id' => $swapId]);
+
+            $this->connection->commit();
+            return true;
+        } catch (PDOException $e) {
+            try { $this->connection->rollBack(); } catch (Throwable $_) {}
+            error_log('approveShiftSwap error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function denyShiftSwap(int $swapId, int $managerId): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE shift_swap_requests
+                SET status = 'denied', decided_at = NOW(), decided_by = :m
+                WHERE id = :id AND status IN ('open', 'volunteer_offered')
+            ");
+            $stmt->execute([':m' => $managerId, ':id' => $swapId]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('denyShiftSwap error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function cancelShiftSwap(int $swapId, int $requesterId): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE shift_swap_requests
+                SET status = 'cancelled', decided_at = NOW()
+                WHERE id = :id AND requester_id = :r
+                  AND status IN ('open', 'volunteer_offered')
+            ");
+            $stmt->execute([':id' => $swapId, ':r' => $requesterId]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('cancelShiftSwap error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function listShifts(?string $fromDt = null, ?string $toDt = null, ?int $userId = null): array
     {
         $clauses = ['1=1'];
