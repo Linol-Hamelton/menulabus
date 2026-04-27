@@ -1,6 +1,6 @@
 {
-  "version": "1.4.19",
+  "version": "1.4.20",
   "release_date": "2026-04-27",
-  "changelog": "Polish 12.3: new scripts/seed-data.php CLI seeds a fresh tenant DB with 20 realistic menu items from tests/fixtures/menu-sample.csv plus N test customers (default 5) and N random orders (default 10). Customers are upserted by email (seed{1..N}@cleanmenu-seed.test) so re-runs don't duplicate. Orders pick 1-3 random items, random delivery type, and a sprinkled status. --dry-run reports without writing. Useful for fresh-tenant demos, Lighthouse runs that need real data, and the KDS end-to-end smoke flow.",
+  "changelog": "Phase 7.2: 54-ФЗ fiscal receipt scaffolding. New lib/Fiscal/AtolOnline.php adapter implements АТОЛ Онлайн v4 happy-path (getToken / sell / report). lib/OrderPaidHook.php gets cleanmenu_emit_fiscal_receipt — fires on order.paid, persists receipt uuid, never blocks payment confirmation on fiscalisation failure. scripts/fiscal-receipt-worker.php (cron */2) polls pending uuids, stamps fiscal_receipt_url when ready, clears uuid on fail to allow retry. Migration sql/fiscal-receipt-migration.sql adds nullable fiscal_receipt_uuid + fiscal_receipt_url + idx_orders_fiscal_pending. Tenant config keys documented in docs/fiscal-54fz.md.",
   "critical": false
 }
