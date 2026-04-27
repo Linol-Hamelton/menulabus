@@ -1,3 +1,6 @@
+/* admin-staff.php — shifts + time clock + tip splits.
+   Token-based; all surfaces inherit the admin shell. */
+
 .staff-timeclock {
     margin: 10px 0 16px;
 }
@@ -12,11 +15,11 @@
     flex-direction: column;
     gap: 2px;
     font-size: 12px;
-    color: #555;
+    color: var(--ui-text-muted);
 }
 .staff-filter input, .staff-tips-form input {
     padding: 6px 10px;
-    border: 1px solid #c8d2dc;
+    border: 1px solid var(--ui-border);
     border-radius: 6px;
     font-size: 13px;
 }
@@ -30,31 +33,31 @@
 .staff-shifts-table td,
 .staff-tips-table th,
 .staff-tips-table td {
-    border: 1px solid #e5e5e5;
+    border: 1px solid var(--ui-border);
     padding: 6px 8px;
     text-align: left;
 }
 .staff-shifts-table th, .staff-tips-table th {
-    background: #f8f9fa;
+    background: var(--ui-surface-muted);
     font-weight: 600;
 }
 .staff-shifts-table input,
 .staff-shifts-table select {
     padding: 4px 6px;
-    border: 1px solid #c8d2dc;
+    border: 1px solid var(--ui-border);
     border-radius: 4px;
     font-size: 13px;
     width: 100%;
     box-sizing: border-box;
 }
-.staff-new-row td { background: #f1f7fd; }
+.staff-new-row td { background: var(--ui-surface-muted); }
 
 .staff-tips-hint {
-    color: #555;
+    color: var(--ui-text-muted);
     margin: 10px 0;
 }
 .staff-tips-hint code {
-    background: #f1f3f5;
+    background: var(--ui-surface-muted);
     padding: 1px 5px;
     border-radius: 3px;
 }
@@ -67,19 +70,25 @@
 }
 .staff-tips-result {
     padding: 10px;
-    border: 1px solid #e5e5e5;
+    border: 1px solid var(--ui-border);
     border-radius: 8px;
-    background: #f9fafb;
+    background: var(--ui-surface-muted);
     min-height: 20px;
 }
 .staff-splits-list { list-style: none; margin: 0; padding: 0; }
 .staff-splits-list li {
     padding: 8px 12px;
-    background: #fff;
-    border: 1px solid #e5e5e5;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
     border-radius: 8px;
     margin-bottom: 6px;
     font-size: 13px;
 }
-.staff-splits-list small { color: #6b7280; }
-.staff-empty { color: #6b7280; padding: 14px; background: #f9fafb; border: 1px dashed #c8d2dc; border-radius: 8px; }
+.staff-splits-list small { color: var(--ui-text-muted); }
+.staff-empty {
+    color: var(--ui-text-muted);
+    padding: 14px;
+    background: var(--ui-surface-muted);
+    border: 1px dashed var(--ui-border);
+    border-radius: 8px;
+}

@@ -1,11 +1,43 @@
+/* Kitchen Display System (Phase 6.1).
+   Dark theme — kitchen tablets sit in bright environments and the
+   high-contrast slate palette holds up at distance. All colors flow
+   through scoped `--kds-*` tokens so the tenant brand (or a per-tenant
+   theme override) can recolor the surface without touching markup. */
+
 * { box-sizing: border-box; }
 
 body.kds-page {
+    /* ── Scoped tokens ── */
+    --kds-bg:           #0f172a;
+    --kds-surface:      #1e293b;
+    --kds-surface-deep: #0f172a;
+    --kds-border:       #334155;
+    --kds-border-soft:  #475569;
+    --kds-text:         #f1f5f9;
+    --kds-text-soft:    #cbd5e1;
+    --kds-text-muted:   #94a3b8;
+    --kds-text-faint:   #64748b;
+    --kds-accent:       #0ea5e9;
+    --kds-accent-soft:  #60a5fa;
+    --kds-primary:      #2563eb;
+    --kds-primary-hover:#1d4ed8;
+    --kds-success:      #16a34a;
+    --kds-success-hover:#15803d;
+    --kds-success-bg:   #052e1a;
+    --kds-success-text: #86efac;
+    --kds-warning:      #eab308;
+    --kds-warning-bg:   #1f1a07;
+    --kds-warning-text: #fde047;
+    --kds-qty:          #fbbf24;
+    --kds-flash-rgb:    34, 197, 94;
+    --kds-radius:       12px;
+    --kds-radius-sm:    8px;
+
     margin: 0;
     padding: 0;
-    background: #0f172a;
-    color: #f1f5f9;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--kds-bg);
+    color: var(--kds-text);
+    font-family: var(--font-text), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     min-height: 100vh;
 }
 
@@ -20,7 +52,7 @@ body.kds-page {
 }
 .kds-station-picker p {
     margin: 0 0 24px;
-    color: #94a3b8;
+    color: var(--kds-text-muted);
 }
 
 .kds-station-grid {
@@ -33,29 +65,29 @@ body.kds-page {
     flex-direction: column;
     gap: 6px;
     padding: 20px;
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 12px;
+    background: var(--kds-surface);
+    border: 1px solid var(--kds-border);
+    border-radius: var(--kds-radius);
     text-decoration: none;
-    color: #f1f5f9;
+    color: var(--kds-text);
     transition: transform 0.12s ease, border-color 0.12s ease;
 }
 .kds-station-card:hover {
-    border-color: #60a5fa;
+    border-color: var(--kds-accent-soft);
     transform: translateY(-1px);
 }
 .kds-station-card--unrouted {
     border-style: dashed;
-    background: #0f172a;
+    background: var(--kds-surface-deep);
 }
 .kds-station-label { font-size: 20px; font-weight: 600; }
-.kds-station-slug { font-size: 13px; color: #94a3b8; font-family: ui-monospace, monospace; }
+.kds-station-slug { font-size: 13px; color: var(--kds-text-muted); font-family: ui-monospace, monospace; }
 
 .kds-empty {
     padding: 24px;
-    border: 1px dashed #475569;
-    border-radius: 12px;
-    color: #94a3b8;
+    border: 1px dashed var(--kds-border-soft);
+    border-radius: var(--kds-radius);
+    color: var(--kds-text-muted);
     text-align: center;
 }
 
@@ -66,21 +98,21 @@ body.kds-page {
     align-items: center;
     justify-content: space-between;
     padding: 12px 20px;
-    background: #1e293b;
-    border-bottom: 1px solid #334155;
+    background: var(--kds-surface);
+    border-bottom: 1px solid var(--kds-border);
     position: sticky;
     top: 0;
     z-index: 10;
 }
 .kds-header-title { display: flex; align-items: baseline; gap: 16px; }
 .kds-header-label { font-size: 22px; font-weight: 700; }
-.kds-header-time { font-size: 16px; color: #94a3b8; font-variant-numeric: tabular-nums; }
+.kds-header-time { font-size: 16px; color: var(--kds-text-muted); font-variant-numeric: tabular-nums; }
 .kds-header-actions { display: flex; align-items: center; gap: 12px; }
 .kds-header-counter {
     padding: 4px 12px;
     border-radius: 999px;
-    background: #0ea5e9;
-    color: #fff;
+    background: var(--kds-accent);
+    color: var(--kds-text);
     font-size: 14px;
     font-weight: 600;
 }
@@ -89,23 +121,23 @@ body.kds-page {
     display: inline-block;
     padding: 8px 14px;
     border: 1px solid transparent;
-    border-radius: 8px;
+    border-radius: var(--kds-radius-sm);
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    background: #334155;
-    color: #f1f5f9;
+    background: var(--kds-border);
+    color: var(--kds-text);
     text-decoration: none;
     transition: background 0.12s ease, border-color 0.12s ease;
 }
-.kds-btn:hover:not(:disabled) { background: #475569; }
+.kds-btn:hover:not(:disabled) { background: var(--kds-border-soft); }
 .kds-btn:disabled { opacity: 0.5; cursor: wait; }
-.kds-btn-primary { background: #2563eb; }
-.kds-btn-primary:hover:not(:disabled) { background: #1d4ed8; }
-.kds-btn-success { background: #16a34a; }
-.kds-btn-success:hover:not(:disabled) { background: #15803d; }
-.kds-btn-secondary { background: #1e293b; border-color: #475569; }
-.kds-btn-link { background: transparent; padding: 6px 10px; color: #60a5fa; }
+.kds-btn-primary { background: var(--kds-primary); }
+.kds-btn-primary:hover:not(:disabled) { background: var(--kds-primary-hover); }
+.kds-btn-success { background: var(--kds-success); }
+.kds-btn-success:hover:not(:disabled) { background: var(--kds-success-hover); }
+.kds-btn-secondary { background: var(--kds-surface); border-color: var(--kds-border-soft); }
+.kds-btn-link { background: transparent; padding: 6px 10px; color: var(--kds-accent-soft); }
 .kds-btn-link:hover { text-decoration: underline; background: transparent; }
 
 .kds-board {
@@ -119,21 +151,21 @@ body.kds-page {
     grid-column: 1 / -1;
     padding: 40px;
     text-align: center;
-    color: #64748b;
+    color: var(--kds-text-faint);
 }
 
 .kds-order {
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 12px;
+    background: var(--kds-surface);
+    border: 1px solid var(--kds-border);
+    border-radius: var(--kds-radius);
     padding: 12px;
     display: flex;
     flex-direction: column;
     gap: 10px;
     min-height: 140px;
 }
-.kds-order-status-готовим { border-color: #eab308; }
-.kds-order-status-Приём   { border-color: #0ea5e9; }
+.kds-order-status-готовим { border-color: var(--kds-warning); }
+.kds-order-status-Приём   { border-color: var(--kds-accent); }
 
 .kds-order-head {
     display: flex;
@@ -141,13 +173,13 @@ body.kds-page {
     justify-content: space-between;
     gap: 8px;
     padding-bottom: 6px;
-    border-bottom: 1px solid #334155;
+    border-bottom: 1px solid var(--kds-border);
 }
 .kds-order-id { font-size: 20px; font-weight: 700; }
-.kds-order-delivery { font-size: 13px; color: #94a3b8; }
+.kds-order-delivery { font-size: 13px; color: var(--kds-text-muted); }
 .kds-order-age {
     font-size: 13px;
-    color: #cbd5e1;
+    color: var(--kds-text-soft);
     font-variant-numeric: tabular-nums;
     margin-left: auto;
 }
@@ -156,9 +188,9 @@ body.kds-page {
 
 .kds-item {
     padding: 8px 10px;
-    background: #0f172a;
-    border: 1px solid #334155;
-    border-radius: 8px;
+    background: var(--kds-surface-deep);
+    border: 1px solid var(--kds-border);
+    border-radius: var(--kds-radius-sm);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -166,21 +198,21 @@ body.kds-page {
     transition: background 0.15s ease, border-color 0.15s ease;
 }
 .kds-item-main { display: flex; align-items: baseline; gap: 10px; flex: 1; }
-.kds-item-qty { color: #fbbf24; font-weight: 700; font-size: 16px; min-width: 36px; }
+.kds-item-qty { color: var(--kds-qty); font-weight: 700; font-size: 16px; min-width: 36px; }
 .kds-item-name { font-size: 15px; font-weight: 500; line-height: 1.3; }
 .kds-item-meta { display: flex; align-items: center; gap: 10px; }
-.kds-item-status { font-size: 12px; color: #94a3b8; text-transform: lowercase; }
+.kds-item-status { font-size: 12px; color: var(--kds-text-muted); text-transform: lowercase; }
 
 .kds-item-status-queued { }
-.kds-item-status-cooking { border-color: #eab308; background: #1f1a07; }
-.kds-item-status-cooking .kds-item-status { color: #fde047; }
-.kds-item-status-ready { border-color: #16a34a; background: #052e1a; opacity: 0.7; }
-.kds-item-status-ready .kds-item-status { color: #86efac; }
+.kds-item-status-cooking { border-color: var(--kds-warning); background: var(--kds-warning-bg); }
+.kds-item-status-cooking .kds-item-status { color: var(--kds-warning-text); }
+.kds-item-status-ready { border-color: var(--kds-success); background: var(--kds-success-bg); opacity: 0.7; }
+.kds-item-status-ready .kds-item-status { color: var(--kds-success-text); }
 
 .kds-item-flash-ready { animation: kds-flash 0.6s ease-in-out; }
 @keyframes kds-flash {
-    0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-    100% { box-shadow: 0 0 0 12px rgba(34, 197, 94, 0); }
+    0% { box-shadow: 0 0 0 0 rgba(var(--kds-flash-rgb), 0.7); }
+    100% { box-shadow: 0 0 0 12px rgba(var(--kds-flash-rgb), 0); }
 }
 
 @media (max-width: 640px) {

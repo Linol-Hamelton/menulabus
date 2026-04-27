@@ -1,9 +1,13 @@
+/* admin-kitchen.php — kitchen station CRUD + routing matrix.
+   Token-based; status-row tints (saving/saved) carry their own subtle
+   colors that read against any tenant brand. */
+
 .kitchen-intro {
-    color: #555;
+    color: var(--ui-text-muted);
     margin-bottom: 16px;
 }
 .kitchen-intro code {
-    background: #f1f3f5;
+    background: var(--ui-surface-muted);
     padding: 1px 6px;
     border-radius: 3px;
     font-size: 12px;
@@ -16,30 +20,30 @@
 }
 .kitchen-stations-table th,
 .kitchen-stations-table td {
-    border: 1px solid #e5e5e5;
+    border: 1px solid var(--ui-border);
     padding: 6px 10px;
     vertical-align: middle;
     text-align: left;
 }
 .kitchen-stations-table th {
-    background: #f8f9fa;
+    background: var(--ui-surface-muted);
     font-weight: 600;
 }
 .kitchen-stations-table input[type="text"] {
     width: 100%;
     padding: 6px 8px;
-    border: 1px solid #c8d2dc;
+    border: 1px solid var(--ui-border);
     border-radius: 4px;
     font-size: 13px;
 }
 .kitchen-stations-table input[type="number"] {
     padding: 6px 8px;
-    border: 1px solid #c8d2dc;
+    border: 1px solid var(--ui-border);
     border-radius: 4px;
     font-size: 13px;
 }
 .kitchen-new-row td {
-    background: #f1f7fd;
+    background: var(--ui-surface-muted);
 }
 
 .routing-table-wrapper {
@@ -54,13 +58,13 @@
 
 .kitchen-routing-table th,
 .kitchen-routing-table td {
-    border: 1px solid #e5e5e5;
+    border: 1px solid var(--ui-border);
     padding: 6px 8px;
     text-align: center;
 }
 
 .kitchen-routing-table thead th {
-    background: #f8f9fa;
+    background: var(--ui-surface-muted);
     font-weight: 600;
     vertical-align: bottom;
 }
@@ -70,7 +74,7 @@
     min-width: 220px;
     position: sticky;
     left: 0;
-    background: #f8f9fa;
+    background: var(--ui-surface-muted);
     z-index: 2;
 }
 
@@ -78,12 +82,12 @@
     text-align: left !important;
     position: sticky;
     left: 0;
-    background: #fff;
+    background: var(--ui-surface);
     z-index: 1;
 }
 
 .routing-item-name { font-weight: 500; }
-.routing-item-cat { font-size: 11px; color: #6c757d; margin-top: 2px; }
+.routing-item-cat { font-size: 11px; color: var(--ui-text-muted); margin-top: 2px; }
 
 .routing-station-head {
     min-width: 100px;
@@ -94,7 +98,7 @@
     margin-top: 2px;
     font-family: ui-monospace, monospace;
     font-size: 11px;
-    color: #6c757d;
+    color: var(--ui-text-muted);
 }
 
 .routing-toggle {
@@ -103,5 +107,6 @@
     cursor: pointer;
 }
 
+/* Save state hints — kept as soft local tints; readable against any brand. */
 .routing-row-saving { background: #fffbe5; }
-.routing-row-saved { background: #d4edda; transition: background 0.8s ease; }
+.routing-row-saved  { background: #d4edda; transition: background 0.8s ease; }

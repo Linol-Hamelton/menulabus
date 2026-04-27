@@ -1,9 +1,14 @@
+/* admin-locations.php — multi-location CRUD table.
+   Token-based; legacy bucket carries a soft amber tint via local
+   utility tokens (kept here so the row stays readable even if the
+   tenant brand color is also amber). */
+
 .loc-intro {
-    color: #555;
+    color: var(--ui-text-muted);
     margin: 12px 0;
 }
 .loc-intro code {
-    background: #f1f3f5;
+    background: var(--ui-surface-muted);
     padding: 1px 6px;
     border-radius: 3px;
     font-size: 12px;
@@ -17,13 +22,13 @@
 }
 .locations-table th,
 .locations-table td {
-    border: 1px solid #e5e5e5;
+    border: 1px solid var(--ui-border);
     padding: 6px 8px;
     vertical-align: middle;
     text-align: left;
 }
 .locations-table th {
-    background: #f8f9fa;
+    background: var(--ui-surface-muted);
     font-weight: 600;
 }
 .locations-table .num-col {
@@ -33,7 +38,7 @@
 .locations-table input[type="text"],
 .locations-table input[type="number"] {
     padding: 4px 6px;
-    border: 1px solid #c8d2dc;
+    border: 1px solid var(--ui-border);
     border-radius: 4px;
     font-size: 13px;
     width: 100%;
@@ -41,7 +46,7 @@
     box-sizing: border-box;
 }
 .loc-new-row td {
-    background: #f1f7fd;
+    background: var(--ui-surface-muted);
 }
 .loc-legacy td {
     background: #fff8e1;

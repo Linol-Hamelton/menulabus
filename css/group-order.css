@@ -1,3 +1,7 @@
+/* group-order.css — group ordering shared-tab UI on /group.php.
+   Token-based; submit-CTA panel keeps a soft success tint via local
+   utility colors (so tenant brand can be anything). */
+
 .group-create-form,
 .group-join-form,
 .group-add-form {
@@ -7,8 +11,8 @@
     align-items: flex-end;
     margin: 12px 0;
     padding: 14px;
-    background: #f8fafc;
-    border: 1px solid #e5e7eb;
+    background: var(--ui-surface-muted);
+    border: 1px solid var(--ui-border);
     border-radius: 10px;
 }
 .group-create-form label,
@@ -18,7 +22,7 @@
     flex-direction: column;
     gap: 3px;
     font-size: 12px;
-    color: #555;
+    color: var(--ui-text-muted);
 }
 .group-create-form input,
 .group-create-form select,
@@ -26,7 +30,7 @@
 .group-add-form input,
 .group-add-form select {
     padding: 8px 10px;
-    border: 1px solid #c8d2dc;
+    border: 1px solid var(--ui-border);
     border-radius: 6px;
     font-size: 14px;
     min-width: 120px;
@@ -34,11 +38,17 @@
 .group-add-form select {
     min-width: 200px;
 }
-.group-subtitle { color: #555; font-size: 14px; margin: 6px 0 14px; }
-.group-empty { color: #6b7280; padding: 14px; background: #f9fafb; border: 1px dashed #c8d2dc; border-radius: 8px; }
+.group-subtitle { color: var(--ui-text-muted); font-size: 14px; margin: 6px 0 14px; }
+.group-empty {
+    color: var(--ui-text-muted);
+    padding: 14px;
+    background: var(--ui-surface-muted);
+    border: 1px dashed var(--ui-border);
+    border-radius: 8px;
+}
 
 .group-seat { margin-bottom: 14px; }
-.group-seat h4 { margin: 0 0 6px; font-size: 15px; color: #111827; }
+.group-seat h4 { margin: 0 0 6px; font-size: 15px; color: var(--ui-text); }
 .group-seat-items {
     list-style: none;
     margin: 0;
@@ -53,23 +63,23 @@
     gap: 10px;
     align-items: center;
     padding: 8px 10px;
-    background: #fff;
-    border: 1px solid #e5e7eb;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
     border-radius: 6px;
 }
 .group-seat-name { font-size: 14px; }
 .group-seat-price {
     font-variant-numeric: tabular-nums;
-    color: #374151;
+    color: var(--ui-text);
     font-weight: 500;
 }
 .group-del {
     background: transparent;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--ui-border);
     border-radius: 4px;
     padding: 2px 8px;
     cursor: pointer;
-    color: #b91c1c;
+    color: var(--ui-danger);
     font-size: 15px;
     line-height: 1;
 }
@@ -78,10 +88,10 @@
 .group-total {
     margin: 14px 0;
     padding: 12px 14px;
-    background: #eef2ff;
+    background: var(--ui-surface-muted);
     border-radius: 8px;
     font-size: 16px;
-    color: #1e3a8a;
+    color: var(--ui-text);
 }
 
 .group-submit {

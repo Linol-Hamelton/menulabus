@@ -1,9 +1,12 @@
+/* admin-loyalty.php — tier + promo CRUD tables.
+   All chrome on shared shell tokens so brand/theme changes propagate. */
+
 .loyalty-intro {
-    color: #555;
+    color: var(--ui-text-muted);
     margin: 12px 0;
 }
 .loyalty-intro code {
-    background: #f1f3f5;
+    background: var(--ui-surface-muted);
     padding: 1px 6px;
     border-radius: 3px;
     font-size: 12px;
@@ -21,7 +24,7 @@
 .loyalty-tiers-table td,
 .loyalty-promos-table th,
 .loyalty-promos-table td {
-    border: 1px solid #e5e5e5;
+    border: 1px solid var(--ui-border);
     padding: 6px 8px;
     vertical-align: middle;
     text-align: left;
@@ -29,7 +32,7 @@
 
 .loyalty-tiers-table th,
 .loyalty-promos-table th {
-    background: #f8f9fa;
+    background: var(--ui-surface-muted);
     font-weight: 600;
 }
 
@@ -42,7 +45,7 @@
 .loyalty-tiers-table input,
 .loyalty-promos-table input {
     padding: 4px 6px;
-    border: 1px solid #c8d2dc;
+    border: 1px solid var(--ui-border);
     border-radius: 4px;
     font-size: 13px;
     width: 100%;
@@ -51,7 +54,7 @@
 }
 
 .loyalty-new-row td {
-    background: #f1f7fd;
+    background: var(--ui-accent-soft, var(--ui-surface-muted));
 }
 
 .loyalty-promos-table {

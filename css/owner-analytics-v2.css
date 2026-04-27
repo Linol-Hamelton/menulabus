@@ -1,3 +1,8 @@
+/* owner-analytics-v2.css — Phase 6.4 dish margins / cohorts / heatmap /
+   forecast cards on /owner.php?tab=analytics-v2.
+   Token-based; margin-pill ok/warn keep their conventional palette so
+   the trend reads at a glance regardless of tenant brand. */
+
 .owner-analytics-workspace {
     padding: 12px 0;
 }
@@ -9,20 +14,20 @@
     align-items: flex-end;
     padding: 10px 14px;
     margin-bottom: 14px;
-    background: #f8f9fa;
-    border: 1px solid #e5e5e5;
+    background: var(--ui-surface-muted);
+    border: 1px solid var(--ui-border);
     border-radius: 10px;
 }
 .analytics-v2-controls label {
     display: flex;
     flex-direction: column;
     font-size: 12px;
-    color: #555;
+    color: var(--ui-text-muted);
     gap: 2px;
 }
 .analytics-v2-controls input {
     padding: 6px 10px;
-    border: 1px solid #c8d2dc;
+    border: 1px solid var(--ui-border);
     border-radius: 6px;
     font-size: 13px;
     min-height: 30px;
@@ -35,8 +40,8 @@
 }
 
 .analytics-v2-card {
-    background: #fff;
-    border: 1px solid #e5e5e5;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
     border-radius: 10px;
     padding: 14px;
 }
@@ -47,7 +52,7 @@
 }
 .analytics-v2-hint {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--ui-text-muted);
     margin-bottom: 10px;
 }
 
@@ -75,7 +80,7 @@
 .analytics-v2-cohorts td,
 .analytics-v2-heatmap th,
 .analytics-v2-heatmap td {
-    border: 1px solid #e5e5e5;
+    border: 1px solid var(--ui-border);
     padding: 4px 6px;
     text-align: left;
 }
@@ -83,7 +88,7 @@
 .analytics-v2-table th,
 .analytics-v2-cohorts th,
 .analytics-v2-heatmap th {
-    background: #f8f9fa;
+    background: var(--ui-surface-muted);
     font-weight: 600;
 }
 
@@ -96,21 +101,27 @@
 
 .an-cat {
     font-size: 11px;
-    color: #6b7280;
+    color: var(--ui-text-muted);
     margin-top: 2px;
 }
 
+/* Margin pills — conventional ok=green / warn=amber so the analytic
+   reads at a glance even when brand is similar. */
 .an-margin-pill {
     padding: 2px 8px;
     border-radius: 999px;
     font-weight: 600;
     font-size: 11px;
 }
-.an-margin-pill.ok   { background: #d4edda; color: #155724; }
+.an-margin-pill.ok   { background: #d4edda; color: var(--ui-success); }
 .an-margin-pill.warn { background: #fff3cd; color: #856404; }
 
-.an-cell-empty { color: #c0c6cd; background: #fafafa; }
-.an-empty { text-align: center; color: #6b7280; padding: 20px; }
+.an-cell-empty { color: var(--ui-text-muted); background: var(--ui-surface-muted); }
+.an-empty {
+    text-align: center;
+    color: var(--ui-text-muted);
+    padding: 20px;
+}
 
 .analytics-v2-heatmap-wrap {
     overflow-x: auto;
@@ -130,9 +141,9 @@
 .analytics-v2-forecast-big {
     font-size: 28px;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--ui-text);
 }
-.analytics-v2-forecast-big small { font-size: 16px; color: #6b7280; }
+.analytics-v2-forecast-big small { font-size: 16px; color: var(--ui-text-muted); }
 
 @media (max-width: 900px) {
     .analytics-v2-grid {

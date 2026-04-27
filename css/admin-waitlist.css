@@ -1,3 +1,7 @@
+/* admin-waitlist.php — staff waitlist queue + reservation overflow CTA.
+   Token-based; status tints stay literal (yellow = notified) for
+   instant scan-readability across tenant brands. */
+
 .waitlist-filter {
     display: flex;
     gap: 10px;
@@ -8,21 +12,21 @@
     display: flex;
     flex-direction: column;
     font-size: 12px;
-    color: #555;
+    color: var(--ui-text-muted);
     gap: 2px;
 }
 .waitlist-filter input[type="date"] {
     padding: 6px 10px;
-    border: 1px solid #c8d2dc;
+    border: 1px solid var(--ui-border);
     border-radius: 6px;
     font-size: 13px;
 }
 .waitlist-empty {
     padding: 20px;
     text-align: center;
-    color: #6b7280;
-    background: #f8f9fa;
-    border: 1px dashed #c8d2dc;
+    color: var(--ui-text-muted);
+    background: var(--ui-surface-muted);
+    border: 1px dashed var(--ui-border);
     border-radius: 8px;
 }
 .waitlist-table {
@@ -33,12 +37,12 @@
 }
 .waitlist-table th,
 .waitlist-table td {
-    border: 1px solid #e5e5e5;
+    border: 1px solid var(--ui-border);
     padding: 6px 8px;
     vertical-align: middle;
 }
 .waitlist-table th {
-    background: #f8f9fa;
+    background: var(--ui-surface-muted);
     font-weight: 600;
     text-align: left;
 }
@@ -52,12 +56,12 @@
 .reservation-waitlist-offer {
     margin-top: 8px;
     padding: 10px 12px;
-    background: #eef2ff;
-    border: 1px solid #c7d2fe;
+    background: var(--ui-surface-muted);
+    border: 1px solid var(--ui-border);
     border-radius: 8px;
 }
 .reservation-waitlist-offer p {
     margin: 0 0 8px;
     font-size: 13px;
-    color: #1e3a8a;
+    color: var(--ui-text);
 }
