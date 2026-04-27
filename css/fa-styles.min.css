@@ -1436,20 +1436,25 @@ body.cart-page #menu {
 
 /* "Ещё" dropdown — desktop only.
    On mobile (<= 1250px) the wrapper dissolves so the secondary items
-   render flat inside the existing burger-menu column. */
-.nav-more,
-.nav-more-menu {
+   render flat inside the existing burger-menu column.
+
+   IMPORTANT specificity note: `.nav ul { display: flex }` higher up
+   has specificity 0,1,1 — so naked `.nav-more-menu { display: none }`
+   (0,1,0) loses the cascade and the menu would always render flex.
+   We prefix every `.nav-more*` rule with `.nav` to win. */
+.nav .nav-more,
+.nav .nav-more-menu {
   display: contents;
 }
 .nav-more-toggle {
   display: none;
 }
 @media (min-width: 1251px) {
-  .nav-more {
+  .nav .nav-more {
     display: list-item;
     position: relative;
   }
-  .nav-more-toggle {
+  .nav .nav-more-toggle {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -1462,20 +1467,20 @@ body.cart-page #menu {
     padding: 0;
     transition: color 0.3s ease;
   }
-  .nav-more-toggle:hover,
-  .nav-more-toggle:focus-visible {
+  .nav .nav-more-toggle:hover,
+  .nav .nav-more-toggle:focus-visible {
     color: var(--primary-color);
     outline: none;
   }
-  .nav-more-toggle .nav-more-caret {
+  .nav .nav-more-toggle .nav-more-caret {
     font-size: 0.85em;
     line-height: 1;
     transition: transform 0.2s ease;
   }
-  .nav-more.is-open .nav-more-toggle .nav-more-caret {
+  .nav .nav-more.is-open .nav-more-toggle .nav-more-caret {
     transform: rotate(180deg);
   }
-  .nav-more-menu {
+  .nav .nav-more-menu {
     display: none;
     position: absolute;
     top: 100%;
@@ -1489,16 +1494,17 @@ body.cart-page #menu {
     padding: 8px 0;
     list-style: none;
     z-index: 100;
+    flex-direction: column;
   }
-  .nav-more.is-open .nav-more-menu {
+  .nav .nav-more.is-open .nav-more-menu {
     display: block;
   }
-  .nav-more-menu li {
+  .nav .nav-more-menu li {
     margin: 0;
     text-align: left;
     white-space: nowrap;
   }
-  .nav-more-menu a {
+  .nav .nav-more-menu a {
     display: block;
     padding: 10px 18px;
     color: var(--ui-text);
@@ -1506,13 +1512,13 @@ body.cart-page #menu {
     text-decoration: none;
     transition: background-color 0.15s ease, color 0.15s ease;
   }
-  .nav-more-menu a:hover,
-  .nav-more-menu a:focus-visible {
+  .nav .nav-more-menu a:hover,
+  .nav .nav-more-menu a:focus-visible {
     background: var(--ui-surface-muted);
     color: var(--primary-color);
     outline: none;
   }
-  .nav-more-menu .lang-picker-item {
+  .nav .nav-more-menu .lang-picker-item {
     border-top: 1px solid var(--ui-border);
     margin-top: 4px;
     padding: 8px 12px 4px;
@@ -1520,7 +1526,7 @@ body.cart-page #menu {
     gap: 6px;
     justify-content: flex-start;
   }
-  .nav-more-menu .lang-picker-item .lang-picker-link {
+  .nav .nav-more-menu .lang-picker-item .lang-picker-link {
     padding: 4px 10px;
   }
 }
