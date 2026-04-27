@@ -79,9 +79,14 @@ $statusLabels = [
             <h1>Выбор станции кухни</h1>
             <p>Один планшет = одна станция. Выбор сохранится до выхода из сессии.</p>
             <?php if (empty($stations)): ?>
-                <div class="kds-empty">
-                    Станции ещё не созданы. Откройте админку → «Станции кухни».
-                    <a class="kds-btn kds-btn-link" href="/admin-menu.php?tab=stations">К админке</a>
+                <div class="kds-empty kds-empty--cta">
+                    <p class="kds-empty-title">Станции ещё не созданы</p>
+                    <p class="kds-empty-hint">Создайте хотя бы одну станцию (например, «Горячий цех», «Холодный», «Бар», «Пицца»), чтобы начать работу с кухонной доской. Каждое блюдо потом привязывается к станции в матрице маршрутизации.</p>
+                    <?php if (in_array($role, ['admin', 'owner'], true)): ?>
+                        <a class="kds-btn kds-btn-primary kds-empty-cta" href="/admin-kitchen.php">Создать первую станцию</a>
+                    <?php else: ?>
+                        <p class="kds-empty-note">Попросите администратора создать станции через раздел «Станции кухни».</p>
+                    <?php endif; ?>
                 </div>
             <?php else: ?>
                 <div class="kds-station-grid">

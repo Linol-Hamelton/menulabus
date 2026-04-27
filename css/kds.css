@@ -91,6 +91,39 @@ body.kds-page {
     text-align: center;
 }
 
+/* Phase 10.3: empty-state with explicit CTA when no stations exist yet.
+   Earlier copy pointed to /admin-menu.php?tab=stations — broken link;
+   now points to /admin-kitchen.php with a primary button visible to
+   admin/owner only. Employees see a note asking the admin to set up. */
+.kds-empty--cta {
+    padding: 32px 28px;
+    text-align: center;
+    color: var(--kds-text);
+}
+.kds-empty-title {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 600;
+}
+.kds-empty-hint {
+    margin: 0 auto 16px;
+    max-width: 540px;
+    color: var(--kds-text-muted);
+    font-size: 14px;
+    line-height: 1.5;
+}
+.kds-empty-note {
+    margin: 12px 0 0;
+    color: var(--kds-text-soft);
+    font-size: 13px;
+}
+.kds-empty-cta {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 16px;
+    padding: 12px 24px;
+}
+
 .kds-logout-row { margin-top: 24px; text-align: right; }
 
 .kds-header {
