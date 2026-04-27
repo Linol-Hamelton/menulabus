@@ -142,6 +142,44 @@ if [ "$push_main" -eq 1 ] || [ "$push_release" -eq 1 ]; then
   echo "[pre-push] Docs drift check OK"
 fi
 
+# Phase P-2: visual regression check before any release/main push.
+# Skipped gracefully when:
+#   - playwright is not installed (fresh clone before `npm install`)
+#   - .env.local is missing (no owner credentials → suite can't auth)
+#   - --no-visual flag is set in CLEANMENU_NO_VISUAL env var (escape hatch)
+# When the suite runs and finds a snapshot diff, the push is blocked
+# until the operator either fixes the regression or runs
+# `npm run visual:update` to refresh baselines.
+if [ "$push_main" -eq 1 ] || [ "$push_release" -eq 1 ]; then
+  if [ "${CLEANMENU_NO_VISUAL:-0}" = "1" ]; then
+    echo "[pre-push] visual regression check skipped (CLEANMENU_NO_VISUAL=1)"
+  elif [ ! -f .env.local ]; then
+    echo "[pre-push] visual regression check skipped (.env.local missing — see tests/visual/README.md)"
+  elif [ ! -d node_modules/@playwright ]; then
+    echo "[pre-push] visual regression check skipped (npm install not run yet)"
+  elif ! command -v npx >/dev/null 2>&1; then
+    echo "[pre-push] visual regression check skipped (npx not on PATH)"
+  else
+    # Check chromium is installed locally; skip with hint if not.
+    if ! npx playwright install --dry-run chromium >/dev/null 2>&1; then
+      echo "[pre-push] visual regression check skipped (run 'npx playwright install chromium' once)"
+    else
+      echo "[pre-push] Running visual regression suite..."
+      if npm run --silent visual >/tmp/cleanmenu-visual.log 2>&1; then
+        echo "[pre-push] Visual regression OK"
+      else
+        echo "[pre-push] ERROR: visual regression detected. Last lines:"
+        tail -20 /tmp/cleanmenu-visual.log
+        echo
+        echo "[pre-push] To inspect the diff: npm run visual:report"
+        echo "[pre-push] To accept the new look: npm run visual:update && commit"
+        echo "[pre-push] To bypass for one push: CLEANMENU_NO_VISUAL=1 git push"
+        exit 1
+      fi
+    fi
+  fi
+fi
+
 if [ "$push_main" -eq 1 ]; then
   echo "[pre-push] main branch push detected ($remote_name $remote_url), validating OpenAPI..."
   if ! command -v npm >/dev/null 2>&1; then

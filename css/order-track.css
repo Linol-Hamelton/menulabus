@@ -247,8 +247,8 @@
     min-height: 100%;
     border-radius: 16px;
     text-align: left;
-    background: rgba(18,18,18,.03);
-    border: 1px solid rgba(18,18,18,.08);
+    background: rgba(var(--secondary-color-rgb), .03);
+    border: 1px solid rgba(var(--secondary-color-rgb), .08);
 }
 .track-time-box .time-label {
     font-size: 12px;

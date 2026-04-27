@@ -1,6 +1,6 @@
 {
-  "version": "1.4.9",
+  "version": "1.4.10",
   "release_date": "2026-04-27",
-  "changelog": "Phase 9 audit follow-up sweep (B1-B9 + C1). 9.1: menu.php drops Cache-Control: public to stop poison-caching the cookieless 500 race. 9.2: bottom-dock tab rail flows inline with content on desktop (≥1025px) instead of overlaying — fixed-bottom positioning kept on mobile/tablet (≤1024px). [Phase 8 history below.] Phase 8 visual unification: header collapses secondary nav into 'Ещё ▾' dropdown (single-row desktop, mobile-untouched); 13 page-specific stylesheets migrated to design tokens (KDS dark theme, all admin surfaces flow tenant brand); inline style='width' replaced with data-w attributes (CSP cleanup); Playwright visual regression suite. Hot-fixes in 1.4.2: (1) header-more.js binds click directly to the toggle button — other globals stop event bubbling so the document-level handler never fired; (2) script tag drops the empty nonce attribute when scriptNonce is unset; (3) one straggler inline style on owner.php (analytics heatmap days input) migrated to data-w='sm'.",
-  "critical": true
+  "changelog": "Polish 12.1: token sweep across employee-triage, owner-styles, index-landing, order-track stylesheets — hardcoded #121212 / rgba(18,18,18,…) migrated to var(--secondary-color) / rgba(var(--secondary-color-rgb), …) so tenant secondary-color override propagates through employee shell, owner page, homepage marketing, and customer order-track timeline (~55 occurrences). Pre-push hook now runs npm run visual on push to main / release/* with graceful skip when Playwright/chromium/.env.local are not configured locally; CLEANMENU_NO_VISUAL=1 escape hatch for one-off bypass.",
+  "critical": false
 }
