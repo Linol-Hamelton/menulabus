@@ -5661,6 +5661,173 @@ class Database
     }
 
     /**
+     * Group split-bill payments (Phase 7.5).
+     *
+     * Each payer creates one payment intent for their share of a group_order.
+     * The group transitions to 'paid' when SUM(intents.amount WHERE status='paid')
+     * >= SUM(group_order_items.unit_price * quantity).
+     */
+    public function getGroupOrderTotal(int $groupOrderId): float
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT COALESCE(SUM(unit_price * quantity), 0) AS total
+                FROM group_order_items
+                WHERE group_order_id = :gid
+            ");
+            $stmt->execute([':gid' => $groupOrderId]);
+            return (float)($stmt->fetchColumn() ?: 0);
+        } catch (PDOException $e) {
+            error_log('getGroupOrderTotal error: ' . $e->getMessage());
+            return 0.0;
+        }
+    }
+
+    public function getGroupSeatTotal(int $groupOrderId, string $seatLabel): float
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT COALESCE(SUM(unit_price * quantity), 0) AS total
+                FROM group_order_items
+                WHERE group_order_id = :gid AND seat_label = :seat
+            ");
+            $stmt->execute([':gid' => $groupOrderId, ':seat' => $seatLabel]);
+            return (float)($stmt->fetchColumn() ?: 0);
+        } catch (PDOException $e) {
+            error_log('getGroupSeatTotal error: ' . $e->getMessage());
+            return 0.0;
+        }
+    }
+
+    public function listGroupPaymentIntents(int $groupOrderId): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, payer_label, seat_label, amount, payment_method,
+                       yk_payment_id, status, paid_at, created_at
+                FROM group_payment_intents
+                WHERE group_order_id = :gid
+                ORDER BY created_at ASC
+            ");
+            $stmt->execute([':gid' => $groupOrderId]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listGroupPaymentIntents error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function createGroupPaymentIntent(
+        int $groupOrderId,
+        string $payerLabel,
+        ?string $seatLabel,
+        float $amount,
+        string $paymentMethod = 'card'
+    ): ?int {
+        if ($amount <= 0) return null;
+        try {
+            $stmt = $this->prepareCached("
+                INSERT INTO group_payment_intents
+                    (group_order_id, payer_label, seat_label, amount, payment_method)
+                VALUES (:gid, :pl, :sl, :a, :pm)
+            ");
+            $stmt->execute([
+                ':gid' => $groupOrderId,
+                ':pl'  => mb_substr($payerLabel, 0, 64),
+                ':sl'  => $seatLabel !== null ? mb_substr($seatLabel, 0, 64) : null,
+                ':a'   => round($amount, 2),
+                ':pm'  => $paymentMethod,
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('createGroupPaymentIntent error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function attachYkPaymentIdToGroupIntent(int $intentId, string $ykPaymentId): bool
+    {
+        try {
+            $stmt = $this->prepareCached(
+                "UPDATE group_payment_intents SET yk_payment_id = :yk WHERE id = :id"
+            );
+            return $stmt->execute([':yk' => $ykPaymentId, ':id' => $intentId]);
+        } catch (PDOException $e) {
+            error_log('attachYkPaymentIdToGroupIntent error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function markGroupPaymentIntentPaid(string $ykPaymentId): ?array
+    {
+        try {
+            $stmt = $this->prepareCached(
+                "UPDATE group_payment_intents
+                 SET status = 'paid', paid_at = NOW()
+                 WHERE yk_payment_id = :yk AND status = 'pending'"
+            );
+            $stmt->execute([':yk' => $ykPaymentId]);
+            if ($stmt->rowCount() === 0) return null;
+
+            $sel = $this->prepareCached(
+                "SELECT id, group_order_id, payer_label, seat_label, amount
+                 FROM group_payment_intents
+                 WHERE yk_payment_id = :yk LIMIT 1"
+            );
+            $sel->execute([':yk' => $ykPaymentId]);
+            $row = $sel->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('markGroupPaymentIntentPaid error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getGroupPaidTotal(int $groupOrderId): float
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT COALESCE(SUM(amount), 0)
+                FROM group_payment_intents
+                WHERE group_order_id = :gid AND status = 'paid'
+            ");
+            $stmt->execute([':gid' => $groupOrderId]);
+            return (float)($stmt->fetchColumn() ?: 0);
+        } catch (PDOException $e) {
+            error_log('getGroupPaidTotal error: ' . $e->getMessage());
+            return 0.0;
+        }
+    }
+
+    public function setGroupOrderSplitMode(int $groupOrderId, string $mode): bool
+    {
+        if (!in_array($mode, ['host', 'per_seat', 'equal'], true)) return false;
+        try {
+            $stmt = $this->prepareCached(
+                "UPDATE group_orders SET split_mode = :m WHERE id = :id"
+            );
+            return $stmt->execute([':m' => $mode, ':id' => $groupOrderId]);
+        } catch (PDOException $e) {
+            error_log('setGroupOrderSplitMode error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function markGroupOrderPaid(int $groupOrderId): bool
+    {
+        try {
+            $stmt = $this->prepareCached(
+                "UPDATE group_orders SET status = 'paid' WHERE id = :id AND status IN ('open','submitted')"
+            );
+            return $stmt->execute([':id' => $groupOrderId]);
+        } catch (PDOException $e) {
+            error_log('markGroupOrderPaid error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Freeze the group into real orders. Modes:
      *   'single'   = one Order with all items.
      *   'per_seat' = one Order per seat_label (split bill).

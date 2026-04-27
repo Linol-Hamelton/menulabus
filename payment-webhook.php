@@ -66,6 +66,55 @@ if (!$verified) {
 
 $apiStatus = $verified['status'] ?? ''; // pending | waiting_for_capture | succeeded | canceled
 
+// ── Phase 7.5: group split-bill payment branch ───────────────────────────
+// If the YK payment carries metadata.kind = 'group_intent' it's a share
+// payment, not a regular order payment. Mark the intent paid; if the
+// aggregate covers the group total, fire cleanmenu_on_order_paid for
+// every underlying order created at submitGroupOrder time.
+$metadata = $verified['metadata'] ?? [];
+if (($metadata['kind'] ?? '') === 'group_intent') {
+    if ($apiStatus === 'succeeded') {
+        $intent = $db->markGroupPaymentIntentPaid($paymentId);
+        if ($intent) {
+            $groupId = (int)$intent['group_order_id'];
+            $total   = $db->getGroupOrderTotal($groupId);
+            $paid    = $db->getGroupPaidTotal($groupId);
+            if ($paid + 0.005 >= $total && $total > 0) {
+                $db->markGroupOrderPaid($groupId);
+                // Each per-seat order created at submit time is in the
+                // orders table; fire the paid hook for those that are
+                // not yet paid. We pull them by group reference (kept
+                // in their delivery_details / external_id by submit).
+                if (method_exists($db, 'getOrdersByGroupOrderId')) {
+                    foreach ($db->getOrdersByGroupOrderId($groupId) as $row) {
+                        $oid = (int)$row['id'];
+                        $db->updateOrderPayment($oid, $paymentId, 'paid');
+                        cleanmenu_on_order_paid($db, $oid);
+                    }
+                }
+                error_log("payment-webhook: group #{$groupId} fully paid (total={$total} paid={$paid})");
+            }
+        }
+        http_response_code(200);
+        echo 'ok';
+        exit;
+    } elseif ($apiStatus === 'canceled') {
+        // Best-effort: mark intent failed so the user can retry. Other
+        // intents on the same group keep their state.
+        try {
+            $r = new ReflectionClass($db);
+            $p = $r->getProperty('connection');
+            $p->setAccessible(true);
+            $pdo = $p->getValue($db);
+            $pdo->prepare("UPDATE group_payment_intents SET status='failed' WHERE yk_payment_id = :y AND status='pending'")
+                ->execute([':y' => $paymentId]);
+        } catch (Throwable $_) {}
+        http_response_code(200);
+        echo 'ok';
+        exit;
+    }
+}
+
 // Find order by payment_id
 $order = $db->getOrderByPaymentId($paymentId);
 if (!$order) {

@@ -1,6 +1,6 @@
 {
-  "version": "1.4.20",
-  "release_date": "2026-04-27",
-  "changelog": "Phase 7.2: 54-ФЗ fiscal receipt scaffolding. New lib/Fiscal/AtolOnline.php adapter implements АТОЛ Онлайн v4 happy-path (getToken / sell / report). lib/OrderPaidHook.php gets cleanmenu_emit_fiscal_receipt — fires on order.paid, persists receipt uuid, never blocks payment confirmation on fiscalisation failure. scripts/fiscal-receipt-worker.php (cron */2) polls pending uuids, stamps fiscal_receipt_url when ready, clears uuid on fail to allow retry. Migration sql/fiscal-receipt-migration.sql adds nullable fiscal_receipt_uuid + fiscal_receipt_url + idx_orders_fiscal_pending. Tenant config keys documented in docs/fiscal-54fz.md.",
+  "version": "1.4.21",
+  "release_date": "2026-04-28",
+  "changelog": "Phase 7.5: split-bill payments scaffolding. New table group_payment_intents tracks per-payer chunks of a group_orders row; group_orders.split_mode picks host (legacy) / per_seat / equal. New POST /api/group-create-payment-intent.php endpoint takes (group_code, payer_label, optional seat_label, optional share_count) and returns a YooKassa confirmation_url for that payer's share. payment-webhook.php now recognises metadata.kind='group_intent' and reconciles aggregate paid total — when SUM(paid intents) >= group total it fires cleanmenu_on_order_paid for every underlying order so loyalty + fiscal receipts run per guest. 9 new DB methods on Database (getGroupOrderTotal/getGroupSeatTotal/listGroupPaymentIntents/createGroupPaymentIntent/attachYkPaymentIdToGroupIntent/markGroupPaymentIntentPaid/getGroupPaidTotal/setGroupOrderSplitMode/markGroupOrderPaid). UI picker on /group.php pending in a follow-up.",
   "critical": false
 }
