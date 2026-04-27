@@ -1,5 +1,5 @@
 -- Menu sort order migration: enable drag-n-drop ordering within a category.
--- Run once on each tenant DB (idempotent via IF NOT EXISTS).
+-- Run once on each tenant DB (idempotent — re-runs are no-ops).
 --
 -- Before: menu_items was ordered by (category, name) — the UI had no way to
 -- promote a signature dish to the top of its category.
@@ -10,12 +10,25 @@
 --
 -- The migration is deliberately non-destructive: existing rows get sort_order=0
 -- and keep sorting by name as before until an operator drags them into place.
+--
+-- Idempotency: ADD COLUMN IF NOT EXISTS / ADD INDEX IF NOT EXISTS need
+-- MySQL 8.0.29+. Production runs older 8.0.x, so we guard each DDL with an
+-- INFORMATION_SCHEMA lookup + PREPARE/EXECUTE — works on every 8.0.x.
 
-ALTER TABLE menu_items
-    ADD COLUMN IF NOT EXISTS sort_order INT NOT NULL DEFAULT 0 AFTER category;
+SET @col_exists := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME   = 'menu_items'
+                      AND COLUMN_NAME  = 'sort_order');
+SET @ddl := IF(@col_exists = 0,
+               'ALTER TABLE menu_items ADD COLUMN sort_order INT NOT NULL DEFAULT 0 AFTER category',
+               'SELECT 1');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
--- MySQL 8.0+ supports IF NOT EXISTS on ADD INDEX; the block is guarded so a
--- second run is a no-op. On older MySQL (5.7) remove the IF NOT EXISTS clause
--- and drop the index manually before re-running.
-ALTER TABLE menu_items
-    ADD INDEX IF NOT EXISTS idx_menu_items_category_sort (category, sort_order, name);
+SET @idx_exists := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME   = 'menu_items'
+                      AND INDEX_NAME   = 'idx_menu_items_category_sort');
+SET @ddl := IF(@idx_exists = 0,
+               'ALTER TABLE menu_items ADD INDEX idx_menu_items_category_sort (category, sort_order, name)',
+               'SELECT 1');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
