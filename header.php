@@ -3,6 +3,13 @@ if (!defined('PUBLIC_MENU')) {
     require_once __DIR__ . '/session_init.php';
 }
 
+// I18n must be available regardless of PUBLIC_MENU mode — header.php calls
+// t('nav.menu') / t('nav.cart') / etc. unconditionally. menu-public.php skips
+// session_init.php (which is the usual loader of lib/I18n.php), so without
+// this defensive require the cookieless guest catalog hits "Call to undefined
+// function t()" → fatal → HTTP 500. Phase 9.1 fix for C1.
+require_once __DIR__ . '/lib/I18n.php';
+
 $projectName = trim(html_entity_decode($GLOBALS['siteName'] ?? $_SESSION['project_name'] ?? 'labus', ENT_QUOTES, 'UTF-8'), '"\'');
 $hideLabusBranding = $GLOBALS['hideLabusBranding'] ?? false;
 $contactPhone = trim((string)($GLOBALS['contactPhone'] ?? ''));
