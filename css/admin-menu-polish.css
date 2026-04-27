@@ -1551,7 +1551,12 @@ body.employee-page .account-section {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   margin-top: 0;
-  margin-bottom: 100px;
+  /* Phase 9.4: was 100px — historical compensation for the fixed
+     bottom-dock that doubled as inter-section gap. After 9.2 the dock
+     flows inline on desktop, and `--bottom-tab-rail-clearance` already
+     handles the bottom safe area on mobile. 100px between sections
+     left a ~200px gap under the 2FA card on /account.php (B1). */
+  margin-bottom: 24px;
   padding: 24px;
 }
 

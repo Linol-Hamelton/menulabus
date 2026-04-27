@@ -1196,6 +1196,10 @@ body.tenant-homepage .footer-bottom {
 
 body.account-page .account-header-bar {
   margin-bottom: 18px;
+  /* Phase 9.3: top padding so the cog/chart icons breathe under the
+     site header instead of crashing into it. Was 0; pre-rail-fix this
+     wasn't visible because tabs floated over the layout. */
+  padding-top: 24px;
 }
 
 body.account-page .account-header-bar .container {

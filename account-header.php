@@ -7,7 +7,7 @@
 
             <div class="section-header-quick-actions">
                 <?php if (in_array(($user['role'] ?? ''), ['owner', 'admin'], true)): ?>
-                    <a href="admin-menu.php" class="account-admin" aria-label="Панель администратора">
+                    <a href="admin-menu.php" class="account-admin" aria-label="Панель администратора" title="Панель администратора">
                         <svg class="account-action-icon" aria-hidden="true" viewBox="0 0 256 256">
                             <use href="/images/icons/phosphor-sprite.svg#gear-six"></use>
                         </svg>
