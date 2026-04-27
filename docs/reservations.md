@@ -180,9 +180,23 @@ CLEANMENU_TEST_MYSQL_PASS=... \
 composer test
 ```
 
+## 2-Hour Telegram Reminder (Polish 12.2.3, 2026-04-27)
+
+`scripts/reservation-reminder-worker.php` is a CLI cron worker that scans
+for active reservations starting in `NOW() + 110m..NOW() + 130m` (a 20-min
+window so a missed cron tick still catches the row on the next pass) and
+sends one Telegram message per row to the tenant chat. The row is then
+stamped via `Database::markReservationReminderSent($id)` so it is never
+reminded twice. Migration: `sql/reservation-reminder-migration.sql` adds
+a nullable `reminder_sent_at DATETIME` column on `reservations`.
+
+Cron suggestion: `*/5 * * * *` — five-minute granularity matches the
+20-min window so each row is seen at least twice before exiting.
+
 ## Known Gaps / Future Work
 
-- **No reminder.** [Queue.php](../Queue.php) supports delayed jobs; a `send_reservation_reminder` job 2 hours before `starts_at` is the minimal addition.
+- **Reminder targets the staff chat only.** A guest-direct DM (when the
+  user has a Telegram-linked `users.telegram_chat_id`) is a follow-up.
 - **No OpenAPI entries.** [docs/openapi.yaml](./openapi.yaml) has not been updated; mobile clients should rely on this doc until that lands. Pre-push hook validates OpenAPI, so the diff must be clean.
 - **No availability picker on customer form.** The current form lets the user pick any datetime; on submit the server returns `409 slot_taken` if conflicting. A future iteration can call `availability.php` (or a session-based equivalent) to disable taken slots in the time picker.
 - **Staff board is a flat list, not a calendar grid.** Week-long list grouped by day, no drag-to-reschedule, no overlap visualization across tables. Sufficient for a 5–20 table venue; revisit at scale.

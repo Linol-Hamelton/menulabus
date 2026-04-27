@@ -1,6 +1,6 @@
 {
-  "version": "1.4.11",
+  "version": "1.4.12",
   "release_date": "2026-04-27",
-  "changelog": "Polish 12.2.1+12.2.2: CSRF token validation added to save-project-name.php (admin-menu project rename) and send_message.php (Telegram bridge for legacy reservation form on index.php). Both client paths now read the page-level meta csrf-token and forward it as X-CSRF-Token header + body field; servers call Csrf::requireValid() and reject 403 on mismatch. Closes the last two state-mutating endpoints that were unauthenticated in the strict CSP baseline.",
+  "changelog": "Polish 12.2.3: Reservation 2-hour reminder worker. New scripts/reservation-reminder-worker.php picks up active reservations starting in NOW()+110m..130m (20-min window so missed cron ticks still catch the row), sends one Telegram message per row to the tenant chat, then stamps reservations.reminder_sent_at via Database::markReservationReminderSent() so the row is never reminded twice. Migration sql/reservation-reminder-migration.sql adds reminder_sent_at DATETIME NULL via INFORMATION_SCHEMA-guarded ALTER. Cron */5 * * * *.",
   "critical": false
 }

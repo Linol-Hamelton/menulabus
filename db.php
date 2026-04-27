@@ -3431,6 +3431,64 @@ class Database
     }
 
     /**
+     * Reservation reminder worker support (Polish 12.2.3).
+     *
+     * Returns reservations that:
+     *   - start in the next $minutesAhead minutes (default 120 = 2h),
+     *     within a $windowMinutes-wide window so each cron tick has slack
+     *     to catch rows even if the worker missed a previous run;
+     *   - are still active (pending/confirmed/seated);
+     *   - have not yet had reminder_sent_at stamped.
+     *
+     * The worker calls markReservationReminderSent($id) after a successful
+     * Telegram dispatch.
+     */
+    public function getReservationsDueForReminder(int $minutesAhead = 120, int $windowMinutes = 10): array
+    {
+        $minutesAhead  = max(1, min(1440, $minutesAhead));
+        $windowMinutes = max(1, min(60, $windowMinutes));
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT id, table_label, user_id, guest_name, guest_phone,
+                       guests_count, starts_at, ends_at, status, note
+                FROM reservations
+                WHERE status IN ('pending','confirmed','seated')
+                  AND reminder_sent_at IS NULL
+                  AND starts_at BETWEEN
+                      DATE_ADD(NOW(), INTERVAL :ahead_low MINUTE)
+                  AND DATE_ADD(NOW(), INTERVAL :ahead_high MINUTE)
+                ORDER BY starts_at ASC
+                LIMIT 200
+            ");
+            $stmt->execute([
+                ':ahead_low'  => $minutesAhead - $windowMinutes,
+                ':ahead_high' => $minutesAhead + $windowMinutes,
+            ]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log("getReservationsDueForReminder error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function markReservationReminderSent(int $id): bool
+    {
+        try {
+            $stmt = $this->connection->prepare("
+                UPDATE reservations
+                SET reminder_sent_at = NOW()
+                WHERE id = :id AND reminder_sent_at IS NULL
+            ");
+            $stmt->execute([':id' => $id]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log("markReservationReminderSent error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Conflict check for a (table_label, starts_at, ends_at) triple.
      * Returns true when the slot is free, false when an active reservation
      * overlaps. Cancelled/no_show rows are ignored. Pass $excludeId to skip
