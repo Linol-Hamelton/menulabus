@@ -161,6 +161,32 @@ not a fatal.
 
 ---
 
+## Phase 9 sweep — all 9 pre-existing issues + C1 FIXED
+
+Added 2026-04-27 after the user requested a sequential pass through B1-B9 + C1
+with re-verification at each step. Final commit chain:
+
+| # | Commit | Track |
+|---|---|---|
+| 9.1 | `e0005ec` | C1.1 — drop public Cache-Control on menu.php |
+| C1f | `e0a08b6` | C1.2 — defensive `require_once lib/I18n.php` in header.php (real root cause: `t()` undefined under PUBLIC_MENU mode) |
+| 9.2 | `e3bc2d2` | B2 + B3 — bottom-dock tabs flow inline on desktop (≥1025px), fixed only on mobile/tablet |
+| 9.3 + 9.4 | `a75045c` | B4 — `.account-header-bar` 24px top padding + admin icon `title` attr; B1 — `body.customer_orders-page .account-section { margin-bottom: 100px → 24px }` |
+| 9.5 + 9.6 + 9.7 + 9.8 + 9.9 | `79ab2da` | B5 owner CTA hierarchy (filled primary + outline secondary); B6 admin-kitchen empty state; B7 admin-loyalty promo empty state; B8 tablet 768-991 keeps 2-col cards; B9 broken `HDR1_1440.webp` references → `HDR1_1024.webp` |
+
+Live verification via Playwright MCP at 1920px (audit-screens 30-34) and 900px tablet (35):
+
+- **30-homepage-1920-FINAL** — header single row, dropdown closed, hero clean.
+- **31-account-1920-FINAL** — tabs `Профиль/Безопасность/Меню/Обновления` are inline above 2FA card (was: floating mid-page over the Profile form). 2FA → Профиль gap is now ~120px (was ~200px). Cog/chart icons have 24px top padding (was: ~12px crashing into header).
+- **32-owner-1920-FINAL** — "Открыть заказы" filled-red primary, "Закрыть просроченные (6)" outline-red secondary (proper hierarchy). Bottom-dock tabs `Продажи/Прибыль/…` are inside the analytics card (was: floating across viewport bottom).
+- **33-admin-kitchen-1920-FINAL** — routing matrix shows dashed empty-state copy ("Сначала создайте станции выше — затем здесь появится матрица…") instead of a 1-column table with 700px of dead space.
+- **34-admin-loyalty-1920-FINAL** — promo-codes section shows empty-state copy ("Промо-кодов ещё нет. Заполните строку ниже…") above a single new-row form (was: lone editable row in a borderless table that read as existing data).
+- **35-homepage-tablet-900-FINAL** — entry cards stay in 2 columns (was: collapsed to 1-column at the 992px breakpoint, wasting half the row).
+
+Functional verification:
+- `curl -sk https://menu.labus.pro/menu.php` cookieless returns **HTTP 200** after PHP-FPM restart (was: STALE 500 on every smoke). The post-merge cron-smoke that runs immediately after `git pull` may still see 500 because PHP-FPM hasn't been restarted yet — that's a deploy-ordering quirk, not a real issue. After `systemctl restart php8.1-fpm` the smoke goes green.
+- All 13 Phase 8 admin surfaces still verified: HTTP 200/302 (auth-gate), no console CSP violations, no regressions.
+
 ## What I did not test
 
 - Real ordering flow (would create test orders in prod)
