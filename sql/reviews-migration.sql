@@ -10,10 +10,12 @@
 --   - ip_hash is a sha256 hex digest (64 chars) of client IP + app salt,
 --     used for rate limiting / abuse review without storing raw PII.
 --   - FK to orders uses ON DELETE CASCADE so cleanup scripts don't leave
---     orphan rows.
+--     orphan rows. order_id MUST be plain INT (signed) — `orders.id` in the
+--     base schema is signed INT, MySQL 8 refuses an UNSIGNED→signed FK with
+--     "Referencing column ... are incompatible" (errno 3780).
 CREATE TABLE IF NOT EXISTS reviews (
     id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    order_id    INT UNSIGNED NOT NULL,
+    order_id    INT NOT NULL,
     user_id     INT DEFAULT NULL,
     rating      TINYINT UNSIGNED NOT NULL,
     comment     TEXT DEFAULT NULL,
