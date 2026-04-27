@@ -97,6 +97,7 @@ $includeHeaderCss = empty($GLOBALS['header_css_in_head']);
   <?php endif; ?>
   <link rel="stylesheet" href="/css/ui-ux-polish.css?v=<?= htmlspecialchars($uiUxPolishVersion, ENT_QUOTES, 'UTF-8') ?>">
   <link rel="stylesheet" href="/css/lang-picker.css?v=<?= htmlspecialchars($appVersion) ?>">
+  <link rel="stylesheet" href="/css/a11y.css?v=<?= htmlspecialchars($appVersion) ?>">
   <script src="/js/focus-trap.js?v=<?= htmlspecialchars($appVersion) ?>" defer<?= !empty($GLOBALS['scriptNonce']) ? ' nonce="' . htmlspecialchars((string)$GLOBALS['scriptNonce']) . '"' : '' ?>></script>
   <script src="/js/header-more.js?v=<?= htmlspecialchars($appVersion) ?>" defer<?= !empty($GLOBALS['scriptNonce']) ? ' nonce="' . htmlspecialchars((string)$GLOBALS['scriptNonce']) . '"' : '' ?>></script>
 </header>

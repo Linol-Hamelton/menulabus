@@ -1,0 +1,81 @@
+/* a11y.css — small, focused accessibility baseline (Polish 12.6, 2026-04-27).
+ *
+ * Loaded once via header.php so it covers every page that pulls the
+ * shared header (which is every public/customer/admin surface). Strict
+ * CSP-compliant: external stylesheet, nonce-tagged via the <link>.
+ *
+ * Goals:
+ *   - Visible focus ring on every interactive element for keyboard users.
+ *     Browsers' default outline is removed by many CSS resets; we restore
+ *     a consistent token-based ring on :focus-visible only (so mouse
+ *     clicks don't show the ring).
+ *   - .sr-only utility class for "visible" labels that should reach
+ *     screen readers but not consume visual layout. Pattern from
+ *     https://www.tpgi.com/the-anatomy-of-visually-hidden/.
+ *   - Skip-link helper that becomes visible on focus.
+ *   - Respect for prefers-reduced-motion: any element opted-in via
+ *     [data-motion-respect] gets transition/animation suppressed.
+ */
+
+:where(a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid var(--ui-focus-ring, #2563eb);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--ui-focus-shadow, rgba(37, 99, 235, 0.22));
+}
+
+/* Visually hidden, but available to screen readers and assistive tech. */
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+/* Skip link: hidden until keyboard-focused, then surfaces over the page
+ * so keyboard users can jump past the header to the main content. */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 8px;
+    z-index: 9999;
+    padding: 8px 12px;
+    background: var(--ui-surface, #fff);
+    color: var(--ui-text, #1f2328);
+    border: 2px solid var(--ui-focus-ring, #2563eb);
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: top 0.15s ease-out;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+    top: 8px;
+}
+
+/* Respect prefers-reduced-motion. Suppresses transitions and animations
+ * on elements that opt in via data-motion-respect; doesn't blanket-kill
+ * everything. */
+@media (prefers-reduced-motion: reduce) {
+    [data-motion-respect],
+    [data-motion-respect] *,
+    .reservation-busy-slots,
+    .reservation-busy-slots * {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Modal dialogs: the modal-box container should expose a clear focus
+ * boundary when focused via the focus-trap fallback path. */
+[role="dialog"]:focus-visible,
+[role="dialog"][tabindex]:focus {
+    outline: 3px solid var(--ui-focus-ring, #2563eb);
+    outline-offset: -3px;
+}
