@@ -83,7 +83,7 @@ $statusLabels = [
                     <p class="kds-empty-title">Станции ещё не созданы</p>
                     <p class="kds-empty-hint">Создайте хотя бы одну станцию (например, «Горячий цех», «Холодный», «Бар», «Пицца»), чтобы начать работу с кухонной доской. Каждое блюдо потом привязывается к станции в матрице маршрутизации.</p>
                     <?php if (in_array($role, ['admin', 'owner'], true)): ?>
-                        <a class="kds-btn kds-btn-primary kds-empty-cta" href="/admin-kitchen.php">Создать первую станцию</a>
+                        <a class="kds-btn kds-btn-primary kds-empty-cta" href="/admin/kitchen.php">Создать первую станцию</a>
                     <?php else: ?>
                         <p class="kds-empty-note">Попросите администратора создать станции через раздел «Станции кухни».</p>
                     <?php endif; ?>

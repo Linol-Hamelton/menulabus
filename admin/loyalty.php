@@ -1,6 +1,6 @@
 <?php
 /**
- * admin-loyalty.php — admin UI for loyalty tiers + promo codes (Phase 6.3).
+ * admin/loyalty.php — admin UI for loyalty tiers + promo codes (Phase 6.3).
  *
  * Panels:
  *   1. Loyalty tiers — name / min_spent / cashback_pct / sort_order.
@@ -10,9 +10,9 @@
  */
 
 $required_role = 'admin';
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/require_auth.php';
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/../session_init.php';
+require_once __DIR__ . '/../require_auth.php';
+require_once __DIR__ . '/../db.php';
 
 $db     = Database::getInstance();
 $tiers  = $db->listLoyaltyTiers(false);
@@ -36,14 +36,14 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion) ?>">
 </head>
 <body class="admin-page account-page" data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
-    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
-    <?php require_once __DIR__ . '/account-header.php'; ?>
+    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/../header.php'; ?>
+    <?php require_once __DIR__ . '/../account-header.php'; ?>
 
     <div class="account-container">
         <section class="account-section">
             <div class="section-header-menu">
                 <h2>Программа лояльности</h2>
-                <a href="/admin-menu.php" class="back-to-menu-btn">К админке</a>
+                <a href="/admin/menu.php" class="back-to-menu-btn">К админке</a>
             </div>
             <p class="loyalty-intro">
                 Уровни (тиры) — кто и сколько баллов получает за заказ. Тир назначается

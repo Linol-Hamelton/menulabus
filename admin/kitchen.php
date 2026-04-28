@@ -1,6 +1,6 @@
 <?php
 /**
- * admin-kitchen.php — admin UI for Kitchen Display System.
+ * admin/kitchen.php — admin UI for Kitchen Display System.
  *
  * Two panels on one page:
  *   1. Kitchen stations CRUD (create / rename / activate / sort / delete).
@@ -12,9 +12,9 @@
  */
 
 $required_role = 'admin';
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/require_auth.php';
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/../session_init.php';
+require_once __DIR__ . '/../require_auth.php';
+require_once __DIR__ . '/../db.php';
 
 $db = Database::getInstance();
 $stations = $db->listKitchenStations(false);
@@ -44,8 +44,8 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion) ?>">
 </head>
 <body class="admin-page account-page" data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
-    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
-    <?php require_once __DIR__ . '/account-header.php'; ?>
+    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/../header.php'; ?>
+    <?php require_once __DIR__ . '/../account-header.php'; ?>
 
     <div class="account-container">
         <section class="account-section">
@@ -53,7 +53,7 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                 <h2>Станции кухни</h2>
                 <div>
                     <a href="/kds.php" class="checkout-btn" target="_blank">Открыть KDS</a>
-                    <a href="/admin-menu.php" class="back-to-menu-btn">К админке</a>
+                    <a href="/admin/menu.php" class="back-to-menu-btn">К админке</a>
                 </div>
             </div>
             <p class="kitchen-intro">

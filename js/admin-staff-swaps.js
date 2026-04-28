@@ -1,6 +1,6 @@
 // admin-staff-swaps.js (Phase 13A.2, 2026-04-28)
 //
-// Wires the shift-swap UI in admin-staff.php to the existing
+// Wires the shift-swap UI in admin/staff.php to the existing
 // /api/shift-swap-action.php endpoint (Phase 7.4 v2). Handles five
 // transitions:
 //   * employee  → "Запросить замену"        action=request

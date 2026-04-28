@@ -1,6 +1,6 @@
 {
-  "version": "1.4.26",
+  "version": "1.5.0",
   "release_date": "2026-04-28",
-  "changelog": "Phase 13A.3: owner-tab fiscal-config (АТОЛ Онлайн credentials). New /owner.php?tab=fiscal — провайдер-радио, форма с login/password/group_code/ИНН/payment_address/СНО/sandbox toggle. Кнопка 'Тест соединения' дёргает AtolOnline::ensureToken() через api/save-fiscal-settings.php?test=1 без сохранения, показывает token-prefix или внятную ошибку АТОЛ. Кнопка 'Сохранить' upsert-ит все fiscal_* settings keys через Database::setSetting (JSON-encoded). Manual re-emit для legacy-заказов: ?reemit=<order_id> прокручивает cleanmenu_emit_fiscal_receipt. Owner-only access. Token-based CSS в css/owner-fiscal.css.",
+  "changelog": "Phase 13B.3.a: ARCHITECTURE — все 9 admin-*.php переехали из корня в admin/{name}.php. Файлы: admin/{inventory,kitchen,locations,loyalty,marketing,menu,staff,waitlist,webhooks}.php. Внутри файлов __DIR__ . '/X' сменилось на __DIR__ . '/../X'. Все внешние ссылки (account-header.php, help.php, kds.php, lib/ops/monitor-page.php, scripts/tenant/launch.php, js/admin-menu-page.js, js/admin-staff-swaps.js, и cross-refs внутри admin/*) переписаны на новые пути. nginx-optimized.conf обновлён (skip_cache regex /admin-menu → /admin/). Корень теперь содержит 83 PHP вместо 92 (-9). Минорный bump 1.5.0 для cache-bust на всех страницах.",
   "critical": false
 }

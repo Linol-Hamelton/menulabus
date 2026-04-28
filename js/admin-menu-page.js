@@ -209,7 +209,7 @@
       if (!navLink) return;
 
       const href = navLink.getAttribute('href') || '';
-      if (href.startsWith('admin-menu.php')) {
+      if (href.startsWith('admin/menu.php')) {
         saveScrollPosition();
       }
     });
@@ -218,8 +218,8 @@
       const form = event.target;
       if (!(form instanceof HTMLFormElement)) return;
 
-      const action = form.getAttribute('action') || 'admin-menu.php';
-      if (action === '' || action.startsWith('admin-menu.php')) {
+      const action = form.getAttribute('action') || 'admin/menu.php';
+      if (action === '' || action.startsWith('admin/menu.php')) {
         saveScrollPosition();
       }
     });

@@ -463,7 +463,7 @@ $metrics = getPerformanceMetrics(true);
                     Обновлено: <?= date('H:i:s') ?>
                 </div>
                 <div class="header-actions">
-                    <a href="admin-menu.php" class="btn btn-secondary">
+                    <a href="admin/menu.php" class="btn btn-secondary">
                         <?= renderMonitorIcon('arrow-left', 'monitor-button-icon') ?>
                         <span>Назад в админку</span>
                     </a>

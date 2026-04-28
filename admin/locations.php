@@ -1,15 +1,15 @@
 <?php
 /**
- * admin-locations.php — admin CRUD for restaurant locations (Phase 6.5).
+ * admin/locations.php — admin CRUD for restaurant locations (Phase 6.5).
  *
  * Minimal interface: one inline-editable table. Deactivating a location is
  * soft (flips `active=0`); history is preserved.
  */
 
 $required_role = 'admin';
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/require_auth.php';
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/../session_init.php';
+require_once __DIR__ . '/../require_auth.php';
+require_once __DIR__ . '/../db.php';
 
 $db = Database::getInstance();
 $locations = $db->listLocations(false);
@@ -39,14 +39,14 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion) ?>">
 </head>
 <body class="admin-page account-page" data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
-    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
-    <?php require_once __DIR__ . '/account-header.php'; ?>
+    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/../header.php'; ?>
+    <?php require_once __DIR__ . '/../account-header.php'; ?>
 
     <div class="account-container">
         <section class="account-section">
             <div class="section-header-menu">
                 <h2>Локации (сеть ресторанов)</h2>
-                <a href="/admin-menu.php" class="back-to-menu-btn">К админке</a>
+                <a href="/admin/menu.php" class="back-to-menu-btn">К админке</a>
             </div>
             <p class="loc-intro">
                 Добавьте точки сети. Заказы и меню-позиции могут быть привязаны к конкретной локации

@@ -1,7 +1,7 @@
 <?php
 $required_role = 'admin';
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/require_auth.php';
+require_once __DIR__ . '/../session_init.php';
+require_once __DIR__ . '/../require_auth.php';
 
 // Ensure script nonce is available for CSP
 if (empty($scriptNonce) && isset($GLOBALS['scriptNonce'])) {
@@ -14,11 +14,11 @@ if (empty($scriptNonce) && isset($_SESSION['csp_nonce']['script'])) {
 
 $db = Database::getInstance();
 $appVersion = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
-$adminMenuCssVersion = @filemtime(__DIR__ . '/css/admin-menu-polish.css');
+$adminMenuCssVersion = @filemtime(__DIR__ . '/../css/admin-menu-polish.css');
 $adminMenuCssVersion = $adminMenuCssVersion ? (string)$adminMenuCssVersion : ($appVersion ?: '1.0.0');
-$adminMenuJsVersion = @filemtime(__DIR__ . '/js/admin-menu-page.js');
+$adminMenuJsVersion = @filemtime(__DIR__ . '/../js/admin-menu-page.js');
 $adminMenuJsVersion = $adminMenuJsVersion ? (string)$adminMenuJsVersion : ($appVersion ?: '1.0.0');
-$adminModifiersJsVersion = @filemtime(__DIR__ . '/js/admin-modifiers.js');
+$adminModifiersJsVersion = @filemtime(__DIR__ . '/../js/admin-modifiers.js');
 $adminModifiersJsVersion = $adminModifiersJsVersion ? (string)$adminModifiersJsVersion : ($appVersion ?: '1.0.0');
 
 $menuView = (($_GET['view'] ?? 'active') === 'archived') ? 'archived' : 'active';
@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     : 'Не удалось архивировать блюдо';
             }
         }
-        header('Location: admin-menu.php?view=active');
+        header('Location: admin/menu.php?view=active');
         exit;
     } elseif (isset($_POST['restore_archived'])) {
         if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     : 'Не удалось восстановить блюдо';
             }
         }
-        header('Location: admin-menu.php?view=archived');
+        header('Location: admin/menu.php?view=archived');
         exit;
     } elseif (isset($_POST['name'])) {
         if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
@@ -109,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 if ($ok) {
                     $_SESSION['success'] = 'Товар обновлён!';
-                    header('Location: admin-menu.php?edit=' . $id);
+                    header('Location: admin/menu.php?edit=' . $id);
                     exit;
                 }
                 $_SESSION['error'] = 'Ошибка при обновлении';
@@ -129,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 if ($ok) {
                     $_SESSION['success'] = 'Товар добавлен!';
-                    header('Location: admin-menu.php');
+                    header('Location: admin/menu.php');
                     exit;
                 }
                 $_SESSION['error'] = 'Ошибка при добавлении';
@@ -172,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
-        header('Location: admin-menu.php?view=active');
+        header('Location: admin/menu.php?view=active');
         exit;
     }
 }
@@ -220,8 +220,8 @@ $savedDbFontsJson = htmlspecialchars(
 </head>
 
 <body class="employee-page admin-menu-page account-page" data-admin-font-settings="<?= $savedDbFontsJson ?>">
-    <?php require_once __DIR__ . '/header.php'; ?>
-    <?php require_once __DIR__ . '/account-header.php'; ?>
+    <?php require_once __DIR__ . '/../header.php'; ?>
+    <?php require_once __DIR__ . '/../account-header.php'; ?>
 
     <!-- Admin Tabs -->
     <div class="admin-tabs-container">
@@ -252,8 +252,8 @@ $savedDbFontsJson = htmlspecialchars(
             <section class="admin-form-container admin-section-card admin-catalog-card admin-block admin-block--catalog">
             <div class="admin-catalog-toolbar">
                 <div class="form-actions menu-view-switch">
-                <a href="admin-menu.php?view=active" class="admin-checkout-btn<?= !$showArchived ? ' cancel' : '' ?>">Активные</a>
-                <a href="admin-menu.php?view=archived" class="admin-checkout-btn<?= $showArchived ? ' cancel' : '' ?>">Архив</a>
+                <a href="admin/menu.php?view=active" class="admin-checkout-btn<?= !$showArchived ? ' cancel' : '' ?>">Активные</a>
+                <a href="admin/menu.php?view=archived" class="admin-checkout-btn<?= $showArchived ? ' cancel' : '' ?>">Архив</a>
                 </div>
                 <div class="menu-tabs-container admin-menu-categories">
                     <div class="menu-tabs">
@@ -367,7 +367,7 @@ $savedDbFontsJson = htmlspecialchars(
                                             <button type="submit" name="restore_archived" class="admin-checkout-btn">Восстановить</button>
                                         </form>
                                     <?php else: ?>
-                                        <a href="admin-menu.php?edit=<?= $it['id'] ?>" class="admin-checkout-btn">Редактировать</a>
+                                        <a href="admin/menu.php?edit=<?= $it['id'] ?>" class="admin-checkout-btn">Редактировать</a>
                                         <form method="POST" class="inline-action-form">
                                             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                                             <input type="hidden" name="id" value="<?= (int)$it['id'] ?>">
@@ -426,7 +426,7 @@ $savedDbFontsJson = htmlspecialchars(
                                         title="<?= $it['available'] ? 'Снять с продажи' : 'Вернуть в продажу' ?>">
                                         <?= $it['available'] ? 'СТОП' : 'Вернуть' ?>
                                     </button>
-                                    <a href="admin-menu.php?edit=<?= $it['id'] ?>" class="mobile-table-btn">
+                                    <a href="admin/menu.php?edit=<?= $it['id'] ?>" class="mobile-table-btn">
                                         Редактировать
                                     </a>
                                     <form method="POST" class="inline-action-form">
@@ -537,7 +537,7 @@ $savedDbFontsJson = htmlspecialchars(
                     <div class="form-actions">
                         <button type="submit" class="checkout-btn"><?= $editItem ? 'Сохранить' : 'Добавить' ?></button>
                         <?php if ($editItem): ?>
-                            <a href="admin-menu.php" class="admin-checkout-btn cancel">Отмена</a>
+                            <a href="admin/menu.php" class="admin-checkout-btn cancel">Отмена</a>
                         <?php endif; ?>
                     </div>
                 </form>
@@ -573,7 +573,7 @@ $savedDbFontsJson = htmlspecialchars(
                         <h3>Рецепт (списание со склада)</h3>
                         <p class="yk-desc">
                             Когда заказ приходит, эти количества автоматически списываются со склада.
-                            Управление ингредиентами — <a href="/admin-inventory.php" target="_blank" rel="noopener">в «Складе»</a>.
+                            Управление ингредиентами — <a href="/admin/inventory.php" target="_blank" rel="noopener">в «Складе»</a>.
                         </p>
                         <div id="recipeRows" class="recipe-rows"></div>
                         <div class="recipe-add-row">

@@ -103,7 +103,7 @@ try {
             'backoffice_routes' => [
                 $result['base_url'] . '/account.php',
                 $result['base_url'] . '/help.php',
-                $result['base_url'] . '/admin-menu.php',
+                $result['base_url'] . '/admin/menu.php',
                 $result['base_url'] . '/owner.php',
                 $result['base_url'] . '/employee.php',
             ],

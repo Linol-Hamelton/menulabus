@@ -1,13 +1,13 @@
 <?php
 /**
- * admin-staff.php — managers schedule shifts, employees clock in/out,
+ * admin/staff.php — managers schedule shifts, employees clock in/out,
  * owners compute tip splits for a pay period. (Phase 7.4)
  */
 
 $required_role = 'employee';
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/require_auth.php';
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/../session_init.php';
+require_once __DIR__ . '/../require_auth.php';
+require_once __DIR__ . '/../db.php';
 
 $db = Database::getInstance();
 $role = (string)($_SESSION['user_role'] ?? '');
@@ -59,8 +59,8 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
 <body class="admin-page account-page"
       data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>"
       data-is-manager="<?= $isManager ? '1' : '0' ?>">
-    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
-    <?php require_once __DIR__ . '/account-header.php'; ?>
+    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/../header.php'; ?>
+    <?php require_once __DIR__ . '/../account-header.php'; ?>
 
     <div class="account-container">
         <section class="account-section">

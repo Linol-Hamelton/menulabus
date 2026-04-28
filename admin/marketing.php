@@ -1,12 +1,12 @@
 <?php
 /**
- * admin-marketing.php — owner / admin UI for email/push/Telegram campaigns (Phase 8.1).
+ * admin/marketing.php — owner / admin UI for email/push/Telegram campaigns (Phase 8.1).
  */
 
 $required_role = 'admin';
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/require_auth.php';
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/../session_init.php';
+require_once __DIR__ . '/../require_auth.php';
+require_once __DIR__ . '/../db.php';
 
 $db = Database::getInstance();
 $campaigns = $db->listMarketingCampaigns(50);
@@ -29,14 +29,14 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion) ?>">
 </head>
 <body class="admin-page account-page" data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
-    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
-    <?php require_once __DIR__ . '/account-header.php'; ?>
+    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/../header.php'; ?>
+    <?php require_once __DIR__ . '/../account-header.php'; ?>
 
     <div class="account-container">
         <section class="account-section">
             <div class="section-header-menu">
                 <h2>Маркетинг</h2>
-                <a href="/admin-menu.php" class="back-to-menu-btn">К админке</a>
+                <a href="/admin/menu.php" class="back-to-menu-btn">К админке</a>
             </div>
             <p class="mk-intro">
                 Создайте кампанию, выберите сегмент клиентов, отправьте.

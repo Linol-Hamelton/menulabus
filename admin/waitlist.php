@@ -1,15 +1,15 @@
 <?php
 /**
- * admin-waitlist.php — staff view for the waitlist queue (Phase 8.4).
+ * admin/waitlist.php — staff view for the waitlist queue (Phase 8.4).
  *
  * Minimal table: phone + guests + requested window + actions. Staff can
  * flip a row to 'notified' (after calling the guest) or 'seated' / 'cancelled'.
  */
 
 $required_role = 'employee';
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/require_auth.php';
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/../session_init.php';
+require_once __DIR__ . '/../require_auth.php';
+require_once __DIR__ . '/../db.php';
 
 $role = (string)($_SESSION['user_role'] ?? '');
 if (!in_array($role, ['employee', 'admin', 'owner'], true)) {
@@ -44,8 +44,8 @@ $statusLabels = [
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion) ?>">
 </head>
 <body class="admin-page account-page" data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
-    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
-    <?php require_once __DIR__ . '/account-header.php'; ?>
+    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/../header.php'; ?>
+    <?php require_once __DIR__ . '/../account-header.php'; ?>
 
     <div class="account-container">
         <section class="account-section">
@@ -58,7 +58,7 @@ $statusLabels = [
                     <input type="date" name="date" value="<?= htmlspecialchars($filterDate) ?>">
                 </label>
                 <button type="submit" class="admin-checkout-btn">Показать</button>
-                <a href="/admin-waitlist.php" class="admin-checkout-btn cancel">Сбросить</a>
+                <a href="/admin/waitlist.php" class="admin-checkout-btn cancel">Сбросить</a>
             </form>
 
             <?php if (empty($entries)): ?>

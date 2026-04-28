@@ -1,15 +1,15 @@
 <?php
 /**
- * admin-webhooks.php — admin UI for outgoing webhook subscriptions.
+ * admin/webhooks.php — admin UI for outgoing webhook subscriptions.
  *
  * Read/write surface; CRUD goes through api/save-webhook.php.
  * See docs/webhook-integration.md for the event catalogue and HMAC recipe.
  */
 
 $required_role = 'admin';
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/require_auth.php';
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/../session_init.php';
+require_once __DIR__ . '/../require_auth.php';
+require_once __DIR__ . '/../db.php';
 
 $db = Database::getInstance();
 $webhooks = $db->listWebhooks();
@@ -40,14 +40,14 @@ $knownEvents = [
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion) ?>">
 </head>
 <body class="admin-page account-page" data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES) ?>">
-    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
-    <?php require_once __DIR__ . '/account-header.php'; ?>
+    <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/../header.php'; ?>
+    <?php require_once __DIR__ . '/../account-header.php'; ?>
 
     <div class="account-container">
         <section class="account-section">
             <div class="section-header-menu">
                 <h2>Вебхуки</h2>
-                <a href="/admin-menu.php" class="back-to-menu-btn">Назад в админку</a>
+                <a href="/admin/menu.php" class="back-to-menu-btn">Назад в админку</a>
             </div>
             <p class="webhooks-intro">
                 Подписывайте внешние сервисы (CRM, аналитику, POS) на события системы.

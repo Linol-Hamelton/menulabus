@@ -38,7 +38,7 @@ $canOpenOwner = $role === 'owner';
                 <div class="account-section-actions">
                     <a href="/employee.php" class="checkout-btn">Открыть заказы</a>
                     <?php if ($canOpenAdmin): ?>
-                        <a href="/admin-menu.php" class="checkout-btn">Открыть админку</a>
+                        <a href="/admin/menu.php" class="checkout-btn">Открыть админку</a>
                     <?php endif; ?>
                     <?php if ($canOpenOwner): ?>
                         <a href="/owner.php" class="checkout-btn">Открыть аналитику</a>
