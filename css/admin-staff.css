@@ -114,3 +114,69 @@
     border: 1px dashed var(--ui-border);
     border-radius: 8px;
 }
+
+/* Phase 13A.2 — shift swap UI */
+.staff-my-shifts-list,
+.staff-volunteer-list {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.staff-my-shift {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--ui-surface, #fff);
+    border: 1px solid var(--ui-border, #e3e5ea);
+    border-radius: 8px;
+}
+.staff-my-shift-when {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+}
+.staff-my-shift-role {
+    color: var(--ui-text-muted, #5f6368);
+    font-size: 13px;
+}
+.staff-my-shift-swap-state {
+    flex: 1 1 auto;
+    color: var(--ui-text-muted, #5f6368);
+    font-size: 13px;
+}
+.staff-volunteer-list li {
+    padding: 8px 12px;
+    background: var(--ui-surface-muted, #f7f7f9);
+    border-radius: 6px;
+    font-size: 14px;
+}
+.staff-swap-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+}
+.staff-swap-table th,
+.staff-swap-table td {
+    padding: 10px;
+    border-bottom: 1px solid var(--ui-border, #e3e5ea);
+    text-align: left;
+    font-size: 14px;
+    vertical-align: top;
+}
+.staff-swap-table th {
+    background: var(--ui-surface-muted, #f7f7f9);
+    font-weight: 500;
+    color: var(--ui-text-muted, #5f6368);
+}
+.staff-swap-table td small {
+    display: block;
+    color: var(--ui-text-muted, #5f6368);
+    font-size: 12px;
+}
+.staff-swap-table .admin-checkout-btn + .admin-checkout-btn {
+    margin-left: 6px;
+}

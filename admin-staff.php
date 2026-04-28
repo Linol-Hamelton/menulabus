@@ -28,6 +28,18 @@ $staffUsers = $db->getAllUsers();
 
 $recentSplits = $db->listTipSplits(10);
 
+// Phase 13A.2 — shift-swap state
+$myUpcomingShifts = $userId > 0
+    ? $db->listShifts(date('Y-m-d H:i:s'), date('Y-m-d H:i:s', strtotime('+30 days')), $userId)
+    : [];
+$mySwapRequests = $userId > 0 ? $db->listShiftSwapRequests(null, $userId) : [];
+$openSwapRequests = $isManager
+    ? array_values(array_filter(
+        $db->listShiftSwapRequests(null, null),
+        static fn ($r) => in_array((string)$r['status'], ['open', 'volunteer_offered'], true)
+    ))
+    : [];
+
 $siteName   = $GLOBALS['siteName'] ?? 'labus';
 $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
 ?>
@@ -66,6 +78,128 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                 <?php endif; ?>
             </div>
         </section>
+
+        <!-- Phase 13A.2 — employee shift-swap section -->
+        <?php if ($userId > 0): ?>
+        <section class="account-section" id="staffSwapEmployee">
+            <div class="section-header-menu">
+                <h3>Мои предстоящие смены</h3>
+            </div>
+            <?php if (empty($myUpcomingShifts)): ?>
+                <p class="staff-empty">У вас нет смен в ближайшие 30 дней.</p>
+            <?php else: ?>
+                <ul class="staff-my-shifts-list">
+                    <?php foreach ($myUpcomingShifts as $sh): ?>
+                        <?php
+                        // Has this shift already got an open swap request from me?
+                        $existingSwap = null;
+                        foreach ($mySwapRequests as $sw) {
+                            if ((int)$sw['shift_id'] === (int)$sh['id']
+                                && in_array((string)$sw['status'], ['open', 'volunteer_offered'], true)) {
+                                $existingSwap = $sw;
+                                break;
+                            }
+                        }
+                        ?>
+                        <li class="staff-my-shift" data-shift-id="<?= (int)$sh['id'] ?>">
+                            <span class="staff-my-shift-when">
+                                <?= htmlspecialchars(date('d.m.Y H:i', strtotime((string)$sh['starts_at']))) ?>
+                                — <?= htmlspecialchars(date('H:i', strtotime((string)$sh['ends_at']))) ?>
+                            </span>
+                            <span class="staff-my-shift-role"><?= htmlspecialchars((string)$sh['role']) ?></span>
+                            <?php if ($existingSwap): ?>
+                                <span class="staff-my-shift-swap-state">
+                                    Запрос на замену: <strong><?= htmlspecialchars(match((string)$existingSwap['status']) {
+                                        'open' => 'ищу того, кто возьмёт',
+                                        'volunteer_offered' => 'волонтёр найден, ждём подтверждения',
+                                        default => (string)$existingSwap['status'],
+                                    }) ?></strong>
+                                </span>
+                                <button type="button" class="admin-checkout-btn cancel btn-swap-cancel"
+                                        data-swap-id="<?= (int)$existingSwap['id'] ?>">Отменить запрос</button>
+                            <?php else: ?>
+                                <button type="button" class="admin-checkout-btn btn-swap-request"
+                                        data-shift-id="<?= (int)$sh['id'] ?>">Запросить замену</button>
+                            <?php endif; ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+
+            <?php
+            // List swap requests where current user is the volunteer (offered to take someone else's shift).
+            $myVolunteerOffers = array_values(array_filter(
+                $mySwapRequests,
+                static fn ($r) => (int)($r['volunteer_id'] ?? 0) === $userId
+            ));
+            ?>
+            <?php if (!empty($myVolunteerOffers)): ?>
+                <h4>Я предложил подменить</h4>
+                <ul class="staff-volunteer-list">
+                    <?php foreach ($myVolunteerOffers as $sw): ?>
+                        <li>
+                            Запрос #<?= (int)$sw['id'] ?>
+                            · смена <?= htmlspecialchars(date('d.m.Y H:i', strtotime((string)$sw['starts_at']))) ?>
+                            · статус: <strong><?= htmlspecialchars(match((string)$sw['status']) {
+                                'volunteer_offered' => 'жду решения менеджера',
+                                'approved' => '✅ одобрено — это теперь моя смена',
+                                'denied' => '❌ менеджер отказал',
+                                'cancelled' => 'отменён',
+                                default => (string)$sw['status'],
+                            }) ?></strong>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </section>
+        <?php endif; ?>
+
+        <?php if ($isManager): ?>
+        <section class="account-section" id="staffSwapManager">
+            <div class="section-header-menu">
+                <h3>Запросы на замену смен</h3>
+            </div>
+            <?php if (empty($openSwapRequests)): ?>
+                <p class="staff-empty">Открытых запросов нет.</p>
+            <?php else: ?>
+                <table class="staff-swap-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Кто просит</th>
+                            <th>Смена</th>
+                            <th>Волонтёр</th>
+                            <th>Комментарий</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($openSwapRequests as $sw): ?>
+                            <tr data-swap-id="<?= (int)$sw['id'] ?>">
+                                <td>#<?= (int)$sw['id'] ?></td>
+                                <td><?= htmlspecialchars((string)($sw['requester_name'] ?? '?')) ?></td>
+                                <td>
+                                    <?= htmlspecialchars(date('d.m.Y H:i', strtotime((string)$sw['starts_at']))) ?>
+                                    — <?= htmlspecialchars(date('H:i', strtotime((string)$sw['ends_at']))) ?>
+                                    <small>(<?= htmlspecialchars((string)$sw['role']) ?>)</small>
+                                </td>
+                                <td><?= htmlspecialchars((string)($sw['volunteer_name'] ?? '— ждём')) ?></td>
+                                <td><?= htmlspecialchars((string)($sw['note'] ?? '')) ?></td>
+                                <td>
+                                    <?php if ((string)$sw['status'] === 'volunteer_offered'): ?>
+                                        <button type="button" class="admin-checkout-btn btn-swap-approve"
+                                                data-swap-id="<?= (int)$sw['id'] ?>">Одобрить</button>
+                                    <?php endif; ?>
+                                    <button type="button" class="admin-checkout-btn cancel btn-swap-deny"
+                                            data-swap-id="<?= (int)$sw['id'] ?>">Отклонить</button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </section>
+        <?php endif; ?>
 
         <?php if ($isManager): ?>
         <section class="account-section">
@@ -176,5 +310,6 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
     <script src="/js/security.min.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/app.min.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/admin-staff.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/admin-staff-swaps.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
 </body>
 </html>

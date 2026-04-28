@@ -86,9 +86,19 @@ Calculation:
 6. Confirm `shifts.user_id` for that row is now B's id (atomic via transaction).
 7. Run `php scripts/payroll-export.php --period=YYYY-MM` and verify CSV opens cleanly in Excel/Numbers.
 
-## Known Gaps / Future Work
+## Frontend (Phase 13A.2, 2026-04-28)
 
-- **No staff dashboard UI** for the swap-request inbox. v3 will add a panel inside `admin-staff.php` listing open requests + manager actions, plus an employee-side "my open requests" list.
+`/admin-staff.php` now has two swap-related sections:
+
+- **Employee section** (visible to any logged-in user_id > 0): "Мои предстоящие смены" lists shifts in the next 30 days. For each shift either:
+  - "Запросить замену" button (action=request, opens a `prompt()` for the optional note) — if no open request exists for this shift; or
+  - "Отменить запрос" + status pill ("ищу того, кто возьмёт" / "волонтёр найден, ждём подтверждения") — if there is.
+  Below: "Я предложил подменить" — list of swap requests where the user is the volunteer, with manager-decision status.
+- **Manager section** (`is_manager` only): table of all open swap-requests in any status `open` / `volunteer_offered`. Columns: id, requester, shift, volunteer, note, actions. "Одобрить" button visible only when `status='volunteer_offered'`; "Отклонить" always visible.
+
+All buttons → `POST /api/shift-swap-action.php` via `js/admin-staff-swaps.js`. Server-side render is the source of truth — every successful action triggers `window.location.reload()`.
+
+## Known Gaps / Future Work
 - **No Telegram notification** when a request is opened or a volunteer offers. Should reuse `lib/telegram-notifications.php` to ping admin/owner chats.
 - **No shift conflict check** — the volunteer might already have an overlapping shift. v3 should call a `Database::hasOverlappingShift($userId, $startsAt, $endsAt)` guard before the reassignment commits.
 - **No payroll filter by location** — the CSV totals across all locations of a multi-location tenant. Add `--location-id=N` flag in v3.

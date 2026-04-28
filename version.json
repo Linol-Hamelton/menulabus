@@ -1,6 +1,6 @@
 {
-  "version": "1.4.24",
+  "version": "1.4.25",
   "release_date": "2026-04-28",
-  "changelog": "Phase 13A.1: split-mode picker UI on /group.php. Once the group is submitted, a payment block appears with 3 modes (host=один платит / per_seat=каждый за свои / equal=поровну). Per-seat mode renders a button per seat showing remaining amount; equal mode takes payer name + share count. Each pay-action POST /api/group-create-payment-intent.php → redirect to YK confirmation_url. New api/save-group-order.php action 'set_split_mode' persists the picker choice. New js/group-split-pay.js (live polls every 8s while pending intents exist). Token-based CSS in css/group-order.css.",
+  "changelog": "Phase 13A.2: staff dashboard UI for shift-swap requests on /admin-staff.php. Two new sections: (1) employee — список своих смен в ближайшие 30 дней с кнопкой 'Запросить замену' (или 'Отменить запрос' если запрос открыт) + блок 'Я предложил подменить' если был volunteer offer; (2) manager-only — таблица всех открытых swap-requests с кнопками 'Одобрить' (для status=volunteer_offered) и 'Отклонить'. Все действия идут через js/admin-staff-swaps.js → POST /api/shift-swap-action.php (Phase 7.4 v2). Token-based CSS в css/admin-staff.css.",
   "critical": false
 }
