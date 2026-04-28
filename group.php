@@ -129,7 +129,7 @@ $seatCookie = $_COOKIE['cleanmenu_group_seat'] ?? '';
                             </select>
                         </label>
                         <label>Кол-во
-                            <input type="number" id="gQty" min="1" max="20" value="1" style="width: 70px">
+                            <input type="number" id="gQty" min="1" max="20" value="1" data-w="sm">
                         </label>
                         <button type="button" class="checkout-btn" id="gAddBtn">Добавить</button>
                     </div>
