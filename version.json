@@ -1,6 +1,6 @@
 {
-  "version": "1.4.23",
+  "version": "1.4.24",
   "release_date": "2026-04-28",
-  "changelog": "Phase 7.3 i18n expansion: locales/{ru,en,kk}.json each gain ~80 new keys covering common.* (save/cancel/edit/archive/etc.), account.* (tabs + form labels), owner.* (workspace + tabs), admin.* (9 admin pages), errors.* (auth/forbidden/csrf/validation). New scripts/i18n-extract-strings.php scanner walks PHP/JS, surfaces hardcoded Cyrillic candidates, prints top-30 most-repeated strings and top-20 most-affected files. Skips already-migrated lines (containing t(), SQL keywords, or below min-len). JSON output via --json --out=PATH. Docs in docs/i18n.md cover architecture, lookup chain, surface coverage, migration workflow, gaps.",
+  "changelog": "Phase 13A.1: split-mode picker UI on /group.php. Once the group is submitted, a payment block appears with 3 modes (host=один платит / per_seat=каждый за свои / equal=поровну). Per-seat mode renders a button per seat showing remaining amount; equal mode takes payer name + share count. Each pay-action POST /api/group-create-payment-intent.php → redirect to YK confirmation_url. New api/save-group-order.php action 'set_split_mode' persists the picker choice. New js/group-split-pay.js (live polls every 8s while pending intents exist). Token-based CSS in css/group-order.css.",
   "critical": false
 }

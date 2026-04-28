@@ -178,6 +178,22 @@ switch ($action) {
         echo json_encode(['success' => true, 'order_ids' => $orderIds, 'mode' => $mode]);
         break;
 
+    case 'set_split_mode':
+        // Phase 13A.1 — picker on /group.php payment block flips
+        // group_orders.split_mode between host / per_seat / equal.
+        $code = trim((string)($input['group_code'] ?? ''));
+        $mode = trim((string)($input['split_mode'] ?? ''));
+        if ($code === '') { http_response_code(400); echo json_encode(['success' => false, 'error' => 'missing_code']); break; }
+        $g = $db->getGroupOrderByCode($code);
+        if (!$g) { http_response_code(404); echo json_encode(['success' => false, 'error' => 'group_not_found']); break; }
+        if (!$db->setGroupOrderSplitMode((int)$g['id'], $mode)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'invalid_mode_or_save_failed']);
+            break;
+        }
+        echo json_encode(['success' => true, 'split_mode' => $mode]);
+        break;
+
     default:
         http_response_code(400);
         echo json_encode(['success' => false, 'error' => 'unknown_action']);

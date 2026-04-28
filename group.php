@@ -48,6 +48,29 @@ $isHost = $group && $userId !== null && (int)($group['host_user_id'] ?? 0) === $
 $isGuestFlow = $group && $group['host_user_id'] === null;
 $canSubmit = $group && $group['status'] === 'open' && ($isHost || $isGuestFlow);
 
+// Phase 13A.1: split-bill payment state. Visible once the group is
+// submitted (frozen items become orders) and until status='paid'.
+$paymentState = null;
+if ($group && in_array((string)$group['status'], ['submitted', 'paid'], true)) {
+    $groupId  = (int)$group['id'];
+    $payTotal = $db->getGroupOrderTotal($groupId);
+    $paidSum  = $db->getGroupPaidTotal($groupId);
+    $intents  = $db->listGroupPaymentIntents($groupId);
+    $seatTotals = [];
+    foreach ($items as $it) {
+        $seat = (string)$it['seat_label'];
+        $seatTotals[$seat] = ($seatTotals[$seat] ?? 0) + (int)$it['quantity'] * (float)$it['unit_price'];
+    }
+    $paymentState = [
+        'total'      => $payTotal,
+        'paid'       => $paidSum,
+        'remaining'  => max(0, $payTotal - $paidSum),
+        'split_mode' => (string)($group['split_mode'] ?? 'host'),
+        'intents'    => $intents,
+        'seat_totals' => $seatTotals,
+    ];
+}
+
 // Seat sticky cookie so a refreshing guest doesn't lose "who they are".
 $seatCookie = $_COOKIE['cleanmenu_group_seat'] ?? '';
 ?>
@@ -156,11 +179,101 @@ $seatCookie = $_COOKIE['cleanmenu_group_seat'] ?? '';
                         <button type="button" class="checkout-btn" id="gSubmitBtn">Отправить на кухню</button>
                     </div>
                 <?php endif; ?>
+
+                <?php if ($paymentState): ?>
+                    <div class="group-payment"
+                         data-group-code="<?= htmlspecialchars((string)$group['code'], ENT_QUOTES) ?>"
+                         data-group-total="<?= number_format($paymentState['total'], 2, '.', '') ?>"
+                         data-group-paid="<?= number_format($paymentState['paid'], 2, '.', '') ?>"
+                         data-group-remaining="<?= number_format($paymentState['remaining'], 2, '.', '') ?>"
+                         data-split-mode="<?= htmlspecialchars($paymentState['split_mode']) ?>"
+                         data-status="<?= htmlspecialchars((string)$group['status']) ?>">
+                        <h3>Оплата</h3>
+                        <?php if ($group['status'] === 'paid'): ?>
+                            <p class="group-paid-banner">✅ Заказ полностью оплачен. Чеки придут плательщикам по email.</p>
+                        <?php else: ?>
+                            <fieldset class="group-split-mode">
+                                <legend>Как платим?</legend>
+                                <label><input type="radio" name="gSplitMode" value="host" <?= $paymentState['split_mode'] === 'host' ? 'checked' : '' ?>> Один платит за всех</label>
+                                <label><input type="radio" name="gSplitMode" value="per_seat" <?= $paymentState['split_mode'] === 'per_seat' ? 'checked' : '' ?>> Каждый за свои позиции</label>
+                                <label><input type="radio" name="gSplitMode" value="equal" <?= $paymentState['split_mode'] === 'equal' ? 'checked' : '' ?>> Поровну</label>
+                            </fieldset>
+
+                            <p class="group-payment-status">
+                                Оплачено: <strong><?= number_format($paymentState['paid'], 0, '.', ' ') ?> ₽</strong>
+                                из <strong><?= number_format($paymentState['total'], 0, '.', ' ') ?> ₽</strong>
+                                · Осталось: <strong><?= number_format($paymentState['remaining'], 0, '.', ' ') ?> ₽</strong>
+                            </p>
+
+                            <div class="group-pay-actions" id="gPayActions">
+                                <?php // Host mode: one big "pay all" button ?>
+                                <div class="group-pay-host" data-mode="host" <?= $paymentState['split_mode'] !== 'host' ? 'hidden' : '' ?>>
+                                    <button type="button" class="checkout-btn" data-pay-action="host">Оплатить весь заказ — <?= number_format($paymentState['remaining'], 0, '.', ' ') ?> ₽</button>
+                                </div>
+
+                                <?php // Per-seat mode: one button per seat ?>
+                                <div class="group-pay-per-seat" data-mode="per_seat" <?= $paymentState['split_mode'] !== 'per_seat' ? 'hidden' : '' ?>>
+                                    <?php foreach ($paymentState['seat_totals'] as $seat => $seatSum): ?>
+                                        <?php
+                                        $seatPaid = 0;
+                                        foreach ($paymentState['intents'] as $i) {
+                                            if ((string)($i['seat_label'] ?? '') === $seat && (string)$i['status'] === 'paid') {
+                                                $seatPaid += (float)$i['amount'];
+                                            }
+                                        }
+                                        $seatRemaining = max(0, $seatSum - $seatPaid);
+                                        ?>
+                                        <button type="button" class="checkout-btn"
+                                                data-pay-action="seat"
+                                                data-seat="<?= htmlspecialchars($seat, ENT_QUOTES) ?>"
+                                                data-seat-amount="<?= number_format($seatRemaining, 2, '.', '') ?>"
+                                                <?= $seatRemaining <= 0 ? 'disabled' : '' ?>>
+                                            <?= htmlspecialchars($seat) ?> · <?= number_format($seatRemaining, 0, '.', ' ') ?> ₽
+                                            <?= $seatRemaining <= 0 ? ' ✅' : '' ?>
+                                        </button>
+                                    <?php endforeach; ?>
+                                </div>
+
+                                <?php // Equal mode: payer-name input + share count + pay button ?>
+                                <div class="group-pay-equal" data-mode="equal" <?= $paymentState['split_mode'] !== 'equal' ? 'hidden' : '' ?>>
+                                    <label>Ваше имя <input type="text" id="gEqualPayerName" placeholder="Маша" maxlength="64"></label>
+                                    <label>На скольких делим <input type="number" id="gEqualShareCount" min="1" max="20" value="2"></label>
+                                    <button type="button" class="checkout-btn" data-pay-action="equal">Оплатить свою долю</button>
+                                </div>
+                            </div>
+
+                            <?php if (!empty($paymentState['intents'])): ?>
+                                <h4>История оплат</h4>
+                                <ul class="group-intents-list">
+                                    <?php foreach ($paymentState['intents'] as $i): ?>
+                                        <li class="group-intent group-intent--<?= htmlspecialchars((string)$i['status']) ?>">
+                                            <span class="group-intent-payer"><?= htmlspecialchars((string)$i['payer_label']) ?></span>
+                                            <?php if (!empty($i['seat_label'])): ?>
+                                                <span class="group-intent-seat">(стол: <?= htmlspecialchars((string)$i['seat_label']) ?>)</span>
+                                            <?php endif; ?>
+                                            <span class="group-intent-amount"><?= number_format((float)$i['amount'], 0, '.', ' ') ?> ₽</span>
+                                            <span class="group-intent-status"><?= htmlspecialchars(match((string)$i['status']) {
+                                                'paid' => '✅ оплачено',
+                                                'pending' => '⏳ ожидает',
+                                                'failed' => '❌ ошибка',
+                                                'cancelled' => '⊘ отменён',
+                                                default => (string)$i['status'],
+                                            }) ?></span>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </section>
         <?php endif; ?>
     </div>
 
     <script src="/js/security.min.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/group-order.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <?php if ($paymentState): ?>
+        <script src="/js/group-split-pay.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <?php endif; ?>
 </body>
 </html>

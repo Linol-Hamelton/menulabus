@@ -96,9 +96,35 @@ Error responses: `400 missing_fields`, `404 group_not_found`, `409 group_not_pay
 4. Each guest taps "Pay my share". Frontend calls `/api/group-create-payment-intent.php` with their seat label, follows the redirect to YooKassa sandbox.
 5. After both payments confirm, the group transitions to `paid`, fiscal receipts emit per order, loyalty points accrue per user_id where present.
 
-## Known Gaps / Future Work
+## Frontend (Phase 13A.1, 2026-04-28)
 
-- **No frontend picker** for `host` / `per_seat` / `equal` mode on `group.php` yet. The API+DB are wired, but the UI still defaults to host-pays-all. Follow-up commit will add the radio + per-seat "Pay" buttons.
+The split-bill payment block is rendered on `/group.php` once
+`group_orders.status` becomes `submitted`. State is computed server-side
+in `group.php` (`$paymentState` block: total / paid / remaining /
+split_mode / intents / per-seat totals). Markup includes:
+
+- A radiobutton fieldset for the three modes (host / per_seat / equal),
+  preselected from `group_orders.split_mode`.
+- A status line ("Оплачено: X из Y · Осталось: Z").
+- Mode-specific action area:
+  - **host** — single full-width "Оплатить весь заказ — N ₽" button.
+  - **per_seat** — one button per seat with remaining seat amount
+    (disabled when seat is fully paid; shows ✅ instead).
+  - **equal** — payer name input + share count + pay button.
+- A history table of all intents with status pills (paid/pending/
+  failed/cancelled).
+
+`js/group-split-pay.js` wires the radios to `POST /api/save-group-order.php
+{action:"set_split_mode"}` and the pay buttons to `POST
+/api/group-create-payment-intent.php`. Successful intent creation
+redirects the user to YK's `confirmation_url`. While at least one
+intent is `pending` and the group isn't yet `paid`, the page reloads
+every 8s so the user sees their payment land without manual refresh.
+
+When `group_orders.status` flips to `paid`, the action area is replaced
+with a green "✅ Заказ полностью оплачен" banner.
+
+## Known Gaps / Future Work
 - **No SBP support** for partial payments (only card). YooKassa accepts SBP but we don't expose it for splits yet.
 - **No "tip pool" line** — tips on a split bill currently lump into the largest payer's share. Tracked separately.
 - **No refund flow** for individual intents (e.g. one guest cancels). Possible via YK refund API → `intent.status = 'cancelled'`; not implemented.

@@ -111,3 +111,116 @@
     gap: 6px;
     font-size: 14px;
 }
+
+/* Phase 13A.1 — split-bill payment block on /group.php */
+.group-payment {
+    margin-top: 28px;
+    padding: 18px;
+    background: var(--ui-surface, #fff);
+    border: 1px solid var(--ui-border, #e3e5ea);
+    border-radius: var(--shell-radius-soft, 10px);
+}
+.group-payment h3 {
+    margin: 0 0 14px;
+}
+.group-paid-banner {
+    padding: 12px 14px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    color: var(--ui-success, #166534);
+    font-weight: 500;
+}
+.group-split-mode {
+    border: 0;
+    padding: 0;
+    margin: 0 0 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+.group-split-mode legend {
+    width: 100%;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--ui-text-muted, #5f6368);
+}
+.group-split-mode label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    cursor: pointer;
+}
+.group-payment-status {
+    margin: 14px 0;
+    padding: 10px 14px;
+    background: var(--ui-surface-muted, #f7f7f9);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--ui-text, #1f2328);
+}
+.group-pay-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.group-pay-host .checkout-btn {
+    width: 100%;
+}
+.group-pay-per-seat {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+}
+.group-pay-per-seat .checkout-btn {
+    padding: 12px;
+    text-align: center;
+}
+.group-pay-per-seat .checkout-btn[disabled] {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+.group-pay-equal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: end;
+}
+.group-pay-equal label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--ui-text-muted, #5f6368);
+}
+.group-pay-equal input {
+    padding: 6px 8px;
+    border: 1px solid var(--ui-border, #e3e5ea);
+    border-radius: 6px;
+}
+.group-intents-list {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.group-intent {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--ui-surface-muted, #f7f7f9);
+    border-radius: 6px;
+    font-size: 14px;
+}
+.group-intent--paid    { background: #f0fdf4; }
+.group-intent--pending { background: #fef9c3; }
+.group-intent--failed,
+.group-intent--cancelled { background: #fee2e2; }
+.group-intent-payer  { font-weight: 500; }
+.group-intent-seat   { color: var(--ui-text-muted, #5f6368); font-size: 13px; }
+.group-intent-amount { margin-left: auto; font-variant-numeric: tabular-nums; }
+.group-intent-status { color: var(--ui-text-muted, #5f6368); font-size: 13px; }
