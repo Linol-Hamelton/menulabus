@@ -1,0 +1,106 @@
+/* owner-fiscal.css — owner.php?tab=fiscal (Phase 13A.3, 2026-04-28) */
+
+.fiscal-config-section,
+.fiscal-reemit-section {
+    background: var(--ui-surface, #fff);
+    border: 1px solid var(--ui-border, #e3e5ea);
+    border-radius: var(--shell-radius-soft, 10px);
+    padding: 18px;
+    margin-bottom: 14px;
+}
+
+.fiscal-config-form fieldset {
+    border: 1px solid var(--ui-border, #e3e5ea);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin: 0 0 14px;
+}
+.fiscal-config-form legend {
+    padding: 0 6px;
+    font-weight: 500;
+    color: var(--ui-text-muted, #5f6368);
+}
+.fiscal-config-form fieldset label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 16px;
+    cursor: pointer;
+}
+
+.fiscal-atol-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 10px;
+    padding: 12px;
+    background: var(--ui-surface-muted, #f7f7f9);
+    border: 1px solid var(--ui-border, #e3e5ea);
+    border-radius: 8px;
+}
+.fiscal-atol-fields label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--ui-text-muted, #5f6368);
+}
+.fiscal-atol-fields label.fiscal-atol-sandbox {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    grid-column: 1 / -1;
+}
+.fiscal-atol-fields input[type="text"],
+.fiscal-atol-fields input[type="password"],
+.fiscal-atol-fields select {
+    padding: 8px 10px;
+    border: 1px solid var(--ui-border, #e3e5ea);
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.fiscal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-top: 14px;
+}
+.fiscal-action-feedback {
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 6px;
+}
+.fiscal-action-feedback--ok {
+    background: #f0fdf4;
+    color: var(--ui-success, #166534);
+}
+.fiscal-action-feedback--err {
+    background: #fee2e2;
+    color: var(--ui-danger, #b91c1c);
+}
+
+.fiscal-reemit-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: end;
+    margin-top: 8px;
+}
+.fiscal-reemit-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--ui-text-muted, #5f6368);
+}
+.fiscal-reemit-form input {
+    padding: 8px 10px;
+    border: 1px solid var(--ui-border, #e3e5ea);
+    border-radius: 6px;
+}
+.fiscal-reemit-hint {
+    color: var(--ui-text-muted, #5f6368);
+    font-size: 13px;
+    margin: 0 0 6px;
+}

@@ -61,9 +61,32 @@ Add inside the `# >>> cleanmenu cron >>>` marker block alongside webhook-worker,
 5. Within ~5 minutes, `orders.fiscal_receipt_url` should populate; opening the URL reveals the test receipt at АТОЛ Sandbox.
 6. Tail the worker log: `tail -f data/logs/fiscal-receipt-worker.log` — expected `checked=N updated≥1 failed=0 pending=*`.
 
-## Known Gaps / Future Work
+## Frontend (Phase 13A.3, 2026-04-28)
 
-- **No admin UI yet.** Settings must be inserted manually via SQL or a one-off CLI; the planned `/owner.php?tab=fiscal` form is a follow-up.
+`/owner.php?tab=fiscal` (owner-only) renders the partial
+`partials/owner_fiscal_section.php` with:
+
+- Provider radio (`""` disabled / `"atol"` АТОЛ Онлайн).
+- АТОЛ field grid: login, password (with placeholder "сохранён,
+  перезапишите чтобы сменить" if already stored), group code, ИНН
+  (10/12 digits), payment address, СНО dropdown (osn / usn_income /
+  usn_income_outcome / envd / esn / patent), sandbox toggle.
+- "Сохранить" → POST `/api/save-fiscal-settings.php` writes all
+  `fiscal_*` setting keys via `Database::setSetting` (JSON-encoded).
+  Empty password preserves the existing stored value so other fields
+  can be edited without re-typing the secret.
+- "Тест соединения" → POST `?test=1`. Calls `AtolOnline::ensureToken()`
+  with the supplied (or stored) credentials without saving; returns a
+  token prefix on success or the verbatim АТОЛ error.
+- Manual receipt re-emit: order_id input + button → POST
+  `?reemit=<order_id>`. Drops any existing uuid for the order, then
+  runs `cleanmenu_emit_fiscal_receipt()` to fire a fresh sale request.
+
+CSS in `css/owner-fiscal.css` is token-based (uses `--ui-surface`,
+`--ui-border`, `--ui-success`, `--ui-danger`). Inline status pills for
+save/test/reemit feedback.
+
+## Known Gaps / Future Work
 - **No customer-facing receipt link rendering.** Once URLs land, account.php / order-track.php should add a "Чек" link.
 - **No password encryption at rest.** The settings table is plaintext; Phase 9 compliance pack will introduce KMS-backed encryption for credential-bearing settings.
 - **No support for refunds** (АТОЛ "возврат прихода"). Planned for Phase 7.2.1 once the happy-path is live in production.

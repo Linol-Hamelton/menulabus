@@ -395,6 +395,7 @@ if (!empty($report_data)) {
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/owner-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/owner-fiscal.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/hotkeys.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/owner-analytics-v2.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/published-reviews.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
@@ -413,6 +414,7 @@ if (!empty($report_data)) {
                 <button type="button" class="admin-tab-btn <?= $tab === 'users' ? 'active' : '' ?>" data-tab="users">Пользователи</button>
                 <button type="button" class="admin-tab-btn <?= $tab === 'reviews' ? 'active' : '' ?>" data-tab="reviews">Отзывы<?= $reviewRatingCount > 0 ? ' <span class="owner-tab-count">' . $reviewRatingCount . '</span>' : '' ?></button>
                 <button type="button" class="admin-tab-btn <?= $tab === 'analytics-v2' ? 'active' : '' ?>" data-tab="analytics-v2">Аналитика</button>
+                <button type="button" class="admin-tab-btn <?= $tab === 'fiscal' ? 'active' : '' ?>" data-tab="fiscal">Чеки 54-ФЗ</button>
             </div>
         </div>
         <section class="admin-form-container">
@@ -909,6 +911,11 @@ if (!empty($report_data)) {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Phase 13A.3 — fiscal receipts tab -->
+            <div class="admin-tab-pane <?= $tab === 'fiscal' ? 'active' : '' ?>" id="fiscal">
+                <?php require_once __DIR__ . '/partials/owner_fiscal_section.php'; ?>
             </div>
         </section>
     </div>

@@ -1,6 +1,6 @@
 {
-  "version": "1.4.25",
+  "version": "1.4.26",
   "release_date": "2026-04-28",
-  "changelog": "Phase 13A.2: staff dashboard UI for shift-swap requests on /admin-staff.php. Two new sections: (1) employee — список своих смен в ближайшие 30 дней с кнопкой 'Запросить замену' (или 'Отменить запрос' если запрос открыт) + блок 'Я предложил подменить' если был volunteer offer; (2) manager-only — таблица всех открытых swap-requests с кнопками 'Одобрить' (для status=volunteer_offered) и 'Отклонить'. Все действия идут через js/admin-staff-swaps.js → POST /api/shift-swap-action.php (Phase 7.4 v2). Token-based CSS в css/admin-staff.css.",
+  "changelog": "Phase 13A.3: owner-tab fiscal-config (АТОЛ Онлайн credentials). New /owner.php?tab=fiscal — провайдер-радио, форма с login/password/group_code/ИНН/payment_address/СНО/sandbox toggle. Кнопка 'Тест соединения' дёргает AtolOnline::ensureToken() через api/save-fiscal-settings.php?test=1 без сохранения, показывает token-prefix или внятную ошибку АТОЛ. Кнопка 'Сохранить' upsert-ит все fiscal_* settings keys через Database::setSetting (JSON-encoded). Manual re-emit для legacy-заказов: ?reemit=<order_id> прокручивает cleanmenu_emit_fiscal_receipt. Owner-only access. Token-based CSS в css/owner-fiscal.css.",
   "critical": false
 }
