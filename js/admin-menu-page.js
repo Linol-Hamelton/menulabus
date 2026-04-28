@@ -129,7 +129,7 @@
     renderStatus(status, 'loading', 'Сохраняю...');
 
     try {
-      const data = await postJson('/save-payment-settings.php', {
+      const data = await postJson('/api/save/payment-settings.php', {
         payment: {
           yookassa_enabled: document.getElementById('ykEnabled')?.checked ?? false,
           yookassa_shop_id: document.getElementById('ykShopId')?.value.trim() || '',
@@ -148,7 +148,7 @@
     renderStatus(status, 'loading', 'Сохраняю...');
 
     try {
-      const data = await postJson('/save-payment-settings.php', {
+      const data = await postJson('/api/save/payment-settings.php', {
         payment: {
           tbank_enabled: document.getElementById('tbEnabled')?.checked ?? false,
           tbank_terminal_key: document.getElementById('tbTerminalKey')?.value.trim() || '',
@@ -173,7 +173,7 @@
     renderStatus(status, 'loading', 'Сохраняю...');
 
     try {
-      const data = await postJson('/save-brand.php', {
+      const data = await postJson('/api/save/brand.php', {
         brand: {
           telegram_chat_id: value,
         },

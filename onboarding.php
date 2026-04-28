@@ -2,9 +2,9 @@
 /**
  * onboarding.php — First-launch wizard for new restaurant owners.
  *
- * Step 1 : Enter restaurant name       (saved via save-brand.php)
- * Step 2 : Upload logo URL             (saved via save-brand.php)
- * Step 3 : Choose brand colors         (saved via save-colors.php)
+ * Step 1 : Enter restaurant name       (saved via api/save/brand.php)
+ * Step 2 : Upload logo URL             (saved via api/save/brand.php)
+ * Step 3 : Choose brand colors         (saved via api/save/colors.php)
  * Step 4 : Download / print QR code   (via qr-print.php)
  * Step 5 : Done → owner.php
  *
@@ -161,7 +161,7 @@ $currentLogo      = json_decode($db->getSetting('logo_url') ?? '""', true) ?? ''
 const csrf = <?= json_encode($csrf) ?>;
 
 async function postBrand(data) {
-    return fetch('/save-brand.php', {
+    return fetch('/api/save/brand.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
         body: JSON.stringify({ brand: data, csrf_token: csrf })
@@ -195,7 +195,7 @@ async function saveColorsAndNext() {
     const btn = document.getElementById('colorsNextBtn');
     btn.textContent = '...'; btn.disabled = true;
     try {
-        await fetch('/save-colors.php', {
+        await fetch('/api/save/colors.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
             body: JSON.stringify({

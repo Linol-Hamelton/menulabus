@@ -14,7 +14,7 @@ This document captures the UX niceties shipped on top of [admin-menu.php](../adm
 - The listing query (`Database::getMenuItems`, `Database::getArchivedMenuItems`) now orders by `category, sort_order, name` — so an untouched menu still reads alphabetically (all rows start at `sort_order=0`), and any explicit reorder wins.
 - New desktop-only drag handle (`⋮⋮`) in the first column of the admin menu table. Rows are `draggable="true"`; dropping a row above or below another row in the **same category** rewrites positions.
 - New method `Database::updateMenuItemsOrder(array $idToPosition): bool` — transactional batch UPDATE, invalidates the Redis menu cache via `invalidateMenuCache()` on success.
-- New endpoint [save-menu-order.php](../save-menu-order.php) — admin/owner role gate + CSRF via [lib/Csrf.php](../lib/Csrf.php), refuses cross-category reorders by checking each submitted id's `category` against the request `category` field.
+- New endpoint [api/save/menu-order.php](../api/save/menu-order.php) — admin/owner role gate + CSRF via [lib/Csrf.php](../lib/Csrf.php), refuses cross-category reorders by checking each submitted id's `category` against the request `category` field.
 - New UI: [js/admin-menu-sort.js](../js/admin-menu-sort.js) (vanilla HTML5 DnD, 500 ms debounce on save), [css/admin-menu-sort.css](../css/admin-menu-sort.css) (drag handle, drop indicator, toast).
 
 ### What is explicitly out of scope in this iteration
@@ -25,7 +25,7 @@ This document captures the UX niceties shipped on top of [admin-menu.php](../adm
 ### Request shape
 
 ```
-POST /save-menu-order.php
+POST /api/save/menu-order.php
 Content-Type: application/json
 X-CSRF-Token: <token>
 
@@ -65,7 +65,7 @@ MySQL 5.7 does not support `IF NOT EXISTS` on `ADD INDEX` / `ADD COLUMN`. On 5.7
 3. Drag the bottom item to the top. Toast "Порядок сохранён (N)" appears within ~500 ms.
 4. Reload the page. The dragged item remains at the top.
 5. Open the public `/menu.php` — the ordering carries through (same `ORDER BY` clause).
-6. In DevTools → Network → POST `save-menu-order.php`:
+6. In DevTools → Network → POST `api/save/menu-order.php`:
    - Strip the CSRF header and body → expect `403`.
    - Send a valid request but with a mismatched `category` → expect `400 cross_category_reorder_refused`.
 

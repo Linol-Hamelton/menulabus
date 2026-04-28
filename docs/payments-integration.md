@@ -4,7 +4,7 @@
 
 - Status: `Implemented`
 - Last reviewed: `2026-04-11`
-- Verified against code: [lib/TBank.php](../lib/TBank.php), [generate-payment-link.php](../generate-payment-link.php), [payment-return.php](../payment-return.php), [payment-webhook.php](../payment-webhook.php), [confirm-cash-payment.php](../confirm-cash-payment.php), [save-payment-settings.php](../save-payment-settings.php), [sql/payment-migration.sql](../sql/payment-migration.sql), [sql/sbp-migration.sql](../sql/sbp-migration.sql).
+- Verified against code: [lib/TBank.php](../lib/TBank.php), [generate-payment-link.php](../generate-payment-link.php), [payment-return.php](../payment-return.php), [payment-webhook.php](../payment-webhook.php), [confirm-cash-payment.php](../confirm-cash-payment.php), [api/save/payment-settings.php](../api/save/payment-settings.php), [sql/payment-migration.sql](../sql/payment-migration.sql), [sql/sbp-migration.sql](../sql/sbp-migration.sql).
 
 ## Purpose
 
@@ -32,7 +32,7 @@ Writes go through `Database::updateOrderPayment($orderId, $paymentId, $status, $
 
 ## Settings keys
 
-All stored in the `settings` table, JSON-encoded (wrap values with `json_encode()`). Written via [save-payment-settings.php](../save-payment-settings.php), which accepts only the allowlist below and requires `admin`/`owner` role plus CSRF.
+All stored in the `settings` table, JSON-encoded (wrap values with `json_encode()`). Written via [api/save/payment-settings.php](../api/save/payment-settings.php), which accepts only the allowlist below and requires `admin`/`owner` role plus CSRF.
 
 | Key | Kind | Meaning |
 |---|---|---|
@@ -44,7 +44,7 @@ All stored in the `settings` table, JSON-encoded (wrap values with `json_encode(
 | `tbank_terminal_key` | string | T-Bank terminal key. |
 | `tbank_password` | string | T-Bank terminal password used to sign requests. |
 
-> Secret values are validated by `save-payment-settings.php` against a conservative printable-char regex (`^\S{1,200}$`). Values above 200 characters are rejected with HTTP 422.
+> Secret values are validated by `api/save/payment-settings.php` against a conservative printable-char regex (`^\S{1,200}$`). Values above 200 characters are rejected with HTTP 422.
 
 ## Request flows
 
@@ -108,7 +108,7 @@ Both run under the nginx scope lock: the `location ^~ /scripts/ { return 404; }`
 
 | Symptom | Likely cause | Where to look |
 |---|---|---|
-| `Онлайн-оплата не настроена` (HTTP 503) on `generate-payment-link.php` | `yookassa_enabled` is `false` or `yookassa_shop_id`/`yookassa_secret_key` is empty | `save-payment-settings.php` / `settings` table |
+| `Онлайн-оплата не настроена` (HTTP 503) on `generate-payment-link.php` | `yookassa_enabled` is `false` or `yookassa_shop_id`/`yookassa_secret_key` is empty | `api/save/payment-settings.php` / `settings` table |
 | `Ошибка создания платежа в ЮKassa` (HTTP 502) | Wrong credentials or YooKassa rejected the amount/currency | `error_log` entries from `generate-payment-link.php` |
 | Webhook accepted but order not updated | `getOrderByPaymentId()` returned null — `payment_id` was never persisted, or persisted against the wrong order | DB row for the order; `updateOrderPayment()` call trace |
 | T-Bank webhook HTTP 400 "Invalid token" | `tbank_password` setting mismatches the terminal password | Admin panel; re-enter terminal credentials |

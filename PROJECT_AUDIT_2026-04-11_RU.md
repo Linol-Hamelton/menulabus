@@ -46,7 +46,7 @@ Menu Labus сегодня — это **зрелый production-grade white-label
 - `docs/tenant-launch-checklist.md` (`2026-03-24`): «One-command server-side go-live is now available through `scripts/tenant/go-live.sh`… DNS ownership remains an external prerequisite.»
 - `docs/project-improvement-roadmap.md` (`2026-03-24`): «Phase 2: Database and tenant provisioning — Implemented… Phase 5: Optional automation — Implemented.»
 
-И код это подтверждает: `scripts/tenant/go-live.sh`, `lib/tenant/launch-contract.php`, обработка `public_entry_mode` в `session_init.php` + `save-brand.php` + `index.php` — всё существует.
+И код это подтверждает: `scripts/tenant/go-live.sh`, `lib/tenant/launch-contract.php`, обработка `public_entry_mode` в `session_init.php` + `api/save/brand.php` + `index.php` — всё существует.
 
 **Рекомендация:** переписать `README.md` одним проходом, синхронизировав с feature matrix. Это первый файл, который видит новый инженер или потенциальный клиент, и сейчас он занижает продукт.
 
@@ -92,7 +92,7 @@ Menu Labus сегодня — это **зрелый production-grade white-label
 
 ### A.8. OpenAPI покрывает только часть реальной API-поверхности
 
-`docs/openapi.yaml` — авторитетный контракт мобильного API, pre-push hook его проверяет для пушей в `main`. Но многие эндпоинты, которые приложение реально использует в браузере (CSRF-защищённые POST из бэкофиса и пользовательских flow), **не** замоделированы в OpenAPI, потому что OpenAPI ограничен `api/v1/*`. Решение об охвате легитимное, но тогда частая фраза в документации «API contract source of truth: `docs/openapi.yaml`» слегка вводит в заблуждение: это **контракт мобильного API**, а не API в целом. У веб-эндпоинтов (`save-brand.php`, `save-colors.php`, `toggle-available.php`, `update_order_status.php`, `update_user_role.php`, `confirm-cash-payment.php`, `generate-payment-link.php` и т. п.) **нет схемы**.
+`docs/openapi.yaml` — авторитетный контракт мобильного API, pre-push hook его проверяет для пушей в `main`. Но многие эндпоинты, которые приложение реально использует в браузере (CSRF-защищённые POST из бэкофиса и пользовательских flow), **не** замоделированы в OpenAPI, потому что OpenAPI ограничен `api/v1/*`. Решение об охвате легитимное, но тогда частая фраза в документации «API contract source of truth: `docs/openapi.yaml`» слегка вводит в заблуждение: это **контракт мобильного API**, а не API в целом. У веб-эндпоинтов (`api/save/brand.php`, `api/save/colors.php`, `toggle-available.php`, `update_order_status.php`, `update_user_role.php`, `confirm-cash-payment.php`, `generate-payment-link.php` и т. п.) **нет схемы**.
 
 **Рекомендация:** либо (a) переименовать файл OpenAPI в `mobile-api.yaml` и явно это прописать, либо (b) добавить второй, более тонкий `docs/web-endpoints.yaml`, перечисляющий веб-POST, их CSRF-ожидания и формат ответов. Вариант (a) — дешёвый фикс; вариант (b) окупается при QA и внешних аудитах.
 
@@ -116,7 +116,7 @@ Menu Labus сегодня — это **зрелый production-grade white-label
 - [generate-payment-link.php](generate-payment-link.php), [payment-return.php](payment-return.php), [payment-webhook.php](payment-webhook.php), [confirm-cash-payment.php](confirm-cash-payment.php) — YooKassa + наличные + генерация ссылок.
 - [sql/payment-migration.sql](sql/payment-migration.sql) — миграция схемы платежей.
 - [sql/sbp-migration.sql](sql/sbp-migration.sql) — поддержка СБП (Система быстрых платежей).
-- [save-payment-settings.php](save-payment-settings.php) — бекенд админского UI для выбора провайдера.
+- [api/save/payment-settings.php](api/save/payment-settings.php) — бекенд админского UI для выбора провайдера.
 - [js/employee-payments.js](js/employee-payments.js) — подтверждение наличных/ссылок со стороны сотрудника.
 
 **Что говорят документы:** `docs/project-reference.md` секция 10 перечисляет платёжные роуты как «present in repo, repo-first audited only». **Нет гайда по интеграции, списка переменных окружения/ключей настроек, описания fail/rollback, заметок по СБП и T-Bank, заметок по идемпотентности** (хотя `lib/Idempotency.php` реально используется в `api/v1/orders/create.php`).
@@ -129,7 +129,7 @@ Menu Labus сегодня — это **зрелый production-grade white-label
 
 - [telegram-notifications.php](telegram-notifications.php) + [telegram-webhook.php](telegram-webhook.php) — бот с инлайн-кнопками принять/отклонить.
 - [send_message.php](send_message.php) — отдельная точка отправки.
-- Связки из [toggle-available.php](toggle-available.php), [admin-menu.php](admin-menu.php), [save-brand.php](save-brand.php).
+- Связки из [toggle-available.php](toggle-available.php), [admin-menu.php](admin-menu.php), [api/save/brand.php](api/save/brand.php).
 
 **Что говорят документы:** feature matrix упоминает «Telegram webhook / notifications — present in repo, repo-first audited only». **Setup-документа нет.** Операторы не могут подключить бота, не читая PHP-исходники.
 
@@ -216,7 +216,7 @@ Menu Labus сегодня — это **зрелый production-grade white-label
 
 Эти файлы существуют, но даже не перечислены в `docs/project-reference.md`:
 
-- [save-colors.php](save-colors.php), [save-fonts.php](save-fonts.php), [save-project-name.php](save-project-name.php) — эндпоинты админских настроек, должны быть под «branding surface».
+- [api/save/colors.php](api/save/colors.php), [api/save/fonts.php](api/save/fonts.php), [api/save/project-name.php](api/save/project-name.php) — эндпоинты админских настроек, должны быть под «branding surface».
 - [auto-colors.php](auto-colors.php), [auto-fonts.php](auto-fonts.php), [dynamic-fonts.php](dynamic-fonts.php) — генерация динамических CSS.
 - [download-sample.php](download-sample.php) — CSV-шаблон для массового импорта меню.
 - [verify.php](verify.php) — верификация email.

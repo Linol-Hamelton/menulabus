@@ -30,7 +30,7 @@ classify_surface() {
       echo "shell"
       return 0
       ;;
-    index.php|session_init.php|tenant_runtime.php|save-brand.php|lib/tenant/*|scripts/tenant/*)
+    index.php|session_init.php|tenant_runtime.php|api/save/brand.php|lib/tenant/*|scripts/tenant/*)
       echo "launch"
       return 0
       ;;

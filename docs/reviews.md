@@ -5,7 +5,7 @@
 - Status: `Implemented`
 - Last reviewed: `2026-04-12`
 - Current state:
-  - **Submission:** [order-track.php](../order-track.php) renders a 1–5 star form and optional comment textarea on any completed (`завершён`) order that has no existing review. Guests and logged-in users both submit through [save-review.php](../save-review.php).
+  - **Submission:** [order-track.php](../order-track.php) renders a 1–5 star form and optional comment textarea on any completed (`завершён`) order that has no existing review. Guests and logged-in users both submit through [api/save/review.php](../api/save/review.php).
   - **Storage:** [sql/reviews-migration.sql](../sql/reviews-migration.sql) — append-only `reviews` table, one row per order, enforced by a `UNIQUE (order_id)` index.
   - **Owner surface:** `/owner.php?tab=reviews` — read-only last-50 list with average rating, per-order deep-link back to the tracker. No moderation, no replies, no deletion from the admin in this iteration.
   - **5-star deep-link:** when `google_review_url` is set in brand settings, 5-star submissions surface a "Поделиться в Google" link after the thank-you state. Empty setting = button hidden.
@@ -40,8 +40,8 @@ Indexes: unique `(order_id)`, regular `(created_at)`, regular `(rating)`. The un
 1. Guest finishes the flow and lands on `/order-track.php?id=N`.
 2. When the poll (or initial server render) sees `status === 'завершён'`, the PHP branch renders the `#reviewSection` block with stars + textarea.
 3. `order-track.php` also writes `N` into `$_SESSION['reviewable_orders']` (cap 20). This is the session-scoped ownership proof — you cannot POST a review for an order you never viewed from this session.
-4. The form posts JSON to `/save-review.php` with `order_id`, `rating`, `comment`, and the session CSRF token.
-5. [save-review.php](../save-review.php) validates in order:
+4. The form posts JSON to `/api/save/review.php` with `order_id`, `rating`, `comment`, and the session CSRF token.
+5. [api/save/review.php](../api/save/review.php) validates in order:
    - `POST` method
    - CSRF token matches `$_SESSION['csrf_token']`
    - `order_id > 0`, `rating ∈ {1..5}`
@@ -65,7 +65,7 @@ No actions — this is a read surface. Deleting a review is deliberately not exp
 
 ## Google Review Deep-Link
 
-Setting: `google_review_url`, managed in [admin-menu.php](../admin-menu.php) alongside other brand fields. Validated as a URL in [save-brand.php](../save-brand.php) with a relaxed 500-char limit (default is 200) because Google's `writereview?placeid=…` URLs can be long.
+Setting: `google_review_url`, managed in [admin-menu.php](../admin-menu.php) alongside other brand fields. Validated as a URL in [api/save/brand.php](../api/save/brand.php) with a relaxed 500-char limit (default is 200) because Google's `writereview?placeid=…` URLs can be long.
 
 Behavior:
 
@@ -95,7 +95,7 @@ The setting is deliberately not exposed to non-5-star submissions. Low-rated fee
 8. In a second session, place and complete another order. Submit a 5-star review.
 9. Expect: thank-you panel + "Поделиться в Google" link (only if `google_review_url` is configured in brand settings).
 10. Open `/owner.php?tab=reviews`. Expect: both reviews listed, newest first, average rating shown.
-11. Attempt `curl -X POST /save-review.php` with a valid order ID from a fresh session. Expect: `403 Order not accessible from this session`.
+11. Attempt `curl -X POST /api/save/review.php` with a valid order ID from a fresh session. Expect: `403 Order not accessible from this session`.
 12. Attempt a second POST for the same order from the session that already reviewed it. Expect: `409 Review already submitted`.
 
 ## Known Gaps / Future Work
@@ -108,8 +108,8 @@ The setting is deliberately not exposed to non-5-star submissions. Low-rated fee
 
 ## Related Docs
 
-- [project-reference.md](./project-reference.md) — section 5.2 lists the public routes exposed by each tenant; `save-review.php` and the updated `order-track.php` are part of that surface.
+- [project-reference.md](./project-reference.md) — section 5.2 lists the public routes exposed by each tenant; `api/save/review.php` and the updated `order-track.php` are part of that surface.
 - [feature-audit-matrix.md](./feature-audit-matrix.md) — the "reviews / feedback loop" row in §3 is the audit entry for this module.
 - [menu-capabilities-presentation.md](./menu-capabilities-presentation.md) — the guest-facing and owner-facing bullets describe the feature to non-engineers.
 - [public-layer-guidelines.md](./public-layer-guidelines.md) — CSP rules the submission UI must honor (no inline styles/scripts; external css + js only).
-- [api-smoke.md](./api-smoke.md) — the smoke runner does not currently exercise `/save-review.php`; adding a case there is a followup if the feature becomes load-bearing.
+- [api-smoke.md](./api-smoke.md) — the smoke runner does not currently exercise `/api/save/review.php`; adding a case there is a followup if the feature becomes load-bearing.

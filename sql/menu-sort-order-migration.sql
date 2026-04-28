@@ -5,7 +5,7 @@
 -- promote a signature dish to the top of its category.
 -- After:  menu_items has a sort_order INT column with a composite index on
 -- (category, sort_order, name). The admin UI writes integer positions via
--- save-menu-order.php; new items default to 0 and show up alphabetically
+-- api/save/menu-order.php; new items default to 0 and show up alphabetically
 -- under any items that have been explicitly ordered.
 --
 -- The migration is deliberately non-destructive: existing rows get sort_order=0

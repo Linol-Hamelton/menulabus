@@ -19,7 +19,7 @@ if (!$order) {
 
 $isLoggedIn = !empty($_SESSION['user_id']);
 
-// Stamp this order id as session-reviewable so /save-review.php accepts a
+// Stamp this order id as session-reviewable so /api/save/review.php accepts a
 // submission from the same session later. We deliberately keep this list
 // small (last 20) so a long-lived session doesn't accumulate state forever.
 $reviewableOrders = isset($_SESSION['reviewable_orders']) && is_array($_SESSION['reviewable_orders'])
@@ -279,14 +279,14 @@ $appVersion = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
     // Review submission block — only shown for orders in the terminal
     // `завершён` state. If there's already a review in the DB, render a
     // read-only thank-you panel. Otherwise render the star-picker form.
-    // The JS lives in /js/reviews.js and wires the form to /save-review.php.
+    // The JS lives in /js/reviews.js and wires the form to /api/save/review.php.
     $canSubmitReview = ($done && $existingReview === null);
     $alreadyReviewed = ($done && $existingReview !== null);
     ?>
     <?php if ($canSubmitReview): ?>
     <section class="review-section" id="reviewSection"
              data-order-id="<?= $orderId ?>"
-             data-endpoint="/save-review.php">
+             data-endpoint="/api/save/review.php">
         <h3 class="review-title">Оцените заказ</h3>
         <p class="review-sub">Ваша обратная связь помогает команде улучшать сервис.</p>
         <form class="review-form" id="reviewForm" autocomplete="off">

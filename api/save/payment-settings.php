@@ -1,8 +1,8 @@
 <?php
 /**
- * save-payment-settings.php — save ЮKassa payment credentials
+ * api/save/payment-settings.php — save ЮKassa payment credentials
  *
- * POST /save-payment-settings.php
+ * POST /api/save/payment-settings.php
  * Content-Type: application/json
  * Body: { "payment": { "yookassa_enabled": true, "yookassa_shop_id": "...", "yookassa_secret_key": "..." } }
  *
@@ -10,8 +10,8 @@
  */
 
 $required_role = 'admin';
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/require_auth.php';
+require_once __DIR__ . '/../../session_init.php';
+require_once __DIR__ . '/../../require_auth.php';
 
 header('Content-Type: application/json; charset=utf-8');
 

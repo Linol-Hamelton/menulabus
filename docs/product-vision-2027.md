@@ -48,7 +48,7 @@
 - **Security host rollout (Phase 2/3/5)** — скрипты готовы, нужна раскатка на проде.
 - **Mobile Capacitor tenant-aware** — пока provider-centric.
 - **OAuth (Google/VK/Yandex)** — runtime-config dependent.
-- **CSRF на `save-project-name.php` / `send_message.php`** — требует правки минифицированного JS.
+- **CSRF на `api/save/project-name.php` / `send_message.php`** — требует правки минифицированного JS.
 
 ### 2.3 What we don't yet have (competitive gaps)
 

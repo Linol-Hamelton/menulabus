@@ -1,5 +1,5 @@
 <?php
-// save-review.php — customer feedback submission endpoint.
+// api/save/review.php — customer feedback submission endpoint.
 //
 // Accessible to guests and logged-in users (the order tracker page is public,
 // so review submission must be too). Protections:
@@ -21,8 +21,8 @@
 //
 // On failure: HTTP 4xx with { "error": "..." }.
 
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/../../session_init.php';
+require_once __DIR__ . '/../../db.php';
 
 header('Content-Type: application/json; charset=utf-8');
 

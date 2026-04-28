@@ -44,7 +44,7 @@ Both statements are contradicted by newer docs:
 - `docs/tenant-launch-checklist.md` (`2026-03-24`): "One-command server-side go-live is now available through `scripts/tenant/go-live.sh`… DNS ownership remains an external prerequisite."
 - `docs/project-improvement-roadmap.md` (`2026-03-24`): "Phase 2: Database and tenant provisioning — Implemented… Phase 5: Optional automation — Implemented."
 
-And the code supports them: `scripts/tenant/go-live.sh`, `lib/tenant/launch-contract.php`, and `public_entry_mode` handling in `session_init.php` + `save-brand.php` + `index.php` all exist.
+And the code supports them: `scripts/tenant/go-live.sh`, `lib/tenant/launch-contract.php`, and `public_entry_mode` handling in `session_init.php` + `api/save/brand.php` + `index.php` all exist.
 
 **Recommendation:** rewrite `README.md` in one pass to match the current feature matrix — it is the file a new engineer or potential customer sees first, and it is currently underselling the product.
 
@@ -90,7 +90,7 @@ Both are still genuinely open. The stale threshold is hard-coded at 45 minutes i
 
 ### A.8. OpenAPI covers only a slice of the real API surface
 
-`docs/openapi.yaml` is the authoritative mobile API contract, and the pre-push hook gates it for pushes to `main`. But many endpoints that the app actually uses in the browser (CSRF-protected POSTs from the backoffice and customer flows) are **not** modeled in OpenAPI, because OpenAPI is scoped to `api/v1/*` only. Legitimate scoping decision — but it means the docs' frequent phrase "API contract source of truth: `docs/openapi.yaml`" is slightly misleading: it is the **mobile API contract**, not the overall API contract. Web endpoints (`save-brand.php`, `save-colors.php`, `toggle-available.php`, `update_order_status.php`, `update_user_role.php`, `confirm-cash-payment.php`, `generate-payment-link.php`, etc.) have **no schema**.
+`docs/openapi.yaml` is the authoritative mobile API contract, and the pre-push hook gates it for pushes to `main`. But many endpoints that the app actually uses in the browser (CSRF-protected POSTs from the backoffice and customer flows) are **not** modeled in OpenAPI, because OpenAPI is scoped to `api/v1/*` only. Legitimate scoping decision — but it means the docs' frequent phrase "API contract source of truth: `docs/openapi.yaml`" is slightly misleading: it is the **mobile API contract**, not the overall API contract. Web endpoints (`api/save/brand.php`, `api/save/colors.php`, `toggle-available.php`, `update_order_status.php`, `update_user_role.php`, `confirm-cash-payment.php`, `generate-payment-link.php`, etc.) have **no schema**.
 
 **Recommendation:** either (a) rename the OpenAPI file to `mobile-api.yaml` and say so in docs, or (b) add a second, slimmer schema `docs/web-endpoints.yaml` that enumerates the web POSTs, their CSRF expectations, and response shapes. Option (a) is the cheap fix; option (b) pays off during QA and external audits.
 
@@ -114,7 +114,7 @@ These are genuine **doc gaps**, not bugs — the features work, they are just in
 - [generate-payment-link.php](generate-payment-link.php), [payment-return.php](payment-return.php), [payment-webhook.php](payment-webhook.php), [confirm-cash-payment.php](confirm-cash-payment.php) — YooKassa + cash + link-generation flow.
 - [sql/payment-migration.sql](sql/payment-migration.sql) — payment columns schema migration.
 - [sql/sbp-migration.sql](sql/sbp-migration.sql) — SBP (Система быстрых платежей) support.
-- [save-payment-settings.php](save-payment-settings.php) — admin UI backend for provider selection.
+- [api/save/payment-settings.php](api/save/payment-settings.php) — admin UI backend for provider selection.
 - [js/employee-payments.js](js/employee-payments.js) — employee-side cash/link confirmation.
 
 **What docs say:** `docs/project-reference.md` section 10 lists the payment routes as "present in repo, repo-first audited only". There is **no integration guide, no credential variable list, no fail/rollback narrative, no SBP note, no T-Bank note, no idempotency note** (despite `lib/Idempotency.php` being a real class used by `api/v1/orders/create.php`).
@@ -127,7 +127,7 @@ These are genuine **doc gaps**, not bugs — the features work, they are just in
 
 - [telegram-notifications.php](telegram-notifications.php) + [telegram-webhook.php](telegram-webhook.php) — bot with inline keyboard accept/reject callbacks.
 - [send_message.php](send_message.php) — separate send entry point.
-- Tie-ins from [toggle-available.php](toggle-available.php), [admin-menu.php](admin-menu.php), and [save-brand.php](save-brand.php).
+- Tie-ins from [toggle-available.php](toggle-available.php), [admin-menu.php](admin-menu.php), and [api/save/brand.php](api/save/brand.php).
 
 **What docs say:** the feature matrix mentions "Telegram webhook / notifications — present in repo, repo-first audited only". **No setup doc exists.** Operators cannot onboard a bot without reading PHP source.
 
@@ -214,7 +214,7 @@ These are genuine **doc gaps**, not bugs — the features work, they are just in
 
 The following files exist but are not even enumerated in `docs/project-reference.md`:
 
-- [save-colors.php](save-colors.php), [save-fonts.php](save-fonts.php), [save-project-name.php](save-project-name.php) — admin settings endpoints, should appear under "branding surface".
+- [api/save/colors.php](api/save/colors.php), [api/save/fonts.php](api/save/fonts.php), [api/save/project-name.php](api/save/project-name.php) — admin settings endpoints, should appear under "branding surface".
 - [auto-colors.php](auto-colors.php), [auto-fonts.php](auto-fonts.php), [dynamic-fonts.php](dynamic-fonts.php) — dynamic CSS generation endpoints.
 - [download-sample.php](download-sample.php) — CSV template for bulk menu import.
 - [verify.php](verify.php) — email verification entry point.

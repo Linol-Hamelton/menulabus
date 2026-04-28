@@ -1,7 +1,7 @@
 /* reviews.js — wires the review form on order-track.php
  *
  * No framework; no dependencies. Reads CSRF from <meta name="csrf-token">,
- * posts JSON to /save-review.php, handles three states:
+ * posts JSON to /api/save/review.php, handles three states:
  *   - idle: waiting for a star selection
  *   - selected: at least one star picked, submit becomes enabled
  *   - submitted: form hidden, thank-you panel shown, optional Google link
@@ -27,7 +27,7 @@
     }
 
     const orderId = parseInt(section.getAttribute('data-order-id') || '0', 10);
-    const endpoint = section.getAttribute('data-endpoint') || '/save-review.php';
+    const endpoint = section.getAttribute('data-endpoint') || '/api/save/review.php';
 
     function getCsrfToken() {
         const meta = document.querySelector('meta[name="csrf-token"]');

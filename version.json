@@ -1,6 +1,6 @@
 {
-  "version": "1.5.0",
+  "version": "1.5.1",
   "release_date": "2026-04-28",
-  "changelog": "Phase 13B.3.a: ARCHITECTURE — все 9 admin-*.php переехали из корня в admin/{name}.php. Файлы: admin/{inventory,kitchen,locations,loyalty,marketing,menu,staff,waitlist,webhooks}.php. Внутри файлов __DIR__ . '/X' сменилось на __DIR__ . '/../X'. Все внешние ссылки (account-header.php, help.php, kds.php, lib/ops/monitor-page.php, scripts/tenant/launch.php, js/admin-menu-page.js, js/admin-staff-swaps.js, и cross-refs внутри admin/*) переписаны на новые пути. nginx-optimized.conf обновлён (skip_cache regex /admin-menu → /admin/). Корень теперь содержит 83 PHP вместо 92 (-9). Минорный bump 1.5.0 для cache-bust на всех страницах.",
+  "changelog": "Phase 13B.3.b: ARCHITECTURE — 7 root-level save-*.php переехали в api/save/. Файлы: api/save/{brand,colors,fonts,menu-order,payment-settings,project-name,review}.php (без save- префикса — название уже в namespace директории). Внутри файлов __DIR__ . '/X' → __DIR__ . '/../../X' (depth 2). Все внешние URL refs обновлены — js/file-manager.min.js, js/admin-menu-page.js, js/admin-menu-sort.js, js/reviews.js, order-track.php, onboarding.php плюс cross-refs внутри api/save/*. Корень теперь 76 PHP файлов вместо 83 (-7).",
   "critical": false
 }

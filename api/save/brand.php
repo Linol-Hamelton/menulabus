@@ -2,7 +2,7 @@
 $required_role = 'admin';
 require_once 'session_init.php';
 require_once 'require_auth.php';
-require_once __DIR__ . '/lib/tenant/launch-contract.php';
+require_once __DIR__ . '/../../lib/tenant/launch-contract.php';
 
 header('Content-Type: application/json');
 

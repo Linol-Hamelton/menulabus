@@ -1,6 +1,6 @@
 <?php
 /**
- * save-menu-order.php — persist a drag-n-drop reorder for menu items.
+ * api/save/menu-order.php — persist a drag-n-drop reorder for menu items.
  *
  * POST JSON {
  *   category: "Пицца",
@@ -20,10 +20,10 @@
  */
 
 $required_role = 'admin';
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/require_auth.php';
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/lib/Csrf.php';
+require_once __DIR__ . '/../../session_init.php';
+require_once __DIR__ . '/../../require_auth.php';
+require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../../lib/Csrf.php';
 
 header('Content-Type: application/json; charset=utf-8');
 

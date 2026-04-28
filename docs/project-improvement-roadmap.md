@@ -135,7 +135,7 @@ Operational note:
 2. Execute host-level security rollout for firewall, SSH/fail2ban, and patch cadence on the production host.
 3. Apply pending migrations on live tenants: `menu-sort-order-migration.sql`, `modifiers-soft-delete-migration.sql`, `webhooks-migration.sql`, `reservations-migration.sql`.
 4. Wire cron jobs: `webhook-worker.php`, `scripts/orders/purge-soft-deleted.php`, `scripts/security/monthly-review.sh`.
-5. Close remaining CSRF gaps on `save-project-name.php` and `send_message.php` (either update minified JS callers or deprecate).
+5. Close remaining CSRF gaps on `api/save/project-name.php` and `send_message.php` (either update minified JS callers or deprecate).
 6. Finish Mobile Capacitor tenant-aware rework (preferences-driven `server.url`).
 
 ### Medium-term — Phase 6 (Restaurant Operations Core)

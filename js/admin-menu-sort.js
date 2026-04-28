@@ -62,7 +62,7 @@
 
     function sendOrder(category, order) {
         if (!order || order.length === 0) return;
-        fetch('/save-menu-order.php', {
+        fetch('/api/save/menu-order.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

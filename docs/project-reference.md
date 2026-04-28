@@ -105,7 +105,7 @@ Public + customer flow:
 - `/create_guest_order.php` → guest order create endpoint
 - `/order-track.php` → customer-facing order status page; on completed orders, renders the 1–5 star feedback submission block (see [reviews.md](./reviews.md))
 - `/order-status.php` → short-poll status fetch used by the tracker
-- `/save-review.php` → customer review submission endpoint (CSRF + session-scoped ownership; append-only). See [reviews.md](./reviews.md)
+- `/api/save/review.php` → customer review submission endpoint (CSRF + session-scoped ownership; append-only). See [reviews.md](./reviews.md)
 - `/orders-sse.php` → server-sent events stream for live updates
 - `/ws-poll.php` → long-poll fallback for live updates
 - `/payment-return.php` → redirect landing after YooKassa / T-Bank payment
@@ -141,8 +141,8 @@ Owner / admin / employee surfaces:
 
 Settings writers (CSRF + role-gated):
 
-- `/save-brand.php`, `/save-colors.php`, `/save-fonts.php`, `/save-contact.php`
-- `/save-payment-settings.php` — YooKassa + T-Bank credentials allowlist (see [payments-integration.md](./payments-integration.md))
+- `/api/save/brand.php`, `/api/save/colors.php`, `/api/save/fonts.php`, `/save-contact.php`
+- `/api/save/payment-settings.php` — YooKassa + T-Bank credentials allowlist (see [payments-integration.md](./payments-integration.md))
 - `/save-telegram-settings.php` — `telegram_chat_id` per tenant
 - `/toggle-available.php` — stop-list toggle; also fires Telegram alert
 - `/update_order_status.php` — employee state-machine transition, also triggers push (see [pwa-and-push.md](./pwa-and-push.md))
