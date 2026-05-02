@@ -15,14 +15,14 @@ type Page = { name: string; url: string; skipOn?: string[] };
 
 const PAGES: Page[] = [
   // Owner dashboards
-  { name: 'admin-kitchen',   url: '/admin-kitchen.php' },
-  { name: 'admin-inventory', url: '/admin-inventory.php' },
-  { name: 'admin-loyalty',   url: '/admin-loyalty.php' },
-  { name: 'admin-locations', url: '/admin-locations.php' },
-  { name: 'admin-marketing', url: '/admin-marketing.php' },
-  { name: 'admin-staff',     url: '/admin-staff.php' },
-  { name: 'admin-webhooks',  url: '/admin-webhooks.php' },
-  { name: 'admin-waitlist',  url: '/admin-waitlist.php' },
+  { name: 'admin-kitchen',   url: '/admin/kitchen.php' },
+  { name: 'admin-inventory', url: '/admin/inventory.php' },
+  { name: 'admin-loyalty',   url: '/admin/loyalty.php' },
+  { name: 'admin-locations', url: '/admin/locations.php' },
+  { name: 'admin-marketing', url: '/admin/marketing.php' },
+  { name: 'admin-staff',     url: '/admin/staff.php' },
+  { name: 'admin-webhooks',  url: '/admin/webhooks.php' },
+  { name: 'admin-waitlist',  url: '/admin/waitlist.php' },
 
   // KDS
   { name: 'kds-station-picker', url: '/kds.php' },
