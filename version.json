@@ -1,6 +1,6 @@
 {
-  "version": "1.5.3",
+  "version": "1.5.4",
   "release_date": "2026-04-28",
-  "changelog": "Phase 13B.4 + 13B.5: новый docs/architecture-map.md — feature → file/API/DB/cron map по всем 14 feature-areas (KDS, inventory, loyalty, multi-location, analytics-v2, reservations, webhooks, marketing, reviews, group split-bill, waitlist, staff v2, fiscal, i18n) + cross-cutting subsystems + repo layout после Phase 13B.3 рефакторинга. docs/feature-audit-matrix.md синхронизован: Phase 7 (54-ФЗ, i18n, staff v2, advanced split-bill payments) + Phase 8 (marketing, group ordering, waitlists, reviews) переведены из 'planned' в 'Implemented' с актуальными file paths и ссылками на module-doc'и. iiko остаётся 'planned (deferred — explicit user decision Phase 13)'.",
+  "changelog": "Phase 13C cleanup. 13C.1: удалены audit-screens/ + PROJECT_AUDIT_*.md + .playwright-cli/.playwright-mcp/playwright-report/test-results/ из git и working dir; .gitignore обновлён. 13C.2: docs/archive/2026/ создан с README-конвенцией о том, когда переезжать execution-guides в архив. 13C.3: scripts/dev-db-reset.php — CLI с --really-truncate-test-data флагом, dry-run по умолчанию; truncate-list = orders/reservations/group_orders/loyalty_transactions/marketing_sends/webhook_deliveries/stock_movements/shifts/time_entries/tip_splits/shift_swap_requests/idempotency_keys (17 таблиц). Не трогает menu_items/users/settings/kitchen_stations/ingredients/locations/loyalty_tiers/promo_codes (showcase data).",
   "critical": false
 }
