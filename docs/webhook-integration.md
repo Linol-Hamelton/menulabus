@@ -10,7 +10,7 @@
   - **Dispatcher:** [lib/WebhookDispatcher.php](../lib/WebhookDispatcher.php) — `dispatch()` (enqueue per active subscription), `send()` (HTTP POST with HMAC-SHA256), `generateSecret()`.
   - **Worker:** [scripts/webhook-worker.php](../scripts/webhook-worker.php) — atomic claim via `SELECT ... FOR UPDATE`, runs once or in a loop.
   - **Admin UI:** [admin-webhooks.php](../admin-webhooks.php) — list, create, toggle active, rotate secret, delete, view delivery history. CRUD endpoint: [api/save-webhook.php](../api/save-webhook.php).
-  - **Hook points (current):** `order.created` ([create_new_order.php](../create_new_order.php)), `reservation.created` ([api/v1/reservations/create.php](../api/v1/reservations/create.php), [create_reservation.php](../create_reservation.php)), `reservation.confirmed` / `reservation.seated` / `reservation.cancelled` / `reservation.no_show` ([update_reservation_status.php](../update_reservation_status.php)).
+  - **Hook points (current):** `order.created` ([create_new_order.php](../create_new_order.php)), `reservation.created` ([api/v1/reservations/create.php](../api/v1/reservations/create.php), [api/reservations/create.php](../api/reservations/create.php)), `reservation.confirmed` / `reservation.seated` / `reservation.cancelled` / `reservation.no_show` ([api/reservations/update-status.php](../api/reservations/update-status.php)).
 
 ## Purpose
 
@@ -63,8 +63,8 @@ Initial set (see [lib/WebhookDispatcher.php](../lib/WebhookDispatcher.php) `disp
 | Event                    | Fires from                                                                                              | Payload `data` shape                                  |
 |--------------------------|---------------------------------------------------------------------------------------------------------|--------------------------------------------------------|
 | `order.created`          | [create_new_order.php](../create_new_order.php) after successful insert                                 | full row from `Database::getOrderById()`              |
-| `reservation.created`    | [api/v1/reservations/create.php](../api/v1/reservations/create.php) and [create_reservation.php](../create_reservation.php) | full row from `Database::getReservationById()` |
-| `reservation.confirmed`  | [update_reservation_status.php](../update_reservation_status.php) after staff/Telegram action           | full reservation row                                  |
+| `reservation.created`    | [api/v1/reservations/create.php](../api/v1/reservations/create.php) and [api/reservations/create.php](../api/reservations/create.php) | full row from `Database::getReservationById()` |
+| `reservation.confirmed`  | [api/reservations/update-status.php](../api/reservations/update-status.php) after staff/Telegram action           | full reservation row                                  |
 | `reservation.seated`     | same as above                                                                                            | full reservation row                                  |
 | `reservation.cancelled`  | same as above                                                                                            | full reservation row                                  |
 | `reservation.no_show`    | same as above                                                                                            | full reservation row                                  |
@@ -191,7 +191,7 @@ Click the active toggle. The subscription stays in the table; new events are not
 
 1. Stand up a tiny local consumer (`ngrok` or Cloudflare Tunnel pointing at `http://localhost:4000/sink`).
 2. In `/admin-webhooks.php` create a subscription for `reservation.created` with the tunnel URL. Copy the secret from the success message.
-3. Hit `POST /create_reservation.php` with a valid CSRF token (or use the `/reservation.php` form).
+3. Hit `POST /api/reservations/create.php` with a valid CSRF token (or use the `/reservation.php` form).
 4. Run the worker once: `php scripts/webhook-worker.php --batch=10`.
 5. Confirm the consumer received the request and the HMAC validates.
 6. Click "История" for the subscription in the admin UI — expect a row with `status=delivered`, `response_code=200`.

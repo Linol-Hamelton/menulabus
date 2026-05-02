@@ -11,8 +11,8 @@
 
 ## Files
 
-- `/vk-oauth-start.php`
-- `/vk-oauth-callback.php`
+- `/auth/oauth/vk-start.php`
+- `/auth/oauth/vk-callback.php`
 - `/lib/OAuthVK.php`
 
 ## Runtime Variables
@@ -34,17 +34,17 @@ VK_OAUTH_CLIENT_SECRET=your-app-secret
 ## Provider Example
 
 - site URL: `https://menu.labus.pro`
-- redirect URI: `https://menu.labus.pro/vk-oauth-callback.php`
+- redirect URI: `https://menu.labus.pro/auth/oauth/vk-callback.php`
 
 If you use a different domain, register that exact callback URL in VK.
 
 ## Flow Summary
 
-1. `/vk-oauth-start.php?mode=login|register`
+1. `/auth/oauth/vk-start.php?mode=login|register`
    - generates signed `state`
    - stores `vk_oauth_state` cookie
    - redirects to VK authorization
-2. `/vk-oauth-callback.php`
+2. `/auth/oauth/vk-callback.php`
    - validates `state`
    - exchanges `code` for `access_token`
    - fetches user profile

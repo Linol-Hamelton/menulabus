@@ -12,7 +12,7 @@
  */
 
 define('LABUS_CTX', 'sse');
-require_once __DIR__ . '/session_init.php';
+require_once __DIR__ . '/../session_init.php';
 
 header('Content-Type: text/event-stream; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -57,7 +57,7 @@ if ($stationId !== null && $stationId <= 0) {
     exit;
 }
 
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/../db.php';
 $db = Database::getInstance();
 
 $lastKnown = (int)($_GET['t'] ?? 0);

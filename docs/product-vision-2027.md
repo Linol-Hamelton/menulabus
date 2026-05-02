@@ -78,7 +78,7 @@
 
 | Трек | Выход |
 |---|---|
-| 6.1 Kitchen Display System | Separate `/kds.php` для кухни, per-station routing (hot/cold/bar), drag-to-acknowledge, real-time через SSE или WebSocket. |
+| 6.1 Kitchen Display System | Separate `/kds/index.php` для кухни, per-station routing (hot/cold/bar), drag-to-acknowledge, real-time через SSE или WebSocket. |
 | 6.2 Inventory MVP | Таблицы `ingredients`, `recipes`, `stock_movements`; auto-deduction при `order.created`; admin UI для рецептов. |
 | 6.3 Loyalty Program | Балльная система, tier levels (Bronze/Silver/Gold), cashback в баллы, промокоды v2. |
 | 6.4 Enhanced Analytics | Маржа по блюдам (уже есть `cost`), cohort-анализ клиентов, heatmap час × день, прогноз выручки на неделю. |

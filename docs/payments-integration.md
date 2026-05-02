@@ -4,7 +4,7 @@
 
 - Status: `Implemented`
 - Last reviewed: `2026-04-11`
-- Verified against code: [lib/TBank.php](../lib/TBank.php), [generate-payment-link.php](../generate-payment-link.php), [payment-return.php](../payment-return.php), [payment-webhook.php](../payment-webhook.php), [confirm-cash-payment.php](../confirm-cash-payment.php), [api/save/payment-settings.php](../api/save/payment-settings.php), [sql/payment-migration.sql](../sql/payment-migration.sql), [sql/sbp-migration.sql](../sql/sbp-migration.sql).
+- Verified against code: [lib/TBank.php](../lib/TBank.php), [generate-payment-link.php](../generate-payment-link.php), [payment-return.php](../payment-return.php), [payment-webhook.php](../payment-webhook.php), [api/checkout/cash-payment.php](../api/checkout/cash-payment.php), [api/save/payment-settings.php](../api/save/payment-settings.php), [sql/payment-migration.sql](../sql/payment-migration.sql), [sql/sbp-migration.sql](../sql/sbp-migration.sql).
 
 ## Purpose
 
@@ -14,7 +14,7 @@ This document is the operator- and engineer-facing reference for the payment lay
 
 | Provider | `payment_method` value | Use case |
 |---|---|---|
-| Cash at pickup / cash on delivery | `cash` | Default. Confirmed by an employee via `confirm-cash-payment.php`. |
+| Cash at pickup / cash on delivery | `cash` | Default. Confirmed by an employee via `api/checkout/cash-payment.php`. |
 | YooKassa (Юkassa) card payment | `online` | Default online card acquiring for the Russian market. Creates a hosted payment page and redirects the user there. |
 | T-Bank (Тинькофф) acquiring via СБП | `sbp` | Fast-payment-system rail via T-Bank terminal. Signed with SHA-256 token; verified on webhook and on payment-return. |
 
@@ -76,14 +76,14 @@ All stored in the `settings` table, JSON-encoded (wrap values with `json_encode(
 ### Cash (`cash`)
 
 1. Order is created with `payment_status='not_required'` (or `pending` if a cash-on-delivery flag is configured at cart level).
-2. Employee confirms cash receipt via [confirm-cash-payment.php](../confirm-cash-payment.php), which calls `Database::confirmCashPayment($orderId)`.
+2. Employee confirms cash receipt via [api/checkout/cash-payment.php](../api/checkout/cash-payment.php), which calls `Database::confirmCashPayment($orderId)`.
 3. The confirm endpoint is **idempotent**: it reads the `Idempotency-Key` header via `Idempotency::getHeaderKey()`, hashes the request payload, and replays the cached response for the same key+hash. Payload conflict on the same key returns HTTP 409. See [api-smoke.md](./api-smoke.md) for the header contract.
 
 ## Idempotency
 
 - Library: [lib/Idempotency.php](../lib/Idempotency.php).
 - Table: `api_idempotency_keys` (see [sql/mobile-api-tables.sql](../sql/mobile-api-tables.sql)).
-- Used today by: `confirm-cash-payment.php`, `api/v1/orders/create.php` (order creation), and mobile API POSTs. `generate-payment-link.php` relies on YooKassa's own `Idempotence-Key` header for the upstream call and additionally reuses existing pending payments to stay idempotent at the business level.
+- Used today by: `api/checkout/cash-payment.php`, `api/v1/orders/create.php` (order creation), and mobile API POSTs. `generate-payment-link.php` relies on YooKassa's own `Idempotence-Key` header for the upstream call and additionally reuses existing pending payments to stay idempotent at the business level.
 - Key TTL: enforced by the row's `expires_at` column.
 
 ## Webhook URL registration

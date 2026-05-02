@@ -1,6 +1,6 @@
 <?php
 /**
- * reservation_availability.php — session-based availability lookup for
+ * api/reservations/availability.php — session-based availability lookup for
  * the public /reservation.php picker. Mirrors api/v1/reservations/availability.php
  * but uses session auth so unauthenticated guests can pre-check slots
  * without a bearer token.
@@ -14,8 +14,8 @@
  * No CSRF: read-only, idempotent.
  */
 
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/../../session_init.php';
+require_once __DIR__ . '/../../db.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate');

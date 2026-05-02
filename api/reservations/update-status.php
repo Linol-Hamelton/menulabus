@@ -1,6 +1,6 @@
 <?php
 /**
- * update_reservation_status.php — staff-only endpoint to move a reservation
+ * api/reservations/update-status.php — staff-only endpoint to move a reservation
  * along its lifecycle. Mirrors the shape of update_order_status.php.
  *
  * POST { reservation_id, status }
@@ -10,9 +10,9 @@
  * CSRF: required (header X-CSRF-Token or POST/JSON body csrf_token).
  */
 
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/lib/Csrf.php';
+require_once __DIR__ . '/../../session_init.php';
+require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../../lib/Csrf.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -86,7 +86,7 @@ if (!$db->updateReservationStatus($reservationId, $newStatus)) {
     exit;
 }
 
-require_once __DIR__ . '/lib/WebhookDispatcher.php';
+require_once __DIR__ . '/../../lib/WebhookDispatcher.php';
 $updated = $db->getReservationById($reservationId);
 if ($updated !== null) {
     WebhookDispatcher::dispatch('reservation.' . $newStatus, $updated, $db);

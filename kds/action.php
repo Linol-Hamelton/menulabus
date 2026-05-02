@@ -20,10 +20,10 @@
  */
 
 $required_role = 'employee';
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/require_auth.php';
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/lib/Csrf.php';
+require_once __DIR__ . '/../session_init.php';
+require_once __DIR__ . '/../require_auth.php';
+require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../lib/Csrf.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -80,7 +80,7 @@ $orderReady = false;
 if ($changed && $newStatus === 'ready' && $orderId > 0 && $db->isOrderFullyReady($orderId)) {
     $orderReady = true;
     try {
-        require_once __DIR__ . '/lib/WebhookDispatcher.php';
+        require_once __DIR__ . '/../lib/WebhookDispatcher.php';
         $orderRow = $db->getOrderById($orderId);
         if ($orderRow) {
             WebhookDispatcher::dispatch('order.ready', $orderRow, $db);
@@ -90,8 +90,8 @@ if ($changed && $newStatus === 'ready' && $orderId > 0 && $db->isOrderFullyReady
     }
 
     try {
-        require_once __DIR__ . '/config.php';
-        require_once __DIR__ . '/telegram-notifications.php';
+        require_once __DIR__ . '/../config.php';
+        require_once __DIR__ . '/../telegram-notifications.php';
         if (defined('TELEGRAM_BOT_TOKEN') && TELEGRAM_BOT_TOKEN) {
             $tgChatId = json_decode($db->getSetting('telegram_chat_id') ?? 'null', true);
             if ($tgChatId) {

@@ -3,9 +3,9 @@
 // Web login/register via Google OAuth callback.
 // Exchanges code -> id_token, verifies it, links/creates a user, then creates a normal PHP session.
 
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/lib/OAuthGoogle.php';
+require_once __DIR__ . '/../../session_init.php';
+require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../../lib/OAuthGoogle.php';
 
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
@@ -77,7 +77,7 @@ if ($code === '' || $state === '') {
 $cookieState = (string)($_COOKIE['g_oauth_state'] ?? '');
 setcookie('g_oauth_state', '', tenant_host_only_cookie_options([
     'expires' => time() - 3600,
-    'path' => '/google-oauth-callback.php',
+    'path' => '/auth/oauth/google-callback.php',
     'samesite' => 'Lax',
 ]));
 if ($cookieState === '' || !hash_equals($cookieState, $state)) {
@@ -101,7 +101,7 @@ if ($clientId === '' || $clientSecret === '') {
     auth_fail('Google OAuth is not configured');
 }
 
-$redirectUri = tenant_url('/google-oauth-callback.php');
+$redirectUri = tenant_url('/auth/oauth/google-callback.php');
 
 // Exchange code -> tokens (includes id_token)
 $body = http_build_query([

@@ -11,9 +11,9 @@
  */
 
 $required_role = 'employee';
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/require_auth.php';
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/../session_init.php';
+require_once __DIR__ . '/../require_auth.php';
+require_once __DIR__ . '/../db.php';
 
 $db = Database::getInstance();
 $role = (string)($_SESSION['user_role'] ?? '');
@@ -31,7 +31,7 @@ if (isset($_GET['station'])) {
     } else {
         $_SESSION['kitchen_station_id'] = (int)$q;
     }
-    header('Location: /kds.php');
+    header('Location: /kds/index.php');
     exit;
 }
 
@@ -91,12 +91,12 @@ $statusLabels = [
             <?php else: ?>
                 <div class="kds-station-grid">
                     <?php foreach ($stations as $s): ?>
-                        <a class="kds-station-card" href="/kds.php?station=<?= (int)$s['id'] ?>">
+                        <a class="kds-station-card" href="/kds/index.php?station=<?= (int)$s['id'] ?>">
                             <span class="kds-station-label"><?= htmlspecialchars((string)$s['label']) ?></span>
                             <span class="kds-station-slug"><?= htmlspecialchars((string)$s['slug']) ?></span>
                         </a>
                     <?php endforeach; ?>
-                    <a class="kds-station-card kds-station-card--unrouted" href="/kds.php?station=0">
+                    <a class="kds-station-card kds-station-card--unrouted" href="/kds/index.php?station=0">
                         <span class="kds-station-label">Без маршрута</span>
                         <span class="kds-station-slug">unrouted — блюда без привязки к станции</span>
                     </a>
@@ -114,7 +114,7 @@ $statusLabels = [
             </div>
             <div class="kds-header-actions">
                 <span class="kds-header-counter" id="kdsCounter" aria-label="Позиций на доске">0</span>
-                <a class="kds-btn kds-btn-secondary" href="/kds.php?station=-">Сменить станцию</a>
+                <a class="kds-btn kds-btn-secondary" href="/kds/index.php?station=-">Сменить станцию</a>
             </div>
         </header>
 

@@ -34,7 +34,7 @@ classify_surface() {
       echo "launch"
       return 0
       ;;
-    api/v1/*|payment-*.php|generate-payment-link.php|confirm-cash-payment.php|telegram-*.php|*oauth*.php|orders-sse.php|ws-poll.php)
+    api/v1/*|payment-*.php|generate-payment-link.php|api/checkout/cash-payment.php|telegram-*.php|*oauth*.php|orders-sse.php|ws-poll.php)
       echo "integrations"
       return 0
       ;;

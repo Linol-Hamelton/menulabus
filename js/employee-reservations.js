@@ -31,7 +31,7 @@
         var actionButtons = card.querySelectorAll('.btn-resv-action');
         actionButtons.forEach(function (b) { b.disabled = true; });
 
-        fetch('/update_reservation_status.php', {
+        fetch('/api/reservations/update-status.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

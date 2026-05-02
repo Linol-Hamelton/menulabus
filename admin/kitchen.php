@@ -52,13 +52,13 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
             <div class="section-header-menu">
                 <h2>Станции кухни</h2>
                 <div>
-                    <a href="/kds.php" class="checkout-btn" target="_blank">Открыть KDS</a>
+                    <a href="/kds/index.php" class="checkout-btn" target="_blank">Открыть KDS</a>
                     <a href="/admin/menu.php" class="back-to-menu-btn">К админке</a>
                 </div>
             </div>
             <p class="kitchen-intro">
                 Создайте станции (например, «Горячий цех», «Холодный», «Бар», «Пицца») и привяжите к ним блюда ниже.
-                Когда блюдо принимает заказ, кухня видит его на своём экране <code>/kds.php</code>.
+                Когда блюдо принимает заказ, кухня видит его на своём экране <code>/kds/index.php</code>.
             </p>
 
             <h3>Активные и архивные станции</h3>

@@ -26,7 +26,7 @@
             <div class="section-header-nav-actions">
                 <?php if (in_array(($user['role'] ?? ''), ['owner', 'employee', 'admin'], true)): ?>
                     <a href="employee.php" class="back-to-menu-btn">Заказы</a>
-                    <a href="kds.php" class="back-to-menu-btn" target="_blank" rel="noopener">Кухня</a>
+                    <a href="kds/index.php" class="back-to-menu-btn" target="_blank" rel="noopener">Кухня</a>
                     <a href="admin/waitlist.php" class="back-to-menu-btn">Очередь</a>
                     <a href="admin/staff.php" class="back-to-menu-btn">Смены</a>
                     <a href="help.php" class="back-to-menu-btn">Помощь</a>

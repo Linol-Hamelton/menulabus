@@ -1,12 +1,12 @@
 <?php
 
-// Web login/register via Google OAuth (authorization code flow).
+// Web login/register via Yandex ID OAuth (authorization code flow).
 // Does not use external JS (compatible with strict CSP).
 //
-// IMPORTANT: PHP session cookie is SameSite=Strict, so it will not be sent back after Google redirect.
+// IMPORTANT: PHP session cookie is SameSite=Strict, so it will not be sent back after Yandex redirect.
 // We therefore use a short-lived Lax cookie to bind "state" to the browser (prevents login CSRF).
 
-require_once __DIR__ . '/session_init.php';
+require_once __DIR__ . '/../../session_init.php';
 
 function b64url_encode(string $data): string
 {
@@ -39,38 +39,35 @@ if ($mode !== 'login' && $mode !== 'register') {
     $mode = 'login';
 }
 
-$ids = (string)getenv('GOOGLE_OAUTH_CLIENT_IDS');
-$clientId = trim(explode(',', $ids)[0] ?? '');
+$clientId = (string)getenv('YANDEX_OAUTH_CLIENT_ID');
 if ($clientId === '') {
     http_response_code(500);
-    echo "Google OAuth is not configured (GOOGLE_OAUTH_CLIENT_IDS)";
+    echo "Yandex OAuth is not configured (YANDEX_OAUTH_CLIENT_ID)";
     exit;
 }
 
 $state = oauth_make_state($mode);
 
 // Bind state to the browser across cross-site redirect.
-// Lax is required so cookie is sent on top-level GET navigation back from Google.
+// Lax is required so cookie is sent on top-level GET navigation back from Yandex.
 $cookieOpts = [
-    'path' => '/google-oauth-callback.php',
+    'path' => '/auth/oauth/yandex-callback.php',
     'expires' => time() + 300,
     'samesite' => 'Lax',
 ];
-setcookie('g_oauth_state', $state, tenant_host_only_cookie_options($cookieOpts));
+setcookie('y_oauth_state', $state, tenant_host_only_cookie_options($cookieOpts));
 
-$redirectUri = tenant_url('/google-oauth-callback.php');
+$redirectUri = tenant_url('/auth/oauth/yandex-callback.php');
 $params = [
     'client_id' => $clientId,
     'redirect_uri' => $redirectUri,
     'response_type' => 'code',
-    'scope' => 'openid email profile',
     'state' => $state,
-    // Force refresh_token on first consent; harmless for web login even if not used.
-    'access_type' => 'offline',
-    'prompt' => 'consent',
+    // Yandex ID requires no additional scopes for basic profile + email
+    // Default: login:email, login:info, login:avatar
 ];
 
-$url = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+$url = 'https://oauth.yandex.ru/authorize?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Location: ' . $url, true, 302);

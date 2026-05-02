@@ -54,7 +54,7 @@
         if (data.get('guest_name'))  payload.guest_name  = (data.get('guest_name')  || '').toString().trim();
         if (data.get('guest_phone')) payload.guest_phone = (data.get('guest_phone') || '').toString().trim();
 
-        fetch('/create_reservation.php', {
+        fetch('/api/reservations/create.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

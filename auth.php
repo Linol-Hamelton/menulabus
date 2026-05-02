@@ -374,15 +374,15 @@ $pendingEmail  = $pendingEmail  ?? '';
 
             <div class="auth-oauth-divider">или</div>
             <div class="auth-form auth-oauth-form">
-                <a href="/google-oauth-start.php?mode=register" class="btn btn-google" role="button">
+                <a href="/auth/oauth/google-start.php?mode=register" class="btn btn-google" role="button">
                     <span class="btn-text">Продолжить через Google</span>
                     <span class="btn-loader" aria-hidden="true"></span>
                 </a>
-                <a href="/yandex-oauth-start.php?mode=register" class="btn btn-yandex" role="button">
+                <a href="/auth/oauth/yandex-start.php?mode=register" class="btn btn-yandex" role="button">
                     <span class="btn-text">Продолжить через Яндекс ID</span>
                     <span class="btn-loader" aria-hidden="true"></span>
                 </a>
-                <a href="/vk-oauth-start.php?mode=register" class="btn btn-vk" role="button">
+                <a href="/auth/oauth/vk-start.php?mode=register" class="btn btn-vk" role="button">
                     <span class="btn-text">Продолжить через VK ID</span>
                     <span class="btn-loader" aria-hidden="true"></span>
                 </a>
@@ -462,15 +462,15 @@ $pendingEmail  = $pendingEmail  ?? '';
 
             <div class="auth-oauth-divider">или</div>
             <div class="auth-form auth-oauth-form">
-                <a href="/google-oauth-start.php?mode=login" class="btn btn-google" role="button">
+                <a href="/auth/oauth/google-start.php?mode=login" class="btn btn-google" role="button">
                     <span class="btn-text">Войти через Google</span>
                     <span class="btn-loader" aria-hidden="true"></span>
                 </a>
-                <a href="/yandex-oauth-start.php?mode=login" class="btn btn-yandex" role="button">
+                <a href="/auth/oauth/yandex-start.php?mode=login" class="btn btn-yandex" role="button">
                     <span class="btn-text">Войти через Яндекс ID</span>
                     <span class="btn-loader" aria-hidden="true"></span>
                 </a>
-                <a href="/vk-oauth-start.php?mode=login" class="btn btn-vk" role="button">
+                <a href="/auth/oauth/vk-start.php?mode=login" class="btn btn-vk" role="button">
                     <span class="btn-text">Войти через VK ID</span>
                     <span class="btn-loader" aria-hidden="true"></span>
                 </a>

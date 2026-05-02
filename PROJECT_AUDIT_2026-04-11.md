@@ -90,7 +90,7 @@ Both are still genuinely open. The stale threshold is hard-coded at 45 minutes i
 
 ### A.8. OpenAPI covers only a slice of the real API surface
 
-`docs/openapi.yaml` is the authoritative mobile API contract, and the pre-push hook gates it for pushes to `main`. But many endpoints that the app actually uses in the browser (CSRF-protected POSTs from the backoffice and customer flows) are **not** modeled in OpenAPI, because OpenAPI is scoped to `api/v1/*` only. Legitimate scoping decision — but it means the docs' frequent phrase "API contract source of truth: `docs/openapi.yaml`" is slightly misleading: it is the **mobile API contract**, not the overall API contract. Web endpoints (`api/save/brand.php`, `api/save/colors.php`, `toggle-available.php`, `update_order_status.php`, `update_user_role.php`, `confirm-cash-payment.php`, `generate-payment-link.php`, etc.) have **no schema**.
+`docs/openapi.yaml` is the authoritative mobile API contract, and the pre-push hook gates it for pushes to `main`. But many endpoints that the app actually uses in the browser (CSRF-protected POSTs from the backoffice and customer flows) are **not** modeled in OpenAPI, because OpenAPI is scoped to `api/v1/*` only. Legitimate scoping decision — but it means the docs' frequent phrase "API contract source of truth: `docs/openapi.yaml`" is slightly misleading: it is the **mobile API contract**, not the overall API contract. Web endpoints (`api/save/brand.php`, `api/save/colors.php`, `toggle-available.php`, `update_order_status.php`, `update_user_role.php`, `api/checkout/cash-payment.php`, `generate-payment-link.php`, etc.) have **no schema**.
 
 **Recommendation:** either (a) rename the OpenAPI file to `mobile-api.yaml` and say so in docs, or (b) add a second, slimmer schema `docs/web-endpoints.yaml` that enumerates the web POSTs, their CSRF expectations, and response shapes. Option (a) is the cheap fix; option (b) pays off during QA and external audits.
 
@@ -111,7 +111,7 @@ These are genuine **doc gaps**, not bugs — the features work, they are just in
 **What exists in code:**
 
 - [lib/TBank.php](lib/TBank.php) — full T-Bank (Тинькофф) payment provider integration class.
-- [generate-payment-link.php](generate-payment-link.php), [payment-return.php](payment-return.php), [payment-webhook.php](payment-webhook.php), [confirm-cash-payment.php](confirm-cash-payment.php) — YooKassa + cash + link-generation flow.
+- [generate-payment-link.php](generate-payment-link.php), [payment-return.php](payment-return.php), [payment-webhook.php](payment-webhook.php), [api/checkout/cash-payment.php](api/checkout/cash-payment.php) — YooKassa + cash + link-generation flow.
 - [sql/payment-migration.sql](sql/payment-migration.sql) — payment columns schema migration.
 - [sql/sbp-migration.sql](sql/sbp-migration.sql) — SBP (Система быстрых платежей) support.
 - [api/save/payment-settings.php](api/save/payment-settings.php) — admin UI backend for provider selection.

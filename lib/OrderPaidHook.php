@@ -5,7 +5,7 @@
  *
  * Called from every payment-confirmation path:
  *   - payment-webhook.php (YooKassa + T-Bank branches)
- *   - confirm-cash-payment.php (staff-confirmed cash)
+ *   - api/checkout/cash-payment.php (staff-confirmed cash)
  *
  * Side effects:
  *   - Accrues loyalty points (idempotent per (user_id, order_id) at the DB layer).

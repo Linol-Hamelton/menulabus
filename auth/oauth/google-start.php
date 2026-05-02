@@ -1,12 +1,12 @@
 <?php
 
-// Web login/register via VK ID OAuth (authorization code flow).
+// Web login/register via Google OAuth (authorization code flow).
 // Does not use external JS (compatible with strict CSP).
 //
-// IMPORTANT: PHP session cookie is SameSite=Strict, so it will not be sent back after VK redirect.
+// IMPORTANT: PHP session cookie is SameSite=Strict, so it will not be sent back after Google redirect.
 // We therefore use a short-lived Lax cookie to bind "state" to the browser (prevents login CSRF).
 
-require_once __DIR__ . '/session_init.php';
+require_once __DIR__ . '/../../session_init.php';
 
 function b64url_encode(string $data): string
 {
@@ -39,36 +39,38 @@ if ($mode !== 'login' && $mode !== 'register') {
     $mode = 'login';
 }
 
-$clientId = (string)getenv('VK_OAUTH_CLIENT_ID');
+$ids = (string)getenv('GOOGLE_OAUTH_CLIENT_IDS');
+$clientId = trim(explode(',', $ids)[0] ?? '');
 if ($clientId === '') {
     http_response_code(500);
-    echo "VK OAuth is not configured (VK_OAUTH_CLIENT_ID)";
+    echo "Google OAuth is not configured (GOOGLE_OAUTH_CLIENT_IDS)";
     exit;
 }
 
 $state = oauth_make_state($mode);
 
 // Bind state to the browser across cross-site redirect.
-// Lax is required so cookie is sent on top-level GET navigation back from VK.
+// Lax is required so cookie is sent on top-level GET navigation back from Google.
 $cookieOpts = [
-    'path' => '/vk-oauth-callback.php',
+    'path' => '/auth/oauth/google-callback.php',
     'expires' => time() + 300,
     'samesite' => 'Lax',
 ];
-setcookie('vk_oauth_state', $state, tenant_host_only_cookie_options($cookieOpts));
+setcookie('g_oauth_state', $state, tenant_host_only_cookie_options($cookieOpts));
 
-$redirectUri = tenant_url('/vk-oauth-callback.php');
+$redirectUri = tenant_url('/auth/oauth/google-callback.php');
 $params = [
     'client_id' => $clientId,
     'redirect_uri' => $redirectUri,
     'response_type' => 'code',
+    'scope' => 'openid email profile',
     'state' => $state,
-    'scope' => 'email', // phone scope requires approval from VK
-    'display' => 'popup',
-    'v' => '5.131', // VK API version
+    // Force refresh_token on first consent; harmless for web login even if not used.
+    'access_type' => 'offline',
+    'prompt' => 'consent',
 ];
 
-$url = 'https://oauth.vk.com/authorize?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+$url = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Location: ' . $url, true, 302);

@@ -649,7 +649,7 @@ async function completeOrder(tenantBase, employeeState, orderId) {
 
     const cashBtn = page.locator(`button.confirm-cash-btn[data-order-id="${orderId}"]`).first();
     if (await cashBtn.count()) {
-      const cashResponse = page.waitForResponse(response => response.url().includes('/confirm-cash-payment.php') && response.request().method() === 'POST', { timeout: 60000 }).catch(() => null);
+      const cashResponse = page.waitForResponse(response => response.url().includes('/api/checkout/cash-payment.php') && response.request().method() === 'POST', { timeout: 60000 }).catch(() => null);
       await cashBtn.click();
       await cashResponse;
       addStep(`Confirm cash for order #${orderId}`, true, { summary: 'cash confirmation submitted' });

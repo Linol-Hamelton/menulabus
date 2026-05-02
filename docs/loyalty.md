@@ -10,7 +10,7 @@
   - **Admin surface:** [/admin-loyalty.php](../admin-loyalty.php) — inline table editors for tiers and promo codes, CRUD via [api/save-loyalty.php](../api/save-loyalty.php).
   - **Customer surface:** [partials/account_loyalty_card.php](../partials/account_loyalty_card.php) — balance / tier / progress-to-next-tier / last 10 transactions. Rendered on `/account.php?tab=profile` only if the user has any activity (zero-state hidden).
   - **Cart integration:** [apply-promo.php](../apply-promo.php) — pure read-and-math endpoint. The counter is incremented only when the order lands, not at validation time.
-  - **Order hooks:** `cleanmenu_on_order_paid()` in [payment-webhook.php](../payment-webhook.php) is called from YooKassa + T-Bank branches and from [confirm-cash-payment.php](../confirm-cash-payment.php). Accrues points transactionally and dispatches the `payment.received` webhook.
+  - **Order hooks:** `cleanmenu_on_order_paid()` in [payment-webhook.php](../payment-webhook.php) is called from YooKassa + T-Bank branches and from [api/checkout/cash-payment.php](../api/checkout/cash-payment.php). Accrues points transactionally and dispatches the `payment.received` webhook.
   - **Tests:** [tests/LoyaltyTest.php](../tests/LoyaltyTest.php) — MySQL-gated, 11 cases: tier resolution, accrual idempotency, tier transition, redeem floor, promo rejection paths (empty/not_found/min_total), pct + fixed-amount math with clamp, both-discount refusal, usage-limit enforcement, tier validation.
 
 ## Purpose
@@ -140,7 +140,7 @@ Three call sites run the same logic through `cleanmenu_on_order_paid()`:
 |---|---|
 | [payment-webhook.php](../payment-webhook.php) — YooKassa branch | `apiStatus === 'succeeded'` |
 | [payment-webhook.php](../payment-webhook.php) — T-Bank branch | `Status === 'CONFIRMED'` |
-| [confirm-cash-payment.php](../confirm-cash-payment.php) | cash flip from staff UI |
+| [api/checkout/cash-payment.php](../api/checkout/cash-payment.php) | cash flip from staff UI |
 
 Each call:
 

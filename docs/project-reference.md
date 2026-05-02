@@ -110,7 +110,7 @@ Public + customer flow:
 - `/ws-poll.php` → long-poll fallback for live updates
 - `/payment-return.php` → redirect landing after YooKassa / T-Bank payment
 - `/payment-webhook.php` → provider webhook receiver (YooKassa + T-Bank). See [payments-integration.md](./payments-integration.md)
-- `/confirm-cash-payment.php` → staff cash confirmation (idempotent). Token via header `Idempotency-Key`
+- `/api/checkout/cash-payment.php` → staff cash confirmation (idempotent). Token via header `Idempotency-Key`
 - `/generate-payment-link.php` → staff "Waiter link" generator (admin/owner/employee)
 - `/telegram-webhook.php` → bot callback handler for accept/reject buttons. See [telegram-bot-setup.md](./telegram-bot-setup.md)
 - `/telegram-notifications.php` → library include, not a standalone endpoint
@@ -124,9 +124,9 @@ Public + customer flow:
 Auth and account:
 
 - `/auth.php`, `/logout.php`, `/password-reset.php`, `/verify-email.php`
-- `/google-oauth-start.php`, `/google-oauth-callback.php`
-- `/vk-oauth-start.php`, `/vk-oauth-callback.php`
-- `/yandex-oauth-start.php`, `/yandex-oauth-callback.php`
+- `/auth/oauth/google-start.php`, `/auth/oauth/google-callback.php`
+- `/auth/oauth/vk-start.php`, `/auth/oauth/vk-callback.php`
+- `/auth/oauth/yandex-start.php`, `/auth/oauth/yandex-callback.php`
 - `/account.php`
 - `/help.php`
 
@@ -252,12 +252,12 @@ Current implementation gap:
 ## 10. Integrations and Callbacks
 
 - OAuth start/callback routes:
-  - `/google-oauth-start.php`, `/google-oauth-callback.php`
-  - `/vk-oauth-start.php`, `/vk-oauth-callback.php`
-  - `/yandex-oauth-start.php`, `/yandex-oauth-callback.php`
+  - `/auth/oauth/google-start.php`, `/auth/oauth/google-callback.php`
+  - `/auth/oauth/vk-start.php`, `/auth/oauth/vk-callback.php`
+  - `/auth/oauth/yandex-start.php`, `/auth/oauth/yandex-callback.php`
 - payment-related routes:
   - `/generate-payment-link.php`
-  - `/confirm-cash-payment.php`
+  - `/api/checkout/cash-payment.php`
   - `/payment-return.php`
   - `/payment-webhook.php`
 - messaging / external callbacks:

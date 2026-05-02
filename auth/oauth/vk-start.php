@@ -1,12 +1,12 @@
 <?php
 
-// Web login/register via Yandex ID OAuth (authorization code flow).
+// Web login/register via VK ID OAuth (authorization code flow).
 // Does not use external JS (compatible with strict CSP).
 //
-// IMPORTANT: PHP session cookie is SameSite=Strict, so it will not be sent back after Yandex redirect.
+// IMPORTANT: PHP session cookie is SameSite=Strict, so it will not be sent back after VK redirect.
 // We therefore use a short-lived Lax cookie to bind "state" to the browser (prevents login CSRF).
 
-require_once __DIR__ . '/session_init.php';
+require_once __DIR__ . '/../../session_init.php';
 
 function b64url_encode(string $data): string
 {
@@ -39,35 +39,36 @@ if ($mode !== 'login' && $mode !== 'register') {
     $mode = 'login';
 }
 
-$clientId = (string)getenv('YANDEX_OAUTH_CLIENT_ID');
+$clientId = (string)getenv('VK_OAUTH_CLIENT_ID');
 if ($clientId === '') {
     http_response_code(500);
-    echo "Yandex OAuth is not configured (YANDEX_OAUTH_CLIENT_ID)";
+    echo "VK OAuth is not configured (VK_OAUTH_CLIENT_ID)";
     exit;
 }
 
 $state = oauth_make_state($mode);
 
 // Bind state to the browser across cross-site redirect.
-// Lax is required so cookie is sent on top-level GET navigation back from Yandex.
+// Lax is required so cookie is sent on top-level GET navigation back from VK.
 $cookieOpts = [
-    'path' => '/yandex-oauth-callback.php',
+    'path' => '/auth/oauth/vk-callback.php',
     'expires' => time() + 300,
     'samesite' => 'Lax',
 ];
-setcookie('y_oauth_state', $state, tenant_host_only_cookie_options($cookieOpts));
+setcookie('vk_oauth_state', $state, tenant_host_only_cookie_options($cookieOpts));
 
-$redirectUri = tenant_url('/yandex-oauth-callback.php');
+$redirectUri = tenant_url('/auth/oauth/vk-callback.php');
 $params = [
     'client_id' => $clientId,
     'redirect_uri' => $redirectUri,
     'response_type' => 'code',
     'state' => $state,
-    // Yandex ID requires no additional scopes for basic profile + email
-    // Default: login:email, login:info, login:avatar
+    'scope' => 'email', // phone scope requires approval from VK
+    'display' => 'popup',
+    'v' => '5.131', // VK API version
 ];
 
-$url = 'https://oauth.yandex.ru/authorize?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+$url = 'https://oauth.vk.com/authorize?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Location: ' . $url, true, 302);

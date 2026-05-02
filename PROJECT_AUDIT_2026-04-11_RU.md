@@ -92,7 +92,7 @@ Menu Labus сегодня — это **зрелый production-grade white-label
 
 ### A.8. OpenAPI покрывает только часть реальной API-поверхности
 
-`docs/openapi.yaml` — авторитетный контракт мобильного API, pre-push hook его проверяет для пушей в `main`. Но многие эндпоинты, которые приложение реально использует в браузере (CSRF-защищённые POST из бэкофиса и пользовательских flow), **не** замоделированы в OpenAPI, потому что OpenAPI ограничен `api/v1/*`. Решение об охвате легитимное, но тогда частая фраза в документации «API contract source of truth: `docs/openapi.yaml`» слегка вводит в заблуждение: это **контракт мобильного API**, а не API в целом. У веб-эндпоинтов (`api/save/brand.php`, `api/save/colors.php`, `toggle-available.php`, `update_order_status.php`, `update_user_role.php`, `confirm-cash-payment.php`, `generate-payment-link.php` и т. п.) **нет схемы**.
+`docs/openapi.yaml` — авторитетный контракт мобильного API, pre-push hook его проверяет для пушей в `main`. Но многие эндпоинты, которые приложение реально использует в браузере (CSRF-защищённые POST из бэкофиса и пользовательских flow), **не** замоделированы в OpenAPI, потому что OpenAPI ограничен `api/v1/*`. Решение об охвате легитимное, но тогда частая фраза в документации «API contract source of truth: `docs/openapi.yaml`» слегка вводит в заблуждение: это **контракт мобильного API**, а не API в целом. У веб-эндпоинтов (`api/save/brand.php`, `api/save/colors.php`, `toggle-available.php`, `update_order_status.php`, `update_user_role.php`, `api/checkout/cash-payment.php`, `generate-payment-link.php` и т. п.) **нет схемы**.
 
 **Рекомендация:** либо (a) переименовать файл OpenAPI в `mobile-api.yaml` и явно это прописать, либо (b) добавить второй, более тонкий `docs/web-endpoints.yaml`, перечисляющий веб-POST, их CSRF-ожидания и формат ответов. Вариант (a) — дешёвый фикс; вариант (b) окупается при QA и внешних аудитах.
 
@@ -113,7 +113,7 @@ Menu Labus сегодня — это **зрелый production-grade white-label
 **Что есть в коде:**
 
 - [lib/TBank.php](lib/TBank.php) — класс интеграции T-Bank (Тинькофф).
-- [generate-payment-link.php](generate-payment-link.php), [payment-return.php](payment-return.php), [payment-webhook.php](payment-webhook.php), [confirm-cash-payment.php](confirm-cash-payment.php) — YooKassa + наличные + генерация ссылок.
+- [generate-payment-link.php](generate-payment-link.php), [payment-return.php](payment-return.php), [payment-webhook.php](payment-webhook.php), [api/checkout/cash-payment.php](api/checkout/cash-payment.php) — YooKassa + наличные + генерация ссылок.
 - [sql/payment-migration.sql](sql/payment-migration.sql) — миграция схемы платежей.
 - [sql/sbp-migration.sql](sql/sbp-migration.sql) — поддержка СБП (Система быстрых платежей).
 - [api/save/payment-settings.php](api/save/payment-settings.php) — бекенд админского UI для выбора провайдера.

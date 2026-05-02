@@ -32,7 +32,7 @@ The following 14 surfaces × 3 viewports (desktop 1920, tablet 768, mobile 375) 
 | 11 | `/admin-menu.php` |   |   |   |   |
 | 12 | `/admin-staff.php` |   |   |   | new swap UI (13A.2) |
 | 13 | `/admin-kitchen.php` |   |   |   |   |
-| 14 | `/kds.php` |   |   |   |   |
+| 14 | `/kds/index.php` |   |   |   |   |
 
 For each ✗ or ⚠: open a follow-up commit `fix(<surface>): <short-description>` referencing this row.
 

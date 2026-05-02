@@ -210,7 +210,7 @@ get `flex-wrap: wrap` so multi-input rows stack vertically.
 | /admin-marketing | "Сохранить как черновик" "Phase 11 Test Campaign / email" | row `data-campaign-id="1"` in `mk-table` after reload |
 | /admin-webhooks | "Создать" subscription `order.created → webhook.site/test-phase-11` | row in `.webhooks-table` after reload, action buttons (История / Сменить ключ / Удалить) wired |
 | /admin-staff | "Начать смену" | status `На смене с 2026-04-27 20:41:59`, button flipped to "Закончить смену". "Закончить смену" → status reverted. |
-| /kds.php | After station #1 creation | empty-state replaced with two selectable cards: "Горячий цех" + "Без маршрута" |
+| /kds/index.php | After station #1 creation | empty-state replaced with two selectable cards: "Горячий цех" + "Без маршрута" |
 
 **All 7 admin DB-write surfaces produce server-side persisted rows
 that survive a page reload.** Click-through audit closed.

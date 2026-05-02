@@ -2,9 +2,9 @@
 //
 // Listens for changes to the table_label and starts_at fields on
 // /reservation.php. When both are filled, fetches busy slots for that
-// (table, date) from /reservation_availability.php and renders them as
+// (table, date) from /api/reservations/availability.php and renders them as
 // a compact read-only list under the date inputs. The list is purely
-// informational — the form still submits to /create_reservation.php
+// informational — the form still submits to /api/reservations/create.php
 // which is the authoritative slot conflict gate (returns 409 on
 // overlap).
 //
@@ -83,7 +83,7 @@
         const ctrl = new AbortController();
         inflight = ctrl;
 
-        const url = '/reservation_availability.php?'
+        const url = '/api/reservations/availability.php?'
             + 'table_label=' + encodeURIComponent(tableLabel)
             + '&date=' + encodeURIComponent(datePart);
 

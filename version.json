@@ -1,6 +1,6 @@
 {
-  "version": "1.5.1",
+  "version": "1.5.2",
   "release_date": "2026-04-28",
-  "changelog": "Phase 13B.3.b: ARCHITECTURE — 7 root-level save-*.php переехали в api/save/. Файлы: api/save/{brand,colors,fonts,menu-order,payment-settings,project-name,review}.php (без save- префикса — название уже в namespace директории). Внутри файлов __DIR__ . '/X' → __DIR__ . '/../../X' (depth 2). Все внешние URL refs обновлены — js/file-manager.min.js, js/admin-menu-page.js, js/admin-menu-sort.js, js/reviews.js, order-track.php, onboarding.php плюс cross-refs внутри api/save/*. Корень теперь 76 PHP файлов вместо 83 (-7).",
+  "changelog": "Phase 13B.3.c+d+e+f: ARCHITECTURE — финальный sweep root-level PHP в подпапки. (c) confirm-cash-payment.php → api/checkout/cash-payment.php. (d) 6 oauth-файлов в auth/oauth/{google,vk,yandex}-{callback,start}.php. (e) kds.php / kds-action.php / kds-sse.php → kds/{index,action,sse}.php. (f) create_reservation.php / update_reservation_status.php / reservation_availability.php → api/reservations/{create,update-status,availability}.php (отличается от bearer-gated api/v1/reservations namespace). Внутренние __DIR__ исправлены до правильной глубины. Все cross-refs в PHP/JS/MD/SQL/conf обновлены sed-batchom. Корень: 76 → 63 PHP (-13). Итого Phase 13B.3 (a..f): 92 → 63, 29 файлов разложены.",
   "critical": false
 }

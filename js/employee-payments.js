@@ -181,7 +181,7 @@
     button.textContent = 'Подтверждаем…';
 
     try {
-      var response = await fetch('/confirm-cash-payment.php', {
+      var response = await fetch('/api/checkout/cash-payment.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

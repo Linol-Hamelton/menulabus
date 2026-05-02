@@ -208,7 +208,7 @@ function handleTBankWebhook(): void
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 // cleanmenu_on_order_paid() lives in lib/OrderPaidHook.php so both
-// payment-webhook.php (YooKassa + T-Bank branches) and confirm-cash-payment.php
+// payment-webhook.php (YooKassa + T-Bank branches) and api/checkout/cash-payment.php
 // can require it without risking "Cannot redeclare" fatals.
 require_once __DIR__ . '/lib/OrderPaidHook.php';
 

@@ -1,11 +1,11 @@
 <?php
 
-// Web login/register via VK ID OAuth callback.
+// Web login/register via Yandex ID OAuth callback.
 // Exchanges code -> access_token, retrieves user info, links/creates a user, then creates a normal PHP session.
 
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/lib/OAuthVK.php';
+require_once __DIR__ . '/../../session_init.php';
+require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../../lib/OAuthYandex.php';
 
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
@@ -65,29 +65,29 @@ function auth_fail(string $msg): void
 $err = (string)($_GET['error'] ?? '');
 if ($err !== '') {
     $errDesc = (string)($_GET['error_description'] ?? $err);
-    auth_fail('VK OAuth error: ' . $errDesc);
+    auth_fail('Yandex OAuth error: ' . $errDesc);
 }
 
 $code = (string)($_GET['code'] ?? '');
 $state = (string)($_GET['state'] ?? '');
 if ($code === '' || $state === '') {
-    auth_fail('VK OAuth: missing code/state');
+    auth_fail('Yandex OAuth: missing code/state');
 }
 
 // CSRF binding cookie check.
-$cookieState = (string)($_COOKIE['vk_oauth_state'] ?? '');
-setcookie('vk_oauth_state', '', tenant_host_only_cookie_options([
+$cookieState = (string)($_COOKIE['y_oauth_state'] ?? '');
+setcookie('y_oauth_state', '', tenant_host_only_cookie_options([
     'expires' => time() - 3600,
-    'path' => '/vk-oauth-callback.php',
+    'path' => '/auth/oauth/yandex-callback.php',
     'samesite' => 'Lax',
 ]));
 if ($cookieState === '' || !hash_equals($cookieState, $state)) {
-    auth_fail('VK OAuth: invalid state (cookie mismatch)');
+    auth_fail('Yandex OAuth: invalid state (cookie mismatch)');
 }
 
 $statePayload = oauth_verify_state($state);
 if (!$statePayload) {
-    auth_fail('VK OAuth: invalid state');
+    auth_fail('Yandex OAuth: invalid state');
 }
 
 $mode = (string)($statePayload['mode'] ?? 'login');
@@ -95,20 +95,20 @@ if ($mode !== 'login' && $mode !== 'register') {
     $mode = 'login';
 }
 
-$clientId = (string)getenv('VK_OAUTH_CLIENT_ID');
-$clientSecret = (string)getenv('VK_OAUTH_CLIENT_SECRET');
+$clientId = (string)getenv('YANDEX_OAUTH_CLIENT_ID');
+$clientSecret = (string)getenv('YANDEX_OAUTH_CLIENT_SECRET');
 if ($clientId === '' || $clientSecret === '') {
-    auth_fail('VK OAuth is not configured');
+    auth_fail('Yandex OAuth is not configured');
 }
 
-$redirectUri = tenant_url('/vk-oauth-callback.php');
+$redirectUri = tenant_url('/auth/oauth/yandex-callback.php');
 
 // Exchange code -> access_token
 $body = http_build_query([
     'code' => $code,
     'client_id' => $clientId,
     'client_secret' => $clientSecret,
-    'redirect_uri' => $redirectUri,
+    'grant_type' => 'authorization_code',
 ], '', '&', PHP_QUERY_RFC3986);
 
 $ctx = stream_context_create([
@@ -125,45 +125,36 @@ $ctx = stream_context_create([
     ],
 ]);
 
-$raw = @file_get_contents('https://oauth.vk.com/access_token', false, $ctx);
+$raw = @file_get_contents('https://oauth.yandex.ru/token', false, $ctx);
 if (!is_string($raw) || $raw === '') {
-    auth_fail('VK OAuth: token exchange failed');
+    auth_fail('Yandex OAuth: token exchange failed');
 }
 $tok = json_decode($raw, true);
 if (!is_array($tok)) {
-    auth_fail('VK OAuth: invalid token response');
+    auth_fail('Yandex OAuth: invalid token response');
 }
 
 if (isset($tok['error'])) {
     $errMsg = $tok['error_description'] ?? $tok['error'];
-    auth_fail("VK OAuth: {$errMsg}");
+    auth_fail("Yandex OAuth: {$errMsg}");
 }
 
 $accessToken = (string)($tok['access_token'] ?? '');
-$userId = (int)($tok['user_id'] ?? 0);
-$email = (string)($tok['email'] ?? '');
-
-if ($accessToken === '' || $userId === 0) {
-    auth_fail('VK OAuth: missing access_token or user_id');
+if ($accessToken === '') {
+    auth_fail('Yandex OAuth: missing access_token');
 }
 
-// VK может не вернуть email, если пользователь не разрешил доступ
-// В этом случае нельзя создать аккаунт (email обязателен)
-if ($email === '') {
-    auth_fail('VK OAuth: email is required. Please grant access to your email in VK settings.');
-}
-
-// Retrieve user info from VK API
+// Retrieve user info from Yandex /info endpoint
 try {
-    $claims = OAuthVK::getUserInfo($accessToken, $userId, $email);
+    $claims = OAuthYandex::getUserInfo($accessToken);
 } catch (Throwable $e) {
-    auth_fail('VK OAuth: ' . $e->getMessage());
+    auth_fail('Yandex OAuth: ' . $e->getMessage());
 }
 
 $db = Database::getInstance();
 $pdo = $db->getConnection();
 
-$provider = 'vk';
+$provider = 'yandex';
 $subject = $claims['subject'];
 $email = $claims['email'];
 $emailVerified = $claims['email_verified'] ? 1 : 0;
@@ -177,7 +168,7 @@ $userId = $stmt->fetchColumn();
 if ($userId) {
     $user = $db->getUserById((int)$userId);
     if (!$user) {
-        auth_fail('VK OAuth: linked user not found');
+        auth_fail('Yandex OAuth: linked user not found');
     }
 } else {
     // 2) Link by email if user exists; otherwise create a new active user.
@@ -196,7 +187,7 @@ if ($userId) {
         $newId = (int)$pdo->lastInsertId();
         $user = $db->getUserById($newId);
         if (!$user) {
-            auth_fail('VK OAuth: failed to create user');
+            auth_fail('Yandex OAuth: failed to create user');
         }
     } else {
         // Update user's name if it's empty and OAuth provides one

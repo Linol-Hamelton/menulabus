@@ -11,8 +11,8 @@
 
 ## Files
 
-- `/yandex-oauth-start.php`
-- `/yandex-oauth-callback.php`
+- `/auth/oauth/yandex-start.php`
+- `/auth/oauth/yandex-callback.php`
 - `/lib/OAuthYandex.php`
 
 ## Runtime Variables
@@ -34,17 +34,17 @@ YANDEX_OAUTH_CLIENT_SECRET=your-client-secret
 ## Provider Example
 
 - site URL: `https://menu.labus.pro`
-- redirect URI: `https://menu.labus.pro/yandex-oauth-callback.php`
+- redirect URI: `https://menu.labus.pro/auth/oauth/yandex-callback.php`
 
 If you use a different domain, register that exact callback URL in Yandex OAuth.
 
 ## Flow Summary
 
-1. `/yandex-oauth-start.php?mode=login|register`
+1. `/auth/oauth/yandex-start.php?mode=login|register`
    - generates signed `state`
    - stores `y_oauth_state` cookie
    - redirects to Yandex authorization
-2. `/yandex-oauth-callback.php`
+2. `/auth/oauth/yandex-callback.php`
    - validates `state`
    - exchanges `code` for `access_token`
    - fetches user profile

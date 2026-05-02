@@ -8,7 +8,7 @@
   - **Storage:** [sql/reservations-migration.sql](../sql/reservations-migration.sql) — append-only `reservations` table, conflict check at the application layer.
   - **DB layer:** [db.php](../db.php) — `createReservation`, `getReservationById`, `getReservationsByRange`, `getUpcomingReservationsByUser`, `updateReservationStatus`, `checkTableAvailable`.
   - **Mobile API:** `POST /api/v1/reservations/create.php`, `GET /api/v1/reservations/availability.php`, `POST /api/v1/reservations/cancel.php` — bearer-authenticated, idempotency-aware on create.
-  - **Web (session) endpoints:** `POST /create_reservation.php` (customer), `POST /update_reservation_status.php` (staff). Both use [lib/Csrf.php](../lib/Csrf.php) and the staff endpoint enforces a `pending → confirmed → seated` transition table.
+  - **Web (session) endpoints:** `POST /api/reservations/create.php` (customer), `POST /api/reservations/update-status.php` (staff). Both use [lib/Csrf.php](../lib/Csrf.php) and the staff endpoint enforces a `pending → confirmed → seated` transition table.
   - **Customer UI:** [reservation.php](../reservation.php) — standalone page with form, "my upcoming reservations" list for logged-in users, prefill via `?table=N` or `qr_table` session value. Linked from [header.php](../header.php) "Бронь" nav item.
   - **Staff UI:** new "Брони" tab in [employee.php](../employee.php) → [partials/employee_account_sections.php](../partials/employee_account_sections.php) — week-long board grouped by day, status badges, action buttons (Подтвердить / Рассадить / Не пришёл / Отменить).
   - **Telegram:** `sendReservationToTelegram()` in [telegram-notifications.php](../telegram-notifications.php) sends a card with inline-keyboard *Подтвердить* / *Отклонить* on every new booking. Callback handler `reserve_(confirm|reject)_N` in [telegram-webhook.php](../telegram-webhook.php) updates status and edits the original message.
@@ -184,12 +184,12 @@ composer test
 
 `/reservation.php` now shows a read-only "busy slots" panel under the
 date pickers. The panel is hydrated by `js/reservation-availability.js`,
-which fetches `/reservation_availability.php?table_label=…&date=YYYY-MM-DD`
+which fetches `/api/reservations/availability.php?table_label=…&date=YYYY-MM-DD`
 (the new session-based mirror of `api/v1/reservations/availability.php`)
 each time the user types a table label or picks a start datetime.
 Fetches are debounced 250ms and the in-flight request aborts when a
 newer one starts. The picker is informational only — the form still
-submits to `create_reservation.php`, which is the authoritative gate
+submits to `api/reservations/create.php`, which is the authoritative gate
 and returns `409 slot_taken` on overlap. Empty result shows
 "Стол свободен на YYYY-MM-DD"; otherwise renders the busy ranges as
 pill-style chips.

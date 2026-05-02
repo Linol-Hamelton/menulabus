@@ -2,9 +2,9 @@
 
 ob_start();
 
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/lib/Idempotency.php';
+require_once __DIR__ . '/../../session_init.php';
+require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../../lib/Idempotency.php';
 
 $response = ['success' => false];
 
@@ -167,7 +167,7 @@ try {
     }
 
     // Shared order.paid hook (loyalty accrual + payment.received webhook).
-    require_once __DIR__ . '/lib/OrderPaidHook.php';
+    require_once __DIR__ . '/../../lib/OrderPaidHook.php';
     cleanmenu_on_order_paid($db, $orderId);
 
     $response = array_merge(['success' => true], $payload);

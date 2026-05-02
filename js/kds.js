@@ -129,7 +129,7 @@
             return;
         }
         try {
-            var url = '/kds-sse.php?station=' + encodeURIComponent(stationId) + '&t=' + lastKnownTs;
+            var url = '/kds/sse.php?station=' + encodeURIComponent(stationId) + '&t=' + lastKnownTs;
             evtSource = new EventSource(url);
         } catch (e) {
             startLongPoll();
@@ -150,7 +150,7 @@
     function startLongPoll() {
         // Fallback for browsers that do not ship EventSource (rare).
         function tick() {
-            fetch('/kds-sse.php?station=' + encodeURIComponent(stationId) + '&t=' + lastKnownTs, {
+            fetch('/kds/sse.php?station=' + encodeURIComponent(stationId) + '&t=' + lastKnownTs, {
                 method: 'GET',
                 credentials: 'same-origin',
                 headers: { 'Accept': 'text/event-stream' },
@@ -175,7 +175,7 @@
         var rowId = parseInt(btn.getAttribute('data-status-row-id') || '0', 10);
         if (!rowId || !action) return;
         btn.disabled = true;
-        fetch('/kds-action.php', {
+        fetch('/kds/action.php', {
             method: 'POST',
             credentials: 'same-origin',
             headers: {

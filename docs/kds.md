@@ -7,9 +7,9 @@
 - Current state:
   - **Storage:** [sql/kds-migration.sql](../sql/kds-migration.sql) — `kitchen_stations`, `menu_item_stations`, `order_item_status`.
   - **DB layer:** [db.php](../db.php) — `listKitchenStations`, `getKitchenStationById`, `saveKitchenStation`, `deleteKitchenStation`, `getMenuItemStations`, `setMenuItemStations`, `routeOrderItemsToStations`, `getKdsBoardForStation`, `advanceKdsItemStatus`, `isOrderFullyReady`, `getKdsLastUpdateTs`.
-  - **Kitchen surface:** [/kds.php](../kds.php) — full-screen display with a one-shot station picker per session, real-time via SSE ([kds-sse.php](../kds-sse.php)), action endpoint [kds-action.php](../kds-action.php).
+  - **Kitchen surface:** [/kds/index.php](../kds/index.php) — full-screen display with a one-shot station picker per session, real-time via SSE ([kds-sse.php](../kds/sse.php)), action endpoint [kds-action.php](../kds/action.php).
   - **Admin surface:** [/admin-kitchen.php](../admin-kitchen.php) — station CRUD + item-to-station routing matrix. CRUD endpoint [api/save-kitchen-station.php](../api/save-kitchen-station.php).
-  - **Integration:** on `order.created` (both [create_new_order.php](../create_new_order.php) and [api/v1/orders/create.php](../api/v1/orders/create.php)) `routeOrderItemsToStations()` writes one `order_item_status` row per `(item slot × station)`. When every non-cancelled slot for an order lands in `ready`, [kds-action.php](../kds-action.php) dispatches the `order.ready` webhook and pings the tenant's Telegram chat.
+  - **Integration:** on `order.created` (both [create_new_order.php](../create_new_order.php) and [api/v1/orders/create.php](../api/v1/orders/create.php)) `routeOrderItemsToStations()` writes one `order_item_status` row per `(item slot × station)`. When every non-cancelled slot for an order lands in `ready`, [kds-action.php](../kds/action.php) dispatches the `order.ready` webhook and pings the tenant's Telegram chat.
   - **Tests:** [tests/KdsTest.php](../tests/KdsTest.php) — MySQL-gated, 8 cases: slug validation, per-slot × station routing, idempotent retry, status-machine transitions with timestamp stamps, unknown-status rejection, all-ready detection, cancelled-slot exclusion, setMenuItemStations replacement.
 
 ## Purpose
@@ -87,13 +87,13 @@ Attempting to set a status outside the allowlist returns `false` from `advanceKd
 
 ## Surfaces
 
-### `/kds.php` — the kitchen tablet
+### `/kds/index.php` — the kitchen tablet
 
 - Role gate: `employee` / `admin` / `owner`.
 - Session picks a station once; switch with `?station=<id>` (or `?station=-` to reset the pick). `?station=0` = unrouted tab.
 - Layout: one column per order, each order is a card with its items for *this* station.
 - Per item: `Начать` button in `queued` state → `cooking`; `Готово` button in `cooking` state → `ready`.
-- Real-time via SSE ([kds-sse.php](../kds-sse.php)). Falls back to long-poll via `fetch()` on browsers without `EventSource`.
+- Real-time via SSE ([kds-sse.php](../kds/sse.php)). Falls back to long-poll via `fetch()` on browsers without `EventSource`.
 - Header shows tenant clock + live counter of active items on the board.
 
 ### `/admin-kitchen.php` — the admin setup
@@ -122,7 +122,7 @@ The trigger fires **at most once** per order-ready transition. Cancelling a slot
 
 ## Wire Formats
 
-### SSE — `/kds-sse.php?station=<id>&t=<last_known_ts>`
+### SSE — `/kds/sse.php?station=<id>&t=<last_known_ts>`
 
 Events:
 
@@ -131,7 +131,7 @@ Events:
 
 Client passes `t` back on reconnect so the server can emit the next frame only when the board actually changed.
 
-### Action — `POST /kds-action.php`
+### Action — `POST /kds/action.php`
 
 Request:
 
@@ -167,11 +167,11 @@ Idempotent via `CREATE TABLE IF NOT EXISTS`. After the migration:
 1. Open `/admin-kitchen.php`.
 2. Create at least one station (e.g. `hot` with label «Горячий»).
 3. Attach existing menu items via the routing matrix.
-4. Open `/kds.php` on the kitchen tablet, pick the station once.
+4. Open `/kds/index.php` on the kitchen tablet, pick the station once.
 
 ### Rollback
 
-- UI-only rollback: comment out the `routeOrderItemsToStations()` calls in [create_new_order.php](../create_new_order.php) and [api/v1/orders/create.php](../api/v1/orders/create.php). New orders stop populating `order_item_status`; the `/kds.php` board becomes permanently empty but the schema and admin UI still work.
+- UI-only rollback: comment out the `routeOrderItemsToStations()` calls in [create_new_order.php](../create_new_order.php) and [api/v1/orders/create.php](../api/v1/orders/create.php). New orders stop populating `order_item_status`; the `/kds/index.php` board becomes permanently empty but the schema and admin UI still work.
 - Full rollback: `DROP TABLE order_item_status, menu_item_stations, kitchen_stations` (in that order — FKs matter).
 
 ## Test Flow
@@ -179,7 +179,7 @@ Idempotent via `CREATE TABLE IF NOT EXISTS`. After the migration:
 1. Apply `sql/kds-migration.sql`.
 2. Create three stations in `/admin-kitchen.php`: `hot`, `cold`, `bar`.
 3. Assign existing menu items — pizza → hot, salad → cold, drinks → bar. Leave one dish unrouted.
-4. Open `/kds.php?station=<hot_id>` on one browser tab and `/kds.php?station=0` on another.
+4. Open `/kds/index.php?station=<hot_id>` on one browser tab and `/kds/index.php?station=0` on another.
 5. Place an order from `/menu.php` that mixes a pizza + a salad + the unrouted dish.
 6. Within ~2 s:
    - Hot board shows the pizza slot.

@@ -1,6 +1,6 @@
 <?php
 /**
- * create_reservation.php — session-based reservation creation for the
+ * api/reservations/create.php — session-based reservation creation for the
  * web client. Mirrors create_new_order.php / create_guest_order.php.
  *
  * POST JSON {
@@ -19,10 +19,10 @@
  *   500 db_failure
  */
 
-require_once __DIR__ . '/session_init.php';
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/lib/Csrf.php';
-require_once __DIR__ . '/telegram-notifications.php';
+require_once __DIR__ . '/../../session_init.php';
+require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../../lib/Csrf.php';
+require_once __DIR__ . '/../../telegram-notifications.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -127,7 +127,7 @@ $created = $db->getReservationById($reservationId);
 if ($created !== null) {
     sendReservationToTelegram((int)$reservationId, $created, $db);
 
-    require_once __DIR__ . '/lib/WebhookDispatcher.php';
+    require_once __DIR__ . '/../../lib/WebhookDispatcher.php';
     WebhookDispatcher::dispatch('reservation.created', $created, $db);
 }
 

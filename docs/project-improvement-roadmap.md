@@ -142,7 +142,7 @@ Operational note:
 
 | Track | Key deliverables |
 |---|---|
-| 6.1 Kitchen Display System | New `/kds.php` surface, per-station routing (hot/cold/bar/pizza), drag-to-acknowledge, SSE or WS live updates. |
+| 6.1 Kitchen Display System | New `/kds/index.php` surface, per-station routing (hot/cold/bar/pizza), drag-to-acknowledge, SSE or WS live updates. |
 | 6.2 Inventory MVP | Tables `ingredients`, `recipes`, `stock_movements`; auto-deduction on `order.created`; admin UI for recipes; low-stock alerts via Telegram. |
 | 6.3 Loyalty Program | Points engine with tier levels (Bronze/Silver/Gold), cashback in points, promo codes v2, birthday bonuses. |
 | 6.4 Enhanced Analytics | Per-item margin (uses existing `cost`), cohort analysis, day×hour heatmap, weekly revenue forecast, funnel view. |
