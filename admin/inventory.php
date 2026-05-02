@@ -15,6 +15,11 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 
+// Phase 14.8 — gate behind 'inventory' plan feature.
+$gate_feature = 'inventory';
+$gate_label   = 'Управление складом';
+require __DIR__ . '/../partials/billing_feature_gate.php';
+
 $db = Database::getInstance();
 $ingredients = $db->listIngredients(true);
 $suppliers   = $db->listSuppliers(false);

@@ -14,6 +14,11 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 
+// Phase 14.8 — gate behind 'loyalty' plan feature.
+$gate_feature = 'loyalty';
+$gate_label   = 'Программа лояльности';
+require __DIR__ . '/../partials/billing_feature_gate.php';
+
 $db     = Database::getInstance();
 $tiers  = $db->listLoyaltyTiers(false);
 $promos = $db->listPromoCodes(false);

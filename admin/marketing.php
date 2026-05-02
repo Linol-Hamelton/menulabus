@@ -8,6 +8,11 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 
+// Phase 14.8 — gate behind 'marketing' plan feature.
+$gate_feature = 'marketing';
+$gate_label   = 'Маркетинг и рассылки';
+require __DIR__ . '/../partials/billing_feature_gate.php';
+
 $db = Database::getInstance();
 $campaigns = $db->listMarketingCampaigns(50);
 $tiers     = $db->listLoyaltyTiers(false);

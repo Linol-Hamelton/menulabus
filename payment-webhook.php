@@ -72,6 +72,24 @@ $apiStatus = $verified['status'] ?? ''; // pending | waiting_for_capture | succe
 // aggregate covers the group total, fire cleanmenu_on_order_paid for
 // every underlying order created at submitGroupOrder time.
 $metadata = $verified['metadata'] ?? [];
+
+// ── Phase 14.3: SaaS subscription billing branch ────────────────────────
+// metadata.kind = 'subscription_invoice' marks payments coming from the
+// billing engine (initial card-add or recurring autocharge). Updates the
+// invoice row and saves the payment_method_id on first success so future
+// cycles can charge without customer interaction.
+if (($metadata['kind'] ?? '') === 'subscription_invoice') {
+    require_once __DIR__ . '/lib/Billing/SubscriptionStore.php';
+    try {
+        \Cleanmenu\Billing\SubscriptionStore::onWebhook($paymentId, $apiStatus, $verified);
+    } catch (Throwable $e) {
+        error_log('payment-webhook[subscription_invoice]: ' . $e->getMessage());
+    }
+    http_response_code(200);
+    echo 'ok';
+    exit;
+}
+
 if (($metadata['kind'] ?? '') === 'group_intent') {
     if ($apiStatus === 'succeeded') {
         $intent = $db->markGroupPaymentIntentPaid($paymentId);

@@ -1,6 +1,6 @@
 {
-  "version": "1.5.4",
-  "release_date": "2026-04-28",
-  "changelog": "Phase 13C cleanup. 13C.1: удалены audit-screens/ + PROJECT_AUDIT_*.md + .playwright-cli/.playwright-mcp/playwright-report/test-results/ из git и working dir; .gitignore обновлён. 13C.2: docs/archive/2026/ создан с README-конвенцией о том, когда переезжать execution-guides в архив. 13C.3: scripts/dev-db-reset.php — CLI с --really-truncate-test-data флагом, dry-run по умолчанию; truncate-list = orders/reservations/group_orders/loyalty_transactions/marketing_sends/webhook_deliveries/stock_movements/shifts/time_entries/tip_splits/shift_swap_requests/idempotency_keys (17 таблиц). Не трогает menu_items/users/settings/kitchen_stations/ingredients/locations/loyalty_tiers/promo_codes (showcase data).",
-  "critical": false
+  "version": "2.0.0",
+  "release_date": "2026-05-03",
+  "changelog": "Phase 14 — SaaS Billing Engine. Major release: продукт переходит в коммерческое состояние. Self-service /signup.php → 14-day trial tenant. /owner.php?tab=billing — управление подпиской (план, карта, инвойсы, отмена). /provider/billing.php + /provider/tenant.php — admin для оператора (MRR, статусы, действия comp/extend_trial/force_*). YooKassa recurring (save_payment_method + chargeStored). billing-cycle-worker (cron */6h) с soft dunning (день 1/4/7 retry → past_due → suspended). 3 тира: Starter 2990₽, Pro 6990₽, Enterprise 19990₽+. Feature gating: kitchen/inventory/loyalty/marketing pages render paywall если фича вне плана; session_init.php → 503 на customer surfaces для suspended. Migration на control-plane DB (tenants extended + subscription_invoices + payment_methods + subscription_events). Все детали в docs/billing.md.",
+  "critical": true
 }

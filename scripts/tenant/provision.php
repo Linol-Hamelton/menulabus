@@ -406,12 +406,13 @@ function provision_run(array $options): array
     ];
 }
 
-if (PHP_SAPI !== 'cli') {
-    http_response_code(404);
-    exit;
-}
-
+// Allow inclusion as a library (api/signup.php uses provision_run directly).
+// Only run the CLI entry point when this file IS the script being executed.
 if (realpath((string)($_SERVER['SCRIPT_FILENAME'] ?? '')) === __FILE__) {
+    if (PHP_SAPI !== 'cli') {
+        http_response_code(404);
+        exit;
+    }
     try {
         $result = provision_run(provision_cli_options());
         echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . PHP_EOL;

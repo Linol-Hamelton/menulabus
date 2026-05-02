@@ -130,7 +130,7 @@ All five tracks (KDS, Inventory, Loyalty, Analytics v2, Multi-location) now appe
 
 | Route / feature | Intended behavior | Planned files | Doc target | Roadmap status |
 |---|---|---|---|---|
-| SaaS billing engine | Starter/Pro/Enterprise plans, usage-based billing, 14-day trial, Stripe/Paddle | `lib/billing/*`, `subscriptions`/`invoices` tables, `provider/billing/*` admin routes | `billing.md` (new) | planned |
+| SaaS billing engine | Starter/Pro/Enterprise plans, 14-day trial, YooKassa recurring, soft dunning (read-only at d8, suspend at d30), self-service signup, provider admin | `lib/Billing/{PlanRegistry,FeatureGate,SubscriptionStore,YookassaRecurring}.php`, `sql/billing-migration.sql` (control plane), `signup.php` + `api/signup.php`, `owner.php?tab=billing`, `provider/{billing,tenant}.php`, `scripts/billing-cycle-worker.php` (cron `0 */6 * * *`) | [`billing.md`](billing.md) | **Implemented** |
 | developer platform | Public API with rate-limits + API keys, JS/Python SDKs, extension marketplace, Zapier | `api/public/v1/*`, `api_keys` table, `sdk/` directory, marketplace UI | `developer-platform.md` (new) | planned |
 | compliance pack | GDPR + 152-ФЗ (data export / right to delete), ЕГАИС for alcohol, Меркурий for meat/fish, 2FA for admin, audit log | `lib/compliance/*`, `audit_log` table, `admin-security.php` | `compliance.md` (new) | planned |
 | multi-region / HA | DB replication, read replicas for analytics, CDN for assets, automatic failover | deployment-level changes, `deploy/` updates, runbook for failover | `deploy/multi-region.md` (new) | planned |

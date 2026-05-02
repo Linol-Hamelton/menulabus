@@ -1,0 +1,61 @@
+/* provider-billing.css — /provider/billing.php + /provider/tenant.php (Phase 14.7) */
+
+.provider-billing-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin: 14px 0;
+}
+.provider-billing-stat {
+    background: var(--ui-surface-muted, #f7f7f9);
+    border: 1px solid var(--ui-border, #e3e5ea);
+    border-radius: var(--shell-radius-soft, 10px);
+    padding: 14px;
+    text-align: center;
+}
+.provider-billing-stat-num {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ui-text, #1f2328);
+    font-variant-numeric: tabular-nums;
+}
+.provider-billing-stat-label {
+    font-size: 12px;
+    color: var(--ui-text-muted, #5f6368);
+    margin-top: 4px;
+}
+
+.provider-tenants-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+}
+.provider-tenants-table th,
+.provider-tenants-table td {
+    padding: 10px;
+    border-bottom: 1px solid var(--ui-border, #e3e5ea);
+    text-align: left;
+    font-size: 13px;
+    vertical-align: top;
+}
+.provider-tenants-table th {
+    background: var(--ui-surface-muted, #f7f7f9);
+    font-weight: 500;
+    color: var(--ui-text-muted, #5f6368);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.provider-tenants-table td code {
+    font-size: 11px;
+    background: var(--ui-surface-muted, #f7f7f9);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.provider-actions-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}

@@ -16,6 +16,11 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 
+// Phase 14.8 — gate behind 'kds' plan feature.
+$gate_feature = 'kds';
+$gate_label   = 'Kitchen Display System';
+require __DIR__ . '/../partials/billing_feature_gate.php';
+
 $db = Database::getInstance();
 $stations = $db->listKitchenStations(false);
 $menuItems = $db->getMenuItems(null, false);

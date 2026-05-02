@@ -1,0 +1,146 @@
+/* owner-billing.css — owner.php?tab=billing (Phase 14.5, 2026-05-03) */
+
+.billing-current-card,
+.billing-card-section,
+.billing-plan-picker,
+.billing-invoices-section,
+.billing-cancel-section {
+    background: var(--ui-surface, #fff);
+    border: 1px solid var(--ui-border, #e3e5ea);
+    border-radius: var(--shell-radius-soft, 10px);
+    padding: 18px;
+    margin-bottom: 14px;
+}
+
+.billing-current-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.billing-current-head h3 { margin: 0 0 4px; font-size: 22px; }
+.billing-current-price { margin: 0; font-size: 18px; font-weight: 600; color: var(--ui-text, #1f2328); }
+.billing-current-price small { font-weight: 400; color: var(--ui-text-muted, #5f6368); }
+
+.billing-status-badge {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+}
+.billing-status-trial      { background: #e0e7ff; color: #3730a3; }
+.billing-status-active     { background: #f0fdf4; color: #166534; }
+.billing-status-past_due   { background: #fef9c3; color: #854d0e; }
+.billing-status-suspended  { background: #fee2e2; color: #991b1b; }
+.billing-status-cancelled  { background: #f1f5f9; color: #475569; }
+
+.billing-status-line {
+    margin: 12px 0 0;
+    padding: 10px 14px;
+    background: var(--ui-surface-muted, #f7f7f9);
+    border-radius: 8px;
+    font-size: 14px;
+}
+.billing-status-line.billing-warning { background: #fef9c3; color: #854d0e; }
+.billing-status-line.billing-danger  { background: #fee2e2; color: #991b1b; }
+
+.billing-card-line {
+    margin: 0 0 12px;
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+}
+.billing-card-line.billing-card-empty { color: var(--ui-text-muted, #5f6368); }
+
+.billing-action-feedback {
+    display: inline-block;
+    margin-left: 12px;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+.billing-action-feedback--ok  { background: #f0fdf4; color: #166534; }
+.billing-action-feedback--err { background: #fee2e2; color: #991b1b; }
+
+.billing-plan-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+    margin-top: 12px;
+}
+.billing-plan-card {
+    border: 1px solid var(--ui-border, #e3e5ea);
+    border-radius: var(--shell-radius-soft, 10px);
+    padding: 18px;
+    background: var(--ui-surface-muted, #f7f7f9);
+    display: flex;
+    flex-direction: column;
+}
+.billing-plan-card.is-current {
+    border-color: var(--ui-accent, #2563eb);
+    background: #eff6ff;
+}
+.billing-plan-card h4 { margin: 0 0 6px; font-size: 18px; }
+.billing-plan-price { margin: 0 0 12px; font-size: 22px; font-weight: 700; }
+.billing-plan-price small { font-size: 13px; font-weight: 400; color: var(--ui-text-muted, #5f6368); }
+.billing-plan-desc {
+    color: var(--ui-text-muted, #5f6368);
+    font-size: 14px;
+    margin: 0 0 12px;
+    flex: 1 1 auto;
+}
+.billing-plan-limits {
+    list-style: none;
+    margin: 0 0 14px;
+    padding: 0;
+    font-size: 13px;
+    color: var(--ui-text, #1f2328);
+}
+.billing-plan-limits li { padding: 3px 0; }
+
+.billing-invoices-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+}
+.billing-invoices-table th,
+.billing-invoices-table td {
+    padding: 10px;
+    border-bottom: 1px solid var(--ui-border, #e3e5ea);
+    text-align: left;
+    font-size: 14px;
+}
+.billing-invoices-table th {
+    background: var(--ui-surface-muted, #f7f7f9);
+    font-weight: 500;
+    color: var(--ui-text-muted, #5f6368);
+}
+.billing-invoice-status {
+    font-size: 13px;
+}
+
+.billing-empty {
+    color: var(--ui-text-muted, #5f6368);
+    padding: 14px;
+    background: var(--ui-surface-muted, #f7f7f9);
+    border: 1px dashed var(--ui-border, #e3e5ea);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.billing-cancel-hint {
+    color: var(--ui-text-muted, #5f6368);
+    font-size: 13px;
+    margin: 0 0 12px;
+}
+
+.billing-paywall {
+    background: var(--ui-surface-muted, #f7f7f9);
+    border: 2px dashed var(--ui-border, #e3e5ea);
+    border-radius: var(--shell-radius-soft, 10px);
+    padding: 24px;
+    text-align: center;
+    margin: 24px 0;
+}
+.billing-paywall h3 { margin: 0 0 8px; }
+.billing-paywall p { margin: 0 0 16px; color: var(--ui-text-muted, #5f6368); }

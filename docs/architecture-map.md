@@ -112,6 +112,15 @@ Functional-feature map of the project: every shipped capability, the surfaces (U
 - **Hooks**: `cleanmenu_emit_fiscal_receipt` on `order.paid` (best-effort)
 - **Cron**: [`scripts/fiscal-receipt-worker.php`](../scripts/fiscal-receipt-worker.php) — 2m
 
+### SaaS Billing (Phase 14)
+- **UI**: [`signup.php`](../signup.php) (public, provider-only host), [`owner.php?tab=billing`](../owner.php) → [`partials/owner_billing_section.php`](../partials/owner_billing_section.php), [`provider/billing.php`](../provider/billing.php), [`provider/tenant.php`](../provider/tenant.php)
+- **API**: [`api/signup.php`](../api/signup.php), [`api/billing-action.php`](../api/billing-action.php), [`api/provider/tenant-action.php`](../api/provider/tenant-action.php)
+- **Adapter**: [`lib/Billing/PlanRegistry.php`](../lib/Billing/PlanRegistry.php), [`lib/Billing/FeatureGate.php`](../lib/Billing/FeatureGate.php), [`lib/Billing/SubscriptionStore.php`](../lib/Billing/SubscriptionStore.php), [`lib/Billing/YookassaRecurring.php`](../lib/Billing/YookassaRecurring.php)
+- **Middleware**: [`require_provider_admin.php`](../require_provider_admin.php), [`partials/billing_feature_gate.php`](../partials/billing_feature_gate.php)
+- **DB** (control plane): `tenants` (extended), `subscription_invoices`, `payment_methods`, `subscription_events`
+- **Hooks**: `payment-webhook.php` `metadata.kind=subscription_invoice` branch → `SubscriptionStore::onWebhook`. `session_init.php` suspended-tenant 503 gate.
+- **Cron**: [`scripts/billing-cycle-worker.php`](../scripts/billing-cycle-worker.php) — `0 */6 * * *`
+
 ### i18n (Phase 7.3)
 - **Helper**: [`lib/I18n.php`](../lib/I18n.php) — `t($key, $params)`
 - **Locales**: [`locales/ru.json`](../locales/ru.json), [`locales/en.json`](../locales/en.json), [`locales/kk.json`](../locales/kk.json)
@@ -134,6 +143,7 @@ Functional-feature map of the project: every shipped capability, the surfaces (U
 | [scripts/orders/purge-soft-deleted.php](../scripts/orders/purge-soft-deleted.php) | `30 3 * * *` | Daily archive sweep |
 | [scripts/reservation-reminder-worker.php](../scripts/reservation-reminder-worker.php) | `*/5 * * * *` | 2h-pre-arrival reservation Telegram |
 | [scripts/fiscal-receipt-worker.php](../scripts/fiscal-receipt-worker.php) | `*/2 * * * *` | АТОЛ Онлайн receipt status poll |
+| [scripts/billing-cycle-worker.php](../scripts/billing-cycle-worker.php) | `0 */6 * * *` | SaaS subscription billing — invoice + charge |
 
 ## Cross-cutting subsystems
 

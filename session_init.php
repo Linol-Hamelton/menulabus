@@ -33,10 +33,47 @@ if (!tenant_is_cli() && ($tenantContext['state'] ?? '') !== 'resolved') {
 $GLOBALS['tenantContext'] = $tenantContext;
 $GLOBALS['tenantMode'] = (string)($tenantContext['mode'] ?? 'provider');
 $GLOBALS['isProviderMode'] = !empty($tenantContext['is_provider']);
+$GLOBALS['tenantId']   = (int)($tenantContext['tenant_id'] ?? 0); // Phase 14: needed by FeatureGate
 $GLOBALS['currentHost'] = (string)($tenantContext['current_host'] ?? '');
 $GLOBALS['primaryHost'] = (string)($tenantContext['primary_host'] ?? '');
 $GLOBALS['baseUrl'] = (string)($tenantContext['base_url'] ?? '');
 $GLOBALS['primaryBaseUrl'] = (string)($tenantContext['primary_base_url'] ?? '');
+
+// Phase 14.8 — suspended tenant gate.
+// When subscription_status='suspended', customer-facing surfaces return 503.
+// Auth, owner billing, and provider-admin surfaces stay open so the operator
+// can pay and reactivate. The check is best-effort: if FeatureGate cannot
+// reach the control plane (e.g. legacy single-DB mode), it returns 'active'
+// and this gate is a no-op.
+if (!empty($GLOBALS['tenantId']) && empty($GLOBALS['isProviderMode'])) {
+    require_once __DIR__ . '/lib/Billing/PlanRegistry.php';
+    require_once __DIR__ . '/lib/Billing/FeatureGate.php';
+    $reqUri  = (string)($_SERVER['REQUEST_URI'] ?? '');
+    $reqPath = parse_url($reqUri, PHP_URL_PATH) ?: '/';
+    $alwaysOpen = [
+        '/auth.php', '/password-reset.php', '/owner.php',
+        '/api/billing-action.php', '/api/save/brand.php',
+        '/payment-webhook.php',
+    ];
+    $alwaysOpenPrefix = ['/auth/oauth/', '/provider/', '/api/provider/'];
+    $skipGate = false;
+    foreach ($alwaysOpen as $p) { if ($p === $reqPath) { $skipGate = true; break; } }
+    if (!$skipGate) {
+        foreach ($alwaysOpenPrefix as $p) { if (strpos($reqPath, $p) === 0) { $skipGate = true; break; } }
+    }
+    if (!$skipGate) {
+        try {
+            if (\Cleanmenu\Billing\FeatureGate::isSuspended()) {
+                http_response_code(503);
+                header('Content-Type: text/html; charset=utf-8');
+                echo '<!doctype html><html><body><h1>Сервис приостановлен</h1>'
+                   . '<p>Подписка ресторана приостановлена. Свяжитесь с владельцем заведения.</p>'
+                   . '</body></html>';
+                exit;
+            }
+        } catch (Throwable $_) { /* control plane unreachable, fail open */ }
+    }
+}
 
 header_remove('Cache-Control');
 header_remove('Expires');
