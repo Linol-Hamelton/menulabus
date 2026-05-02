@@ -1,6 +1,6 @@
 {
-  "version": "1.5.2",
+  "version": "1.5.3",
   "release_date": "2026-04-28",
-  "changelog": "Phase 13B.3.c+d+e+f: ARCHITECTURE — финальный sweep root-level PHP в подпапки. (c) confirm-cash-payment.php → api/checkout/cash-payment.php. (d) 6 oauth-файлов в auth/oauth/{google,vk,yandex}-{callback,start}.php. (e) kds.php / kds-action.php / kds-sse.php → kds/{index,action,sse}.php. (f) create_reservation.php / update_reservation_status.php / reservation_availability.php → api/reservations/{create,update-status,availability}.php (отличается от bearer-gated api/v1/reservations namespace). Внутренние __DIR__ исправлены до правильной глубины. Все cross-refs в PHP/JS/MD/SQL/conf обновлены sed-batchom. Корень: 76 → 63 PHP (-13). Итого Phase 13B.3 (a..f): 92 → 63, 29 файлов разложены.",
+  "changelog": "Phase 13B.4 + 13B.5: новый docs/architecture-map.md — feature → file/API/DB/cron map по всем 14 feature-areas (KDS, inventory, loyalty, multi-location, analytics-v2, reservations, webhooks, marketing, reviews, group split-bill, waitlist, staff v2, fiscal, i18n) + cross-cutting subsystems + repo layout после Phase 13B.3 рефакторинга. docs/feature-audit-matrix.md синхронизован: Phase 7 (54-ФЗ, i18n, staff v2, advanced split-bill payments) + Phase 8 (marketing, group ordering, waitlists, reviews) переведены из 'planned' в 'Implemented' с актуальными file paths и ссылками на module-doc'и. iiko остаётся 'planned (deferred — explicit user decision Phase 13)'.",
   "critical": false
 }

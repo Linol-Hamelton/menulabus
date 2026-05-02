@@ -3,7 +3,7 @@
 ## Implementation Status
 
 - Status: `Implemented`
-- Last reviewed: `2026-04-12`
+- Last reviewed: `2026-04-28` (Phase 13B.5 sweep — Phase 7 + 8 features marked shipped, Phase 13B.3 file-move reflected)
 - Current implementation notes:
   - This document captures the current `repo + live` audit baseline.
   - The audit is docs-first: runtime mismatches are recorded here and in roadmaps, not fixed in this cycle.
@@ -110,21 +110,21 @@ All five tracks (KDS, Inventory, Loyalty, Analytics v2, Multi-location) now appe
 
 | Route / feature | Intended behavior | Planned files | Doc target | Roadmap status |
 |---|---|---|---|---|
-| iiko adapter | Two-way sync for menu / orders / stop-list / stock, cron-based reconciliation, conflict rules (iiko as source of truth for prices) | `lib/integrations/Iiko.php`, `scripts/integrations/iiko-sync.php`, `admin-integrations.php` tab | `integrations/iiko.md` (new) | planned |
-| 54-ФЗ фискальный | Electronic receipt emission on `order.paid` via Atol-Online / Evotor Chek Online, receipt archive, admin retry | `lib/integrations/FiscalProvider.php`, `payment-webhook.php` hook, `fiscal_receipts` table | `fiscal-integration.md` (new) | planned |
-| full i18n | `/locales/{ru,en,kk}.json`, `lib/I18n.php` with `t()`, customer-facing pages first | `lib/I18n.php`, `locales/*.json`, migration of `menu.php` / `cart.php` / `order-track.php` / `reservation.php` | `i18n.md` (new) | planned |
-| staff management | Shifts, time-tracking, tip distribution (pool split by role/hours), per-role KPI | `sql/staff-migration.sql`, `shifts`/`time_entries`/`tip_splits` tables, `admin-staff.php`, `lib/Staff.php` | `staff-management.md` (new) | planned |
-| advanced payments | Split bill per seat / per item, pay-per-person QR links, delayed payments | `generate-payment-link.php` v2, `split_payment_groups` table, new customer UI in cart | `payments-integration.md` (updated) | planned |
+| iiko adapter | Two-way sync for menu / orders / stop-list / stock, cron-based reconciliation, conflict rules (iiko as source of truth for prices) | `lib/integrations/Iiko.php`, `scripts/integrations/iiko-sync.php`, `admin/integrations.php` tab | `integrations/iiko.md` (new) | **planned (deferred — explicit user decision Phase 13)** |
+| 54-ФЗ фискальный | Electronic receipt emission on `order.paid` via АТОЛ Онлайн (alt: Evotor Chek Online) | `lib/Fiscal/AtolOnline.php`, `lib/OrderPaidHook.php` `cleanmenu_emit_fiscal_receipt`, `scripts/fiscal-receipt-worker.php`, `orders.fiscal_receipt_uuid`/`url`, `owner.php?tab=fiscal` | [`docs/fiscal-54fz.md`](fiscal-54fz.md) | **Implemented** (scaffold + admin UI, cron `*/2`) |
+| full i18n | `/locales/{ru,en,kk}.json`, `lib/I18n.php` with `t()`, customer-facing pages first | `lib/I18n.php`, `locales/*.json`, `scripts/i18n-extract-strings.php`; surface migration ongoing | [`docs/i18n.md`](i18n.md) | **Implemented (helper + 80 keys; surface migration progressive)** |
+| staff management | Shifts, time-tracking, tip distribution, swap-requests, payroll CSV | `sql/staff-management-migration.sql` + `sql/staff-v2-migration.sql`, `shifts`/`time_entries`/`tip_splits`/`shift_swap_requests` tables, `admin/staff.php`, `api/shift-swap-action.php`, `scripts/payroll-export.php` | [`docs/staff-v2.md`](staff-v2.md) | **Implemented** (v2 UI shipped 13A.2) |
+| advanced payments | Split bill per seat / per item / equal share, multi-payer YK reconciliation | `group.php` payment block, `api/group-create-payment-intent.php`, `group_payment_intents` table, `payment-webhook.php` group-intent branch | [`docs/group-split-bill.md`](group-split-bill.md) | **Implemented** (UI shipped 13A.1) |
 
 ### Phase 8 — Growth & Retention (Q4 2026)
 
 | Route / feature | Intended behavior | Planned files | Doc target | Roadmap status |
 |---|---|---|---|---|
-| marketing automation | Email / SMS / Push campaigns with trigger scenarios (abandoned cart, birthday, win-back) | `lib/marketing/*`, `campaigns`/`campaign_runs` tables, `admin-campaigns.php` | `marketing-automation.md` (new) | planned |
+| marketing automation | Email / SMS / Push campaigns with trigger scenarios (abandoned cart, birthday, win-back) | `admin/marketing.php`, `api/save-campaign.php`, `marketing_campaigns`/`marketing_sends`/`marketing_segments`, `scripts/marketing-worker.php` | `marketing-automation.md` (planned for full doc) | **Implemented** |
 | AI recommendations | Smart upsell in the cart, menu optimization hints in owner reports, demand forecast | `lib/ai/Recommender.php`, possibly external OpenAI / local model proxy, recommendations cache table | `ai-recommendations.md` (new) | planned |
-| group ordering | Multi-guest single-table flow, each guest adds items via per-seat QR, consolidated or split bill | `group_orders` table, extended `cart.php` with seat switcher, `/group/<code>` public link | `group-ordering.md` (new) | planned |
-| waitlists | "Встать в очередь" form when fully booked, SMS ping on seat available | `waitlist_entries` table, `reservation.php` fallback flow, SMS provider integration | `waitlists.md` (new) | planned |
-| review moderation | Owner replies to reviews, publication of best reviews on tenant site, moderation via Telegram | `reviews.reply_text` column, `owner.php?tab=reviews` write UI, published flag | `reviews.md` (updated) | planned |
+| group ordering | Multi-guest single-table flow, each guest adds items via per-seat QR, consolidated or split bill | `group.php`, `api/save-group-order.php`, `api/group-create-payment-intent.php`, `group_orders`/`group_order_items`/`group_payment_intents` | [`group-split-bill.md`](group-split-bill.md) | **Implemented** |
+| waitlists | "Встать в очередь" form when fully booked, SMS ping on seat available | `admin/waitlist.php`, `api/save-waitlist.php`, `waitlist_entries` table | `waitlists.md` (planned) | **Implemented** |
+| review moderation | Owner replies to reviews, publication of best reviews on tenant site, moderation via Telegram | `reviews.reply_text` column, `owner.php?tab=reviews` write UI, published flag | [`reviews.md`](reviews.md) | **Implemented** |
 
 ### Phase 9 — Enterprise & Platform (Q1 2027)
 
