@@ -296,6 +296,35 @@ cp /etc/nginx/fastpanel2-sites/<user>/<host>.conf \
    /etc/nginx/fastpanel2-available/<user>/<host>.conf
 ```
 
+### After moving files into subdirectories — grep for bare-relative requires
+
+The Phase 13B.3 mass `git mv` of 29 PHP files into purpose-named subdirs
+(`admin/`, `api/save/`, `api/checkout/`, `auth/oauth/`, `kds/`,
+`api/reservations/`) caught most path issues via the `__DIR__ . '/X'` →
+`__DIR__ . '/../../X'` mass-sed. But it **missed** one anti-pattern:
+bare relative requires without `__DIR__`:
+
+```php
+require_once 'session_init.php';   // BAD — resolves relative to PHP's cwd
+require_once 'require_auth.php';
+```
+
+These work while the file lives at repo root (cwd = root, so the bare
+filename resolves correctly), but break silently after the move with
+500 / fatal "require_once(): Failed opening required ...". Production
+caught this on `api/save/brand.php` — that endpoint returned `500` on
+every POST until both requires got the proper `__DIR__ . '/../../'`
+prefix.
+
+Always grep for the anti-pattern after a subdir refactor:
+
+```bash
+grep -rnE "^\s*require(_once)?\s*['\"][a-z][a-z_-]*\.php['\"]" --include="*.php" .
+```
+
+If the grep returns anything, those files will fatal as soon as their
+cwd no longer matches root.
+
 ### Create cache zone directories before nginx reload
 
 The site declares two `fastcgi_cache_path` zones at `/var/cache/nginx/`.
