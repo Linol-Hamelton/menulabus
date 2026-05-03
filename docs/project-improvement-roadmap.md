@@ -2,14 +2,15 @@
 
 ## Implementation Status
 
-- Status: `Implemented (Phases 0-8 + 14) · Planned (AI recs, iiko adapter, Phase 9 sans billing)`
-- Last reviewed: `2026-05-03`
+- Status: `Implemented (Phases 0-8 + 14 + 15) · Planned (AI recs, iiko adapter, Phase 9 sans billing)`
+- Last reviewed: `2026-05-04`
 - Current implementation notes:
   - **Phases 0-5** — foundation + launch automation + release discipline: `Implemented`.
   - **Phase 6** — KDS, inventory MVP, loyalty, multi-location, analytics v2: `Implemented`.
   - **Phase 7** — 54-ФЗ fiscal (АТОЛ), full i18n (helper + 80 keys; surface migration ongoing), staff-management v2 (shifts + swap requests + payroll CSV), split-bill payments: `Implemented`. iiko adapter (Phase 7.1): `Planned (deferred — explicit user decision Phase 13)`.
   - **Phase 8** — marketing automation, group ordering, waitlists, review moderation: `Implemented`. AI recommendations: `Planned`.
   - **Phase 14** — SaaS Billing Engine (signup, plan registry, recurring YK, soft dunning, provider admin): `Implemented` (v2.0.0, 2026-05-03).
+  - **Phase 15** — Audit hotfix M1-M6 (Playwright MCP audit от 2026-05-03 закрыл file-manager 404 на /admin/menu.php, ?tab= URL routing, ghost update modal, `\r\n` literal в changelog, hero clipping на reservation/group/signup, archive 7 broken-image test items): `Implemented` (v2.0.1, 2026-05-04). Детали в `docs/archive/2026/audit-2026-05-03.md`.
   - **Phase 9 (sans billing)** — developer platform, compliance pack (GDPR/152-ФЗ/ЕГАИС/Меркурий), multi-region HA, onboarding 2.0: `Planned`.
   - Architecture refactor (Phase 13): root PHP 92→63, разнесены в admin/, api/save/, api/checkout/, auth/oauth/, kds/, api/reservations/.
   - Release discipline: docs-drift check + visual regression + provider/tenant smoke + provider security smoke + post-release browser regression.
