@@ -917,3 +917,12 @@ body.customer_orders-page .order-toggle-icon.fa-chevron-up::after {
     text-align: left;
   }
 }
+
+/* Audit 2026-05-03 (M5): standalone surfaces без account-header.php
+   тоже должны компенсировать высоту fixed-хедера, чтобы hero-заголовок
+   не обрезался. account.php / owner.php получают это через #menu. */
+body.reservation-page,
+body.group-page,
+body.signup-page {
+  padding-top: 96px;
+}

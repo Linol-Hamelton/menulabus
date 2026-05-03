@@ -1,6 +1,6 @@
 {
-  "version": "2.0.0",
+  "version": "2.0.1",
   "release_date": "2026-05-03",
-  "changelog": "Phase 14 — SaaS Billing Engine. Major release: продукт переходит в коммерческое состояние. Self-service /signup.php → 14-day trial tenant. /owner.php?tab=billing — управление подпиской (план, карта, инвойсы, отмена). /provider/billing.php + /provider/tenant.php — admin для оператора (MRR, статусы, действия comp/extend_trial/force_*). YooKassa recurring (save_payment_method + chargeStored). billing-cycle-worker (cron */6h) с soft dunning (день 1/4/7 retry → past_due → suspended). 3 тира: Starter 2990₽, Pro 6990₽, Enterprise 19990₽+. Feature gating: kitchen/inventory/loyalty/marketing pages render paywall если фича вне плана; session_init.php → 503 на customer surfaces для suspended. Migration на control-plane DB (tenants extended + subscription_invoices + payment_methods + subscription_events). Все детали в docs/billing.md.",
-  "critical": true
+  "changelog": "Phase 15 — Audit fix M1-M7 (production audit 2026-05-03). file-manager.min.js теперь использует абсолютные URL'ы (5 fetch'ей) — fix 404 на /admin/menu.php после Phase 13B.3 move. admin-tabs-repair.js читает ?tab= параметр URL — /admin/menu.php?tab=design теперь корректно открывает таб «Дизайн». version-checker сохраняет dismissed version в localStorage — модалка «Критическое обновление» больше не появляется повторно после закрытия. account.php — убран `r`n literal в конце changelog. account-styles.min.css — добавлен padding-top для reservation/group/signup чтобы hero-заголовки не обрезались под fixed header. scripts/cleanup-broken-image-items.php — one-shot archive 7 test menu_items с битыми путями. Все детали в audit-2026-05-03/AUDIT-REPORT.md.",
+  "critical": false
 }

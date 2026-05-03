@@ -106,8 +106,10 @@ tests/visual/.auth/
 tests/visual/**/*-actual.png
 tests/visual/**/*-diff.png
 
-# Local audit screenshots (regeneratable via Playwright suite)
+# Local audit screenshots (regeneratable via Playwright suite).
+# Reports themselves live in docs/archive/<year>/ when archived.
 audit-screens/
+audit-2*/
 
 # Git hooks local runtime files
 .githooks/*.log

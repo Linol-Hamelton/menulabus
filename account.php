@@ -406,7 +406,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p><?= nl2br(htmlspecialchars($changelog)) ?></p>
             </div>
             <?php endif; ?>
-            <div class="section-header-menu">`r`n                <a href="logout.php" class="back-to-menu-btn">Выйти</a>
+            <div class="section-header-menu">
+                <a href="logout.php" class="back-to-menu-btn">Выйти</a>
             </div>
         </section>
         <?php endif; ?>

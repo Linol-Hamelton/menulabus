@@ -55,6 +55,17 @@
       // no-op
     }
 
+    var urlTabMatched = false;
+    try {
+      var urlTab = new URLSearchParams(window.location.search).get('tab');
+      if (urlTab && validTabs.indexOf(urlTab) !== -1) {
+        initialTab = urlTab;
+        urlTabMatched = true;
+      }
+    } catch (error) {
+      // no-op
+    }
+
     buttons.forEach(function (button) {
       button.addEventListener('click', function () {
         activate(button.getAttribute('data-tab'), true);
@@ -62,7 +73,7 @@
     });
 
     if (initialTab) {
-      activate(initialTab, false);
+      activate(initialTab, urlTabMatched);
     }
   }
 
