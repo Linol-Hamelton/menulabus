@@ -2,10 +2,11 @@
 
 ## Status
 
-- Status: `Draft — strategic`
-- Last reviewed: `2026-04-23`
+- Status: `Draft — strategic` (Phases 6-8 + 14 ahead of schedule)
+- Last reviewed: `2026-05-03`
 - Horizon: Q2 2026 → Q1 2027 (~12 months)
 - Owner: провайдер (platform team)
+- Progress: **Phases 6, 7 (sans iiko), 8, и 14 (SaaS billing) — Implemented к 2026-05-03**, на 8+ месяцев раньше первоначального плана. Phase 9 (sans billing — оно уже сделано) + AI recs + iiko adapter — в `planned`.
 
 Этот документ — стратегический «север», а не технический план задач. Сроки и приоритеты — ориентировочные; конкретные спринты разбиваются в [project-improvement-roadmap.md](./project-improvement-roadmap.md).
 

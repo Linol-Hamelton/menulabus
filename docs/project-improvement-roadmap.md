@@ -2,16 +2,18 @@
 
 ## Implementation Status
 
-- Status: `Implemented (Phases 0-5) + Planned (Phases 6-9)`
-- Last reviewed: `2026-04-23`
+- Status: `Implemented (Phases 0-8 + 14) · Planned (AI recs, iiko adapter, Phase 9 sans billing)`
+- Last reviewed: `2026-05-03`
 - Current implementation notes:
-  - Phases 0-5 (white-label foundation, launch automation, UX polish, release automation) — `Implemented`.
-  - Additional foundational work shipped since 2026-04-11: `lib/Csrf.php`, table reservations end-to-end, outgoing webhook platform, admin UX track (drag-n-drop / bulk / hotkeys / filters / undo).
-  - Strategic vision for the next 12 months captured separately in [product-vision-2027.md](./product-vision-2027.md).
-  - Phases 6-9 below are the tactical projection of that vision onto release trains.
-  - The core provider/tenant model is implemented.
-  - Release discipline now includes docs-drift checks, baseline capture, provider/tenant smoke, and provider security smoke.
-  - Tenant go-live is now scriptable end-to-end on the target host via `scripts/tenant/go-live.sh`, with DNS remaining an external prerequisite.
+  - **Phases 0-5** — foundation + launch automation + release discipline: `Implemented`.
+  - **Phase 6** — KDS, inventory MVP, loyalty, multi-location, analytics v2: `Implemented`.
+  - **Phase 7** — 54-ФЗ fiscal (АТОЛ), full i18n (helper + 80 keys; surface migration ongoing), staff-management v2 (shifts + swap requests + payroll CSV), split-bill payments: `Implemented`. iiko adapter (Phase 7.1): `Planned (deferred — explicit user decision Phase 13)`.
+  - **Phase 8** — marketing automation, group ordering, waitlists, review moderation: `Implemented`. AI recommendations: `Planned`.
+  - **Phase 14** — SaaS Billing Engine (signup, plan registry, recurring YK, soft dunning, provider admin): `Implemented` (v2.0.0, 2026-05-03).
+  - **Phase 9 (sans billing)** — developer platform, compliance pack (GDPR/152-ФЗ/ЕГАИС/Меркурий), multi-region HA, onboarding 2.0: `Planned`.
+  - Architecture refactor (Phase 13): root PHP 92→63, разнесены в admin/, api/save/, api/checkout/, auth/oauth/, kds/, api/reservations/.
+  - Release discipline: docs-drift check + visual regression + provider/tenant smoke + provider security smoke + post-release browser regression.
+  - Tenant go-live: scriptable via `scripts/tenant/go-live.sh` (manual) AND через `/signup.php` (self-service trial).
 
 ## Goal
 
