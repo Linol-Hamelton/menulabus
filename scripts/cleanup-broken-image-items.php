@@ -24,7 +24,7 @@ require_once __DIR__ . '/../tenant_runtime.php';
 require_once __DIR__ . '/../db.php';
 
 $db  = Database::getInstance();
-$pdo = $db->getPdo();
+$pdo = $db->getConnection();
 
 $brokenPaths = [
     '/images/Pizza/piperoni.jpg',
