@@ -158,33 +158,37 @@ final class FeatureGate
     /**
      * Open a PDO to the control-plane DB. Returns null when there is no
      * control plane configured (legacy single-DB mode).
+     *
+     * Prefers tenant_control_pdo() — the canonical helper from
+     * tenant_runtime.php which reads CONTROL_DB_* constants from
+     * tenant_control_config.php. Falls back to $GLOBALS['controlPlanePdo']
+     * if a caller pre-populated it (used by tests).
      */
     private static function controlPlanePdo(): ?\PDO
     {
         if (!empty($GLOBALS['controlPlanePdo']) && $GLOBALS['controlPlanePdo'] instanceof \PDO) {
             return $GLOBALS['controlPlanePdo'];
         }
-        $cfg = $GLOBALS['cleanmenuTenantRuntime']['control'] ?? null;
-        if (!$cfg) return null;
-        try {
-            $dsn = 'mysql:host=' . ($cfg['host'] ?? '127.0.0.1')
-                 . ';dbname=' . ($cfg['db'] ?? '')
-                 . ';charset=utf8mb4';
-            $pdo = new \PDO(
-                $dsn,
-                (string)($cfg['user'] ?? ''),
-                (string)($cfg['pass'] ?? ''),
-                [
-                    \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
-                    \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
-                    \PDO::ATTR_EMULATE_PREPARES   => false,
-                ]
-            );
-            $GLOBALS['controlPlanePdo'] = $pdo;
-            return $pdo;
-        } catch (\Throwable $e) {
-            error_log('FeatureGate: cannot open control-plane PDO: ' . $e->getMessage());
-            return null;
+        // Canonical helper: load tenant_runtime.php once and call
+        // tenant_control_pdo(). This is how the rest of the codebase
+        // talks to the control-plane.
+        if (!function_exists('tenant_control_pdo')) {
+            $bootFile = __DIR__ . '/../../tenant_runtime.php';
+            if (is_file($bootFile)) {
+                require_once $bootFile;
+            }
         }
+        if (function_exists('tenant_control_configured') && function_exists('tenant_control_pdo')) {
+            try {
+                if (!tenant_control_configured()) return null;
+                $pdo = tenant_control_pdo();
+                $GLOBALS['controlPlanePdo'] = $pdo;
+                return $pdo;
+            } catch (\Throwable $e) {
+                error_log('FeatureGate: cannot open control-plane PDO: ' . $e->getMessage());
+                return null;
+            }
+        }
+        return null;
     }
 }
