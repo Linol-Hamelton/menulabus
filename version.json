@@ -1,6 +1,6 @@
 {
-  "version": "2.0.1",
-  "release_date": "2026-05-03",
-  "changelog": "Phase 15 — Audit fix M1-M7 (production audit 2026-05-03). file-manager.min.js теперь использует абсолютные URL'ы (5 fetch'ей) — fix 404 на /admin/menu.php после Phase 13B.3 move. admin-tabs-repair.js читает ?tab= параметр URL — /admin/menu.php?tab=design теперь корректно открывает таб «Дизайн». version-checker сохраняет dismissed version в localStorage — модалка «Критическое обновление» больше не появляется повторно после закрытия. account.php — убран `r`n literal в конце changelog. account-styles.min.css — добавлен padding-top для reservation/group/signup чтобы hero-заголовки не обрезались под fixed header. scripts/cleanup-broken-image-items.php — one-shot archive 7 test menu_items с битыми путями. Все детали в audit-2026-05-03/AUDIT-REPORT.md.",
+  "version": "2.0.2",
+  "release_date": "2026-05-04",
+  "changelog": "Phase 15 hotfix — file-manager.min.js patches 2 missed relative URL bugs (M1 follow-up): list-action template literal + dynamic-fonts link.href now absolute. Cache-bust пушит браузеры за обновлённой версией JS, чтобы fonts CSS правильно загружался на /admin/menu.php.",
   "critical": false
 }
