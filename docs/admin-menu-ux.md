@@ -2,8 +2,39 @@
 
 ## Implementation Status
 
-- Status: `Partial` (5.1 drag-n-drop shipped; 5.2–5.5 planned — see [project plan](../../Users/Dmitry/.claude/plans/silly-mixing-codd.md) locally).
-- Last reviewed: `2026-04-23`
+- Status: `Implemented` (5.1–5.5 + Phase 16 modal editor + image picker).
+- Last reviewed: `2026-05-04`
+
+## Phase 16 — modal editor + image picker (v2.1.0, 2026-05-04)
+
+### What changed
+
+- **Inline-форма редактирования вынесена в модальное окно.** Раньше форма «Обновление» жила прямо на `/admin/menu.php` под таблицей; чтобы отредактировать блюдо, нужно было скроллить вниз. Теперь — `<dialog id="dishEditorModal">` с 5 табами (Основное / Изображение / Модификаторы / Рецепт / Превью). Открывается по клику «Редактировать» (`.js-edit-dish`) или «+ Создать блюдо» (`.js-new-dish`).
+- **AJAX submit** через новый [api/save-menu-item.php](../api/save-menu-item.php). Actions: `get` (загрузить блюдо), `save` (create / update — flat fields), `archive`, `restore`, `inline_save` (single field — used by inline price edit).
+- **Image picker с миниатюрами** ([js/admin-image-picker.js](../js/admin-image-picker.js)) — обходит все подпапки `/images/*` через `/file-manager.php?action=list`, рендерит grid миниатюр с lazy-load, click → set value, search-by-filename, drag-drop upload через `/file-manager.php?action=upload`. Кнопка «Без изображения» для очистки.
+- **Live preview карточки** на отдельном табе и как side-rail в режиме «Основное» — dish-card в той же DOM-структуре что customer-facing menu, обновляется на каждый input event.
+- **Миниатюры в таблице** — рядом с названием блюда показывается `<img class="dish-thumb">` 32×32 (или [/images/icons/dish-placeholder.svg](../images/icons/dish-placeholder.svg) если image не задан). Помогает сканировать каталог глазами.
+- **Inline-edit цены** — клик по ячейке `.js-inline-price` → input → Enter/blur сохраняет через `inline_save`, Escape отменяет. Endpoint валидирует price ≥ 0, возвращает обновлённое значение.
+- **Modifiers / Recipe lazy-init** — при первом открытии соответствующего таба модалки. `window.AdminModifiers.init(root, itemId)` и `window.AdminRecipe.init(root, itemId)` — публичный API, переиспользуется существующая CRUD-логика.
+- **db.php `addMenuItem`** теперь возвращает `int|false` вместо `bool` — нужно endpoint'у для отдачи нового id.
+
+### Files (Phase 16)
+
+- New: [api/save-menu-item.php](../api/save-menu-item.php), [js/admin-menu-modal.js](../js/admin-menu-modal.js), [js/admin-image-picker.js](../js/admin-image-picker.js), [css/admin-menu-modal.css](../css/admin-menu-modal.css), [images/icons/dish-placeholder.svg](../images/icons/dish-placeholder.svg).
+- Modified: [admin/menu.php](../admin/menu.php) (modal markup, table thumb + inline-price classes, button replacements, removed inline editor), [js/admin-modifiers.js](../js/admin-modifiers.js) (public init API), [js/admin-recipe.js](../js/admin-recipe.js) (public init API), [js/admin-menu-page.js](../js/admin-menu-page.js) (inline-price handler), [db.php](../db.php) (`addMenuItem` returns id).
+
+### Out of scope (Phase 16)
+
+- Bulk image assignment (выбрать N items → массовая установка одной картинки).
+- Categories chip manager.
+- Composition autocomplete from inventory ingredients.
+- Mobile swipe-to-archive.
+- Auto-save draft при закрытии модалки.
+- Audit log изменений позиции.
+
+### Reference
+
+
 
 This document captures the UX niceties shipped on top of [admin-menu.php](../admin-menu.php). It's a living doc — each sub-track (bulk actions, hotkeys, richer filters, soft-delete undo) gets a section as it lands.
 

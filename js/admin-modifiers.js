@@ -13,16 +13,30 @@
             || '';
     }
 
-    function init() {
-        var wrap = document.getElementById('modifiersSection');
-        if (!wrap) return;
-        itemId = parseInt(wrap.dataset.itemId, 10) || 0;
-        csrf   = getCsrfToken();
+    function init(rootEl, explicitItemId) {
+        // Two call modes:
+        //   1) page-load auto-init: looks for legacy #modifiersSection wrapper
+        //      (used to be on /admin/menu.php?edit=ID; removed in Phase 16).
+        //   2) explicit init from modal: window.AdminModifiers.init(root, id).
+        if (rootEl && explicitItemId) {
+            itemId = parseInt(explicitItemId, 10) || 0;
+        } else {
+            var wrap = document.getElementById('modifiersSection');
+            if (!wrap) return; // legacy mount point gone — modal will call us later
+            itemId = parseInt(wrap.dataset.itemId, 10) || 0;
+        }
+        csrf = getCsrfToken();
         if (!itemId) return;
         loadModifiers();
-        document.getElementById('addModifierGroupBtn')
-            ?.addEventListener('click', addGroup);
+        var addBtn = document.getElementById('addModifierGroupBtn');
+        if (addBtn && !addBtn.dataset.bound) {
+            addBtn.dataset.bound = '1';
+            addBtn.addEventListener('click', addGroup);
+        }
     }
+
+    // Expose for lazy init from the modal
+    window.AdminModifiers = { init: init };
 
     function api(body) {
         var token = csrf || getCsrfToken();

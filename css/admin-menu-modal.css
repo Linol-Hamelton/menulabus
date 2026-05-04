@@ -1,0 +1,555 @@
+/* admin-menu-modal.css — Phase 16
+ *
+ * Styles for the modal dish editor (#dishEditorModal), the image picker
+ * tab, the live-preview pane, and the dish thumbnail in the catalog list.
+ *
+ * Reuses existing CSS tokens from ui-ux-polish.css and admin-menu-polish.css.
+ * No new CSS variables; everything anchors to var(--ui-*) / var(--shell-*).
+ */
+
+/* ===== <dialog> shell =================================================== */
+dialog.dish-editor-modal {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  max-width: min(1180px, 96vw);
+  max-height: 92vh;
+  width: 100%;
+  margin: auto;
+  overflow: visible;
+  color: var(--ui-text);
+}
+
+dialog.dish-editor-modal::backdrop {
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.dish-editor-modal .modal-card {
+  background: var(--ui-surface);
+  border-radius: 24px;
+  box-shadow: 0 30px 60px rgba(15, 23, 42, 0.25);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  max-height: 92vh;
+  min-height: min(88vh, 720px);
+}
+
+.dish-editor-modal .modal-head {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--ui-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--ui-surface);
+}
+
+.dish-editor-modal .modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.dish-editor-modal .modal-subtitle {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--light-text, #6b7280);
+}
+
+.dish-editor-modal .modal-close {
+  background: transparent;
+  border: 1px solid var(--ui-border);
+  color: var(--ui-text);
+  font-size: 1.4rem;
+  line-height: 1;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.dish-editor-modal .modal-close:hover {
+  background: var(--ui-divider, #f3f4f6);
+}
+
+/* ===== Tab bar ========================================================== */
+.dish-editor-modal .modal-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 10px 24px 0;
+  border-bottom: 1px solid var(--ui-border);
+  background: var(--ui-surface);
+}
+
+.dish-editor-modal .modal-tab-btn {
+  background: transparent;
+  border: 0;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--ui-text);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+  border-radius: 8px 8px 0 0;
+}
+
+.dish-editor-modal .modal-tab-btn:hover {
+  background: var(--ui-divider, #f3f4f6);
+}
+
+.dish-editor-modal .modal-tab-btn[aria-selected="true"] {
+  border-bottom-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.dish-editor-modal .modal-tab-btn[hidden] {
+  display: none;
+}
+
+.dish-editor-modal .modal-tab-btn .badge {
+  font-size: 0.7rem;
+  background: var(--ui-divider, #e5e7eb);
+  border-radius: 999px;
+  padding: 1px 7px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ===== Body / panes ===================================================== */
+.dish-editor-modal .modal-body {
+  overflow: auto;
+  padding: 20px 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+}
+
+.dish-editor-modal .modal-pane[hidden] {
+  display: none;
+}
+
+.dish-editor-modal .modal-pane {
+  display: block;
+}
+
+/* Two-column layout: form (left) + preview side-rail (right) on desktop. */
+@media (min-width: 1024px) {
+  .dish-editor-modal .modal-body.with-preview {
+    grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
+    gap: 28px;
+  }
+  .dish-editor-modal .modal-preview-pane {
+    position: sticky;
+    top: 0;
+    align-self: start;
+  }
+}
+
+/* ===== Footer =========================================================== */
+.dish-editor-modal .modal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--ui-border);
+  background: var(--ui-surface);
+}
+
+.dish-editor-modal .modal-foot .left,
+.dish-editor-modal .modal-foot .right {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.dish-editor-modal .modal-status {
+  font-size: 0.85rem;
+  color: var(--light-text, #6b7280);
+}
+
+.dish-editor-modal .modal-status.ok    { color: #16a34a; }
+.dish-editor-modal .modal-status.error { color: #dc2626; }
+
+/* ===== Form bits ======================================================== */
+.dish-editor-modal .form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.dish-editor-modal .form-grid .form-field-wide {
+  grid-column: 1 / -1;
+}
+
+.dish-editor-modal label.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ui-text);
+}
+
+.dish-editor-modal label.form-field input,
+.dish-editor-modal label.form-field textarea {
+  font: inherit;
+  padding: 9px 11px;
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+}
+
+.dish-editor-modal label.form-field input:focus,
+.dish-editor-modal label.form-field textarea:focus {
+  outline: 2px solid var(--ui-focus-ring, var(--primary-color));
+  outline-offset: 0;
+  border-color: transparent;
+}
+
+.dish-editor-modal label.form-field small.hint {
+  font-weight: 400;
+  color: var(--light-text, #6b7280);
+}
+
+.dish-editor-modal .form-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.dish-editor-modal .image-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--ui-divider, #f3f4f6);
+  border-radius: 12px;
+}
+
+.dish-editor-modal .image-summary img {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #fff;
+}
+
+.dish-editor-modal .image-summary .placeholder {
+  width: 56px; height: 56px; border-radius: 10px;
+  background: linear-gradient(135deg, #f6eee8 0%, #eed9cc 100%);
+  display: grid; place-items: center; font-size: 1.5rem; color: #b59b8a;
+}
+
+.dish-editor-modal .image-summary code {
+  font-size: 0.85rem;
+  word-break: break-all;
+  flex: 1;
+}
+
+/* ===== Image picker grid =============================================== */
+.dish-editor-modal .picker-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.dish-editor-modal .picker-search {
+  flex: 1 1 200px;
+  padding: 8px 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+}
+
+.dish-editor-modal .picker-folder {
+  padding: 8px 10px;
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  font: inherit;
+}
+
+.dish-editor-modal .picker-status {
+  flex: 1 1 100%;
+  font-size: 0.85rem;
+  color: var(--light-text, #6b7280);
+}
+
+.dish-editor-modal .picker-dropzone {
+  border: 2px dashed var(--ui-border);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 14px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--light-text, #6b7280);
+  cursor: pointer;
+  transition: border-color 120ms, background 120ms;
+}
+
+.dish-editor-modal .picker-dropzone:hover,
+.dish-editor-modal .picker-dropzone.is-dragover {
+  border-color: var(--primary-color);
+  background: rgba(var(--primary-color-rgb, 220, 38, 38), 0.05);
+}
+
+.dish-editor-modal .picker-folder-group {
+  margin-bottom: 18px;
+}
+
+.dish-editor-modal .picker-folder-title {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--light-text, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dish-editor-modal .picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.dish-editor-modal .picker-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: var(--ui-surface);
+  border: 2px solid var(--ui-border);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 120ms, transform 120ms;
+}
+
+.dish-editor-modal .picker-tile:hover {
+  border-color: var(--primary-color);
+}
+
+.dish-editor-modal .picker-tile.is-selected {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb, 220, 38, 38), 0.15);
+}
+
+.dish-editor-modal .picker-tile img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: #fff;
+}
+
+.dish-editor-modal .picker-tile-name {
+  padding: 6px 8px;
+  font-size: 0.78rem;
+  text-align: center;
+  background: var(--ui-divider, #f3f4f6);
+  word-break: break-all;
+}
+
+.dish-editor-modal .picker-tile.is-selected::after {
+  content: "✓";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.dish-editor-modal .picker-tile.no-image {
+  background: linear-gradient(135deg, #f6eee8 0%, #eed9cc 100%);
+}
+
+/* ===== Live preview pane =============================================== */
+.dish-editor-modal .modal-preview-pane {
+  background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+  border: 1px solid var(--ui-border);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.dish-editor-modal .modal-preview-title {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--light-text, #6b7280);
+}
+
+.dish-editor-modal .preview-card {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+}
+
+.dish-editor-modal .preview-card-img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: linear-gradient(135deg, #f6eee8 0%, #eed9cc 100%);
+}
+
+.dish-editor-modal .preview-card-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dish-editor-modal .preview-card-name {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.dish-editor-modal .preview-card-cat {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--light-text, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dish-editor-modal .preview-card-desc {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--ui-text);
+}
+
+.dish-editor-modal .preview-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  gap: 12px;
+}
+
+.dish-editor-modal .preview-card-price {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--primary-color);
+}
+
+.dish-editor-modal .preview-card-stop {
+  background: #1f2937;
+  color: #fff;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.dish-editor-modal .preview-card-bju {
+  display: flex;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--light-text, #6b7280);
+}
+
+.dish-editor-modal .preview-card-bju span {
+  background: var(--ui-divider, #f3f4f6);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* ===== Inline-edit price (catalog table) =============================== */
+.menu-items-table td.js-inline-price {
+  cursor: text;
+  position: relative;
+}
+
+.menu-items-table td.js-inline-price:hover {
+  background: rgba(var(--primary-color-rgb, 220, 38, 38), 0.04);
+}
+
+.menu-items-table td.js-inline-price input {
+  width: 100%;
+  min-width: 70px;
+  font: inherit;
+  padding: 4px 6px;
+  border: 1px solid var(--primary-color);
+  border-radius: 8px;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  outline: none;
+}
+
+/* ===== Dish thumbnail in catalog list =================================== */
+.dish-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dish-thumb {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f6eee8 0%, #eed9cc 100%);
+}
+
+.dish-name-cell .dish-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Mobile card list — also show thumb */
+.mobile-table-item .dish-thumb {
+  width: 40px;
+  height: 40px;
+}
+
+/* ===== Mobile adjustments ============================================== */
+@media (max-width: 720px) {
+  dialog.dish-editor-modal {
+    max-width: 100vw;
+    max-height: 100vh;
+    width: 100vw;
+    margin: 0;
+  }
+  .dish-editor-modal .modal-card {
+    border-radius: 0;
+    min-height: 100vh;
+    max-height: 100vh;
+  }
+  .dish-editor-modal .modal-head,
+  .dish-editor-modal .modal-tabs,
+  .dish-editor-modal .modal-body,
+  .dish-editor-modal .modal-foot {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .dish-editor-modal .modal-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+  .dish-editor-modal .modal-tab-btn {
+    flex: 0 0 auto;
+  }
+  .dish-editor-modal .modal-body.with-preview {
+    grid-template-columns: 1fr;
+  }
+}

@@ -231,6 +231,65 @@
       const id = parseInt(stopBtn.getAttribute('data-item-id') || '', 10);
       if (id) toggleAvailable(id, stopBtn);
     });
+
+    // Inline price edit (Phase 16) — click cell → input → blur/Enter saves.
+    document.addEventListener('click', (event) => {
+      const cell = event.target.closest('td.js-inline-price');
+      if (!cell) return;
+      if (cell.querySelector('input')) return;          // already editing
+      const id = parseInt(cell.getAttribute('data-item-id') || '0', 10);
+      if (!id) return;
+
+      const oldText = (cell.textContent || '').trim();
+      const oldVal  = parseFloat(oldText.replace(/\s/g, '').replace('₽', '')) || 0;
+
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.step = '0.01';
+      input.min = '0';
+      input.value = oldVal.toFixed(2);
+      cell.textContent = '';
+      cell.appendChild(input);
+      input.focus();
+      input.select();
+
+      let committed = false;
+      const revert = () => {
+        cell.textContent = oldText;
+      };
+      const commit = async () => {
+        if (committed) return;
+        committed = true;
+        const newVal = parseFloat(input.value);
+        if (!isFinite(newVal) || newVal < 0 || Math.abs(newVal - oldVal) < 0.0001) {
+          revert();
+          return;
+        }
+        try {
+          const data = await postJson('/api/save-menu-item.php', {
+            action: 'inline_save',
+            id,
+            field: 'price',
+            value: newVal,
+          });
+          if (!data || !data.success) {
+            alert((data && data.error) || 'Не сохранилось');
+            revert();
+            return;
+          }
+          cell.textContent = Number(data.value).toFixed(2) + ' ₽';
+        } catch (e) {
+          alert('Сетевая ошибка');
+          revert();
+        }
+      };
+
+      input.addEventListener('blur', commit);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        else if (e.key === 'Escape') { committed = true; revert(); }
+      });
+    });
   }
 
   syncSavedFonts();

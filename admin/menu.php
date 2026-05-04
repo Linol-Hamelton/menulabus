@@ -211,6 +211,7 @@ $savedDbFontsJson = htmlspecialchars(
     <link rel="stylesheet" href="/css/admin-menu-filters.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/undo-toast.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/admin-recipe.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/admin-menu-modal.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/hotkeys.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= $appVersion ?>">
     <title>Блюда | <?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?></title>
@@ -254,6 +255,9 @@ $savedDbFontsJson = htmlspecialchars(
                 <div class="form-actions menu-view-switch">
                 <a href="/admin/menu.php?view=active" class="admin-checkout-btn<?= !$showArchived ? ' cancel' : '' ?>">Активные</a>
                 <a href="/admin/menu.php?view=archived" class="admin-checkout-btn<?= $showArchived ? ' cancel' : '' ?>">Архив</a>
+                <?php if (!$showArchived): ?>
+                <button type="button" class="checkout-btn js-new-dish" title="Создать новое блюдо в модальном редакторе">+ Создать блюдо</button>
+                <?php endif; ?>
                 </div>
                 <div class="menu-tabs-container admin-menu-categories">
                     <div class="menu-tabs">
@@ -345,9 +349,14 @@ $savedDbFontsJson = htmlspecialchars(
                                     </td>
                                 <?php endif; ?>
                                 <td><?= $it['id'] ?></td>
-                                <td><?= htmlspecialchars($it['name']) ?></td>
-                                <td><?= htmlspecialchars($it['category']) ?></td>
-                                <td><?= number_format($it['price'], 2) ?> ₽</td>
+                                <td>
+                                    <div class="dish-name-cell">
+                                        <img class="dish-thumb" src="<?= htmlspecialchars($it['image'] ? preg_replace('#^\./#', '/', (string)$it['image']) : '/images/icons/dish-placeholder.svg') ?>" alt="" loading="lazy" onerror="this.src='/images/icons/dish-placeholder.svg'">
+                                        <span class="dish-name"><?= htmlspecialchars($it['name']) ?></span>
+                                    </div>
+                                </td>
+                                <td data-col="category"><?= htmlspecialchars($it['category']) ?></td>
+                                <td class="<?= $showArchived ? '' : 'js-inline-price' ?>" data-item-id="<?= (int)$it['id'] ?>" title="<?= $showArchived ? '' : 'Кликните чтобы изменить цену' ?>"><?= number_format($it['price'], 2) ?> ₽</td>
                                 <td>
                                     <?php if ($showArchived): ?>
                                         <?= htmlspecialchars((string)($it['archived_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
@@ -367,7 +376,7 @@ $savedDbFontsJson = htmlspecialchars(
                                             <button type="submit" name="restore_archived" class="admin-checkout-btn">Восстановить</button>
                                         </form>
                                     <?php else: ?>
-                                        <a href="/admin/menu.php?edit=<?= $it['id'] ?>" class="admin-checkout-btn">Редактировать</a>
+                                        <button type="button" class="admin-checkout-btn js-edit-dish" data-item-id="<?= (int)$it['id'] ?>">Редактировать</button>
                                         <form method="POST" class="inline-action-form">
                                             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                                             <input type="hidden" name="id" value="<?= (int)$it['id'] ?>">
@@ -395,7 +404,12 @@ $savedDbFontsJson = htmlspecialchars(
                             </div>
                             <div class="mobile-table-row">
                                 <span class="mobile-table-label">Название:</span>
-                                <span class="mobile-table-value"><?= htmlspecialchars($it['name']) ?></span>
+                                <span class="mobile-table-value">
+                                    <span class="dish-name-cell">
+                                        <img class="dish-thumb" src="<?= htmlspecialchars($it['image'] ? preg_replace('#^\./#', '/', (string)$it['image']) : '/images/icons/dish-placeholder.svg') ?>" alt="" loading="lazy" onerror="this.src='/images/icons/dish-placeholder.svg'">
+                                        <span class="dish-name"><?= htmlspecialchars($it['name']) ?></span>
+                                    </span>
+                                </span>
                             </div>
                             <div class="mobile-table-row">
                                 <span class="mobile-table-label">Категория:</span>
@@ -426,9 +440,9 @@ $savedDbFontsJson = htmlspecialchars(
                                         title="<?= $it['available'] ? 'Снять с продажи' : 'Вернуть в продажу' ?>">
                                         <?= $it['available'] ? 'СТОП' : 'Вернуть' ?>
                                     </button>
-                                    <a href="/admin/menu.php?edit=<?= $it['id'] ?>" class="mobile-table-btn">
+                                    <button type="button" class="mobile-table-btn js-edit-dish" data-item-id="<?= (int)$it['id'] ?>">
                                         Редактировать
-                                    </a>
+                                    </button>
                                     <form method="POST" class="inline-action-form">
                                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                                         <input type="hidden" name="id" value="<?= (int)$it['id'] ?>">
@@ -445,16 +459,13 @@ $savedDbFontsJson = htmlspecialchars(
             <section class="admin-form-container admin-section-card admin-dishes-editor">
                 <div class="admin-pane-header">
                     <div class="admin-pane-header-copy">
-                        <p class="admin-pane-kicker">Каталог и наполнение</p>
-                        <p class="admin-pane-caption">Загрузка, ручное редактирование и управление текущим каталогом собраны в одном рабочем пространстве.</p>
+                        <p class="admin-pane-kicker">Массовая загрузка</p>
+                        <p class="admin-pane-caption">Полная синхронизация каталога из CSV. Редактирование одной позиции — через модальный редактор по кнопке «Редактировать» или «+ Создать блюдо» в верхней панели.</p>
                     </div>
                 </div>
                 <div class="admin-dishes-workspace">
-                <h2><?= $editItem ? 'Редактировать' : 'Обновление' ?></h2>
-
-                <!-- Bulk upload -->
                 <section class="admin-form-group admin-subsection-card admin-block admin-block--csv">
-                    <h3>Из CSV</h3>
+                    <h3>Импорт из CSV</h3>
                     <form method="POST" enctype="multipart/form-data">
                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                         <a href="/download-sample.php" download="Update.csv" class="download-button-container">Образец</a>
@@ -463,135 +474,12 @@ $savedDbFontsJson = htmlspecialchars(
                     </form>
                     <small>UTF-8 CSV. Полная синхронизация: позиции вне файла будут архивированы. Формат: external_id;name;description;composition;price;image;calories;protein;fat;carbs;category;available</small>
                 </section>
-
-                <div class="admin-subsection-card admin-block admin-block--manual">
-                <form method="POST">
-                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                    <input type="hidden" name="id" value="<?= $editItem['id'] ?? '' ?>">
-
-                    <div class="admin-form-group">
-                        <h3>Вручную</h3>
-                        <label>Название</label>
-                        <input type="text" name="name" value="<?= htmlspecialchars($editItem['name'] ?? '') ?>" required data-hotkey-new>
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label>Описание</label>
-                        <textarea name="description" rows="3"><?= htmlspecialchars($editItem['description'] ?? '') ?></textarea>
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label>Состав</label>
-                        <textarea name="composition" rows="2"><?= htmlspecialchars($editItem['composition'] ?? '') ?></textarea>
-                        <small>Разделяйте ингредиенты запятыми (например: "яйцо, мука, молоко")</small>
-                    </div>
-
-                    <!-- Калорийность и БЖУ -->
-                    <div class="admin-form-group">
-                        <label>Калорийность (ккал)</label>
-                        <input type="number" name="calories" value="<?= $editItem['calories'] ?? '' ?>">
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label>Белки (г)</label>
-                        <input type="number" name="protein" value="<?= $editItem['protein'] ?? '' ?>">
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label>Жиры (г)</label>
-                        <input type="number" name="fat" value="<?= $editItem['fat'] ?? '' ?>">
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label>Углеводы (г)</label>
-                        <input type="number" name="carbs" value="<?= $editItem['carbs'] ?? '' ?>">
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label>Цена (₽)</label>
-                        <input type="number" step="0.01" name="price" value="<?= $editItem['price'] ?? '' ?>" required>
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label>Изображение (./dir/name.jpg)</label>
-                        <input type="text" name="image" value="<?= htmlspecialchars($editItem['image'] ?? '') ?>">
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label>Категория</label>
-                        <input type="text" name="category" list="cats" value="<?= htmlspecialchars($editItem['category'] ?? '') ?>" required>
-                        <datalist id="cats">
-                            <?php foreach ($categories as $c): ?>
-                                <option value="<?= htmlspecialchars($c) ?>">
-                                <?php endforeach; ?>
-                        </datalist>
-                    </div>
-
-                    <div class="admin-form-group">
-                        <label>
-                            <input type="checkbox" name="available" <?= isset($editItem['available']) && $editItem['available'] ? 'checked' : 'checked' ?>>
-                            Доступен
-                        </label>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="submit" class="checkout-btn"><?= $editItem ? 'Сохранить' : 'Добавить' ?></button>
-                        <?php if ($editItem): ?>
-                            <a href="/admin/menu.php" class="admin-checkout-btn cancel">Отмена</a>
-                        <?php endif; ?>
-                    </div>
-                </form>
                 </div>
-                </div>
-
-                <?php if ($editItem): ?>
-                    <!-- ── Модификаторы (только при редактировании) ── -->
-                    <section class="admin-form-group admin-subsection-card admin-block admin-block--modifiers" id="modifiersSection" data-item-id="<?= (int)$editItem['id'] ?>">
-                        <h3>Модификаторы (варианты блюда)</h3>
-                        <p class="yk-desc">Например: «Степень прожарки» с вариантами Medium / Well-done, или «Добавки» с несколькими вариантами.</p>
-                        <div id="modifierGroupList"></div>
-                        <div class="mod-new-group-row">
-                            <input type="text" id="newGroupName" placeholder="Название группы" maxlength="100">
-                            <select id="newGroupType">
-                                <option value="radio">Один вариант (radio)</option>
-                                <option value="checkbox">Несколько (checkbox)</option>
-                            </select>
-                            <label>
-                                <input type="checkbox" id="newGroupRequired"> Обязательно
-                            </label>
-                            <button id="addModifierGroupBtn" class="checkout-btn">
-                                <svg class="btn-inline-icon" aria-hidden="true" viewBox="0 0 256 256">
-                                    <use href="/images/icons/phosphor-sprite.svg#plus"></use>
-                                </svg>
-                                <span>Группа</span>
-                            </button>
-                        </div>
-                    </section>
-
-                    <!-- ── Рецепт: ингредиенты и их количество ── -->
-                    <section class="admin-form-group admin-subsection-card admin-block admin-block--recipe" id="recipeSection" data-item-id="<?= (int)$editItem['id'] ?>">
-                        <h3>Рецепт (списание со склада)</h3>
-                        <p class="yk-desc">
-                            Когда заказ приходит, эти количества автоматически списываются со склада.
-                            Управление ингредиентами — <a href="/admin/inventory.php" target="_blank" rel="noopener">в «Складе»</a>.
-                        </p>
-                        <div id="recipeRows" class="recipe-rows"></div>
-                        <div class="recipe-add-row">
-                            <select id="recipeAddIngredient">
-                                <option value="">Выбрать ингредиент…</option>
-                                <?php foreach ($db->listIngredients(false) as $ing): ?>
-                                    <option value="<?= (int)$ing['id'] ?>" data-unit="<?= htmlspecialchars((string)$ing['unit']) ?>">
-                                        <?= htmlspecialchars((string)$ing['name']) ?> (<?= htmlspecialchars((string)$ing['unit']) ?>)
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <input type="number" step="0.001" min="0" id="recipeAddQty" placeholder="Кол-во" data-w="lg">
-                            <button type="button" id="recipeAddBtn" class="checkout-btn">Добавить</button>
-                            <button type="button" id="recipeSaveBtn" class="checkout-btn admin-checkout-btn">Сохранить рецепт</button>
-                        </div>
-                        <div id="recipeSaveMsg" class="recipe-save-msg" hidden></div>
-                    </section>
-                <?php endif; ?>
+                <datalist id="cats">
+                    <?php foreach ($categories as $c): ?>
+                        <option value="<?= htmlspecialchars($c) ?>">
+                    <?php endforeach; ?>
+                </datalist>
             </section>
 
             </div>
@@ -1047,6 +935,192 @@ $savedDbFontsJson = htmlspecialchars(
         <?php endif; ?>
     </div>
 
+    <!-- ============================================================== -->
+    <!-- DISH EDITOR MODAL (Phase 16) — open via .js-edit-dish / .js-new-dish -->
+    <!-- ============================================================== -->
+    <dialog id="dishEditorModal" class="dish-editor-modal" aria-labelledby="dishEditorTitle">
+      <div class="modal-card" role="document">
+        <header class="modal-head">
+          <div>
+            <h2 id="dishEditorTitle" class="modal-title">Редактировать блюдо</h2>
+            <p class="modal-subtitle"></p>
+          </div>
+          <button type="button" class="modal-close" aria-label="Закрыть">×</button>
+        </header>
+
+        <nav class="modal-tabs" role="tablist" aria-label="Разделы редактора">
+          <button type="button" class="modal-tab-btn" role="tab" data-tab="main"      aria-selected="true">Основное</button>
+          <button type="button" class="modal-tab-btn" role="tab" data-tab="image"     aria-selected="false">Изображение</button>
+          <button type="button" class="modal-tab-btn" role="tab" data-tab="modifiers" aria-selected="false" hidden>Модификаторы</button>
+          <button type="button" class="modal-tab-btn" role="tab" data-tab="recipe"    aria-selected="false" hidden>Рецепт</button>
+          <button type="button" class="modal-tab-btn" role="tab" data-tab="preview"   aria-selected="false">Превью</button>
+        </nav>
+
+        <div class="modal-body with-preview">
+          <form class="dish-form" autocomplete="off" novalidate>
+
+            <!-- Tab: Main -->
+            <div class="modal-pane" data-pane="main">
+              <div class="form-grid">
+                <label class="form-field form-field-wide">
+                  <span>Название *</span>
+                  <input type="text" name="name" required maxlength="200">
+                </label>
+                <label class="form-field">
+                  <span>Категория *</span>
+                  <input type="text" name="category" list="cats" required maxlength="50">
+                </label>
+                <label class="form-field">
+                  <span>Цена, ₽ *</span>
+                  <input type="number" step="0.01" min="0" name="price" required>
+                </label>
+
+                <label class="form-field form-field-wide">
+                  <span>Описание</span>
+                  <textarea name="description" rows="3"></textarea>
+                </label>
+
+                <label class="form-field form-field-wide">
+                  <span>Состав</span>
+                  <textarea name="composition" rows="2" placeholder="яйцо, мука, молоко"></textarea>
+                  <small class="hint">Разделяйте ингредиенты запятыми.</small>
+                </label>
+
+                <label class="form-field">
+                  <span>Калорийность, ккал</span>
+                  <input type="number" name="calories" min="0">
+                </label>
+                <label class="form-field">
+                  <span>Белки, г</span>
+                  <input type="number" name="protein" min="0">
+                </label>
+                <label class="form-field">
+                  <span>Жиры, г</span>
+                  <input type="number" name="fat" min="0">
+                </label>
+                <label class="form-field">
+                  <span>Углеводы, г</span>
+                  <input type="number" name="carbs" min="0">
+                </label>
+
+                <label class="form-field form-field-wide form-checkbox">
+                  <input type="checkbox" name="available">
+                  <span>Доступно в меню</span>
+                </label>
+
+                <input type="hidden" name="image" value="">
+
+                <div class="form-field form-field-wide">
+                  <span>Изображение</span>
+                  <div class="image-summary">
+                    <img alt="" loading="lazy" style="display:none">
+                    <div class="placeholder">⊘</div>
+                    <code>Изображение не выбрано</code>
+                  </div>
+                  <small class="hint">Перейдите на вкладку «Изображение», чтобы выбрать или загрузить.</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab: Image picker -->
+            <div class="modal-pane" data-pane="image" hidden>
+              <!-- Picker mounts here lazily -->
+              <div class="picker-status">Откройте вкладку, чтобы загрузить список изображений.</div>
+            </div>
+
+            <!-- Tab: Modifiers -->
+            <div class="modal-pane" data-pane="modifiers" hidden>
+              <div data-modifier-root>
+                <p class="yk-desc">Например: «Степень прожарки» с вариантами Medium / Well-done, или «Добавки» с несколькими вариантами.</p>
+                <div id="modifierGroupList"></div>
+                <div class="mod-new-group-row">
+                  <input type="text" id="newGroupName" placeholder="Название группы" maxlength="100">
+                  <select id="newGroupType">
+                    <option value="radio">Один вариант (radio)</option>
+                    <option value="checkbox">Несколько (checkbox)</option>
+                  </select>
+                  <label><input type="checkbox" id="newGroupRequired"> Обязательно</label>
+                  <button type="button" id="addModifierGroupBtn" class="checkout-btn">+ Группа</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab: Recipe -->
+            <div class="modal-pane" data-pane="recipe" hidden>
+              <div data-recipe-root>
+                <p class="yk-desc">При оплате заказа эти количества автоматически списываются со склада.
+                  Управление ингредиентами — <a href="/admin/inventory.php" target="_blank" rel="noopener">в «Складе»</a>.</p>
+                <div id="recipeRows" class="recipe-rows"></div>
+                <div class="recipe-add-row">
+                  <select id="recipeAddIngredient">
+                    <option value="">Выбрать ингредиент…</option>
+                    <?php foreach ($db->listIngredients(false) as $ing): ?>
+                      <option value="<?= (int)$ing['id'] ?>" data-unit="<?= htmlspecialchars((string)$ing['unit']) ?>">
+                        <?= htmlspecialchars((string)$ing['name']) ?> (<?= htmlspecialchars((string)$ing['unit']) ?>)
+                      </option>
+                    <?php endforeach; ?>
+                  </select>
+                  <input type="number" step="0.001" min="0" id="recipeAddQty" placeholder="Кол-во">
+                  <button type="button" id="recipeAddBtn" class="checkout-btn">Добавить</button>
+                  <button type="button" id="recipeSaveBtn" class="checkout-btn admin-checkout-btn">Сохранить рецепт</button>
+                </div>
+                <div id="recipeSaveMsg" class="recipe-save-msg" hidden></div>
+              </div>
+            </div>
+
+            <!-- Tab: Preview -->
+            <div class="modal-pane" data-pane="preview" hidden>
+              <p class="modal-preview-title">Так выглядит карточка для гостя</p>
+              <article class="preview-card">
+                <img class="preview-card-img" alt="" loading="lazy" style="display:none">
+                <div class="preview-card-body">
+                  <p class="preview-card-cat">Категория</p>
+                  <h3 class="preview-card-name">Название блюда</h3>
+                  <p class="preview-card-desc">Описание появится здесь.</p>
+                  <div class="preview-card-bju"></div>
+                  <div class="preview-card-row">
+                    <span class="preview-card-price">0.00 ₽</span>
+                    <span class="preview-card-stop" style="display:none">СТОП</span>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+          </form>
+
+          <!-- Side-rail preview (visible on tab=main on desktop) -->
+          <aside class="modal-preview-pane" aria-label="Превью карточки">
+            <p class="modal-preview-title">Превью</p>
+            <article class="preview-card">
+              <img class="preview-card-img" alt="" loading="lazy" style="display:none">
+              <div class="preview-card-body">
+                <p class="preview-card-cat">Категория</p>
+                <h3 class="preview-card-name">Название блюда</h3>
+                <p class="preview-card-desc">Описание появится здесь.</p>
+                <div class="preview-card-bju"></div>
+                <div class="preview-card-row">
+                  <span class="preview-card-price">0.00 ₽</span>
+                  <span class="preview-card-stop" style="display:none">СТОП</span>
+                </div>
+              </div>
+            </article>
+          </aside>
+        </div>
+
+        <footer class="modal-foot">
+          <div class="left">
+            <button type="button" class="admin-checkout-btn cancel btn-archive" title="Архивировать блюдо">Архивировать</button>
+          </div>
+          <div class="right">
+            <span class="modal-status"></span>
+            <button type="button" class="admin-checkout-btn modal-close">Отмена</button>
+            <button type="button" class="checkout-btn btn-save" title="Ctrl+Enter">Сохранить</button>
+          </div>
+        </footer>
+      </div>
+    </dialog>
+
+    <script src="/js/focus-trap.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/admin-menu-page.js?v=<?= htmlspecialchars($adminMenuJsVersion, ENT_QUOTES, 'UTF-8') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/file-manager.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/admin-modifiers.js?v=<?= htmlspecialchars($adminModifiersJsVersion, ENT_QUOTES, 'UTF-8') ?>" defer nonce="<?= $scriptNonce ?>"></script>
@@ -1056,6 +1130,8 @@ $savedDbFontsJson = htmlspecialchars(
     <script src="/js/admin-menu-sort.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/admin-menu-bulk.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/admin-menu-filters.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/admin-image-picker.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/admin-menu-modal.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/hotkeys.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/security.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/cart.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>

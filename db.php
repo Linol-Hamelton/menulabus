@@ -1661,9 +1661,10 @@ class Database
             
             if ($result) {
                 $this->invalidateMenuCache();
+                return (int)$this->connection->lastInsertId();
             }
-            
-            return $result;
+
+            return false;
         } catch (PDOException $e) {
             error_log("addMenuItem Error: " . $e->getMessage());
             return false;

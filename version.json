@@ -1,6 +1,6 @@
 {
-  "version": "2.0.2",
+  "version": "2.1.0",
   "release_date": "2026-05-04",
-  "changelog": "Phase 15 hotfix — file-manager.min.js patches 2 missed relative URL bugs (M1 follow-up): list-action template literal + dynamic-fonts link.href now absolute. Cache-bust пушит браузеры за обновлённой версией JS, чтобы fonts CSS правильно загружался на /admin/menu.php.",
+  "changelog": "Phase 16 — admin/menu.php UX overhaul. Inline-форма редактирования блюда вынесена в модальный <dialog> с 5 табами: Основное / Изображение / Модификаторы / Рецепт / Превью. Submit через AJAX (новый /api/save-menu-item.php — actions: get/save/archive/restore/inline_save). Image picker с миниатюрами всех файлов /images/ + drag-drop upload через /file-manager.php?action=upload. В таблице каталога — миниатюры 32×32 рядом с названием + inline-edit цены кликом по ячейке. Live-preview карточки в модалке справа на desktop. Modifiers/Recipe lazy-init при открытии соответствующего таба. Esc / backdrop / FocusTrap для модалки. Все детали в docs/admin-menu-ux.md.",
   "critical": false
 }
