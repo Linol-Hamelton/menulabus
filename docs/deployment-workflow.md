@@ -325,6 +325,32 @@ grep -rnE "^\s*require(_once)?\s*['\"][a-z][a-z_-]*\.php['\"]" --include="*.php"
 If the grep returns anything, those files will fatal as soon as their
 cwd no longer matches root.
 
+### After moving files into subdirectories — also grep for relative `<a href>`
+
+Twin sibling of the bare-`require` trap. After Phase 13B.3 the partial
+`account-header.php` (included from 9 admin/*.php pages plus 6 root
+pages) still contained relative URLs like `href="admin/menu.php"`. From
+root-level callers these resolved correctly. From `/admin/<page>` they
+resolved to `/admin/admin/menu.php` — nginx returned `File not found`.
+The break manifested as **intermittent** 404s — only when navigating
+between admin pages, not on the first hop from `/account.php`.
+
+Same anti-pattern in `admin/menu.php` itself — internal `href="admin/
+menu.php?view=…"` and root-target links like `href="download-sample
+.php"` and `href="monitor.php"` resolved to `/admin/admin/...` and
+`/admin/download-sample.php`.
+
+Grep after any move that places a previously-root file under a subdir,
+or after editing a shared partial:
+
+```bash
+grep -rnE "(href|action|src)=['\"][a-z][a-z_/-]*\.php" --include="*.php" .
+```
+
+Any match should be **absolute** (`/-prefixed`) when the file may be
+included from multiple directory depths. Anchor every navigational link
+to site root — relative is a bug-magnet across subdir refactors.
+
 ### Create cache zone directories before nginx reload
 
 The site declares two `fastcgi_cache_path` zones at `/var/cache/nginx/`.

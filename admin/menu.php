@@ -252,8 +252,8 @@ $savedDbFontsJson = htmlspecialchars(
             <section class="admin-form-container admin-section-card admin-catalog-card admin-block admin-block--catalog">
             <div class="admin-catalog-toolbar">
                 <div class="form-actions menu-view-switch">
-                <a href="admin/menu.php?view=active" class="admin-checkout-btn<?= !$showArchived ? ' cancel' : '' ?>">Активные</a>
-                <a href="admin/menu.php?view=archived" class="admin-checkout-btn<?= $showArchived ? ' cancel' : '' ?>">Архив</a>
+                <a href="/admin/menu.php?view=active" class="admin-checkout-btn<?= !$showArchived ? ' cancel' : '' ?>">Активные</a>
+                <a href="/admin/menu.php?view=archived" class="admin-checkout-btn<?= $showArchived ? ' cancel' : '' ?>">Архив</a>
                 </div>
                 <div class="menu-tabs-container admin-menu-categories">
                     <div class="menu-tabs">
@@ -367,7 +367,7 @@ $savedDbFontsJson = htmlspecialchars(
                                             <button type="submit" name="restore_archived" class="admin-checkout-btn">Восстановить</button>
                                         </form>
                                     <?php else: ?>
-                                        <a href="admin/menu.php?edit=<?= $it['id'] ?>" class="admin-checkout-btn">Редактировать</a>
+                                        <a href="/admin/menu.php?edit=<?= $it['id'] ?>" class="admin-checkout-btn">Редактировать</a>
                                         <form method="POST" class="inline-action-form">
                                             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                                             <input type="hidden" name="id" value="<?= (int)$it['id'] ?>">
@@ -426,7 +426,7 @@ $savedDbFontsJson = htmlspecialchars(
                                         title="<?= $it['available'] ? 'Снять с продажи' : 'Вернуть в продажу' ?>">
                                         <?= $it['available'] ? 'СТОП' : 'Вернуть' ?>
                                     </button>
-                                    <a href="admin/menu.php?edit=<?= $it['id'] ?>" class="mobile-table-btn">
+                                    <a href="/admin/menu.php?edit=<?= $it['id'] ?>" class="mobile-table-btn">
                                         Редактировать
                                     </a>
                                     <form method="POST" class="inline-action-form">
@@ -457,7 +457,7 @@ $savedDbFontsJson = htmlspecialchars(
                     <h3>Из CSV</h3>
                     <form method="POST" enctype="multipart/form-data">
                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                        <a href="download-sample.php" download="Update.csv" class="download-button-container">Образец</a>
+                        <a href="/download-sample.php" download="Update.csv" class="download-button-container">Образец</a>
                         <input type="file" name="csv_file" accept=".csv" required>
                         <button type="submit" name="bulk_upload" class="checkout-btn">Загрузить</button>
                     </form>
@@ -537,7 +537,7 @@ $savedDbFontsJson = htmlspecialchars(
                     <div class="form-actions">
                         <button type="submit" class="checkout-btn"><?= $editItem ? 'Сохранить' : 'Добавить' ?></button>
                         <?php if ($editItem): ?>
-                            <a href="admin/menu.php" class="admin-checkout-btn cancel">Отмена</a>
+                            <a href="/admin/menu.php" class="admin-checkout-btn cancel">Отмена</a>
                         <?php endif; ?>
                     </div>
                 </form>
@@ -1039,7 +1039,7 @@ $savedDbFontsJson = htmlspecialchars(
                     <div class="admin-form-group admin-block admin-block--tools">
                         <h3>Инструменты</h3>
                         <div class="form-actions">
-                            <a href="monitor.php" class="checkout-btn">Диагностика</a>
+                            <a href="/monitor.php" class="checkout-btn">Диагностика</a>
                         </div>
                     </div>
                 </section>
