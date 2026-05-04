@@ -1,6 +1,6 @@
 {
-  "version": "2.1.1",
+  "version": "2.1.2",
   "release_date": "2026-05-04",
-  "changelog": "Phase 16.1 — fixups к admin/menu.php modal: убраны все inline-стили и inline-скрипты (onerror на dish-thumb → data-fallback-src + delegated handler в admin-menu-page.js, style=display:none → hidden HTML attribute, style.display в JS → element.hidden = bool). Исправлен баг превью: updatePreview теперь обновляет ОБЕ .preview-card одновременно (side-rail + tab pane). Кнопка «Отмена» в footer модалки получила класс cancel — корректный outline-стиль вместо filled. Боковой preview-rail скрыт на mobile + non-main вкладках чтобы не дублировался с tab=preview.",
+  "changelog": "Phase 16.2 — modal mobile fixes. (1) Tabs не показывались на mobile: grid-template-rows был «auto 1fr auto» = 3 строки на 4 элемента, body занимал auto (=весь контент) и съедал leftover, tabs (1fr) сжимались до ~10px. Исправлено на «auto auto 1fr auto» — body теперь scroll-container, tabs всегда видны. (2) Footer Cancel button НЕ закрывал модалку (querySelector('.modal-close') возвращал только X-кнопку, footer button с тем же классом оставался без listener) — заменён hook на data-modal-close + delegated click handler ловит обе. (3) Cancel button стиль — собственный класс .btn-cancel-modal с outline вместо filled cancel, матчит высоту .checkout-btn для визуальной пары.",
   "critical": false
 }

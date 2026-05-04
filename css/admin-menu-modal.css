@@ -37,7 +37,9 @@ dialog.dish-editor-modal::backdrop {
   box-shadow: 0 30px 60px rgba(15, 23, 42, 0.25);
   overflow: hidden;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  /* 4 rows: head (auto) · tabs (auto) · body (1fr — scroll container) · foot (auto).
+     Без явных 4 значений 1fr попадал в row 2 (tabs) и сжимался под весом body. */
+  grid-template-rows: auto auto 1fr auto;
   max-height: 92vh;
   min-height: min(88vh, 720px);
 }
@@ -200,6 +202,21 @@ dialog.dish-editor-modal::backdrop {
 
 .dish-editor-modal .modal-status.ok    { color: #16a34a; }
 .dish-editor-modal .modal-status.error { color: #dc2626; }
+
+/* Footer cancel button — neutral outline, matches the height of the
+   primary "Сохранить" button (.checkout-btn) so they read as a pair.
+   Reuses .admin-checkout-btn baseline (40px min-height, pill radius). */
+.dish-editor-modal .btn-cancel-modal {
+  background-color: transparent;
+  color: var(--ui-text);
+  border: 1px solid var(--ui-border);
+}
+.dish-editor-modal .btn-cancel-modal:hover {
+  background-color: var(--ui-divider, #f3f4f6);
+  color: var(--ui-text);
+  box-shadow: none;
+  transform: none;
+}
 
 /* ===== Form bits ======================================================== */
 .dish-editor-modal .form-grid {

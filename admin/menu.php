@@ -1113,7 +1113,7 @@ $savedDbFontsJson = htmlspecialchars(
           </div>
           <div class="right">
             <span class="modal-status"></span>
-            <button type="button" class="admin-checkout-btn cancel modal-close">Отмена</button>
+            <button type="button" class="admin-checkout-btn btn-cancel-modal" data-modal-close>Отмена</button>
             <button type="button" class="checkout-btn btn-save" title="Ctrl+Enter">Сохранить</button>
           </div>
         </footer>

@@ -23,6 +23,12 @@
 - New: [api/save-menu-item.php](../api/save-menu-item.php), [js/admin-menu-modal.js](../js/admin-menu-modal.js), [js/admin-image-picker.js](../js/admin-image-picker.js), [css/admin-menu-modal.css](../css/admin-menu-modal.css), [images/icons/dish-placeholder.svg](../images/icons/dish-placeholder.svg).
 - Modified: [admin/menu.php](../admin/menu.php) (modal markup, table thumb + inline-price classes, button replacements, removed inline editor), [js/admin-modifiers.js](../js/admin-modifiers.js) (public init API), [js/admin-recipe.js](../js/admin-recipe.js) (public init API), [js/admin-menu-page.js](../js/admin-menu-page.js) (inline-price handler), [db.php](../db.php) (`addMenuItem` returns id).
 
+### Phase 16.2 — mobile fixes (v2.1.2, 2026-05-04)
+
+- **Tabs скрывались на mobile.** Modal-card имел `grid-template-rows: auto 1fr auto` — 3 явных строки для 4 детей (head, tabs, body, foot). Body уходил в неявную auto-row и брал всю высоту контента; tabs (1fr) сжимались до ~10px. Исправлено: `grid-template-rows: auto auto 1fr auto` — body становится scroll-container, tabs всегда видны.
+- **Footer cancel button не закрывал модалку.** В JS использовался `querySelector('.modal-close')` (single result) — возвращал X-кнопку в header, footer button с тем же классом оставался без listener. Перенесли trigger на `[data-modal-close]` + delegated click handler ловит и `.modal-close`, и `[data-modal-close]`.
+- **Cancel button стиль.** Прежний `.admin-checkout-btn cancel modal-close` накладывал `.modal-close` (круглый icon-button 36x36, border-radius 50%) на text label — выходила странная гибридная кнопка. Заменён на отдельный класс `.btn-cancel-modal` (outline, transparent bg, border, матчит высоту `.checkout-btn`).
+
 ### Phase 16.1 — fixups (v2.1.1, 2026-05-04)
 
 - **Preview rail bug.** `updatePreview()` had `querySelector('.preview-card')` (first match), but the modal renders TWO preview cards (side-rail aside + «Превью» tab pane). On desktop tab=main the visible one was the side-rail, but JS was updating the hidden tab-pane copy. Switched to `querySelectorAll` + iterate.

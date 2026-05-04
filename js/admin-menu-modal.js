@@ -348,8 +348,15 @@
     });
 
     if (saveBtn)   saveBtn.addEventListener('click', submit);
-    if (cancelBtn) cancelBtn.addEventListener('click', close);
     if (deleteBtn) deleteBtn.addEventListener('click', archive);
+
+    // Close triggers: top-right ✕ button (.modal-close icon) AND footer
+    // cancel button (with [data-modal-close]). Use delegation so any
+    // close-marked element inside the modal works.
+    modal.addEventListener('click', function (e) {
+      var trigger = e.target.closest('.modal-close, [data-modal-close]');
+      if (trigger) { e.preventDefault(); close(); }
+    });
 
     // Live preview updates on every input
     form.addEventListener('input', updatePreview);
