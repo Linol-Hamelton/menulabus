@@ -7,6 +7,12 @@
  * No new CSS variables; everything anchors to var(--ui-*) / var(--shell-*).
  */
 
+/* Make sure [hidden] beats display:flex/grid set on parents in modal. */
+.dish-editor-modal [hidden] { display: none !important; }
+
+/* Busy state (sub-mit in flight) — disables pointer events on form. */
+.dish-editor-modal.is-busy form { pointer-events: none; opacity: 0.7; }
+
 /* ===== <dialog> shell =================================================== */
 dialog.dish-editor-modal {
   border: 0;
@@ -147,6 +153,25 @@ dialog.dish-editor-modal::backdrop {
     position: sticky;
     top: 0;
     align-self: start;
+  }
+}
+
+/* On smaller screens hide the side-rail preview entirely; the dedicated
+   "Превью" tab provides the same content without duplicating below the
+   form. */
+@media (max-width: 1023px) {
+  .dish-editor-modal .modal-preview-pane { display: none; }
+}
+
+/* Side-rail preview is only meaningful on the «Основное» tab. On other
+   tabs collapse the right rail so the form/picker/preview pane uses
+   the full width. */
+@media (min-width: 1024px) {
+  .dish-editor-modal .modal-body:not(.with-preview) .modal-preview-pane {
+    display: none;
+  }
+  .dish-editor-modal .modal-body:not(.with-preview) {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

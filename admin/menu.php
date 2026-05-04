@@ -351,7 +351,7 @@ $savedDbFontsJson = htmlspecialchars(
                                 <td><?= $it['id'] ?></td>
                                 <td>
                                     <div class="dish-name-cell">
-                                        <img class="dish-thumb" src="<?= htmlspecialchars($it['image'] ? preg_replace('#^\./#', '/', (string)$it['image']) : '/images/icons/dish-placeholder.svg') ?>" alt="" loading="lazy" onerror="this.src='/images/icons/dish-placeholder.svg'">
+                                        <img class="dish-thumb" src="<?= htmlspecialchars($it['image'] ? preg_replace('#^\./#', '/', (string)$it['image']) : '/images/icons/dish-placeholder.svg') ?>" alt="" loading="lazy" data-fallback-src="/images/icons/dish-placeholder.svg">
                                         <span class="dish-name"><?= htmlspecialchars($it['name']) ?></span>
                                     </div>
                                 </td>
@@ -406,7 +406,7 @@ $savedDbFontsJson = htmlspecialchars(
                                 <span class="mobile-table-label">Название:</span>
                                 <span class="mobile-table-value">
                                     <span class="dish-name-cell">
-                                        <img class="dish-thumb" src="<?= htmlspecialchars($it['image'] ? preg_replace('#^\./#', '/', (string)$it['image']) : '/images/icons/dish-placeholder.svg') ?>" alt="" loading="lazy" onerror="this.src='/images/icons/dish-placeholder.svg'">
+                                        <img class="dish-thumb" src="<?= htmlspecialchars($it['image'] ? preg_replace('#^\./#', '/', (string)$it['image']) : '/images/icons/dish-placeholder.svg') ?>" alt="" loading="lazy" data-fallback-src="/images/icons/dish-placeholder.svg">
                                         <span class="dish-name"><?= htmlspecialchars($it['name']) ?></span>
                                     </span>
                                 </span>
@@ -1013,7 +1013,7 @@ $savedDbFontsJson = htmlspecialchars(
                 <div class="form-field form-field-wide">
                   <span>Изображение</span>
                   <div class="image-summary">
-                    <img alt="" loading="lazy" style="display:none">
+                    <img alt="" loading="lazy" hidden>
                     <div class="placeholder">⊘</div>
                     <code>Изображение не выбрано</code>
                   </div>
@@ -1072,7 +1072,7 @@ $savedDbFontsJson = htmlspecialchars(
             <div class="modal-pane" data-pane="preview" hidden>
               <p class="modal-preview-title">Так выглядит карточка для гостя</p>
               <article class="preview-card">
-                <img class="preview-card-img" alt="" loading="lazy" style="display:none">
+                <img class="preview-card-img" alt="" loading="lazy" hidden>
                 <div class="preview-card-body">
                   <p class="preview-card-cat">Категория</p>
                   <h3 class="preview-card-name">Название блюда</h3>
@@ -1080,7 +1080,7 @@ $savedDbFontsJson = htmlspecialchars(
                   <div class="preview-card-bju"></div>
                   <div class="preview-card-row">
                     <span class="preview-card-price">0.00 ₽</span>
-                    <span class="preview-card-stop" style="display:none">СТОП</span>
+                    <span class="preview-card-stop" hidden>СТОП</span>
                   </div>
                 </div>
               </article>
@@ -1092,7 +1092,7 @@ $savedDbFontsJson = htmlspecialchars(
           <aside class="modal-preview-pane" aria-label="Превью карточки">
             <p class="modal-preview-title">Превью</p>
             <article class="preview-card">
-              <img class="preview-card-img" alt="" loading="lazy" style="display:none">
+              <img class="preview-card-img" alt="" loading="lazy" hidden>
               <div class="preview-card-body">
                 <p class="preview-card-cat">Категория</p>
                 <h3 class="preview-card-name">Название блюда</h3>
@@ -1100,7 +1100,7 @@ $savedDbFontsJson = htmlspecialchars(
                 <div class="preview-card-bju"></div>
                 <div class="preview-card-row">
                   <span class="preview-card-price">0.00 ₽</span>
-                  <span class="preview-card-stop" style="display:none">СТОП</span>
+                  <span class="preview-card-stop" hidden>СТОП</span>
                 </div>
               </div>
             </article>
@@ -1113,7 +1113,7 @@ $savedDbFontsJson = htmlspecialchars(
           </div>
           <div class="right">
             <span class="modal-status"></span>
-            <button type="button" class="admin-checkout-btn modal-close">Отмена</button>
+            <button type="button" class="admin-checkout-btn cancel modal-close">Отмена</button>
             <button type="button" class="checkout-btn btn-save" title="Ctrl+Enter">Сохранить</button>
           </div>
         </footer>

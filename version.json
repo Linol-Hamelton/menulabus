@@ -1,6 +1,6 @@
 {
-  "version": "2.1.0",
+  "version": "2.1.1",
   "release_date": "2026-05-04",
-  "changelog": "Phase 16 — admin/menu.php UX overhaul. Inline-форма редактирования блюда вынесена в модальный <dialog> с 5 табами: Основное / Изображение / Модификаторы / Рецепт / Превью. Submit через AJAX (новый /api/save-menu-item.php — actions: get/save/archive/restore/inline_save). Image picker с миниатюрами всех файлов /images/ + drag-drop upload через /file-manager.php?action=upload. В таблице каталога — миниатюры 32×32 рядом с названием + inline-edit цены кликом по ячейке. Live-preview карточки в модалке справа на desktop. Modifiers/Recipe lazy-init при открытии соответствующего таба. Esc / backdrop / FocusTrap для модалки. Все детали в docs/admin-menu-ux.md.",
+  "changelog": "Phase 16.1 — fixups к admin/menu.php modal: убраны все inline-стили и inline-скрипты (onerror на dish-thumb → data-fallback-src + delegated handler в admin-menu-page.js, style=display:none → hidden HTML attribute, style.display в JS → element.hidden = bool). Исправлен баг превью: updatePreview теперь обновляет ОБЕ .preview-card одновременно (side-rail + tab pane). Кнопка «Отмена» в footer модалки получила класс cancel — корректный outline-стиль вместо filled. Боковой preview-rail скрыт на mobile + non-main вкладках чтобы не дублировался с tab=preview.",
   "critical": false
 }

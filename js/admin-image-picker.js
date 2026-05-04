@@ -116,10 +116,10 @@
       tiles.forEach(function (tile) {
         var name = (tile.querySelector('.picker-tile-name').textContent || '').toLowerCase();
         var visible = !query || name.indexOf(query) !== -1;
-        tile.style.display = visible ? '' : 'none';
+        tile.hidden = !visible;
         if (visible) anyVisible = true;
       });
-      group.style.display = anyVisible ? '' : 'none';
+      group.hidden = !anyVisible;
     });
   }
 

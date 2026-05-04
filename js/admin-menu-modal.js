@@ -115,51 +115,58 @@
       if (!imageSummary) return;
       var path = (imageHidden.value || '').trim();
       var imgEl = imageSummary.querySelector('img');
+      var placeholderEl = imageSummary.querySelector('.placeholder');
       var pathEl = imageSummary.querySelector('code');
       if (path) {
         if (imgEl) {
           imgEl.src = path.replace(/^\.\//, '/');
-          imgEl.style.display = '';
+          imgEl.hidden = false;
         }
+        if (placeholderEl) placeholderEl.hidden = true;
         if (pathEl) pathEl.textContent = path;
       } else {
-        if (imgEl) imgEl.style.display = 'none';
+        if (imgEl) imgEl.hidden = true;
+        if (placeholderEl) placeholderEl.hidden = false;
         if (pathEl) pathEl.textContent = 'Изображение не выбрано';
       }
     }
 
     function updatePreview() {
       var data = collectFormData();
-      var card = modal.querySelector('.preview-card');
-      if (!card) return;
-      var imgEl = card.querySelector('.preview-card-img');
-      if (imgEl) {
-        if (data.image) {
-          imgEl.style.display = '';
-          imgEl.src = data.image.replace(/^\.\//, '/');
-        } else {
-          imgEl.style.display = 'none';
+      // There are TWO .preview-card instances: side-rail aside (visible
+      // on desktop tab=main) and the dedicated «Превью» tab pane. Update
+      // both so they stay in sync regardless of which one the user sees.
+      var cards = modal.querySelectorAll('.preview-card');
+      cards.forEach(function (card) {
+        var imgEl = card.querySelector('.preview-card-img');
+        if (imgEl) {
+          if (data.image) {
+            imgEl.hidden = false;
+            imgEl.src = data.image.replace(/^\.\//, '/');
+          } else {
+            imgEl.hidden = true;
+          }
         }
-      }
-      var nameEl = card.querySelector('.preview-card-name');
-      if (nameEl) nameEl.textContent = data.name || 'Название блюда';
-      var catEl = card.querySelector('.preview-card-cat');
-      if (catEl) catEl.textContent = data.category || 'Категория';
-      var descEl = card.querySelector('.preview-card-desc');
-      if (descEl) descEl.textContent = data.description || 'Описание появится здесь.';
-      var priceEl = card.querySelector('.preview-card-price');
-      if (priceEl) priceEl.textContent = fmtPrice(data.price || 0);
-      var stopEl = card.querySelector('.preview-card-stop');
-      if (stopEl) stopEl.style.display = data.available ? 'none' : '';
-      var bjuEl = card.querySelector('.preview-card-bju');
-      if (bjuEl) {
-        var parts = [];
-        if (data.calories) parts.push('<span>' + escHtml(data.calories) + ' ккал</span>');
-        if (data.protein)  parts.push('<span>Б ' + escHtml(data.protein) + '</span>');
-        if (data.fat)      parts.push('<span>Ж ' + escHtml(data.fat) + '</span>');
-        if (data.carbs)    parts.push('<span>У ' + escHtml(data.carbs) + '</span>');
-        bjuEl.innerHTML = parts.join('');
-      }
+        var nameEl = card.querySelector('.preview-card-name');
+        if (nameEl) nameEl.textContent = data.name || 'Название блюда';
+        var catEl = card.querySelector('.preview-card-cat');
+        if (catEl) catEl.textContent = data.category || 'Категория';
+        var descEl = card.querySelector('.preview-card-desc');
+        if (descEl) descEl.textContent = data.description || 'Описание появится здесь.';
+        var priceEl = card.querySelector('.preview-card-price');
+        if (priceEl) priceEl.textContent = fmtPrice(data.price || 0);
+        var stopEl = card.querySelector('.preview-card-stop');
+        if (stopEl) stopEl.hidden = !!data.available;
+        var bjuEl = card.querySelector('.preview-card-bju');
+        if (bjuEl) {
+          var parts = [];
+          if (data.calories) parts.push('<span>' + escHtml(data.calories) + ' ккал</span>');
+          if (data.protein)  parts.push('<span>Б ' + escHtml(data.protein) + '</span>');
+          if (data.fat)      parts.push('<span>Ж ' + escHtml(data.fat) + '</span>');
+          if (data.carbs)    parts.push('<span>У ' + escHtml(data.carbs) + '</span>');
+          bjuEl.innerHTML = parts.join('');
+        }
+      });
     }
 
     function collectFormData() {

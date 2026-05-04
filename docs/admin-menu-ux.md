@@ -23,6 +23,14 @@
 - New: [api/save-menu-item.php](../api/save-menu-item.php), [js/admin-menu-modal.js](../js/admin-menu-modal.js), [js/admin-image-picker.js](../js/admin-image-picker.js), [css/admin-menu-modal.css](../css/admin-menu-modal.css), [images/icons/dish-placeholder.svg](../images/icons/dish-placeholder.svg).
 - Modified: [admin/menu.php](../admin/menu.php) (modal markup, table thumb + inline-price classes, button replacements, removed inline editor), [js/admin-modifiers.js](../js/admin-modifiers.js) (public init API), [js/admin-recipe.js](../js/admin-recipe.js) (public init API), [js/admin-menu-page.js](../js/admin-menu-page.js) (inline-price handler), [db.php](../db.php) (`addMenuItem` returns id).
 
+### Phase 16.1 — fixups (v2.1.1, 2026-05-04)
+
+- **Preview rail bug.** `updatePreview()` had `querySelector('.preview-card')` (first match), but the modal renders TWO preview cards (side-rail aside + «Превью» tab pane). On desktop tab=main the visible one was the side-rail, but JS was updating the hidden tab-pane copy. Switched to `querySelectorAll` + iterate.
+- **Cancel button.** Footer cancel button now uses `admin-checkout-btn cancel` (outline + muted) instead of filled.
+- **CSP cleanliness — inline styles/scripts removed.** `onerror="this.src='…'"` on `.dish-thumb` → `data-fallback-src` + delegated capture-phase listener in `js/admin-menu-page.js` (`bindThumbFallback()`). `style="display:none"` everywhere → `hidden` HTML attribute. `element.style.display = '…'` in `updatePreview` / `updateImageSummary` / picker-filter → `element.hidden = bool`.
+- **Side-rail visibility.** Hidden on mobile (<1024px) — avoids duplicate preview below form. Hidden on non-main tabs on desktop — picker/modifiers/recipe/preview need full width.
+- **`[hidden]` defensive rule.** Added `.dish-editor-modal [hidden] { display: none !important; }` to ensure hidden beats grid/flex parents.
+
 ### Out of scope (Phase 16)
 
 - Bulk image assignment (выбрать N items → массовая установка одной картинки).

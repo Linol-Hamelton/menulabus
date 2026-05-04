@@ -292,10 +292,25 @@
     });
   }
 
+  // Phase 16: replace inline onerror="this.src='…'" with a delegated
+  // listener (CSP-clean). Any image with [data-fallback-src] swaps src
+  // to the fallback once when the original load errors.
+  function bindThumbFallback() {
+    document.addEventListener('error', (event) => {
+      const img = event.target;
+      if (!(img instanceof HTMLImageElement)) return;
+      const fallback = img.getAttribute('data-fallback-src');
+      if (!fallback || img.dataset.fallbackApplied === '1') return;
+      img.dataset.fallbackApplied = '1';
+      img.src = fallback;
+    }, true); // capture-phase — error events do not bubble
+  }
+
   syncSavedFonts();
   document.addEventListener('DOMContentLoaded', () => {
     restoreScrollPosition();
     bindBrandControls();
     bindAdminActions();
+    bindThumbFallback();
   });
 })();
