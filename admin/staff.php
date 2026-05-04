@@ -63,6 +63,7 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
     <?php require_once __DIR__ . '/../account-header.php'; ?>
 
     <div class="account-container">
+        <div class="account-sections">
         <section class="account-section">
             <div class="section-header-menu">
                 <h2>Мой табель</h2>
@@ -305,6 +306,7 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
             <?php endif; ?>
         </section>
         <?php endif; ?>
+        </div>
     </div>
 
     <script src="/js/security.min.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
