@@ -6,7 +6,7 @@ require_once __DIR__ . '/db.php';
 // 1. Проверка авторизации
 if (!isset($_SESSION['user_id'])) {
     $_SESSION['auth_error'] = "Для доступа необходимо авторизоваться";
-    header("Location: auth.php");
+    header("Location: /auth.php");
     exit;
 }
 
@@ -17,7 +17,7 @@ $user = $db->getUserById($_SESSION['user_id']);
 if (!$user || !$user['is_active']) {
     session_destroy();
     $_SESSION['auth_error'] = $user ? "Аккаунт деактивирован" : "Пользователь не найден";
-    header("Location: auth.php");
+    header("Location: /auth.php");
     exit;
 }
 
@@ -25,7 +25,7 @@ if (!$user || !$user['is_active']) {
 if (!in_array($user['role'], ['owner', 'admin', 'employee'], true)) {
     error_log("Access denied for user_id: {$_SESSION['user_id']}. Role: {$user['role']}");
     $_SESSION['auth_error'] = "У вас нет доступа к панели управления";
-    header("Location: account.php");
+    header("Location: /account.php");
     exit;
 }
 

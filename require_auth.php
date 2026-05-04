@@ -6,7 +6,7 @@ require_once __DIR__ . '/db.php';
 // Проверка активной сессии
 if (!isset($_SESSION['user_id'])) {
     $_SESSION['auth_error'] = "Для доступа необходимо авторизоваться";
-    header("Location: auth.php");
+    header("Location: /auth.php");
     exit;
 }
 
@@ -17,14 +17,14 @@ $user = $db->getUserById($_SESSION['user_id']);
 if (!$user) {
     session_destroy();
     $_SESSION['auth_error'] = "Пользователь не найден";
-    header("Location: auth.php");
+    header("Location: /auth.php");
     exit;
 }
 
 if (!$user['is_active']) {
     session_destroy();
     $_SESSION['auth_error'] = "Аккаунт не активирован. Проверьте вашу почту.";
-    header("Location: auth.php");
+    header("Location: /auth.php");
     exit;
 }
 
@@ -48,7 +48,7 @@ if (isset($required_role)) {
     // Проверяем, есть ли у пользователя нужная роль
     if (!isset($user['role']) || !in_array($user['role'], $allowed_roles)) {
         $_SESSION['auth_error'] = "У вас нет доступа к этой странице";
-        header("Location: account.php");
+        header("Location: /account.php");
         exit;
     }
 }

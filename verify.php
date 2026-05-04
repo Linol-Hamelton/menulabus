@@ -8,7 +8,7 @@ $db = Database::getInstance();
 // Проверяем, что токен не пустой
 if (empty($token)) {
     $_SESSION['auth_error'] = "Отсутствует токен подтверждения.";
-    header("Location: auth.php");
+    header("Location: /auth.php");
     exit;
 }
 
@@ -45,6 +45,6 @@ try {
 session_write_close();
 
 // Редирект с кодом 303 See Other для POST-GET редиректа
-header("Location: auth.php", true, 303);
+header("Location: /auth.php", true, 303);
 exit;
 ?>

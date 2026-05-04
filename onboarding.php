@@ -25,14 +25,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'compl
         exit;
     }
     $db->setSetting('onboarding_done', json_encode(true), (int)$_SESSION['user_id']);
-    header('Location: owner.php');
+    header('Location: /owner.php');
     exit;
 }
 
 // ── Already done → skip wizard ────────────────────────────────────────────────
 $rawDone = $db->getSetting('onboarding_done');
 if ($rawDone !== null && json_decode($rawDone, true) === true) {
-    header('Location: owner.php');
+    header('Location: /owner.php');
     exit;
 }
 

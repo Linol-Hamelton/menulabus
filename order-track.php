@@ -6,14 +6,14 @@ require_once __DIR__ . '/session_init.php';
 
 $orderId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($orderId <= 0) {
-    header('Location: index.php');
+    header('Location: /index.php');
     exit;
 }
 
 $order = $db->getOrderById($orderId);
 if (!$order) {
     header('HTTP/1.1 404 Not Found');
-    header('Location: index.php');
+    header('Location: /index.php');
     exit;
 }
 

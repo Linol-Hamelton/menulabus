@@ -351,6 +351,32 @@ Any match should be **absolute** (`/-prefixed`) when the file may be
 included from multiple directory depths. Anchor every navigational link
 to site root — relative is a bug-magnet across subdir refactors.
 
+### After moving files into subdirectories — also grep for relative `Location:` redirects
+
+Same trap as `<a href>`, but server-side. Browsers resolve a relative
+`Location:` against the **request URL**, so:
+
+```php
+header('Location: auth.php');   // From /admin/staff.php → /admin/auth.php (404)
+                                 // From /kds/index.php  → /kds/auth.php  (404)
+                                 // From /account.php    → /auth.php       ✓
+```
+
+`require_auth.php` is included from 9 `admin/*.php`, 2 `kds/*.php`, and
+multiple `api/*.php` endpoints. Relative `Location:` there fired
+intermittent "File not found" pages every time a session expired or
+rate-limit kicked in.
+
+Grep:
+
+```bash
+grep -rnE "header\(.{1,3}Location:\s*[a-z]" --include="*.php" .
+```
+
+All matches must be `/-prefixed`. The post-13B.3 sweep fixed
+`require_auth.php` (4 redirects), `admin/menu.php` (5 self-redirects
+after CRUD), and 8 root files defensively.
+
 ### Create cache zone directories before nginx reload
 
 The site declares two `fastcgi_cache_path` zones at `/var/cache/nginx/`.

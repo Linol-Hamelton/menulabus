@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     : 'Не удалось архивировать блюдо';
             }
         }
-        header('Location: admin/menu.php?view=active');
+        header('Location: /admin/menu.php?view=active');
         exit;
     } elseif (isset($_POST['restore_archived'])) {
         if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     : 'Не удалось восстановить блюдо';
             }
         }
-        header('Location: admin/menu.php?view=archived');
+        header('Location: /admin/menu.php?view=archived');
         exit;
     } elseif (isset($_POST['name'])) {
         if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
@@ -109,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 if ($ok) {
                     $_SESSION['success'] = 'Товар обновлён!';
-                    header('Location: admin/menu.php?edit=' . $id);
+                    header('Location: /admin/menu.php?edit=' . $id);
                     exit;
                 }
                 $_SESSION['error'] = 'Ошибка при обновлении';
@@ -129,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 if ($ok) {
                     $_SESSION['success'] = 'Товар добавлен!';
-                    header('Location: admin/menu.php');
+                    header('Location: /admin/menu.php');
                     exit;
                 }
                 $_SESSION['error'] = 'Ошибка при добавлении';
@@ -172,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
-        header('Location: admin/menu.php?view=active');
+        header('Location: /admin/menu.php?view=active');
         exit;
     }
 }

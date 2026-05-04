@@ -15,14 +15,14 @@ if (!isset($db)) {
 
 $orderId = isset($_GET['order_id']) ? (int)$_GET['order_id'] : 0;
 if ($orderId <= 0) {
-    header('Location: index.php');
+    header('Location: /index.php');
     exit;
 }
 
 $order = $db->getOrderById($orderId);
 if (!$order) {
     header('HTTP/1.1 404 Not Found');
-    header('Location: index.php');
+    header('Location: /index.php');
     exit;
 }
 
@@ -32,7 +32,7 @@ $sessionUserId = $_SESSION['user_id'] ?? null;
 $orderUserId   = $order['user_id'] ?? null;
 if ($sessionUserId !== null && $orderUserId !== null && (int)$sessionUserId !== (int)$orderUserId) {
     header('HTTP/1.1 403 Forbidden');
-    header('Location: index.php');
+    header('Location: /index.php');
     exit;
 }
 

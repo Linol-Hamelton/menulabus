@@ -9,7 +9,7 @@ $role = (string)($_SESSION['user_role'] ?? ($user['role'] ?? ''));
 if (!in_array($role, ['owner', 'admin'], true)) {
     http_response_code(403);
     $_SESSION['auth_error'] = 'Недостаточно прав для очистки просроченных заказов.';
-    header('Location: employee.php');
+    header('Location: /employee.php');
     exit;
 }
 
@@ -19,13 +19,13 @@ if (!in_array($returnTo, ['employee.php', 'owner.php'], true)) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ' . $returnTo);
+    header('Location: /' . $returnTo);
     exit;
 }
 
 if (!hash_equals($_SESSION['csrf_token'] ?? '', (string)($_POST['csrf_token'] ?? ''))) {
     $_SESSION['error'] = 'Ошибка безопасности при очистке просроченных заказов.';
-    header('Location: ' . $returnTo);
+    header('Location: /' . $returnTo);
     exit;
 }
 
@@ -43,5 +43,5 @@ if (!empty($result['error'])) {
     $_SESSION['success'] = 'Просроченных заказов для очистки не найдено.';
 }
 
-header('Location: ' . $returnTo);
+header('Location: /' . $returnTo);
 exit;
