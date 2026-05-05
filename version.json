@@ -1,6 +1,6 @@
 {
-  "version": "2.2.1",
+  "version": "2.2.2",
   "release_date": "2026-05-05",
-  "changelog": "Phase 17.1 — fix layout collapse на табе «Дизайн». Parent .admin-design-panel это 12-column grid (admin-menu-polish.css), и без явного grid-column дочерние блоки Phase 17 auto-placed в 1/12 ячейку ~95px → plates стекались 1-колонкой, reset <details> плавал бок-о-бок с plates. Добавлено правило `grid-column: 1 / -1` для .admin-design-plates / .design-reset-row / .admin-block--project / dialog.design-modal — все Phase 17 блоки занимают 12 колонок parent grid. min-width plate = 240px (было 220) для лучшей читаемости.",
+  "changelog": "Phase 17.2 — fix Brand modal form layout. .admin-label элементы внутри Brand modal теряли flex/grid layout без legacy .brand-fields обёртки → поля Название/Слоган/Описание/URL логотипа/favicon/Скрыть упоминание рендерились inline и наплывали друг на друга. Добавлены явные CSS правила для .design-modal#brandModal: .modal-pane = flex-column 14px gap, .admin-label = grid 6px gap, .admin-input = full-width pill input, .brand-logo-preview = 160×80 с border, .launch-readiness-card стилизация. Также для Fonts modal — .font-control в карточки с background+border вместо просто vertical stack. Все modals теперь читаемы.",
   "critical": false
 }
