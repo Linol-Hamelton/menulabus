@@ -1,6 +1,6 @@
 {
-  "version": "2.2.0",
+  "version": "2.2.1",
   "release_date": "2026-05-05",
-  "changelog": "Phase 17 — admin/menu.php tab «Дизайн» modal-editor overhaul. Длинный scroll (Brand 13 inputs · Fonts · Colors 12 пикеров · Files browser) разбит на 5 plate-карточек: 🏷️ Бренд · Aa Шрифты · ■ Цвета · 📁 Файлы · 🚀 Launch. Каждая plate показывает status-summary, click → <dialog> с edit-формой, FocusTrap, Esc/backdrop close. Brand modal — 3 sub-tabs (Identity/Контакты/Домен) + side-rail live preview карточки бренда. Colors modal — 4 preset swatches (Классический/Тёмный/Свежий/Свой) + 3 ключевых цвета визибл + <details> с 9 advanced. Fonts modal — preview шрифтов в side-rail. Files modal — file-browser markup. Launch modal — read-only checklist. Все existing IDs (saveBrandBtn/saveFontsBtn/saveColorsBtn/colorPrimarycolor/etc.) сохранены — handlers в admin-menu-page.js + file-manager.min.js работают без правок. CSP-clean: 0 inline styles, 0 inline scripts (preset swatches и plate-icon swatches рендерятся через JS из data-attributes). Все детали в docs/admin-menu-ux.md.",
+  "changelog": "Phase 17.1 — fix layout collapse на табе «Дизайн». Parent .admin-design-panel это 12-column grid (admin-menu-polish.css), и без явного grid-column дочерние блоки Phase 17 auto-placed в 1/12 ячейку ~95px → plates стекались 1-колонкой, reset <details> плавал бок-о-бок с plates. Добавлено правило `grid-column: 1 / -1` для .admin-design-plates / .design-reset-row / .admin-block--project / dialog.design-modal — все Phase 17 блоки занимают 12 колонок parent grid. min-width plate = 240px (было 220) для лучшей читаемости.",
   "critical": false
 }

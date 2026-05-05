@@ -23,6 +23,10 @@
 - New: [api/save-menu-item.php](../api/save-menu-item.php), [js/admin-menu-modal.js](../js/admin-menu-modal.js), [js/admin-image-picker.js](../js/admin-image-picker.js), [css/admin-menu-modal.css](../css/admin-menu-modal.css), [images/icons/dish-placeholder.svg](../images/icons/dish-placeholder.svg).
 - Modified: [admin/menu.php](../admin/menu.php) (modal markup, table thumb + inline-price classes, button replacements, removed inline editor), [js/admin-modifiers.js](../js/admin-modifiers.js) (public init API), [js/admin-recipe.js](../js/admin-recipe.js) (public init API), [js/admin-menu-page.js](../js/admin-menu-page.js) (inline-price handler), [db.php](../db.php) (`addMenuItem` returns id).
 
+### Phase 17.1 — fix layout collapse (v2.2.1, 2026-05-05)
+
+Сразу после релиза 2.2.0 на проде обнаружено: parent `.admin-design-panel` это 12-column grid (admin-menu-polish.css), и Phase 17 ввёл прямых детей (`.admin-design-plates`, `.design-reset-row`, project-name, 5 `<dialog>`) без явного `grid-column` → auto-place в одну 1/12 ячейку (~95px). Plates стекались 1-колонкой, reset disclosure плавал сбоку. Одно CSS-правило `grid-column: 1 / -1` для всех Phase 17 прямых детей `.admin-design-panel` фиксит layout. Plate min-width поднят 220→240px для читаемости.
+
 ### Phase 17 — Дизайн tab modal-editor overhaul (v2.2.0, 2026-05-05)
 
 Раньше таб «Дизайн» был один длинный scroll: Project name → Files browser → Brand (13 inputs) → Fonts → Colors (12 пикеров) → Save buttons. На мобильном — 4-5 экранов прокрутки. Phase 17 разбивает это на 5 plate-карточек:

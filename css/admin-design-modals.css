@@ -8,10 +8,24 @@
  * No new CSS variables; everything anchors to var(--ui-*) / var(--shell-*).
  */
 
+/* ===== Phase 17 — span the 12-col parent grid =========================== */
+/* The parent .admin-design-panel uses `grid-template-columns: repeat(12, ...)`
+   (admin-menu-polish.css). Without an explicit grid-column, each Phase-17
+   block — plates row, reset disclosure, project-name block, and the 5
+   <dialog> elements — auto-places into a single 1/12 cell (~95 px wide),
+   making the row collapse and reset block float beside it. Force them to
+   span all 12 columns. */
+body.admin-menu-page .admin-design-panel > .admin-design-plates,
+body.admin-menu-page .admin-design-panel > .design-reset-row,
+body.admin-menu-page .admin-design-panel > .admin-block--project,
+body.admin-menu-page .admin-design-panel > dialog.design-modal {
+  grid-column: 1 / -1;
+}
+
 /* ===== Plates row ======================================================= */
 .admin-design-plates {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 14px;
   margin: 18px 0 22px;
 }
