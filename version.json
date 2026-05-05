@@ -1,6 +1,6 @@
 {
-  "version": "2.1.2",
-  "release_date": "2026-05-04",
-  "changelog": "Phase 16.2 — modal mobile fixes. (1) Tabs не показывались на mobile: grid-template-rows был «auto 1fr auto» = 3 строки на 4 элемента, body занимал auto (=весь контент) и съедал leftover, tabs (1fr) сжимались до ~10px. Исправлено на «auto auto 1fr auto» — body теперь scroll-container, tabs всегда видны. (2) Footer Cancel button НЕ закрывал модалку (querySelector('.modal-close') возвращал только X-кнопку, footer button с тем же классом оставался без listener) — заменён hook на data-modal-close + delegated click handler ловит обе. (3) Cancel button стиль — собственный класс .btn-cancel-modal с outline вместо filled cancel, матчит высоту .checkout-btn для визуальной пары.",
+  "version": "2.2.0",
+  "release_date": "2026-05-05",
+  "changelog": "Phase 17 — admin/menu.php tab «Дизайн» modal-editor overhaul. Длинный scroll (Brand 13 inputs · Fonts · Colors 12 пикеров · Files browser) разбит на 5 plate-карточек: 🏷️ Бренд · Aa Шрифты · ■ Цвета · 📁 Файлы · 🚀 Launch. Каждая plate показывает status-summary, click → <dialog> с edit-формой, FocusTrap, Esc/backdrop close. Brand modal — 3 sub-tabs (Identity/Контакты/Домен) + side-rail live preview карточки бренда. Colors modal — 4 preset swatches (Классический/Тёмный/Свежий/Свой) + 3 ключевых цвета визибл + <details> с 9 advanced. Fonts modal — preview шрифтов в side-rail. Files modal — file-browser markup. Launch modal — read-only checklist. Все existing IDs (saveBrandBtn/saveFontsBtn/saveColorsBtn/colorPrimarycolor/etc.) сохранены — handlers в admin-menu-page.js + file-manager.min.js работают без правок. CSP-clean: 0 inline styles, 0 inline scripts (preset swatches и plate-icon swatches рендерятся через JS из data-attributes). Все детали в docs/admin-menu-ux.md.",
   "critical": false
 }

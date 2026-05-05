@@ -212,6 +212,7 @@ $savedDbFontsJson = htmlspecialchars(
     <link rel="stylesheet" href="/css/undo-toast.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/admin-recipe.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/admin-menu-modal.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/admin-design-modals.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/hotkeys.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= $appVersion ?>">
     <title>Блюда | <?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?></title>
@@ -485,19 +486,18 @@ $savedDbFontsJson = htmlspecialchars(
             </div>
         </div>
 
-        <!-- Design Tab -->
+        <!-- Design Tab — Phase 17: 5 modal-editor plates instead of long scroll -->
         <div class="admin-tab-pane" id="design">
             <section class="admin-form-container admin-section-card admin-design-panel">
                 <div class="admin-pane-header">
                     <div class="admin-pane-header-copy">
                         <p class="admin-pane-kicker">Файлы и бренд</p>
-                        <h2 class="admin-pane-title">Управление файлами и дизайном</h2>
-                        <p class="admin-pane-caption">Файлы, бренд, шрифты и цвета собраны в одном рабочем пространстве, чтобы white-label настройки было проще проверять и менять.</p>
+                        <h2 class="admin-pane-title">Дизайн и брендинг</h2>
+                        <p class="admin-pane-caption">Бренд, шрифты, цвета и файлы — в отдельных модальных редакторах. Кликните плитку, чтобы открыть нужную секцию.</p>
                     </div>
                 </div>
-                <h2>Управление файлами и дизайном</h2>
 
-                <!-- Название проекта -->
+                <!-- Название проекта (inline) -->
                 <div class="admin-form-group admin-block admin-block--project">
                     <h3>Название проекта</h3>
                     <div class="project-name-control">
@@ -505,49 +505,9 @@ $savedDbFontsJson = htmlspecialchars(
                         <button type="button" class="checkout-btn" id="saveProjectNameBtn">Сохранить название</button>
                     </div>
                 </div>
-                <!-- Управление файлами -->
-                <div class="admin-form-group admin-block admin-block--files">
-                    <h3>Файлы</h3>
-                    <div class="file-manager-buttons">
-                        <button type="button" class="checkout-btn" id="browseImages">Images</button>
-                        <button type="button" class="checkout-btn" id="browseFonts">Fonts</button>
-                        <button type="button" class="checkout-btn" id="browseIcons">Icons</button>
-                    </div>
 
-                    <div id="fileBrowser" class="file-browser">
-                        <div class="file-navigation">
-                            <span class="current-folder">Текущая папка: <span id="currentFolder"></span></span>
-                            <button type="button" class="checkout-btn" id="goBackBtn">
-                                <svg class="btn-inline-icon" aria-hidden="true" viewBox="0 0 256 256">
-                                    <use href="/images/icons/phosphor-sprite.svg#arrow-left"></use>
-                                </svg>
-                                <span>Назад</span>
-                            </button>
-                        </div>
-
-                        <div class="folder-actions">
-                            <button type="button" class="checkout-btn" id="createFolderBtn">Создать папку</button>
-                        </div>
-
-                        <div id="fileList" class="file-list-container"></div>
-
-                        <div class="admin-form-group file-upload-group">
-                            <label>Загрузить файлы:</label>
-                            <input type="file" id="fileUpload" multiple>
-                            <button type="button" class="checkout-btn" id="uploadFileBtn">Загрузить</button>
-                        </div>
-                        <div class="upload-progress">
-                            <div class="progress-bar">
-                                <div class="progress"></div>
-                            </div>
-                            <div class="progress-text">0%</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ── Бренд ── -->
                 <?php
-                // Settings.value is a JSON column; decode before displaying
+                // Compute brand setting reader once (used in plates + later in modals).
                 $bs = static function (string $key, string $default = '') use ($db): string {
                     $raw = $db->getSetting($key);
                     return $raw !== null ? (json_decode($raw, true) ?? $default) : $default;
@@ -569,225 +529,445 @@ $savedDbFontsJson = htmlspecialchars(
                     'public_entry_mode' => $publicEntryModeValue,
                     'custom_domain' => (string)$bs('custom_domain'),
                 ], !empty($GLOBALS['isProviderMode']));
+
+                $plateBrandName    = (string)$bs('app_name', 'labus');
+                $plateBrandTagline = (string)$bs('app_tagline');
+                $plateBrandSummary = trim($plateBrandName . ($plateBrandTagline !== '' ? ' · ' . $plateBrandTagline : ''));
+                $plateColorPrimary = (string)(json_decode($db->getSetting('color_primary-color') ?? 'null', true) ?? '#cd1719');
+                $plateColorAccent  = (string)(json_decode($db->getSetting('color_accent-color') ?? 'null', true) ?? '#db3a34');
+                $launchWarnCount   = 0;
+                foreach (($launchAcceptance['items'] ?? []) as $li) {
+                    if (empty($li['ok'])) { $launchWarnCount++; }
+                }
+                $plateBrandStatus = $launchWarnCount > 0 ? 'warn' : 'ok';
+                $logoUrl = $bs('logo_url');
+
+                $colorVariables = [
+                    'primary-color'   => ['#cd1719', 'Основной цвет'],
+                    'secondary-color' => ['#121212', 'Вторичный цвет'],
+                    'primary-dark'    => ['#000000', 'Тёмный основной'],
+                    'accent-color'    => ['#db3a34', 'Акцентный цвет'],
+                    'text-color'      => ['#333333', 'Цвет текста'],
+                    'acception'       => ['#2c83c2', 'Цвет принятия'],
+                    'light-text'      => ['#555555', 'Светлый текст'],
+                    'bg-light'        => ['#f9f9f9', 'Светлый фон'],
+                    'white'           => ['#ffffff', 'Белый'],
+                    'agree'           => ['#4CAF50', 'Цвет согласия'],
+                    'procces'         => ['#ff9321', 'Цвет процесса'],
+                    'brown'           => ['#712121', 'Коричневый']
+                ];
+                $colorCurrent = [];
+                foreach ($colorVariables as $varName => $data) {
+                    $savedValue = $db->getSetting("color_$varName");
+                    $colorCurrent[$varName] = $savedValue ? (string)json_decode($savedValue, true) : $data[0];
+                }
                 ?>
-                <div class="admin-form-group admin-block admin-block--brand" id="brandSettings">
-                    <h3>Бренд</h3>
-                    <div class="brand-fields">
-                        <label class="admin-label">
+
+                <!-- 5 plates -->
+                <section class="admin-design-plates">
+                    <button type="button" class="design-plate" data-design-modal="brand" data-status="<?= $plateBrandStatus ?>">
+                        <span class="design-plate-icon">🏷️</span>
+                        <span class="design-plate-body">
+                            <span class="design-plate-title">Бренд</span>
+                            <span class="design-plate-summary js-summary-brand"><?= htmlspecialchars($plateBrandSummary) ?></span>
+                        </span>
+                    </button>
+                    <button type="button" class="design-plate" data-design-modal="fonts">
+                        <span class="design-plate-icon">Aa</span>
+                        <span class="design-plate-body">
+                            <span class="design-plate-title">Шрифты</span>
+                            <span class="design-plate-summary js-summary-fonts">по умолчанию</span>
+                        </span>
+                    </button>
+                    <button type="button" class="design-plate" data-design-modal="colors">
+                        <span class="design-plate-icon design-plate-icon-color"
+                              data-color-primary="<?= htmlspecialchars($plateColorPrimary) ?>"
+                              data-color-accent="<?= htmlspecialchars($plateColorAccent) ?>"
+                              aria-hidden="true">●</span>
+                        <span class="design-plate-body">
+                            <span class="design-plate-title">Цвета</span>
+                            <span class="design-plate-summary js-summary-colors"><?= htmlspecialchars($plateColorPrimary) ?></span>
+                        </span>
+                    </button>
+                    <button type="button" class="design-plate" data-design-modal="files">
+                        <span class="design-plate-icon">📁</span>
+                        <span class="design-plate-body">
+                            <span class="design-plate-title">Файлы</span>
+                            <span class="design-plate-summary">Images · Fonts · Icons</span>
+                        </span>
+                    </button>
+                    <button type="button" class="design-plate" data-design-modal="launch" data-status="<?= $plateBrandStatus ?>">
+                        <span class="design-plate-icon">🚀</span>
+                        <span class="design-plate-body">
+                            <span class="design-plate-title">Launch readiness</span>
+                            <span class="design-plate-summary js-summary-launch"><?= $launchWarnCount > 0 ? $launchWarnCount . ' предупреждени' . ($launchWarnCount === 1 ? 'е' : 'я') : 'Всё в порядке' ?></span>
+                        </span>
+                    </button>
+                </section>
+
+                <details class="design-reset-row">
+                    <summary>Сбросить шрифты и цвета к значениям по умолчанию</summary>
+                    <p>Все настройки бренда сохранятся; будут возвращены только шрифты и палитра цветов.</p>
+                    <button type="button" class="checkout-btn cancel" id="resetDesignBtn">Сбросить</button>
+                </details>
+
+                <!-- ============ MODAL: BRAND ============ -->
+                <dialog id="brandModal" class="design-modal" aria-labelledby="brandModalTitle">
+                  <div class="modal-card">
+                    <header class="modal-head">
+                      <div>
+                        <h2 id="brandModalTitle" class="modal-title">🏷️ Бренд</h2>
+                        <p class="modal-subtitle">Имя, контакты, домен — то, что видит гость на меню.</p>
+                      </div>
+                      <button type="button" class="modal-close" aria-label="Закрыть">×</button>
+                    </header>
+                    <nav class="modal-tabs" role="tablist">
+                      <button type="button" class="modal-tab-btn" role="tab" data-tab="identity" aria-selected="true">Identity</button>
+                      <button type="button" class="modal-tab-btn" role="tab" data-tab="contacts" aria-selected="false">Контакты</button>
+                      <button type="button" class="modal-tab-btn" role="tab" data-tab="domain"   aria-selected="false">Домен</button>
+                    </nav>
+                    <div class="modal-body with-preview">
+                      <div class="brand-form" id="brandSettings">
+                        <!-- Identity -->
+                        <div class="modal-pane" data-pane="identity">
+                          <label class="admin-label">
                             Название (ресторан / приложение)
-                            <input type="text" id="brandName" class="admin-input"
-                                value="<?= htmlspecialchars($bs('app_name', 'labus')) ?>"
-                                maxlength="200" placeholder="labus">
-                        </label>
-                        <label class="admin-label">
+                            <input type="text" id="brandName" class="admin-input" value="<?= htmlspecialchars($bs('app_name', 'labus')) ?>" maxlength="200" placeholder="labus">
+                          </label>
+                          <label class="admin-label">
                             Слоган
-                            <input type="text" id="brandTagline" class="admin-input"
-                                value="<?= htmlspecialchars($bs('app_tagline')) ?>"
-                                maxlength="200" placeholder="Меню ресторана">
-                        </label>
-                        <label class="admin-label">
+                            <input type="text" id="brandTagline" class="admin-input" value="<?= htmlspecialchars($bs('app_tagline')) ?>" maxlength="200" placeholder="Меню ресторана">
+                          </label>
+                          <label class="admin-label">
                             Описание (meta / PWA)
-                            <textarea id="brandDesc" class="admin-input brand-desc-area" rows="2"
-                                maxlength="200" placeholder="Цифровое меню ресторана"><?= htmlspecialchars($bs('app_description')) ?></textarea>
-                        </label>
-                        <label class="admin-label">
-                            Публичный вход tenant-домена
-                            <select id="brandPublicEntryMode" class="admin-input">
-                                <option value="homepage" <?= $publicEntryModeValue === 'homepage' ? 'selected' : '' ?>>Главная страница ресторана</option>
-                                <option value="menu" <?= $publicEntryModeValue === 'menu' ? 'selected' : '' ?>>Сразу в меню</option>
-                            </select>
-                            <small class="brand-logo-hint">
-                                Настройка применяется только для tenant-домена. Provider-домен всегда остаётся B2B landing.
-                            </small>
-                        </label>
-                        <label class="admin-label">
-                            Телефон
-                            <input type="text" id="brandPhone" class="admin-input"
-                                value="<?= htmlspecialchars($bs('contact_phone')) ?>"
-                                maxlength="200" placeholder="+79000000000">
-                        </label>
-                        <label class="admin-label">
-                            Ссылка на карту
-                            <input type="url" id="brandMapUrl" class="admin-input"
-                                value="<?= htmlspecialchars($brandMapUrlValue) ?>"
-                                maxlength="200" placeholder="https://yandex.ru/maps/...">
-                            <small class="brand-logo-hint">
-                                CTA "Приехать" показывается только если здесь сохранён валидный URL.
-                            </small>
-                        </label>
-                        <label class="admin-label">
-                            Адрес
-                            <input type="text" id="brandAddress" class="admin-input"
-                                value="<?= htmlspecialchars($brandAddressValue) ?>"
-                                maxlength="200" placeholder="Москва, Цветной б-р, 24">
-                            <small class="brand-logo-hint">
-                                Текст адреса отображается отдельно от ссылки на карту и не должен содержать URL.
-                            </small>
-                        </label>
-                        <label class="admin-label">
-                            Telegram (ссылка)
-                            <input type="url" id="brandTg" class="admin-input"
-                                value="<?= htmlspecialchars($bs('social_tg')) ?>"
-                                maxlength="200" placeholder="https://t.me/...">
-                        </label>
-                        <label class="admin-label">
-                            VK (ссылка)
-                            <input type="url" id="brandVk" class="admin-input"
-                                value="<?= htmlspecialchars($bs('social_vk')) ?>"
-                                maxlength="200" placeholder="https://vk.com/...">
-                        </label>
-                        <?php $logoUrl = $bs('logo_url'); ?>
-                        <label class="admin-label">
+                            <textarea id="brandDesc" class="admin-input brand-desc-area" rows="2" maxlength="200" placeholder="Цифровое меню ресторана"><?= htmlspecialchars($bs('app_description')) ?></textarea>
+                          </label>
+                          <label class="admin-label">
                             URL логотипа
                             <small class="brand-logo-hint">Загрузите PNG через файл-менеджер и вставьте путь</small>
-                            <input type="text" id="brandLogoUrl" class="admin-input"
-                                value="<?= htmlspecialchars($logoUrl) ?>"
-                                maxlength="200" placeholder="/images/logo.png">
-                            <img id="brandLogoPreview"
-                                src="<?= htmlspecialchars($logoUrl) ?>"
-                                alt="Превью логотипа"
-                                class="brand-logo-preview<?= $logoUrl ? '' : ' brand-logo-preview--hidden' ?>">
-                        </label>
-                        <label class="admin-label">
+                            <input type="text" id="brandLogoUrl" class="admin-input" value="<?= htmlspecialchars($logoUrl) ?>" maxlength="200" placeholder="/images/logo.png">
+                            <img id="brandLogoPreview" src="<?= htmlspecialchars($logoUrl) ?>" alt="Превью логотипа" class="brand-logo-preview<?= $logoUrl ? '' : ' brand-logo-preview--hidden' ?>">
+                          </label>
+                          <label class="admin-label">
                             URL favicon
-                            <input type="text" id="brandFaviconUrl" class="admin-input"
-                                value="<?= htmlspecialchars($bs('favicon_url', '/icons/favicon.ico')) ?>"
-                                maxlength="200" placeholder="/icons/favicon.ico">
-                        </label>
-                        <label class="admin-label">
-                            Собственный домен (White Label)
-                            <input type="text" id="brandCustomDomain" class="admin-input"
-                                value="<?= htmlspecialchars($bs('custom_domain')) ?>"
-                                maxlength="253" placeholder="menu.myrestaurant.ru">
-                            <small class="brand-logo-hint">
-                                Это информационное поле. Фактическое подключение домена и выбор tenant-БД теперь управляются через внешний tenant registry.
-                            </small>
-                        </label>
-                        <label class="admin-label">
-                            Ссылка на отзыв в Google
-                            <input type="url" id="brandGoogleReviewUrl" class="admin-input"
-                                value="<?= htmlspecialchars($bs('google_review_url')) ?>"
-                                maxlength="500" placeholder="https://g.page/r/.../review">
-                            <small class="brand-logo-hint">
-                                Ссылка, куда гостям предлагается опубликовать 5-звёздочный отзыв после завершения заказа. Если поле пустое — кнопка «Поделиться в Google» скрыта.
-                            </small>
-                        </label>
-                        <label class="admin-label" id="hideBrandingLabel">
+                            <input type="text" id="brandFaviconUrl" class="admin-input" value="<?= htmlspecialchars($bs('favicon_url', '/icons/favicon.ico')) ?>" maxlength="200" placeholder="/icons/favicon.ico">
+                          </label>
+                          <label class="admin-label" id="hideBrandingLabel">
                             <input type="checkbox" id="brandHideBranding" <?= $bs('hide_labus_branding') === 'true' ? ' checked' : '' ?>>
                             Скрыть упоминание Labus в публичных страницах
-                        </label>
-                        <div class="launch-readiness-card">
+                          </label>
+                        </div>
+
+                        <!-- Contacts -->
+                        <div class="modal-pane" data-pane="contacts" hidden>
+                          <label class="admin-label">
+                            Телефон
+                            <input type="text" id="brandPhone" class="admin-input" value="<?= htmlspecialchars($bs('contact_phone')) ?>" maxlength="200" placeholder="+79000000000">
+                          </label>
+                          <label class="admin-label">
+                            Адрес
+                            <input type="text" id="brandAddress" class="admin-input" value="<?= htmlspecialchars($brandAddressValue) ?>" maxlength="200" placeholder="Москва, Цветной б-р, 24">
+                            <small class="brand-logo-hint">Текст адреса отображается отдельно от ссылки на карту.</small>
+                          </label>
+                          <label class="admin-label">
+                            Ссылка на карту
+                            <input type="url" id="brandMapUrl" class="admin-input" value="<?= htmlspecialchars($brandMapUrlValue) ?>" maxlength="200" placeholder="https://yandex.ru/maps/...">
+                            <small class="brand-logo-hint">CTA "Приехать" показывается только если задан валидный URL.</small>
+                          </label>
+                          <label class="admin-label">
+                            Telegram (ссылка)
+                            <input type="url" id="brandTg" class="admin-input" value="<?= htmlspecialchars($bs('social_tg')) ?>" maxlength="200" placeholder="https://t.me/...">
+                          </label>
+                          <label class="admin-label">
+                            VK (ссылка)
+                            <input type="url" id="brandVk" class="admin-input" value="<?= htmlspecialchars($bs('social_vk')) ?>" maxlength="200" placeholder="https://vk.com/...">
+                          </label>
+                          <label class="admin-label">
+                            Ссылка на отзыв в Google
+                            <input type="url" id="brandGoogleReviewUrl" class="admin-input" value="<?= htmlspecialchars($bs('google_review_url')) ?>" maxlength="500" placeholder="https://g.page/r/.../review">
+                            <small class="brand-logo-hint">Кнопка «Поделиться в Google» показывается только если URL задан.</small>
+                          </label>
+                        </div>
+
+                        <!-- Domain -->
+                        <div class="modal-pane" data-pane="domain" hidden>
+                          <label class="admin-label">
+                            Публичный вход tenant-домена
+                            <select id="brandPublicEntryMode" class="admin-input">
+                              <option value="homepage" <?= $publicEntryModeValue === 'homepage' ? 'selected' : '' ?>>Главная страница ресторана</option>
+                              <option value="menu" <?= $publicEntryModeValue === 'menu' ? 'selected' : '' ?>>Сразу в меню</option>
+                            </select>
+                            <small class="brand-logo-hint">Только для tenant-домена. Provider-домен всегда B2B landing.</small>
+                          </label>
+                          <label class="admin-label">
+                            Собственный домен (White Label)
+                            <input type="text" id="brandCustomDomain" class="admin-input" value="<?= htmlspecialchars($bs('custom_domain')) ?>" maxlength="253" placeholder="menu.myrestaurant.ru">
+                            <small class="brand-logo-hint">Информационное поле. Подключение домена — через внешний tenant registry.</small>
+                          </label>
+                          <div class="launch-readiness-card">
                             <h4>Launch readiness</h4>
                             <ul class="launch-readiness-list">
-                                <?php foreach (($launchAcceptance['items'] ?? []) as $item): ?>
-                                    <li class="launch-readiness-item">
-                                        <span class="account-badge account-badge--<?= !empty($item['ok']) ? 'fresh' : 'warning' ?>">
-                                            <?= !empty($item['ok']) ? 'OK' : 'Check' ?>
-                                        </span>
-                                        <div class="launch-readiness-copy">
-                                            <strong><?= htmlspecialchars((string)($item['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
-                                            <span><?= htmlspecialchars((string)($item['message'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
-                                        </div>
-                                    </li>
-                                <?php endforeach; ?>
+                              <?php foreach (($launchAcceptance['items'] ?? []) as $item): ?>
+                                <li class="launch-readiness-item">
+                                  <span class="account-badge account-badge--<?= !empty($item['ok']) ? 'fresh' : 'warning' ?>"><?= !empty($item['ok']) ? 'OK' : 'Check' ?></span>
+                                  <div class="launch-readiness-copy">
+                                    <strong><?= htmlspecialchars((string)($item['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
+                                    <span><?= htmlspecialchars((string)($item['message'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                                  </div>
+                                </li>
+                              <?php endforeach; ?>
                             </ul>
-                            <?php if (!empty($launchAcceptance['warnings'])): ?>
-                                <div class="launch-readiness-warnings">
-                                    <?php foreach ((array)$launchAcceptance['warnings'] as $warning): ?>
-                                        <p><?= htmlspecialchars((string)$warning, ENT_QUOTES, 'UTF-8') ?></p>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endif; ?>
+                          </div>
                         </div>
-                        <div class="brand-save-row">
-                            <button id="saveBrandBtn" class="checkout-btn">Сохранить бренд</button>
-                            <span id="brandStatus" class="brand-status"></span>
+                      </div>
+
+                      <!-- Side-rail preview -->
+                      <aside class="modal-preview-pane" aria-label="Превью бренда">
+                        <p class="modal-preview-title">Превью</p>
+                        <div class="brand-preview-card">
+                          <img class="brand-preview-logo" alt="Логотип" hidden>
+                          <h3 class="brand-preview-name">labus</h3>
+                          <p class="brand-preview-tagline" hidden></p>
+                          <p class="brand-preview-desc" hidden></p>
+                          <p class="brand-preview-contact" hidden>📞 <span class="brand-preview-phone"></span></p>
+                          <p class="brand-preview-address" hidden>📍 <span class="brand-preview-address-text"></span> · <a class="brand-preview-map" href="#" hidden>Приехать</a></p>
                         </div>
+                      </aside>
                     </div>
-                </div>
+                    <footer class="modal-foot">
+                      <span id="brandStatus" class="brand-status modal-status"></span>
+                      <button type="button" class="admin-checkout-btn btn-cancel-modal" data-modal-close>Закрыть</button>
+                      <button id="saveBrandBtn" class="checkout-btn">Сохранить бренд</button>
+                    </footer>
+                  </div>
+                </dialog>
 
-                <!-- Управление шрифтами -->
-                <div class="admin-form-group admin-block admin-block--fonts">
-                    <h3>Шрифты</h3>
-
-                    <div class="font-controls">
+                <!-- ============ MODAL: FONTS ============ -->
+                <dialog id="fontsModal" class="design-modal" aria-labelledby="fontsModalTitle">
+                  <div class="modal-card">
+                    <header class="modal-head">
+                      <div>
+                        <h2 id="fontsModalTitle" class="modal-title">Aa Шрифты</h2>
+                        <p class="modal-subtitle">Шрифт логотипа, текста и заголовков. По умолчанию используются системные.</p>
+                      </div>
+                      <button type="button" class="modal-close" aria-label="Закрыть">×</button>
+                    </header>
+                    <div class="modal-body with-preview">
+                      <div class="font-controls">
                         <div class="font-control">
-                            <label>
-                                <input type="checkbox" id="fontLogoOverride" class="font-override-checkbox">
-                                Изменить шрифт логотипа
-                            </label>
-                            <select id="fontLogo" class="font-selector" disabled>
-                                <option value="'Magistral', serif">Magistral (по умолчанию)</option>
-                                <!-- Шрифты будут добавлены динамически -->
-                            </select>
+                          <label>
+                            <input type="checkbox" id="fontLogoOverride" class="font-override-checkbox">
+                            Изменить шрифт логотипа
+                          </label>
+                          <select id="fontLogo" class="font-selector" disabled>
+                            <option value="'Magistral', serif">Magistral (по умолчанию)</option>
+                          </select>
                         </div>
-
                         <div class="font-control">
-                            <label>
-                                <input type="checkbox" id="fontTextOverride" class="font-override-checkbox">
-                                Изменить шрифт текста
-                            </label>
-                            <select id="fontText" class="font-selector" disabled>
-                                <option value="'proxima-nova', sans-serif">Proxima-nova (по умолчанию)</option>
-                                <!-- Шрифты будут добавлены динамически -->
-                            </select>
+                          <label>
+                            <input type="checkbox" id="fontTextOverride" class="font-override-checkbox">
+                            Изменить шрифт текста
+                          </label>
+                          <select id="fontText" class="font-selector" disabled>
+                            <option value="'proxima-nova', sans-serif">Proxima-nova (по умолчанию)</option>
+                          </select>
                         </div>
-
                         <div class="font-control">
-                            <label>
-                                <input type="checkbox" id="fontHeadingOverride" class="font-override-checkbox">
-                                Изменить шрифт заголовков
-                            </label>
-                            <select id="fontHeading" class="font-selector" disabled>
-                                <option value="'Inter', sans-serif">Inter (по умолчанию)</option>
-                                <!-- Шрифты будут добавлены динамически -->
-                            </select>
+                          <label>
+                            <input type="checkbox" id="fontHeadingOverride" class="font-override-checkbox">
+                            Изменить шрифт заголовков
+                          </label>
+                          <select id="fontHeading" class="font-selector" disabled>
+                            <option value="'Inter', sans-serif">Inter (по умолчанию)</option>
+                          </select>
                         </div>
+                      </div>
+                      <aside class="modal-preview-pane">
+                        <p class="modal-preview-title">Превью шрифтов</p>
+                        <div class="fonts-preview-rail">
+                          <div class="fonts-preview-row" data-target="logo">
+                            <p class="fonts-preview-row-label">Логотип</p>
+                            <p class="fonts-preview-row-text">labus</p>
+                          </div>
+                          <div class="fonts-preview-row" data-target="text">
+                            <p class="fonts-preview-row-label">Текст</p>
+                            <p class="fonts-preview-row-text">Описание блюда — натуральные ингредиенты, фирменный соус.</p>
+                          </div>
+                          <div class="fonts-preview-row" data-target="heading">
+                            <p class="fonts-preview-row-label">Заголовок</p>
+                            <p class="fonts-preview-row-text">Меню ресторана</p>
+                          </div>
+                        </div>
+                      </aside>
                     </div>
-                </div>
+                    <footer class="modal-foot">
+                      <button type="button" class="admin-checkout-btn btn-cancel-modal" data-modal-close>Закрыть</button>
+                      <button type="button" class="checkout-btn" id="saveFontsBtn">Сохранить шрифты</button>
+                    </footer>
+                  </div>
+                </dialog>
 
-                <!-- Управление цветами -->
-                <div class="admin-form-group admin-block admin-block--colors">
-                    <h3>Цвета</h3>
+                <!-- ============ MODAL: COLORS ============ -->
+                <dialog id="colorsModal" class="design-modal" aria-labelledby="colorsModalTitle">
+                  <div class="modal-card">
+                    <header class="modal-head">
+                      <div>
+                        <h2 id="colorsModalTitle" class="modal-title">■ Цвета</h2>
+                        <p class="modal-subtitle">Готовые палитры или ручная настройка 12 переменных темы.</p>
+                      </div>
+                      <button type="button" class="modal-close" aria-label="Закрыть">×</button>
+                    </header>
+                    <div class="modal-body with-preview">
+                      <div>
+                        <div class="color-presets">
+                          <button type="button" class="color-preset" data-preset="classic">
+                            <span class="color-preset-name">Классический</span>
+                            <span class="color-preset-swatches"><span></span><span></span><span></span><span></span></span>
+                          </button>
+                          <button type="button" class="color-preset" data-preset="dark">
+                            <span class="color-preset-name">Тёмный</span>
+                            <span class="color-preset-swatches"><span></span><span></span><span></span><span></span></span>
+                          </button>
+                          <button type="button" class="color-preset" data-preset="fresh">
+                            <span class="color-preset-name">Свежий</span>
+                            <span class="color-preset-swatches"><span></span><span></span><span></span><span></span></span>
+                          </button>
+                          <button type="button" class="color-preset is-active" data-preset="custom">
+                            <span class="color-preset-name">Свой</span>
+                            <span class="color-preset-swatches"><span></span><span></span><span></span><span></span></span>
+                          </button>
+                        </div>
 
-                    <div class="color-controls">
-                        <?php
-                        $colorVariables = [
-                            'primary-color' => ['#cd1719', 'Основной цвет'],
-                            'secondary-color' => ['#121212', 'Вторичный цвет'],
-                            'primary-dark' => ['#000000', 'Тёмный основной'],
-                            'accent-color' => ['#db3a34', 'Акцентный цвет'],
-                            'text-color' => ['#333333', 'Цвет текста'],
-                            'acception' => ['#2c83c2', 'Цвет принятия'],
-                            'light-text' => ['#555555', 'Светлый текст'],
-                            'bg-light' => ['#f9f9f9', 'Светлый фон'],
-                            'white' => ['#ffffff', 'Белый'],
-                            'agree' => ['#4CAF50', 'Цвет согласия'],
-                            'procces' => ['#ff9321', 'Цвет процесса'],
-                            'brown' => ['#712121', 'Коричневый']
-                        ];
-
-                        foreach ($colorVariables as $varName => $data):
-                            list($defaultValue, $label) = $data;
-                            $savedValue = $db->getSetting("color_$varName");
-                            $currentValue = $savedValue ? json_decode($savedValue, true) : $defaultValue;
-                        ?>
+                        <div class="color-key-trio">
+                          <?php foreach (['primary-color' => 'Основной', 'secondary-color' => 'Вторичный', 'accent-color' => 'Акцент'] as $varName => $shortLabel): ?>
                             <div class="color-control">
-                                <label for="color<?= ucfirst(str_replace('-', '', $varName)) ?>"><?= $label ?>:</label>
-                                <input class="color" type="color" id="color<?= ucfirst(str_replace('-', '', $varName)) ?>"
-                                    data-var="<?= $varName ?>" value="<?= htmlspecialchars($currentValue) ?>">
-                                <span class="color-value"><?= htmlspecialchars($currentValue) ?></span>
+                              <label for="color<?= ucfirst(str_replace('-', '', $varName)) ?>"><?= $shortLabel ?></label>
+                              <input class="color" type="color" id="color<?= ucfirst(str_replace('-', '', $varName)) ?>" data-var="<?= $varName ?>" value="<?= htmlspecialchars($colorCurrent[$varName]) ?>">
+                              <span class="color-value"><?= htmlspecialchars($colorCurrent[$varName]) ?></span>
                             </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
+                          <?php endforeach; ?>
+                        </div>
 
-                <!-- Кнопки сохранения -->
-                <div class="design-buttons admin-block admin-block--design-actions">
-                    <button type="button" class="checkout-btn" id="saveFontsBtn">Сохранить шрифты</button>
-                    <button type="button" class="checkout-btn" id="saveColorsBtn">Сохранить цвета</button>
-                    <button type="button" class="checkout-btn cancel" id="resetDesignBtn">Сбросить всё</button>
-                </div>
+                        <details class="color-advanced">
+                          <summary>Дополнительные цвета (9)</summary>
+                          <div class="color-controls">
+                            <?php foreach ($colorVariables as $varName => $data): ?>
+                              <?php if (in_array($varName, ['primary-color', 'secondary-color', 'accent-color'], true)) continue; ?>
+                              <div class="color-control">
+                                <label for="color<?= ucfirst(str_replace('-', '', $varName)) ?>"><?= $data[1] ?>:</label>
+                                <input class="color" type="color" id="color<?= ucfirst(str_replace('-', '', $varName)) ?>" data-var="<?= $varName ?>" value="<?= htmlspecialchars($colorCurrent[$varName]) ?>">
+                                <span class="color-value"><?= htmlspecialchars($colorCurrent[$varName]) ?></span>
+                              </div>
+                            <?php endforeach; ?>
+                          </div>
+                        </details>
+                      </div>
+
+                      <aside class="modal-preview-pane">
+                        <p class="modal-preview-title">Превью палитры</p>
+                        <div class="colors-preview-rail">
+                          <div class="colors-palette-row">
+                            <span></span><span></span><span></span><span></span>
+                          </div>
+                          <div class="colors-sample-card">
+                            <h4 class="colors-sample-name">Образец карточки</h4>
+                            <p class="colors-sample-price">1 990 ₽</p>
+                            <span class="colors-sample-btn">Купить</span>
+                          </div>
+                        </div>
+                      </aside>
+                    </div>
+                    <footer class="modal-foot">
+                      <button type="button" class="admin-checkout-btn btn-cancel-modal" data-modal-close>Закрыть</button>
+                      <button type="button" class="checkout-btn" id="saveColorsBtn">Сохранить цвета</button>
+                    </footer>
+                  </div>
+                </dialog>
+
+                <!-- ============ MODAL: FILES ============ -->
+                <dialog id="filesModal" class="design-modal" aria-labelledby="filesModalTitle">
+                  <div class="modal-card">
+                    <header class="modal-head">
+                      <div>
+                        <h2 id="filesModalTitle" class="modal-title">📁 Файлы</h2>
+                        <p class="modal-subtitle">Управление изображениями, шрифтами и иконками.</p>
+                      </div>
+                      <button type="button" class="modal-close" aria-label="Закрыть">×</button>
+                    </header>
+                    <div class="modal-body">
+                      <div class="file-manager-buttons">
+                        <button type="button" class="checkout-btn" id="browseImages">Images</button>
+                        <button type="button" class="checkout-btn" id="browseFonts">Fonts</button>
+                        <button type="button" class="checkout-btn" id="browseIcons">Icons</button>
+                      </div>
+                      <div id="fileBrowser" class="file-browser">
+                        <div class="file-navigation">
+                          <span class="current-folder">Текущая папка: <span id="currentFolder"></span></span>
+                          <button type="button" class="checkout-btn" id="goBackBtn">
+                            <svg class="btn-inline-icon" aria-hidden="true" viewBox="0 0 256 256">
+                              <use href="/images/icons/phosphor-sprite.svg#arrow-left"></use>
+                            </svg>
+                            <span>Назад</span>
+                          </button>
+                        </div>
+                        <div class="folder-actions">
+                          <button type="button" class="checkout-btn" id="createFolderBtn">Создать папку</button>
+                        </div>
+                        <div id="fileList" class="file-list-container"></div>
+                        <div class="admin-form-group file-upload-group">
+                          <label>Загрузить файлы:</label>
+                          <input type="file" id="fileUpload" multiple>
+                          <button type="button" class="checkout-btn" id="uploadFileBtn">Загрузить</button>
+                        </div>
+                        <div class="upload-progress">
+                          <div class="progress-bar"><div class="progress"></div></div>
+                          <div class="progress-text">0%</div>
+                        </div>
+                      </div>
+                    </div>
+                    <footer class="modal-foot">
+                      <button type="button" class="admin-checkout-btn btn-cancel-modal" data-modal-close>Закрыть</button>
+                    </footer>
+                  </div>
+                </dialog>
+
+                <!-- ============ MODAL: LAUNCH ============ -->
+                <dialog id="launchModal" class="design-modal" aria-labelledby="launchModalTitle">
+                  <div class="modal-card">
+                    <header class="modal-head">
+                      <div>
+                        <h2 id="launchModalTitle" class="modal-title">🚀 Launch readiness</h2>
+                        <p class="modal-subtitle">Проверка готовности тенанта к публикации.</p>
+                      </div>
+                      <button type="button" class="modal-close" aria-label="Закрыть">×</button>
+                    </header>
+                    <div class="modal-body">
+                      <ul class="launch-readiness-list">
+                        <?php foreach (($launchAcceptance['items'] ?? []) as $item): ?>
+                          <li class="launch-readiness-item">
+                            <span class="account-badge account-badge--<?= !empty($item['ok']) ? 'fresh' : 'warning' ?>"><?= !empty($item['ok']) ? 'OK' : 'Check' ?></span>
+                            <div class="launch-readiness-copy">
+                              <strong><?= htmlspecialchars((string)($item['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
+                              <span><?= htmlspecialchars((string)($item['message'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                            </div>
+                          </li>
+                        <?php endforeach; ?>
+                      </ul>
+                      <?php if (!empty($launchAcceptance['warnings'])): ?>
+                        <div class="launch-readiness-warnings">
+                          <?php foreach ((array)$launchAcceptance['warnings'] as $warning): ?>
+                            <p><?= htmlspecialchars((string)$warning, ENT_QUOTES, 'UTF-8') ?></p>
+                          <?php endforeach; ?>
+                        </div>
+                      <?php endif; ?>
+                    </div>
+                    <footer class="modal-foot">
+                      <button type="button" class="admin-checkout-btn btn-cancel-modal" data-modal-close>Закрыть</button>
+                    </footer>
+                  </div>
+                </dialog>
+                <!-- (Files / Brand / Fonts / Colors moved to modals above — Phase 17) -->
+                
             </section>
         </div>
 
@@ -1132,6 +1312,7 @@ $savedDbFontsJson = htmlspecialchars(
     <script src="/js/admin-menu-filters.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/admin-image-picker.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/admin-menu-modal.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/admin-design-modals.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/hotkeys.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/security.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/cart.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>

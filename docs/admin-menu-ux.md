@@ -23,6 +23,37 @@
 - New: [api/save-menu-item.php](../api/save-menu-item.php), [js/admin-menu-modal.js](../js/admin-menu-modal.js), [js/admin-image-picker.js](../js/admin-image-picker.js), [css/admin-menu-modal.css](../css/admin-menu-modal.css), [images/icons/dish-placeholder.svg](../images/icons/dish-placeholder.svg).
 - Modified: [admin/menu.php](../admin/menu.php) (modal markup, table thumb + inline-price classes, button replacements, removed inline editor), [js/admin-modifiers.js](../js/admin-modifiers.js) (public init API), [js/admin-recipe.js](../js/admin-recipe.js) (public init API), [js/admin-menu-page.js](../js/admin-menu-page.js) (inline-price handler), [db.php](../db.php) (`addMenuItem` returns id).
 
+### Phase 17 — Дизайн tab modal-editor overhaul (v2.2.0, 2026-05-05)
+
+Раньше таб «Дизайн» был один длинный scroll: Project name → Files browser → Brand (13 inputs) → Fonts → Colors (12 пикеров) → Save buttons. На мобильном — 4-5 экранов прокрутки. Phase 17 разбивает это на 5 plate-карточек:
+
+- **🏷️ Бренд** — модалка с 3 sub-tabs (Identity / Контакты / Домен) + side-rail live preview карточки бренда (logo + название + слоган + телефон + адрес + map-link). Reuses `/api/save/brand.php`.
+- **Aa Шрифты** — модалка с 3 selects + override-checkboxes; side-rail показывает 3 строки в выбранных шрифтах (Логотип / Текст / Заголовок). Reuses `/api/save/fonts.php`.
+- **■ Цвета** — модалка с 4 preset palette swatches («Классический / Тёмный / Свежий / Свой»), 3 ключевых цвета (Primary/Secondary/Accent) видны сразу, остальные 9 в `<details>` «Дополнительные цвета». Side-rail — палитра + sample card. Click preset → все 12 пикеров обновляются. Manual edit → active swatch становится «Свой». Reuses `/api/save/colors.php`.
+- **📁 Файлы** — модалка с browse Images/Fonts/Icons, file list, upload. Markup перенесён 1-в-1, file-manager.min.js handlers работают по тем же IDs.
+- **🚀 Launch readiness** — read-only modal с checklist (OK/Check badges).
+
+«Название проекта» остаётся inline над plates — это 1-line input, не нуждается в модалке.
+
+**Plate status-summary:**
+- Бренд → «labus · Меню ресторана» + warning-dot если launch checklist нашёл проблемы.
+- Шрифты → «Magistral · Proxima · Inter».
+- Цвета → primary hex + плитка-иконка с linear-gradient двух цветов (primary+accent) через JS-set CSS-vars.
+- Файлы → «Images · Fonts · Icons».
+- Launch → «N предупреждений» / «Всё в порядке».
+
+Summary-spans обновляются через JS после каждого save без reload.
+
+**Reuse:**
+- Phase 16 `<dialog>` shell + FocusTrap + `[data-modal-close]` паттерн.
+- `tenantLaunchAudit()` (lib/tenant/launch-contract.php) рендерит checklist дважды — на plate (count) и в Launch modal (full list).
+- Все save-endpoints без изменений: `/api/save/brand.php`, `/api/save/fonts.php`, `/api/save/colors.php`, `/api/save/project-name.php`.
+
+**CSP-cleanliness:**
+- 0 inline `style="..."` атрибутов.
+- 0 inline event-handlers.
+- Plate icon swatch + preset swatches рендерятся через JS из `data-color-primary`/`data-color-accent`/`COLOR_PRESETS` (CSS-variables через `element.style.setProperty()`).
+
 ### Phase 16.2 — mobile fixes (v2.1.2, 2026-05-04)
 
 - **Tabs скрывались на mobile.** Modal-card имел `grid-template-rows: auto 1fr auto` — 3 явных строки для 4 детей (head, tabs, body, foot). Body уходил в неявную auto-row и брал всю высоту контента; tabs (1fr) сжимались до ~10px. Исправлено: `grid-template-rows: auto auto 1fr auto` — body становится scroll-container, tabs всегда видны.
