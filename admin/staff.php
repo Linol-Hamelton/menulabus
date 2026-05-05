@@ -54,6 +54,7 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/admin-staff.css?v=<?= htmlspecialchars($appVersion) ?>">
+    <link rel="stylesheet" href="/css/mobile-polish.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion) ?>">
 </head>
 <body class="admin-page account-page"
@@ -313,5 +314,6 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
     <script src="/js/app.min.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/admin-staff.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/admin-staff-swaps.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/mobile-tabs-scroll.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
 </body>
 </html>

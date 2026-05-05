@@ -2,8 +2,22 @@
 
 ## Implementation Status
 
-- Status: `Partial`
-- Last reviewed: `2026-04-27`
+- Status: `Partial · Phase 18 mobile pass shipped 2026-05-05`
+- Last reviewed: `2026-05-05`
+
+## Phase 18 — mobile pass для аккаунт-страниц (v2.3.0, 2026-05-05)
+
+MCP audit на 360px viewport обнаружил серьёзный overflow на `/account.php`, `/owner.php`, `/help.php` и `/admin/staff.php` — содержимое выходило за viewport, скрыто из-за `body { overflow-x: hidden }`. Решение — единый `css/mobile-polish.css` с `@media (max-width: 768px)`:
+
+- Принудительный `box-sizing: border-box; max-width: 100vw` на `.account-section` / `.account-container` (контент не вылезает).
+- `.menu-tabs` → horizontal-scroll lane с `mask-image` fade-edge gradient вместо переноса; scroll-snap.
+- `staff-shifts-table` и `staff-swap-table` (7 колонок) → стек карточек: `display: block` на table/tbody/tr/td, лейблы через `:nth-child::before`. Inputs full-width.
+- `section-header-nav-actions` → 2-col grid.
+- `staff-filter`, `staff-tips-form`, `owner-reports/period` grids → 1-col flex.
+
+Новый `js/mobile-tabs-scroll.js` auto-centres active tab on load для длинных tab-strips (Owner 6 / Help 6 tabs).
+
+Подключено в 4 страницах через `<link>`+`<script>`. Без правок в backend / БД.
 - Verified against published pages: `https://menu.labus.pro/`, `https://test.milyidom.com/`, `https://test.milyidom.com/menu.php`
 - Current implementation notes:
   - Provider and tenant public UX are now clearly split.

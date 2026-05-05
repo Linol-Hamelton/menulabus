@@ -1,0 +1,345 @@
+/* css/mobile-polish.css — Phase 18 mobile pass for /account.php, /owner.php,
+ * /help.php and /admin/staff.php.
+ *
+ * MCP audit on viewport 375 (browser shrank to 360 due to DPR) found:
+ *   - .account-section width up to 781px on /admin/staff.php → клипалось
+ *   - .menu-tabs (4-6 tabs) overflow horizontally
+ *   - shifts-table 7-col не помещалось
+ *   - owner.php reports/period 2-col grid pad-overlap
+ *
+ * Strategy:
+ *   1) Force every .account-section / .account-container to box-sizing:border-box
+ *      and full viewport width with safe gutter on phones.
+ *   2) Convert .menu-tabs from flex-wrap into horizontal-scroll lane with
+ *      hidden scrollbar + fade-edge gradient indicator.
+ *   3) Convert .staff-shifts-table and .staff-swap-table from desktop tables
+ *      to stacked cards (one row = one card) with column labels via :nth-child
+ *      ::before — no markup changes needed.
+ *   4) Stack owner.php "Срезы и метрики" / "Период" cards into a single column
+ *      so they stop overlapping.
+ *   5) Smaller font + padding tweaks for cramped mobile real estate.
+ */
+
+@media (max-width: 768px) {
+
+  /* ===== Universal containment ============================================ */
+  body.account-page,
+  body.admin-page,
+  body.owner-page,
+  body.help-page,
+  body.customer_orders-page,
+  body.employee-page {
+    overflow-x: hidden;
+  }
+
+  body.account-page .account-container,
+  body.admin-page .account-container,
+  body.owner-page .account-container,
+  body.help-page .account-container,
+  body.customer_orders-page .account-container,
+  body.employee-page .account-container {
+    box-sizing: border-box;
+    max-width: 100vw;
+    width: 100%;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  body.account-page .account-section,
+  body.admin-page .account-section,
+  body.owner-page .account-section,
+  body.help-page .account-section,
+  body.customer_orders-page .account-section,
+  body.employee-page .account-section {
+    box-sizing: border-box;
+    max-width: 100%;
+    width: 100%;
+    padding: 16px;
+  }
+
+  /* ===== Tabs: horizontal scroll lane with fade-edge ===================== */
+  body.account-page .menu-tabs-container,
+  body.admin-page .menu-tabs-container,
+  body.owner-page .menu-tabs-container,
+  body.help-page .menu-tabs-container,
+  body.customer_orders-page .menu-tabs-container,
+  body.employee-page .menu-tabs-container {
+    position: relative;
+    overflow: visible !important;
+    max-width: 100%;
+  }
+
+  body.account-page .menu-tabs,
+  body.admin-page .menu-tabs,
+  body.owner-page .menu-tabs,
+  body.help-page .menu-tabs,
+  body.customer_orders-page .menu-tabs,
+  body.employee-page .menu-tabs {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    /* Allow fade-edge to show beyond container right edge */
+    padding-right: 24px !important;
+    mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 24px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 24px), transparent 100%);
+  }
+
+  body.account-page .menu-tabs::-webkit-scrollbar,
+  body.admin-page .menu-tabs::-webkit-scrollbar,
+  body.owner-page .menu-tabs::-webkit-scrollbar,
+  body.help-page .menu-tabs::-webkit-scrollbar,
+  body.customer_orders-page .menu-tabs::-webkit-scrollbar,
+  body.employee-page .menu-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  body.account-page .menu-tabs .tab-btn,
+  body.admin-page .menu-tabs .tab-btn,
+  body.owner-page .menu-tabs .tab-btn,
+  body.help-page .menu-tabs .tab-btn,
+  body.customer_orders-page .menu-tabs .tab-btn,
+  body.employee-page .menu-tabs .tab-btn {
+    flex: 0 0 auto !important;
+    scroll-snap-align: start;
+    white-space: nowrap;
+  }
+
+  /* ===== Account-header-bar nav (Заказы / Кухня / ...) =================== */
+  body.account-page .section-header-nav-actions,
+  body.admin-page .section-header-nav-actions,
+  body.owner-page .section-header-nav-actions,
+  body.help-page .section-header-nav-actions,
+  body.customer_orders-page .section-header-nav-actions,
+  body.employee-page .section-header-nav-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  body.account-page .section-header-nav-actions .back-to-menu-btn,
+  body.admin-page .section-header-nav-actions .back-to-menu-btn,
+  body.owner-page .section-header-nav-actions .back-to-menu-btn,
+  body.help-page .section-header-nav-actions .back-to-menu-btn,
+  body.customer_orders-page .section-header-nav-actions .back-to-menu-btn,
+  body.employee-page .section-header-nav-actions .back-to-menu-btn {
+    margin: 0;
+    text-align: center;
+    justify-content: center;
+    padding: 9px 12px;
+    font-size: 0.92rem;
+  }
+
+  /* ===== owner.php — Reports/period two-col grid → single col ============ */
+  body.owner-page .owner-analytics-grid,
+  body.owner-page .owner-reports-grid,
+  body.owner-page .owner-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* The "Срезы и метрики" + "Период" cards on /owner.php?tab=stats stack */
+  body.owner-page .owner-reports-shell,
+  body.owner-page .owner-period-shell,
+  body.owner-page .owner-section-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  /* ===== help.php tab list (Персонал / Администратор / ... 6 tabs) ======= */
+  body.help-page .menu-tabs {
+    /* same horizontal-scroll behaviour applied above */
+  }
+
+  /* ===== /admin/staff.php — shifts table → stacked cards ================= */
+  body.admin-page .staff-shifts-table {
+    border: 0;
+    background: transparent;
+  }
+
+  body.admin-page .staff-shifts-table thead {
+    display: none;
+  }
+
+  body.admin-page .staff-shifts-table,
+  body.admin-page .staff-shifts-table tbody,
+  body.admin-page .staff-shifts-table tr,
+  body.admin-page .staff-shifts-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  body.admin-page .staff-shifts-table tr {
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: 14px;
+    margin-bottom: 12px;
+    padding: 12px;
+  }
+
+  body.admin-page .staff-shifts-table tr.staff-new-row {
+    background: var(--ui-divider, #f9fafb);
+    border-style: dashed;
+  }
+
+  body.admin-page .staff-shifts-table td {
+    padding: 6px 0;
+    border: 0;
+  }
+
+  body.admin-page .staff-shifts-table td::before {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--light-text, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+
+  body.admin-page .staff-shifts-table td:nth-child(1)::before { content: "ID"; }
+  body.admin-page .staff-shifts-table td:nth-child(2)::before { content: "Сотрудник"; }
+  body.admin-page .staff-shifts-table td:nth-child(3)::before { content: "Роль"; }
+  body.admin-page .staff-shifts-table td:nth-child(4)::before { content: "Начало"; }
+  body.admin-page .staff-shifts-table td:nth-child(5)::before { content: "Конец"; }
+  body.admin-page .staff-shifts-table td:nth-child(6)::before { content: "Комментарий"; }
+  body.admin-page .staff-shifts-table td:nth-child(7)::before { content: "Действия"; }
+
+  body.admin-page .staff-shifts-table input,
+  body.admin-page .staff-shifts-table select {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  body.admin-page .staff-shifts-table td:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  body.admin-page .staff-shifts-table td:last-child::before {
+    margin-bottom: 0;
+  }
+
+  /* ===== /admin/staff.php — swap table → stacked cards =================== */
+  body.admin-page .staff-swap-table {
+    border: 0;
+    background: transparent;
+  }
+
+  body.admin-page .staff-swap-table thead {
+    display: none;
+  }
+
+  body.admin-page .staff-swap-table,
+  body.admin-page .staff-swap-table tbody,
+  body.admin-page .staff-swap-table tr,
+  body.admin-page .staff-swap-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  body.admin-page .staff-swap-table tr {
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: 14px;
+    margin-bottom: 12px;
+    padding: 12px;
+  }
+
+  body.admin-page .staff-swap-table td {
+    padding: 6px 0;
+    border: 0;
+  }
+
+  body.admin-page .staff-swap-table td::before {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--light-text, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+
+  body.admin-page .staff-swap-table td:nth-child(1)::before { content: "#"; }
+  body.admin-page .staff-swap-table td:nth-child(2)::before { content: "Кто просит"; }
+  body.admin-page .staff-swap-table td:nth-child(3)::before { content: "Смена"; }
+  body.admin-page .staff-swap-table td:nth-child(4)::before { content: "Волонтёр"; }
+  body.admin-page .staff-swap-table td:nth-child(5)::before { content: "Комментарий"; }
+  body.admin-page .staff-swap-table td:nth-child(6)::before { content: "Действия"; }
+
+  body.admin-page .staff-swap-table td:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  body.admin-page .staff-swap-table td:last-child::before {
+    margin-bottom: 0;
+  }
+
+  /* ===== /admin/staff.php — filter form 1-col ============================ */
+  body.admin-page .staff-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  body.admin-page .staff-filter label,
+  body.admin-page .staff-filter input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  body.admin-page .staff-filter button {
+    align-self: flex-start;
+  }
+
+  /* ===== /admin/staff.php — tips form 1-col ============================== */
+  body.admin-page .staff-tips-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  body.admin-page .staff-tips-form label,
+  body.admin-page .staff-tips-form input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* ===== Long URLs / code blocks shouldn't push parent =================== */
+  body.account-page .account-section code,
+  body.admin-page .account-section code,
+  body.owner-page .account-section code,
+  body.help-page .account-section code {
+    word-break: break-all;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* ===== Smaller phones (≤ 380px) — extra polish ========================== */
+@media (max-width: 380px) {
+
+  body.account-page .account-section,
+  body.admin-page .account-section,
+  body.owner-page .account-section,
+  body.help-page .account-section {
+    padding: 14px;
+  }
+
+  body.account-page .menu-tabs .tab-btn,
+  body.admin-page .menu-tabs .tab-btn,
+  body.owner-page .menu-tabs .tab-btn,
+  body.help-page .menu-tabs .tab-btn {
+    font-size: 14px;
+    padding: 8px 14px;
+    min-height: 36px;
+  }
+}

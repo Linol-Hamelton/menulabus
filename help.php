@@ -19,6 +19,7 @@ $canOpenOwner = $role === 'owner';
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= $appVersion ?>">
+    <link rel="stylesheet" href="/css/mobile-polish.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= $appVersion ?>">
     <title>Центр помощи | <?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?></title>
 </head>
@@ -319,6 +320,7 @@ $canOpenOwner = $role === 'owner';
             </div>
         </section>
     </div>
+    <script src="/js/mobile-tabs-scroll.js?v=<?= $appVersion ?>" defer nonce="<?= $scriptNonce ?>"></script>
 </body>
 
 </html>
