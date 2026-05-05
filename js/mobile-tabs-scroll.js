@@ -13,8 +13,24 @@
 (function () {
   'use strict';
 
-  if (window.matchMedia && !window.matchMedia('(max-width: 768px)').matches) {
-    // Only run on mobile viewports — desktop tabs already wrap normally.
+  var isMobile = function () {
+    return !!(window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+  };
+
+  // helpactivetabchange — fired by /js/help-page.js when scroll-spy moves
+  // .tab-btn.active in the bottom-dock. Re-centre the new active tab in
+  // the horizontal-scroll lane on mobile so users always see "you are here".
+  document.addEventListener('helpactivetabchange', function (event) {
+    if (!isMobile()) return;
+    var tab = event && event.detail && event.detail.tab;
+    if (!tab) return;
+    var container = tab.closest('.menu-tabs');
+    if (container) scrollActiveIntoView(container);
+  });
+
+  if (!isMobile()) {
+    // Only the page-load auto-centre below is mobile-only — the event
+    // listener above is registered on every viewport but no-ops on desktop.
     return;
   }
 

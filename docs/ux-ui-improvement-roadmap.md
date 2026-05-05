@@ -2,8 +2,26 @@
 
 ## Implementation Status
 
-- Status: `Partial · Phase 18.2 help.php URL-token break shipped 2026-05-05`
+- Status: `Partial · Phase 19 help.php UX overhaul shipped 2026-05-05`
 - Last reviewed: `2026-05-05`
+
+## Phase 19 — /help.php UX overhaul (v2.4.0, 2026-05-05)
+
+`/help.php` was a single long scroll of 6 sections × ~6 cards = ~36 instructional cards, with a top `.menu-tabs` strip used as a TOC. Pain points: navigating from the bottom back to a section meant scrolling 4-5 screens up on mobile; the active tab was hardcoded on `#staff-helper` and never updated; finding a specific tip required visual scanning; and all 6 sections were visible to every role (employee saw owner-billing and admin-helper for no reason).
+
+Five-part overhaul, single atomic commit:
+
+1. **Bottom-docked TOC**: `<div class="menu-tabs">` was moved from the hero into a new `<nav class="menu-tabs-container help-tabs-dock">` placed after the last `<section>`. On `≤1024px` it picks up the existing fixed-bottom rules from `body.account-page .menu-tabs-container` in `ui-ux-polish.css` (Phase 9.2). On desktop it becomes a `position: sticky; bottom: 12px` floating bar with backdrop blur.
+2. **Scroll-spy via `IntersectionObserver`**: new `js/help-page.js` watches every `<section id>` (rootMargin `-30% 0 -60% 0`) and moves `.tab-btn.active` to whichever section is currently in the viewer's reading band. Emits `CustomEvent('helpactivetabchange')` so `js/mobile-tabs-scroll.js` re-centres the active tab in the horizontal-scroll lane on mobile.
+3. **Live text-filter** in the hero: `<input id="helpFilter">` filters `<li>` instructions by substring (Cyrillic-normalized: `ё→е`, debounced 120ms). Cards/sections with no visible items hide via the `[hidden]` attribute. Heading matches (`<h3>` / `<h2>`) re-show all children. `Escape` / × button clear; empty-state status uses `role="status"` + `aria-live="polite"`.
+4. **Role-based section visibility**: `$sectionsByRole` map at the top of `help.php`:
+   - `employee` → `staff-helper`, `menu-presentation` (2 tabs)
+   - `admin` → `staff-helper`, `admin-helper`, `operations-helper`, `menu-presentation` (4 tabs)
+   - `owner` → all 6 sections.
+   Each `<section id>` is wrapped in `<?php if (isset($visibleSections[id])): ?>`. Tabs render from `foreach ($visibleSections)` so the dock auto-syncs.
+5. **Smooth-scroll + offset**: `body.help-page { scroll-behavior: smooth }` (suppressed under `prefers-reduced-motion: reduce`); `section[id] { scroll-margin-top: 24px }` so anchor jumps don't bury the heading at the viewport edge.
+
+New files: `js/help-page.js`, `css/help-page.css`. No backend / DB / API changes.
 
 ## Phase 18.2 — help.php inline URL break-all (v2.3.2, 2026-05-05)
 

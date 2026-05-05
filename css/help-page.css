@@ -1,0 +1,218 @@
+/* /help.php — Phase 19 UX overhaul.
+ *
+ * Adds:
+ *  - bottom-dock clearance (the .menu-tabs-container is fixed-bottom on
+ *    ≤1024px via existing body.account-page rules in ui-ux-polish.css;
+ *    those rules excluded help-page from clearance because the old
+ *    help.php put tabs at the top — we re-enable clearance here);
+ *  - scroll-margin-top on every <section id> so anchor jumps don't bury
+ *    the heading under the (in-page) account-header;
+ *  - smooth-scroll behavior;
+ *  - .help-filter input + status styling;
+ *  - tiny per-page tweaks to .help-tabs-dock (the same .menu-tabs-container
+ *    used everywhere — we just brand-check it slightly).
+ *
+ * Existing patterns reused:
+ *   - .menu-tabs-container fixed-bottom positioning (account-styles.min.css,
+ *     ui-ux-polish.css L1449-1473)
+ *   - .menu-tabs flex/scroll lane (ui-ux-polish.css L1478-1504)
+ *   - .tab-btn / .tab-btn.active (account-styles.min.css L165-200)
+ *   - --bottom-tab-rail-clearance / --bottom-tab-rail-footprint tokens
+ *     (ui-ux-polish.css L1416)
+ *   - body.help-page mobile rules (mobile-polish.css)
+ */
+
+/* ===== Bottom-dock clearance (only matters where rail is fixed) ============ */
+@media (max-width: 1024px) {
+  body.help-page .account-container {
+    padding-bottom: max(32px, var(--bottom-tab-rail-clearance, 96px)) !important;
+  }
+
+  body.help-page .account-section:last-of-type {
+    padding-bottom: calc(var(--bottom-tab-rail-clearance, 96px) + 18px) !important;
+  }
+}
+
+body.help-page .account-container {
+  scroll-padding-bottom: calc(var(--bottom-tab-rail-clearance, 96px) + 18px);
+}
+
+/* ===== Smooth-scroll + section heading offset ============================= */
+body.help-page {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.help-page {
+    scroll-behavior: auto;
+  }
+}
+
+body.help-page .account-container > section[id] {
+  scroll-margin-top: 24px;
+}
+
+/* ===== Filter input in hero =============================================== */
+body.help-page .help-filter {
+  margin-top: 18px;
+  display: grid;
+  gap: 8px;
+}
+
+body.help-page .help-filter-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ui-text-muted, #666);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+body.help-page .help-filter-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+body.help-page .help-filter-input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 40px 10px 38px;
+  border: 1px solid var(--ui-border, rgba(18, 18, 18, 0.18));
+  border-radius: 12px;
+  background: var(--white, #fff);
+  color: var(--ui-text, #121212);
+  font-size: 15px;
+  line-height: 1.4;
+  box-sizing: border-box;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+body.help-page .help-filter-input::placeholder {
+  color: var(--ui-text-muted, #999);
+}
+
+body.help-page .help-filter-input:focus {
+  outline: none;
+  border-color: var(--ui-accent, #cd1719);
+  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb, 205, 23, 25), 0.12);
+}
+
+body.help-page .help-filter-input::-webkit-search-cancel-button {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+body.help-page .help-filter-input-wrap::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='8'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.85;
+}
+
+body.help-page .help-filter-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(18, 18, 18, 0.08);
+  color: var(--ui-text-muted, #555);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+}
+
+body.help-page .help-filter-clear:hover,
+body.help-page .help-filter-clear:focus-visible {
+  background: rgba(18, 18, 18, 0.16);
+  outline: none;
+}
+
+body.help-page .help-filter-status {
+  margin: 4px 0 0;
+  padding: 14px 16px;
+  background: var(--ui-surface-muted, #faf7f2);
+  border: 1px dashed var(--ui-border, rgba(18, 18, 18, 0.18));
+  border-radius: 10px;
+  color: var(--ui-text-muted, #555);
+  font-size: 14px;
+}
+
+body.help-page .help-filter-status .js-filter-q {
+  font-weight: 600;
+  color: var(--ui-text, #121212);
+}
+
+/* ===== Filter — visual feedback while filtered ============================ */
+body.help-page.is-filtering .account-section .admin-form-container[hidden],
+body.help-page.is-filtering .account-section li[hidden],
+body.help-page.is-filtering .account-container > section[hidden] {
+  display: none !important;
+}
+
+body.help-page.is-filtering .account-container > section[id] {
+  scroll-margin-top: 16px;
+}
+
+/* ===== Bottom-dock fine-tuning =========================================== */
+body.help-page .help-tabs-dock {
+  /* On mobile/tablet, the `.menu-tabs-container` rule from ui-ux-polish.css
+     already handles fixed-bottom positioning. On desktop, fall through to
+     the static inline behavior — the dock sits at the end of the content
+     stream below the last section. */
+}
+
+@media (min-width: 1025px) {
+  body.help-page .help-tabs-dock {
+    position: sticky;
+    bottom: 12px;
+    margin: 24px auto 0;
+    max-width: var(--shell-max-width, 1140px);
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--ui-border, rgba(18, 18, 18, 0.08));
+    border-radius: 16px;
+    box-shadow: 0 12px 30px rgba(18, 18, 18, 0.08);
+    padding: 8px 12px;
+    z-index: 50;
+  }
+
+  body.help-page .help-tabs-dock .menu-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    justify-content: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  body.help-page .help-tabs-dock .menu-tabs::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ===== Reduce vertical noise per-card on mobile (filter empty state) ====== */
+@media (max-width: 768px) {
+  body.help-page .help-filter {
+    margin-top: 14px;
+  }
+
+  body.help-page .help-filter-label {
+    font-size: 12px;
+  }
+}

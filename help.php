@@ -7,6 +7,29 @@ $appVersion = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
 $role = (string)($user['role'] ?? ($_SESSION['user_role'] ?? 'employee'));
 $canOpenAdmin = in_array($role, ['admin', 'owner'], true);
 $canOpenOwner = $role === 'owner';
+
+$sectionsByRole = [
+    'employee' => [
+        'staff-helper'      => 'Персонал',
+        'menu-presentation' => 'Возможности',
+    ],
+    'admin' => [
+        'staff-helper'      => 'Персонал',
+        'admin-helper'      => 'Администратор',
+        'operations-helper' => 'Операции',
+        'menu-presentation' => 'Возможности',
+    ],
+    'owner' => [
+        'staff-helper'      => 'Персонал',
+        'admin-helper'      => 'Администратор',
+        'owner-helper'      => 'Владелец',
+        'operations-helper' => 'Операции',
+        'billing-helper'    => 'Подписка',
+        'menu-presentation' => 'Возможности',
+    ],
+];
+$visibleSections = $sectionsByRole[$role] ?? $sectionsByRole['employee'];
+$firstSectionId  = (string)array_key_first($visibleSections);
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -20,6 +43,7 @@ $canOpenOwner = $role === 'owner';
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/css/mobile-polish.css?v=<?= $appVersion ?>">
+    <link rel="stylesheet" href="/css/help-page.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= $appVersion ?>">
     <title>Центр помощи | <?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?></title>
 </head>
@@ -48,13 +72,22 @@ $canOpenOwner = $role === 'owner';
                 </div>
             </div>
 
-            <div class="menu-tabs">
-                <a href="#staff-helper" class="tab-btn active">Персонал</a>
-                <a href="#admin-helper" class="tab-btn">Администратор</a>
-                <a href="#owner-helper" class="tab-btn">Владелец</a>
-                <a href="#operations-helper" class="tab-btn">Операции</a>
-                <a href="#billing-helper" class="tab-btn">Подписка</a>
-                <a href="#menu-presentation" class="tab-btn">Возможности</a>
+            <div class="help-filter">
+                <label for="helpFilter" class="help-filter-label">Поиск по разделам помощи</label>
+                <div class="help-filter-input-wrap">
+                    <input
+                        type="search"
+                        id="helpFilter"
+                        class="help-filter-input"
+                        placeholder="Найти в помощи… (например: «замена смены», «оплата», «KDS»)"
+                        autocomplete="off"
+                        spellcheck="false"
+                    >
+                    <button type="button" class="help-filter-clear" id="helpFilterClear" hidden aria-label="Очистить поиск">×</button>
+                </div>
+                <p class="help-filter-status" id="helpFilterStatus" hidden role="status" aria-live="polite">
+                    Ничего не найдено по «<span class="js-filter-q"></span>». Попробуйте короче или другое слово.
+                </p>
             </div>
         </section>
 
@@ -112,6 +145,7 @@ $canOpenOwner = $role === 'owner';
             </div>
         </section>
 
+        <?php if (isset($visibleSections['admin-helper'])): ?>
         <section class="account-section" id="admin-helper">
             <h2>Хелпер для администратора</h2>
             <div class="admin-form-container">
@@ -158,7 +192,9 @@ $canOpenOwner = $role === 'owner';
                 </ul>
             </div>
         </section>
+        <?php endif; ?>
 
+        <?php if (isset($visibleSections['owner-helper'])): ?>
         <section class="account-section" id="owner-helper">
             <h2>Хелпер для владельца</h2>
             <div class="admin-form-container">
@@ -189,7 +225,9 @@ $canOpenOwner = $role === 'owner';
                 </ul>
             </div>
         </section>
+        <?php endif; ?>
 
+        <?php if (isset($visibleSections['operations-helper'])): ?>
         <section class="account-section" id="operations-helper">
             <h2>Операционный хелпер</h2>
 
@@ -231,7 +269,9 @@ $canOpenOwner = $role === 'owner';
                 </ul>
             </div>
         </section>
+        <?php endif; ?>
 
+        <?php if (isset($visibleSections['billing-helper'])): ?>
         <section class="account-section" id="billing-helper">
             <h2>Подписка на платформу</h2>
 
@@ -266,6 +306,7 @@ $canOpenOwner = $role === 'owner';
                 </ul>
             </div>
         </section>
+        <?php endif; ?>
 
         <section class="account-section" id="menu-presentation">
             <h2>Презентация возможностей меню</h2>
@@ -321,7 +362,21 @@ $canOpenOwner = $role === 'owner';
             </div>
         </section>
     </div>
+
+    <nav class="menu-tabs-container help-tabs-dock" aria-label="Разделы помощи">
+        <div class="menu-tabs">
+            <?php foreach ($visibleSections as $sectionId => $sectionLabel): ?>
+                <a
+                    href="#<?= htmlspecialchars($sectionId) ?>"
+                    class="tab-btn<?= $sectionId === $firstSectionId ? ' active' : '' ?>"
+                    data-help-tab
+                ><?= htmlspecialchars($sectionLabel) ?></a>
+            <?php endforeach; ?>
+        </div>
+    </nav>
+
     <script src="/js/mobile-tabs-scroll.js?v=<?= $appVersion ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/help-page.js?v=<?= $appVersion ?>" defer nonce="<?= $scriptNonce ?>"></script>
 </body>
 
 </html>
