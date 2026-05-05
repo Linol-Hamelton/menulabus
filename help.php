@@ -127,9 +127,10 @@ $canOpenOwner = $role === 'owner';
             <div class="admin-form-container">
                 <h3>Бренд и витрина</h3>
                 <ul>
-                    <li>В <a href="/owner.php?tab=brand">/owner.php?tab=brand</a> сосредоточены бренд, логотип, favicon, шрифты и цвета.</li>
-                    <li>Поле «Ссылка на карту» отвечает только за кнопку «Приехать», а поле «Адрес» отвечает за видимый текст адреса.</li>
-                    <li>Если карта не нужна, оставляйте «Ссылка на карту» пустой: публичная кнопка не появится.</li>
+                    <li>В <a href="/admin/menu.php?tab=design">/admin/menu.php → таб «Дизайн»</a> собраны 5 модальных редакторов: 🏷️ Бренд, Aa Шрифты, ■ Цвета, 📁 Файлы, 🚀 Launch readiness. Кликаете плитку — открывается модалка с edit-формой и live-preview.</li>
+                    <li>В модалке «Бренд» — 3 sub-tabs: <strong>Identity</strong> (имя, слоган, описание, логотип, favicon), <strong>Контакты</strong> (телефон, адрес, ссылка на карту, Telegram, VK, Google review) и <strong>Домен</strong> (custom domain + public entry mode + checklist готовности к запуску).</li>
+                    <li>Поле «Ссылка на карту» отвечает только за кнопку «Приехать»; поле «Адрес» отвечает за видимый текст адреса. Если карта не нужна — оставьте «Ссылка на карту» пустой, кнопка не появится.</li>
+                    <li>В модалке «Цвета» — 4 готовых пресета (Классический / Тёмный / Свежий / Свой) + 3 ключевых цвета (Primary / Secondary / Accent) + collapsed advanced на 9 переменных. Click preset → все 12 цветов перекрашиваются.</li>
                     <li>Если включён white-label режим, проверяйте tenant homepage и public menu на отсутствие provider-смыслов.</li>
                 </ul>
             </div>

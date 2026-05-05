@@ -2,8 +2,23 @@
 
 ## Implementation Status
 
-- Status: `Partial · Phase 18 mobile pass shipped 2026-05-05`
+- Status: `Partial · Phase 18.1 help.php fix shipped 2026-05-05`
 - Last reviewed: `2026-05-05`
+
+## Phase 18.1 — help.php nested overflow + контент-актуализация (v2.3.1, 2026-05-05)
+
+Follow-up по Phase 18: на `/help.php` mobile 360px блок `<section id="staff-helper">` всё ещё уходил за правый край viewport. Корень — Phase 18 покрыл `.account-section` и `.account-container`, но **не** трогал `.admin-form-container` (sub-card внутри section). У этого контейнера остался desktop-padding/max-width, плюс `<ol>/<ul>` рендерились с дефолтным `padding-left: 40px` — комбинация выжимала текст за viewport на 360px.
+
+Фикс в `css/mobile-polish.css` (universal на 6 страниц body-классов):
+
+- `.account-section .admin-form-container` → `box-sizing: border-box; max-width: 100%; padding: 14px; margin: 12px 0 0` (first-of-type → margin-top 0).
+- `body.help-page .account-section ol/ul` → `padding-left: 22px` (вместо 40px), `<li>` → `margin-bottom: 8px; line-height: 1.4`.
+- `<h2>/<h3>` → `overflow-wrap: anywhere` для длинных слов.
+
+Параллельно — content actualization `/help.php`:
+
+- Устаревшая ссылка `/owner.php?tab=brand` (Phase 17 удалил эту вкладку) → `/admin/menu.php?tab=design`.
+- Добавлено описание Phase 17 plate-UX: 5 модальных редакторов (🏷️Бренд / Aa Шрифты / ■Цвета / 📁Файлы / 🚀Launch), 3 sub-tabs Brand modal (Identity / Контакты / Домен), 4 color presets (Классический / Тёмный / Свежий / Свой) + collapsed advanced на 9 переменных.
 
 ## Phase 18 — mobile pass для аккаунт-страниц (v2.3.0, 2026-05-05)
 

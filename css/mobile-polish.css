@@ -57,6 +57,55 @@
     padding: 16px;
   }
 
+  /* Nested .admin-form-container blocks (used in /help.php as inner sub-cards
+     within a .account-section) get their own desktop max-width / padding
+     that pushes content past the viewport on phones. Force them flat. */
+  body.account-page .account-section .admin-form-container,
+  body.admin-page .account-section .admin-form-container,
+  body.owner-page .account-section .admin-form-container,
+  body.help-page .account-section .admin-form-container,
+  body.customer_orders-page .account-section .admin-form-container,
+  body.employee-page .account-section .admin-form-container {
+    box-sizing: border-box;
+    max-width: 100%;
+    width: 100%;
+    padding: 14px;
+    margin: 12px 0 0;
+  }
+
+  body.account-page .account-section .admin-form-container:first-of-type,
+  body.admin-page .account-section .admin-form-container:first-of-type,
+  body.owner-page .account-section .admin-form-container:first-of-type,
+  body.help-page .account-section .admin-form-container:first-of-type,
+  body.customer_orders-page .account-section .admin-form-container:first-of-type,
+  body.employee-page .account-section .admin-form-container:first-of-type {
+    margin-top: 0;
+  }
+
+  /* Ordered/unordered lists inside help cards: tame the default 40px
+     left indent that adds up to 80px combined with parent padding —
+     content gets pushed off the right edge on small phones. */
+  body.help-page .account-section ol,
+  body.help-page .account-section ul {
+    padding-left: 22px;
+    margin: 8px 0;
+  }
+
+  body.help-page .account-section li {
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  body.help-page .account-section li:last-child {
+    margin-bottom: 0;
+  }
+
+  body.help-page .account-section h2,
+  body.help-page .account-section h3 {
+    word-break: normal;
+    overflow-wrap: anywhere;
+  }
+
   /* ===== Tabs: horizontal scroll lane with fade-edge ===================== */
   body.account-page .menu-tabs-container,
   body.admin-page .menu-tabs-container,

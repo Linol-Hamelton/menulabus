@@ -1,6 +1,6 @@
 {
-  "version": "2.3.0",
+  "version": "2.3.1",
   "release_date": "2026-05-05",
-  "changelog": "Phase 18 — mobile pass для /account.php, /owner.php, /help.php, /admin/staff.php. Новый css/mobile-polish.css содержит универсальный @media (max-width: 768px) блок: (1) принудительный box-sizing+max-width на все .account-section/.account-container — содержимое больше не выходит за viewport; (2) .menu-tabs стали horizontal-scroll lane с fade-edge mask-image вместо wrap, scroll-snap; (3) staff-shifts-table и staff-swap-table развёрнуты в карточки (1 строка = 1 card) через :nth-child::before лейблы; (4) section-header-nav-actions теперь 2-col grid; (5) staff-filter / staff-tips-form в 1 колонку; (6) owner reports/period grid → 1 col. Новый js/mobile-tabs-scroll.js auto-scrolls active tab в view при load. Все 4 страницы получили <link> + <script>. Фокус: эстетика + интуитивность + 0 overflow за viewport.",
+  "changelog": "Phase 18.1 — fix /help.php mobile overflow + content actualization. CSS: nested .admin-form-container внутри .account-section получили box-sizing/max-width/padding-14 — раньше desktop-padding пушил содержимое за правый край viewport на mobile. <ol>/<ul> на help-page получили padding-left: 22px (вместо default 40px) — list-content больше не уходил за экран на 360px. Контент: устаревшая ссылка /owner.php?tab=brand → /admin/menu.php?tab=design (Phase 17 модальные редакторы Дизайн), добавлено описание 5 plates (🏷️Бренд / Aa Шрифты / ■Цвета / 📁Файлы / 🚀Launch), 3 sub-tabs Brand modal (Identity/Контакты/Домен) и 4 color presets (Классический/Тёмный/Свежий/Свой) + collapsed advanced.",
   "critical": false
 }
