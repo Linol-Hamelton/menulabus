@@ -94,14 +94,28 @@
   body.help-page .account-section li {
     margin-bottom: 8px;
     line-height: 1.4;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   body.help-page .account-section li:last-child {
     margin-bottom: 0;
   }
 
+  /* URLs/code rendered inline (e.g. /owner.php?tab=billing) are atomic
+     unbreakable tokens by default — they push the grid track wider than
+     the viewport on phones. Force them to break at any character. */
+  body.help-page .account-section li a,
+  body.help-page .account-section li code,
+  body.help-page .account-section p a,
+  body.help-page .account-section p code {
+    word-break: break-all;
+    overflow-wrap: anywhere;
+  }
+
   body.help-page .account-section h2,
-  body.help-page .account-section h3 {
+  body.help-page .account-section h3,
+  body.help-page .account-section p {
     word-break: normal;
     overflow-wrap: anywhere;
   }

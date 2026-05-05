@@ -2,8 +2,22 @@
 
 ## Implementation Status
 
-- Status: `Partial · Phase 18.1 help.php fix shipped 2026-05-05`
+- Status: `Partial · Phase 18.2 help.php URL-token break shipped 2026-05-05`
 - Last reviewed: `2026-05-05`
+
+## Phase 18.2 — help.php inline URL break-all (v2.3.2, 2026-05-05)
+
+MCP verify после Phase 18.1 показал: `body.scrollWidth = 454` при `viewport = 360` (clipped через `body { overflow-x: hidden }`, поэтому визуально не торчит — но логически блок всё ещё «выходит за границы экрана»).
+
+Root cause: внутри `<li>` есть inline-ссылки вроде `<a href="/owner.php?tab=billing">/owner.php?tab=billing</a>`. Текст ссылки — один атомарный токен без пробелов; ни `word-break: normal`, ни default `overflow-wrap` его не разрывают. Min-content такого `<li>` ≈ 337px. Поскольку `.account-container` — `display: grid` с auto-track, эта 337px-ширина каскадирует через `<ol>` (337+22=359) → `.admin-form-container` (359+28=388) → `.account-section` (388+36=425) → grid-track контейнера тоже становится 425px. **Все 7 sections на странице** наследуют эту ширину, не только тот, где живёт URL.
+
+Фикс — universal на body.help-page mobile (max-width: 768px):
+
+- `<li>` → `overflow-wrap: anywhere; word-break: break-word;`
+- `<a>` / `<code>` внутри `<li>`, `<p>` → `word-break: break-all; overflow-wrap: anywhere;`
+- `<p>` → тот же `overflow-wrap: anywhere`.
+
+Теперь URL рендерятся с переносом по любому символу — min-content sections падает в нормальный диапазон, grid-track сжимается, `body.scrollWidth ≤ viewport`.
 
 ## Phase 18.1 — help.php nested overflow + контент-актуализация (v2.3.1, 2026-05-05)
 

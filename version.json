@@ -1,6 +1,6 @@
 {
-  "version": "2.3.1",
+  "version": "2.3.2",
   "release_date": "2026-05-05",
-  "changelog": "Phase 18.1 — fix /help.php mobile overflow + content actualization. CSS: nested .admin-form-container внутри .account-section получили box-sizing/max-width/padding-14 — раньше desktop-padding пушил содержимое за правый край viewport на mobile. <ol>/<ul> на help-page получили padding-left: 22px (вместо default 40px) — list-content больше не уходил за экран на 360px. Контент: устаревшая ссылка /owner.php?tab=brand → /admin/menu.php?tab=design (Phase 17 модальные редакторы Дизайн), добавлено описание 5 plates (🏷️Бренд / Aa Шрифты / ■Цвета / 📁Файлы / 🚀Launch), 3 sub-tabs Brand modal (Identity/Контакты/Домен) и 4 color presets (Классический/Тёмный/Свежий/Свой) + collapsed advanced.",
+  "changelog": "Phase 18.2 — корневой fix overflow на /help.php (виден через body.scrollWidth=454 при viewport=360). Реальный root cause: URL-like text вроде /owner.php?tab=billing внутри <a> в <li> рендерится как один атомарный неразрывный токен (~337px wide) → min-content section grid track раздувается до 425px → ВСЕ section на странице наследуют эту ширину через .account-container grid-template-columns. Body overflow-x:hidden только маскировал проблему. Фикс — на mobile (max-width: 768px) для body.help-page: <li> получили overflow-wrap: anywhere + word-break: break-word, <a>/<code> внутри <li>/<p> → word-break: break-all + overflow-wrap: anywhere, чтобы URL дробились в любом месте. Теперь все sections fit в parent .account-container.",
   "critical": false
 }
