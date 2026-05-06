@@ -2,8 +2,14 @@
 
 ## Implementation Status
 
-- Status: `Partial · Phase 19 help.php UX overhaul shipped 2026-05-05`
-- Last reviewed: `2026-05-05`
+- Status: `Partial · Phase 19.1 help.php desktop dock fix shipped 2026-05-06`
+- Last reviewed: `2026-05-06`
+
+## Phase 19.1 — /help.php desktop dock не sticky'ил (v2.4.1, 2026-05-06)
+
+MCP-verify Phase 19 на desktop 1280 показал: `.help-tabs-dock` рендерился как `position: static`, не как `sticky`. Причина — в `ui-ux-polish.css` есть unconditional baseline `body.account-page .menu-tabs-container { position: static !important }` (применяется на всех viewport'ах кроме mobile, где другая `@media (max-width: 1024px)` перебивает на `fixed !important`). Мой Phase 19 `position: sticky` без `!important` проигрывал.
+
+Фикс: каждая декларация в desktop-блоке `@media (min-width: 1025px) body.help-page .help-tabs-dock { … }` теперь несёт `!important` (position, bottom, margin, max-width, background, border, box-shadow, padding, z-index, overflow). Внутренний `.menu-tabs` получил `!important`-ресеты для transparent-фон/0-border, чтобы не унаследовать mobile-style белой полосы. Mobile-путь не тронут и продолжает работать через существующие `body.account-page` правила.
 
 ## Phase 19 — /help.php UX overhaul (v2.4.0, 2026-05-05)
 
