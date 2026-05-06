@@ -221,6 +221,10 @@ Improve quality, clarity, and conversion without breaking the ordering engine or
 
 - critical visible cases are fixed
 - legacy Font Awesome usage still exists in some non-critical parts of the codebase and should not silently grow again
+- **inventory of remaining FA usages** (audit 2026-05-06):
+  - `onboarding.php` lines 81, 94, 109, 130, 138, 141, 148 — 7 icons (`fa-utensils`, `fa-image`, `fa-palette`, `fa-qrcode`, `fa-print`, `fa-download`, `fa-check-circle`). Page is seen only on first-launch wizard; low priority.
+  - migration to phosphor-sprite is blocked on adding 6 missing icons to `images/icons/phosphor-sprite.svg` (currently has 15 icons; needs `fork-knife`, `image`, `palette`, `qr-code`, `printer`, `check-circle` — `download-simple` already in sprite).
+  - **Phase 26 (deferred)** — once sprite is expanded with the 6 missing icons (one-time, ~30 min from Phosphor source), replace inline `<i class="fas fa-X"></i>` with `<svg><use href="...#icon"></use></svg>` pattern matching the rest of the codebase. Will allow unloading `fa-styles.min.css` from /onboarding.php and shrink page weight.
 
 ## Validation Metrics
 

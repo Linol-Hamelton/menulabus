@@ -56,6 +56,7 @@ $currentLogo      = json_decode($db->getSetting('logo_url') ?? '""', true) ?? ''
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?= htmlspecialchars($csrf, ENT_QUOTES) ?>">
     <title>Настройка ресторана</title>
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= $av ?>">
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= $av ?>">
@@ -157,66 +158,6 @@ $currentLogo      = json_decode($db->getSetting('logo_url') ?? '""', true) ?? ''
     </div>
 </div>
 
-<script nonce="<?= $scriptNonce ?>">
-const csrf = <?= json_encode($csrf) ?>;
-
-async function postBrand(data) {
-    return fetch('/api/save/brand.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-        body: JSON.stringify({ brand: data, csrf_token: csrf })
-    });
-}
-
-async function saveNameAndNext() {
-    const name = document.getElementById('restaurantName').value.trim();
-    if (!name) { document.getElementById('restaurantName').focus(); return; }
-    const btn = document.getElementById('nextBtn');
-    btn.textContent = '...'; btn.disabled = true;
-    try {
-        await postBrand({ app_name: name });
-        window.location.href = '?step=2';
-    } catch (e) { btn.textContent = 'Далее'; btn.disabled = false; }
-}
-
-async function saveLogoAndNext() {
-    const url = document.getElementById('obLogoUrl').value.trim();
-    const btn = document.getElementById('logoNextBtn');
-    btn.textContent = '...'; btn.disabled = true;
-    try {
-        if (url) await postBrand({ logo_url: url });
-        window.location.href = '?step=3';
-    } catch (e) { btn.textContent = 'Далее'; btn.disabled = false; }
-}
-
-async function saveColorsAndNext() {
-    const primary   = document.getElementById('obPrimaryColor')?.value   || '#cd1719';
-    const secondary = document.getElementById('obSecondaryColor')?.value || '#121212';
-    const btn = document.getElementById('colorsNextBtn');
-    btn.textContent = '...'; btn.disabled = true;
-    try {
-        await fetch('/api/save/colors.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-            body: JSON.stringify({
-                colors: { 'primary-color': primary, 'secondary-color': secondary },
-                csrf_token: csrf
-            })
-        });
-        window.location.href = '?step=4';
-    } catch (e) { btn.textContent = 'Сохранить и продолжить'; btn.disabled = false; }
-}
-
-document.getElementById('obLogoUrl')?.addEventListener('input', function() {
-    var img = document.getElementById('obLogoPreview');
-    if (!img) return;
-    if (this.value.trim()) { img.src = this.value; img.classList.add('visible'); }
-    else { img.classList.remove('visible'); }
-});
-
-document.getElementById('nextBtn')?.addEventListener('click', saveNameAndNext);
-document.getElementById('logoNextBtn')?.addEventListener('click', saveLogoAndNext);
-document.getElementById('colorsNextBtn')?.addEventListener('click', saveColorsAndNext);
-</script>
+<script src="/js/onboarding.js?v=<?= $av ?>" defer nonce="<?= $scriptNonce ?>"></script>
 </body>
 </html>

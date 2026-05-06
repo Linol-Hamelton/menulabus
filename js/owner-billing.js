@@ -24,12 +24,28 @@
         feedback.className = 'billing-action-feedback billing-action-feedback--' + (ok ? 'ok' : 'err');
     }
 
+    // Map common YK / network errors to user-friendly Russian messages.
+    function humanizeError(err) {
+        var msg = (err && err.message) || String(err);
+        if (msg === 'network_error') return 'Не удалось связаться с сервером — проверьте интернет и повторите.';
+        if (msg === 'bad_response')  return 'Сервер вернул некорректный ответ. Попробуйте ещё раз.';
+        if (/3ds.*timeout/i.test(msg)) return 'Истекло время подтверждения 3-D Secure. Попробуйте оформить ещё раз.';
+        if (/invalid.*token|card.*invalid/i.test(msg)) return 'Не удалось сохранить карту — попробуйте другую.';
+        if (/yookassa.*not.*configured|yookassa_not_configured/i.test(msg)) return 'YooKassa ещё не настроен. Свяжитесь с поддержкой.';
+        return 'Ошибка: ' + msg;
+    }
+
     async function call(action, payload) {
-        const resp = await fetch('/api/billing-action.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-            body: JSON.stringify(Object.assign({ action: action, csrf_token: csrf }, payload || {})),
-        });
+        let resp;
+        try {
+            resp = await fetch('/api/billing-action.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+                body: JSON.stringify(Object.assign({ action: action, csrf_token: csrf }, payload || {})),
+            });
+        } catch (e) {
+            throw new Error('network_error');
+        }
         const json = await resp.json().catch(() => ({ success: false, error: 'bad_response' }));
         if (!json.success) {
             throw new Error(json.message || json.error || 'unknown_error');
@@ -45,9 +61,10 @@
         showFeedback(true, 'Готовим страницу оплаты…');
         try {
             const json = await call('update_payment_method');
+            if (!json.paymentUrl) throw new Error('no_payment_url');
             window.location.href = json.paymentUrl;
         } catch (err) {
-            showFeedback(false, err.message);
+            showFeedback(false, humanizeError(err));
             btn.disabled = false;
         }
     });
@@ -64,7 +81,7 @@
                 await call('change_plan', { plan_id: newPlan });
                 window.location.reload();
             } catch (err) {
-                alert('Ошибка: ' + err.message);
+                showFeedback(false, humanizeError(err));
                 btn.disabled = false;
             }
         });
@@ -73,11 +90,14 @@
     // Cancel subscription
     document.getElementById('billingCancelBtn')?.addEventListener('click', async function () {
         if (!window.confirm('Отменить подписку? Доступ останется до конца оплаченного периода.')) return;
+        const btn = this;
+        btn.disabled = true;
         try {
             await call('cancel_subscription');
             window.location.reload();
         } catch (err) {
-            alert('Ошибка: ' + err.message);
+            showFeedback(false, humanizeError(err));
+            btn.disabled = false;
         }
     });
 
