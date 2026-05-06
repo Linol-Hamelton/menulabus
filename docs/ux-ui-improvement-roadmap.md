@@ -2,8 +2,25 @@
 
 ## Implementation Status
 
-- Status: `Partial · Phase 19.2 help.php specificity bump shipped 2026-05-06`
+- Status: `Partial · Phase 20 .section-header-menu cross-page identity shipped 2026-05-06`
 - Last reviewed: `2026-05-06`
+
+## Phase 20 — `.section-header-menu` cross-page identity (v2.5.0, 2026-05-06)
+
+Один и тот же DOM-блок из `account-header.php` (`<div class="section-header-menu">` с 2 quick-action иконками и 6 nav-кнопками) визуально отличался на `/admin/menu.php` vs `/owner.php`. MCP-замер на mobile 375 показал расхождение: admin button height 47px vs owner 43px, padding 10px 14px vs 9px 14px, font-size 16px vs 14.72px (0.92rem).
+
+Root cause — `css/admin-menu-polish.css` содержал **два** конфликтующих override-блока на `body.employee-page.admin-menu-page` для shared селекторов `.section-header-menu` / `.section-header-quick-actions` / `.section-header-nav-actions` / `.back-to-menu-btn`:
+
+- **Block A** (L779-806): `min-height: 38px`, `gap: 8px`, muted background, hover/focus переопределения. Полностью dead-code — beaten by Block B в том же файле.
+- **Block B** (L2861-2869): `min-height: 40px`, `gap: 8px`, `min-height: 72px на .section-header-menu`, RED background (`var(--primary-color)`) на `.back-to-menu-btn`. Побеждал universal `body.account-page` rules по specificity (`0,0,4,1` vs `0,0,2,1`).
+
+RED-цвет на проде НЕ применялся (его перебивал `ui-ux-polish.css` L1222 по source order — он грузится позже), но `gap: 8px` и `min-height: 40px` побеждали и создавали реальное расхождение.
+
+Phase 20 удалил **оба** блока (~30 строк CSS). Canonical owner теперь — universal `body.account-page` rules в `ui-ux-polish.css` + `account-styles.min.css` + `mobile-polish.css`. Admin-only overrides на truly admin-specific селекторы (`.admin-tabs-container`, `.admin-tabs`, `.admin-tab-btn`, `.admin-form-group`, `.admin-section-card`, `.admin-pane-*`, `.account-form-container`) сохранены — это не shared blocks.
+
+Визуальный эффект — admin-page header-bar высота вырастает с 40 до 44 px (desktop) / 43 до ~44 px (mobile) для byte-identity с `/owner.php`. Visual baselines обновлены через `npm run visual:update`. Backend / DB / API / markup без изменений.
+
+
 
 ## Phase 19.2 — /help.php desktop dock specificity bump (v2.4.2, 2026-05-06)
 
