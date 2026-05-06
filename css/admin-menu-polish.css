@@ -2085,7 +2085,7 @@ body.account-page .checkout-btn {
 }
 
 body.account-page #menu .section-header-menu {
-  margin: 0 20px 28px;
+  margin: auto;
   gap: 8px;
   padding: 0;
 }

@@ -2,8 +2,14 @@
 
 ## Implementation Status
 
-- Status: `Partial · Phase 20.2 nav-actions space-evenly on mobile 2026-05-06`
+- Status: `Partial · Phase 20.3 #menu .section-header-menu margin auto 2026-05-06`
 - Last reviewed: `2026-05-06`
+
+## Phase 20.3 — `#menu .section-header-menu` margin: auto (2026-05-06)
+
+`body.account-page #menu .section-header-menu` (header-блок внутри публичного меню `#menu`) использовал `margin: 0 20px 28px`, что прижимало его к левому краю с фиксированным side-gutter'ом 20px. Изменено на `margin: auto` в `css/admin-menu-polish.css` L2088 — блок теперь горизонтально центрируется внутри родителя, без фиксированных side-margin'ов. Markup и backend без изменений.
+
+
 
 ## Phase 20.2 — `.section-header-nav-actions` justify-content space-evenly on mobile (2026-05-06)
 
