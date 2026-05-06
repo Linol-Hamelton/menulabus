@@ -12,7 +12,7 @@
   - **Phase 14** — SaaS Billing Engine (signup, plan registry, recurring YK, soft dunning, provider admin): `Implemented` (v2.0.0, 2026-05-03).
   - **Phase 15** — Audit hotfix M1-M6 (Playwright MCP audit от 2026-05-03 закрыл file-manager 404 на /admin/menu.php, ?tab= URL routing, ghost update modal, `\r\n` literal в changelog, hero clipping на reservation/group/signup, archive 7 broken-image test items): `Implemented` (v2.0.1, 2026-05-04). Детали в `docs/archive/2026/audit-2026-05-03.md`.
   - **Phase 9 (sans billing)** — developer platform, compliance pack (GDPR/152-ФЗ/ЕГАИС/Меркурий), multi-region HA, onboarding 2.0: `Planned`.
-  - Architecture refactor (Phase 13): root PHP 92→63, разнесены в admin/, api/save/, api/checkout/, auth/oauth/, kds/, api/reservations/.
+  - **Phase 13** — Architecture refactor: `Implemented`. Root PHP files reduced from 92 → 63; logic разнесена в `admin/`, `api/save/`, `api/checkout/`, `auth/oauth/`, `kds/`, `api/reservations/`. All routes verified post-refactor; no broken paths.
   - Release discipline: docs-drift check + visual regression + provider/tenant smoke + provider security smoke + post-release browser regression.
   - Tenant go-live: scriptable via `scripts/tenant/go-live.sh` (manual) AND через `/signup.php` (self-service trial).
 
@@ -138,7 +138,7 @@ Operational note:
 2. Execute host-level security rollout for firewall, SSH/fail2ban, and patch cadence on the production host.
 3. Apply pending migrations on live tenants: `menu-sort-order-migration.sql`, `modifiers-soft-delete-migration.sql`, `webhooks-migration.sql`, `reservations-migration.sql`.
 4. Wire cron jobs: `webhook-worker.php`, `scripts/orders/purge-soft-deleted.php`, `scripts/security/monthly-review.sh`.
-5. Close remaining CSRF gaps on `api/save/project-name.php` and `send_message.php` (either update minified JS callers or deprecate).
+5. ~~Close remaining CSRF gaps on `api/save/project-name.php` and `send_message.php`~~ — **Done**. Both endpoints route through `Csrf::requireValid()` (verified 2026-05-06).
 6. Finish Mobile Capacitor tenant-aware rework (preferences-driven `server.url`).
 
 ### Medium-term — Phase 6 (Restaurant Operations Core)

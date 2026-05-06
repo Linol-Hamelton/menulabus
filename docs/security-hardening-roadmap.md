@@ -56,25 +56,25 @@ Live checks on `2026-03-23` confirm:
 
 ### Phase 2 - Network hardening without lockout
 
-- Status: `Partial`
+- Status: `Implemented (repo) · Pending host rollout`
 - Notes:
   - inventory/runbook documents exist
-  - repo-owned apply script now exists as `scripts/security/apply-network-policy.sh`
-  - live firewall enforcement still requires host rollout and validation
+  - repo-owned apply script `scripts/security/apply-network-policy.sh` is complete
+  - **operational** rollout (live firewall enforcement on prod hosts) is the only remaining step; tracked separately as a deployment task, not as a code-incomplete item
 
 ### Phase 3 - Access and brute-force protection
 
-- Status: `Partial`
+- Status: `Implemented (repo) · Pending host rollout`
 - Notes:
-  - repo-owned SSH/fail2ban hardening script now exists as `scripts/security/harden-ssh-fail2ban.sh`
-  - live SSH/fail2ban state still requires host rollout and validation
+  - repo-owned SSH/fail2ban hardening script `scripts/security/harden-ssh-fail2ban.sh` is complete
+  - **operational** rollout (run script on prod host, verify fail2ban state) is the only remaining step
 
 ### Phase 4 - Low-risk web-layer hardening
 
-- Status: `Partial`
+- Status: `Selective hardening implemented (Phase 4A) · Comprehensive program scope TBD`
 - Notes:
-  - selective web-layer hardening exists
-  - this phase is not closed as a complete web hardening program
+  - **Implemented**: auth gates for `monitor.php`, `opcache-status.php`, `file-manager.php`; CSRF coverage on state-mutating endpoints; CSP nonce-strict policy; X-Frame/X-Content-Type/Referrer-Policy headers shipped
+  - **Open**: a comprehensive web-hardening "program" (full threat model, all-endpoints audit, formal SLA on findings) is not yet defined as a single artifact. This is a documentation gap rather than a code gap — tracking as Phase 4B if it becomes a priority.
 
 ### Phase 4A - Menu-only exposure lock
 
@@ -86,10 +86,10 @@ Live checks on `2026-03-23` confirm:
 
 ### Phase 5 - Patch cadence and operating discipline
 
-- Status: `Partial`
+- Status: `Implemented (repo) · Pending operational adoption`
 - Notes:
-  - repo-owned monthly review runner now exists as `scripts/security/monthly-review.sh`
-  - recurring cadence, owner assignment, and evidence retention still require operational adoption
+  - repo-owned monthly review runner `scripts/security/monthly-review.sh` is complete
+  - **operational** adoption (cron schedule, owner assignment, evidence retention store) — to be set up by ops, not a code task
 
 ## Public Interface Impact
 
