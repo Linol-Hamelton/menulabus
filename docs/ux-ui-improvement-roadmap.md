@@ -2,8 +2,14 @@
 
 ## Implementation Status
 
-- Status: `Partial · Phase 19.1 help.php desktop dock fix shipped 2026-05-06`
+- Status: `Partial · Phase 19.2 help.php specificity bump shipped 2026-05-06`
 - Last reviewed: `2026-05-06`
+
+## Phase 19.2 — /help.php desktop dock specificity bump (v2.4.2, 2026-05-06)
+
+Phase 19.1 добавил `!important` ко всем декларациям `position: sticky` на desktop, но MCP-verify показал что dock всё равно `position: static`. Причина — cascade с одинаковой specificity и обоими `!important` тёрся source order'ом, а `ui-ux-polish.css` грузится ПОСЛЕ `help-page.css` (вытягивается через header.php-цепочку), поэтому его `body.account-page .menu-tabs-container { position: static !important }` (specificity 0,0,2,0, !important) побеждал наш `body.help-page .help-tabs-dock { position: sticky !important }` (та же 0,0,2,0).
+
+Фикс — bump selector specificity: `.help-tabs-dock` → `.menu-tabs-container.help-tabs-dock` (две класса на одном элементе → 0,0,3,0). 0,0,3,0 беспроигрышно побеждает 0,0,2,0 независимо от source order. Селекторы переписаны в `@media (min-width: 1025px)` блоке для outer wrapper и inner `.menu-tabs`.
 
 ## Phase 19.1 — /help.php desktop dock не sticky'ил (v2.4.1, 2026-05-06)
 

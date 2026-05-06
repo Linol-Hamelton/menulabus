@@ -178,10 +178,15 @@ body.help-page .help-tabs-dock {
 
 @media (min-width: 1025px) {
   /* Override the unconditional `position: static !important` set on
-     body.account-page .menu-tabs-container in ui-ux-polish.css — that
-     baseline is meant to keep the desktop tab rail flowing inline on
-     other pages, but on /help.php we want the dock floating bottom. */
-  body.help-page .help-tabs-dock {
+     body.account-page .menu-tabs-container in ui-ux-polish.css. Both rules
+     have specificity 0,0,2,0 and use !important, but ui-ux-polish.css
+     loads AFTER help-page.css (it's pulled in from a globally-included
+     stylesheet in header.php), so source order gives ui-ux-polish.css
+     the win on a specificity tie. We bump our specificity by chaining
+     .menu-tabs-container.help-tabs-dock (2 classes on the same element →
+     specificity 0,0,3,0) so we beat the competing 0,0,2,0 rule
+     regardless of source order. */
+  body.help-page .menu-tabs-container.help-tabs-dock {
     position: sticky !important;
     bottom: 12px !important;
     left: auto !important;
@@ -200,7 +205,7 @@ body.help-page .help-tabs-dock {
     z-index: 50 !important;
   }
 
-  body.help-page .help-tabs-dock .menu-tabs {
+  body.help-page .menu-tabs-container.help-tabs-dock .menu-tabs {
     display: flex !important;
     flex-wrap: nowrap !important;
     gap: 8px !important;
@@ -214,7 +219,7 @@ body.help-page .help-tabs-dock {
     padding: 0 !important;
   }
 
-  body.help-page .help-tabs-dock .menu-tabs::-webkit-scrollbar {
+  body.help-page .menu-tabs-container.help-tabs-dock .menu-tabs::-webkit-scrollbar {
     display: none;
   }
 }
