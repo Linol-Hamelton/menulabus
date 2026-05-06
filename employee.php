@@ -108,6 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/mobile-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/employee-triage.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/employee-reservations.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/hotkeys.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">

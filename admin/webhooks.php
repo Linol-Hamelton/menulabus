@@ -36,6 +36,7 @@ $knownEvents = [
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($appVersion) ?>">
+    <link rel="stylesheet" href="/css/mobile-polish.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/admin-webhooks.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion) ?>">
 </head>

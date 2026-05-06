@@ -2,8 +2,33 @@
 
 ## Implementation Status
 
-- Status: `Partial · Phase 20 .section-header-menu cross-page identity shipped 2026-05-06`
+- Status: `Partial · Phase 20.1 mobile-polish coverage extended to 10 missing pages 2026-05-06`
 - Last reviewed: `2026-05-06`
+
+## Phase 20.1 — mobile-polish coverage для 10 missing pages (v2.5.1, 2026-05-06)
+
+После Phase 20 desktop `.section-header-menu` стал pixel-identical между `/admin/menu.php` и `/owner.php`. Однако MCP-verify на mobile 375 показал, что admin button height всё ещё **47 px** vs owner **43 px** — Phase 20 не закрыл разницу на mobile.
+
+Root cause — Phase 18 mobile pass добавил `css/mobile-polish.css` только в 4 страницы (`/account.php`, `/owner.php`, `/help.php`, `/admin/staff.php`), а **10 других** страниц включающих `account-header.php` остались без него:
+
+- `/admin/menu.php`
+- `/admin/inventory.php`
+- `/admin/kitchen.php`
+- `/admin/locations.php`
+- `/admin/loyalty.php`
+- `/admin/marketing.php`
+- `/admin/waitlist.php`
+- `/admin/webhooks.php`
+- `/employee.php`
+- `/customer_orders.php`
+
+Universal mobile-правило `body.account-page .section-header-nav-actions .back-to-menu-btn { padding: 9px 12px; font-size: 0.92rem }` (mobile-polish.css L187-198) жило ТОЛЬКО в mobile-polish.css. Без подключения файла страница на mobile получала desktop-стили (padding 10px 16px / font-size 16px) → button height 47 px вместо целевых 43 px.
+
+Phase 20.1 — простое добавление `<link rel="stylesheet" href="/css/mobile-polish.css">` в `<head>` всех 10 missing страниц после `admin-menu-polish.css` (чтобы mobile rules перебивали desktop overrides). Изменения чисто аддитивные, нет правок CSS / markup / JS. Backend / DB / API без изменений.
+
+Теперь `.section-header-menu` и дочерние элементы pixel-identical на **14 account-page страницах** на всех viewports (desktop 1280, tablet 768, mobile 375). Кросс-страничная стандартизация навигационного header'а из `account-header.php` достигнута.
+
+
 
 ## Phase 20 — `.section-header-menu` cross-page identity (v2.5.0, 2026-05-06)
 

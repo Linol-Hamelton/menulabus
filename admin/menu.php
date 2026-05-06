@@ -206,6 +206,7 @@ $savedDbFontsJson = htmlspecialchars(
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($adminMenuCssVersion, ENT_QUOTES, 'UTF-8') ?>">
+    <link rel="stylesheet" href="/css/mobile-polish.css?v=<?= $appVersion ?>">
     <link rel="stylesheet" href="/css/admin-menu-sort.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/admin-menu-bulk.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/admin-menu-filters.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">

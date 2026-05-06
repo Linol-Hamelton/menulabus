@@ -30,6 +30,7 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
     <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($appVersion) ?>">
+    <link rel="stylesheet" href="/css/mobile-polish.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/admin-marketing.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion) ?>">
 </head>
