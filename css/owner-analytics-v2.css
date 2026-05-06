@@ -162,6 +162,8 @@
 
 .analytics-v2-heatmap-wrap {
     overflow-x: auto;
+    width: 100%;
+    max-width: 100%;
 }
 .analytics-v2-heatmap td {
     min-width: 22px;
@@ -182,8 +184,23 @@
 }
 .analytics-v2-forecast-big small { font-size: 16px; color: var(--ui-text-muted); }
 
+/* Phase 29: on narrow viewports the heatmap table forces a min-content
+   width of ~590px (24 hour columns × 22px each). Without minmax(0, 1fr)
+   the grid track grows to fit min-content, blowing past the container.
+   `min-width: 0` on the card lets it shrink inside the grid, and the
+   heatmap-wrap (already overflow-x:auto) allows the user to scroll the
+   24-hour heatmap horizontally inside the bounded card. Same pattern
+   applied to .analytics-v2-table-wrap so the margin-by-dish and cohorts
+   tables behave the same. */
 @media (max-width: 900px) {
     .analytics-v2-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .analytics-v2-card {
+        min-width: 0;
+    }
+    .analytics-v2-table-wrap {
+        max-width: 100%;
+        overflow-x: auto;
     }
 }

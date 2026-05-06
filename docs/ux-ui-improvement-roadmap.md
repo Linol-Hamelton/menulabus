@@ -2,8 +2,18 @@
 
 ## Implementation Status
 
-- Status: `Partial · Phase 20.3 #menu .section-header-menu margin auto 2026-05-06`
+- Status: `Partial · Phase 29 owner.php mobile overflow fix 2026-05-06`
 - Last reviewed: `2026-05-06`
+
+## Phase 29 — `/owner.php` mobile overflow fix (2026-05-06)
+
+User screenshot audit на iPhone 14 Pro Max (430×932) показал два source'а overflow на `/owner.php`:
+
+1. **`.owner-report-toolbar` 2-col grid leak** — desktop rule в `css/owner-styles.min.css` L1017-1021 (`grid-template-columns: minmax(0, 1.3fr) minmax(244px, 0.72fr)`) был БЕЗ media-guard'а и побеждал по source order существующее mobile-rule на L918 (`grid-template-columns: 1fr`). Результат на mobile: левая колонка 71.5px заголовка «Срезы и метрики» — каждое русское слово ломалось в свою строку. Фикс — обернул desktop-rule в `@media (min-width: 1025px)` + сохранил margin-bottom для mobile отдельным правилом.
+
+2. **`.analytics-v2-grid` overflow** — heatmap table (24 часа × 22px = 528px min-width) forced min-content на grid-track шире viewport (591-619px на 430px viewport). Существующее правило `grid-template-columns: 1fr` в `@media (max-width: 900px)` не помогало, потому что 1fr не запрещает grid-track расти за min-content. Фикс — `grid-template-columns: minmax(0, 1fr)` + `min-width: 0` на `.analytics-v2-card` + `width: 100%; max-width: 100%` на `.analytics-v2-heatmap-wrap` (она уже была overflow-x: auto, теперь корректно scrollит heatmap внутри ограниченной карточки). Аналогичная защита для `.analytics-v2-table-wrap` (margin-by-dish + cohorts таблицы).
+
+CSS-only фикс, ~20 строк. Markup и backend без изменений.
 
 ## Phase 20.3 — `#menu .section-header-menu` margin: auto (2026-05-06)
 

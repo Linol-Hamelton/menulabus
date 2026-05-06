@@ -1014,10 +1014,24 @@ body.owner-page .charts-container {
   }
 }
 
-body.owner-page .owner-report-toolbar {
-  gap: 20px;
-  grid-template-columns: minmax(0, 1.3fr) minmax(244px, 0.72fr);
-  margin-bottom: max(24px, calc(var(--bottom-tab-rail-clearance, 88px) - 20px));
+/* Phase 29: wrap desktop 2-col layout in min-width media guard so it
+   doesn't leak to mobile (≤1024px). Without the guard this rule wins
+   over the mobile @media (max-width: 1024px) {grid-template-columns:
+   1fr} rule above by source order, breaking mobile layout (visible at
+   viewport ≤768px as 71px / 244px columns where Russian words wrap by
+   character). */
+@media (min-width: 1025px) {
+  body.owner-page .owner-report-toolbar {
+    gap: 20px;
+    grid-template-columns: minmax(0, 1.3fr) minmax(244px, 0.72fr);
+    margin-bottom: max(24px, calc(var(--bottom-tab-rail-clearance, 88px) - 20px));
+  }
+}
+
+@media (max-width: 1024px) {
+  body.owner-page .owner-report-toolbar {
+    margin-bottom: max(24px, calc(var(--bottom-tab-rail-clearance, 88px) - 20px));
+  }
 }
 
 body.owner-page .owner-report-tabs-card,
