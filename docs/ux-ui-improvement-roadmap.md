@@ -2,8 +2,14 @@
 
 ## Implementation Status
 
-- Status: `Partial · Phase 20.1 mobile-polish coverage extended to 10 missing pages 2026-05-06`
+- Status: `Partial · Phase 20.2 nav-actions space-evenly on mobile 2026-05-06`
 - Last reviewed: `2026-05-06`
+
+## Phase 20.2 — `.section-header-nav-actions` justify-content space-evenly on mobile (2026-05-06)
+
+После Phase 20.1 (мобильная типографика выровнена) на mobile ≤768px ряд из 6 nav-кнопок (Заказы / Кухня / Очередь / Смены / Помощь / История) внутри `.account-header-bar` визуально клumpился к левому краю из-за `justify-content: flex-start`. Изменено на `justify-content: space-evenly` в `css/ui-ux-polish.css` L1109 — кнопки теперь равномерно распределены по ширине строки, balance с quick-actions иконками сверху. Markup и backend без изменений.
+
+
 
 ## Phase 20.1 — mobile-polish coverage для 10 missing pages (v2.5.1, 2026-05-06)
 

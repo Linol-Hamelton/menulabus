@@ -1106,7 +1106,7 @@ body.tenant-homepage .footer-bottom {
   }
 
   body.account-page .account-header-bar .section-header-nav-actions {
-    justify-content: flex-start;
+    justify-content: space-evenly;
     margin-left: 0 !important;
     order: 2;
     padding-top: 20px;
