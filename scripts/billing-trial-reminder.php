@@ -31,6 +31,13 @@ if (PHP_SAPI !== 'cli') {
     exit(2);
 }
 
+// Avoid PHP warnings from session_init.php trying to read $_SERVER['REQUEST_URI']
+// when invoked from CLI (cron context).
+if (!isset($_SERVER['REQUEST_URI']))   { $_SERVER['REQUEST_URI'] = '/cli/billing-trial-reminder'; }
+if (!isset($_SERVER['HTTP_HOST']))     { $_SERVER['HTTP_HOST']   = 'menu.labus.pro'; }
+if (!isset($_SERVER['REMOTE_ADDR']))   { $_SERVER['REMOTE_ADDR'] = '127.0.0.1'; }
+if (!isset($_SERVER['REQUEST_METHOD'])){ $_SERVER['REQUEST_METHOD'] = 'GET'; }
+
 require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../lib/Billing/SubscriptionStore.php';
 require_once __DIR__ . '/../mailer.php';
@@ -73,8 +80,11 @@ foreach ($windows as $label => $w) {
     $upperStr = $w['upper']->format('Y-m-d H:i:s');
     log_line("checking window {$label}: [{$lowerStr} .. {$upperStr})");
 
+    // Phase 14 schema: tenants table has brand_slug, owner_email, trial_ends_at —
+    // not brand_name (display name lives in tenant-side settings JSON, not in
+    // control-plane). Use brand_slug as the human-readable fallback.
     $stmt = $pdo->prepare(
-        "SELECT id, brand_slug, brand_name, owner_email, trial_ends_at
+        "SELECT id, brand_slug, owner_email, trial_ends_at
            FROM tenants
           WHERE subscription_status = 'trial'
             AND owner_email IS NOT NULL
@@ -90,8 +100,8 @@ foreach ($windows as $label => $w) {
     foreach ($rows as $row) {
         $tenantId = (int)$row['id'];
         $owner    = (string)$row['owner_email'];
-        $brand    = (string)($row['brand_name'] ?: $row['brand_slug']);
         $slug     = (string)$row['brand_slug'];
+        $brand    = $slug; // brand_slug is the user-recognisable identifier in control-plane
         $endsAt   = (string)$row['trial_ends_at'];
 
         // Dedup: skip if reminder for this window was already sent today.
