@@ -123,6 +123,10 @@ Once all migrations + cron + hardening are done, verify the system is healthy:
 - Cron entries can be removed via `crontab -e` — they don't modify state, just stop running workers. Active jobs in flight finish gracefully.
 - Hardening scripts modify `/etc/ufw/*` and `/etc/fail2ban/jail.local`. Each script has its own backup-before-write pattern; check the script source for the backup file path.
 
+### File-mode note (Windows + git)
+
+All scripts under `scripts/security/*.sh` are tracked with mode `100755` in git. If you re-add or copy a script from Windows, run `git update-index --chmod=+x scripts/security/<file>.sh` before committing — Windows FS doesn't preserve the execute bit, so without this fix the file lands at `100644` and direct invocation (cron, systemd) fails with `exit 126 / Permission denied`. Invocation via `bash <script>` works regardless and is the safer pattern in runbook examples.
+
 ## 6. TLS / Let's Encrypt cert lifecycle
 
 ### Background — what went wrong on 2026-05-06
