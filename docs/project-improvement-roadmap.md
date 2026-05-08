@@ -2,8 +2,8 @@
 
 ## Implementation Status
 
-- Status: `Implemented (Phases 0-8 + 14 + 15) · Planned (AI recs, iiko adapter, Phase 9 sans billing)`
-- Last reviewed: `2026-05-04`
+- Status: `Implemented (Phases 0-8 + 13 + 14 + 15 + 32A) · Planned (Phase 32B: card-signup + addons; Phase 33+: marketing pages, referral, SEO content; AI recs; iiko adapter; Phase 9)`
+- Last reviewed: `2026-05-08`
 - Current implementation notes:
   - **Phases 0-5** — foundation + launch automation + release discipline: `Implemented`.
   - **Phase 6** — KDS, inventory MVP, loyalty, multi-location, analytics v2: `Implemented`.
@@ -13,6 +13,7 @@
   - **Phase 15** — Audit hotfix M1-M6 (Playwright MCP audit от 2026-05-03 закрыл file-manager 404 на /admin/menu.php, ?tab= URL routing, ghost update modal, `\r\n` literal в changelog, hero clipping на reservation/group/signup, archive 7 broken-image test items): `Implemented` (v2.0.1, 2026-05-04). Детали в `docs/archive/2026/audit-2026-05-03.md`.
   - **Phase 9 (sans billing)** — developer platform, compliance pack (GDPR/152-ФЗ/ЕГАИС/Меркурий), multi-region HA, onboarding 2.0: `Planned`.
   - **Phase 13** — Architecture refactor: `Implemented`. Root PHP files reduced from 92 → 63; logic разнесена в `admin/`, `api/save/`, `api/checkout/`, `auth/oauth/`, `kds/`, `api/reservations/`. All routes verified post-refactor; no broken paths.
+  - **Phase 32A** — Pricing & marketing strategy v3 (2026-05-08, v3.0.0): Killed Starter tier; Pro trial extended 14d → **90 days**; Enterprise self-service at 19 990 ₽/mo with bundled Express onboarding + 4h training; new `enterprise_plus` (договорная, sales-led); annual billing variants (Pro 69 900 ₽, Enterprise 199 900 ₽ — 2 months free). Add-on services catalog (Express / Full / Migration onboarding, training packages, Telegram-bot setup, custom domain) — display in 32A, purchase API in 32B. New `index.php` provider-mode pricing section; rewritten `signup.php` messaging; `partials/owner_billing_section.php` plan grid + addons. New canonical doc `docs/marketing-strategy-2026.md`. Strategy: don't compete on price (vs iiko 8 600 / Quick Resto 5 990 / R-Keeper 6 170); compete on bundle + cloud-only + white-label. Direct-sales GTM M1-M3 (founder-led, no paid ads). Targets: 8 paying customers + 56k MRR by M3, 30 + 210k by M6, 100-120 + 600-800k by M12.
   - Release discipline: docs-drift check + visual regression + provider/tenant smoke + provider security smoke + post-release browser regression.
   - Tenant go-live: scriptable via `scripts/tenant/go-live.sh` (manual) AND через `/signup.php` (self-service trial).
 

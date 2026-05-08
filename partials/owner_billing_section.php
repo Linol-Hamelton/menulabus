@@ -1,13 +1,21 @@
 <?php
 /**
- * partials/owner_billing_section.php — owner.php?tab=billing (Phase 14.5).
+ * partials/owner_billing_section.php — owner.php?tab=billing (Phase 32, 2026-05-08).
  *
  * Renders the tenant-facing subscription panel:
  *   - Current plan card with status badge
  *   - Saved card (last4 / brand) + "Заменить карту" button
  *   - Last 12 invoices table
  *   - Plan picker modal (upgrade / downgrade)
+ *   - Add-on services catalog (display-only in 32A; purchase in 32B)
  *   - Cancel subscription button
+ *
+ * Phase 32 changes:
+ *   - Plan grid: Starter killed, Pro / Pro-annual / Enterprise / Enterprise+
+ *   - Annual billing toggle (Pro→Pro-annual, Enterprise→Enterprise-annual)
+ *   - Add-on services section (Express onboarding, Full onboarding,
+ *     Migration, Telegram-bot setup, Custom domain, Training packages)
+ *   - Enterprise+ → "Свяжитесь" CTA (sales-only)
  *
  * All actions go to /api/billing-action.php (CSRF-gated, owner-only).
  */
@@ -107,15 +115,24 @@ $statusLabel = $statusLabels[$status] ?? $status;
 
     <div class="account-section billing-plan-picker">
         <h3>Сменить тариф</h3>
+        <p class="billing-plan-hint">
+            Месячная оплата — гибкая, отмена в любой момент. Годовая оплата — 2 месяца бесплатно.
+            Сетевой план (10+ локаций) — договорная цена.
+        </p>
         <div class="billing-plan-grid">
-            <?php foreach (['starter', 'pro', 'enterprise'] as $optId):
+            <?php foreach (['pro', 'pro_annual', 'enterprise', 'enterprise_annual'] as $optId):
                 $opt = PlanRegistry::byId($optId);
                 if (!$opt) continue;
-                $isCurrent = $optId === $planId;
+                $isCurrent  = $optId === $planId;
+                $isAnnual   = ($opt['billing_period'] ?? 'monthly') === 'annual';
+                $isEntPlus  = false;
             ?>
-                <div class="billing-plan-card <?= $isCurrent ? 'is-current' : '' ?>">
-                    <h4><?= htmlspecialchars($opt['name']) ?></h4>
-                    <p class="billing-plan-price"><?= htmlspecialchars(PlanRegistry::priceLabel($optId)) ?><small> / мес</small></p>
+                <div class="billing-plan-card <?= $isCurrent ? 'is-current' : '' ?> <?= $isAnnual ? 'is-annual' : '' ?>">
+                    <h4>
+                        <?= htmlspecialchars($opt['name']) ?>
+                        <?php if ($isAnnual): ?><span class="billing-plan-saving">−2 мес</span><?php endif; ?>
+                    </h4>
+                    <p class="billing-plan-price"><?= htmlspecialchars(PlanRegistry::priceLabel($optId)) ?></p>
                     <p class="billing-plan-desc"><?= htmlspecialchars($opt['description']) ?></p>
                     <ul class="billing-plan-limits">
                         <?php
@@ -126,19 +143,92 @@ $statusLabel = $statusLabels[$status] ?? $status;
                         <li>Локации: <strong><?= $loc === null ? 'без лимита' : (int)$loc ?></strong></li>
                         <li>Позиции меню: <strong><?= $items === null ? 'без лимита' : (int)$items ?></strong></li>
                         <li>Заказы / месяц: <strong><?= $orders === null ? 'без лимита' : number_format((int)$orders, 0, '.', ' ') ?></strong></li>
+                        <?php if (!empty($opt['bundled_addons'])): ?>
+                            <li>В цену включено: <strong>Express onboarding + 4 ч обучения</strong> (~24 900 ₽ value)</li>
+                        <?php endif; ?>
                     </ul>
                     <?php if ($isCurrent): ?>
                         <button type="button" class="checkout-btn" disabled>Текущий</button>
-                    <?php elseif ($optId === 'enterprise'): ?>
-                        <a href="mailto:sales@labus.pro?subject=Enterprise%20plan%20interest" class="admin-checkout-btn">Связаться</a>
                     <?php else: ?>
                         <button type="button" class="checkout-btn billing-change-plan-btn" data-target-plan="<?= htmlspecialchars($optId) ?>">
-                            <?= $optId === 'pro' && $planId === 'starter' ? 'Перейти' : ($optId === 'starter' ? 'Понизить' : 'Перейти') ?>
+                            Перейти
                         </button>
                     <?php endif; ?>
                 </div>
             <?php endforeach; ?>
+
+            <?php
+            // Enterprise+ — sales-only, separate CTA card
+            $entPlus = PlanRegistry::byId('enterprise_plus');
+            if ($entPlus):
+            ?>
+                <div class="billing-plan-card billing-plan-card--sales">
+                    <h4><?= htmlspecialchars($entPlus['name']) ?></h4>
+                    <p class="billing-plan-price">Договорная</p>
+                    <p class="billing-plan-desc"><?= htmlspecialchars($entPlus['description']) ?></p>
+                    <ul class="billing-plan-limits">
+                        <li>Локации: <strong>без лимита</strong></li>
+                        <li>SSO/SAML, dedicated DB</li>
+                        <li>Кастомная SLA, выделенный success-manager</li>
+                        <li>Включено: Full onboarding + 4 ч обучения + priority support</li>
+                    </ul>
+                    <a href="mailto:sales@labus.pro?subject=Enterprise%2B%20plan%20inquiry" class="admin-checkout-btn">Связаться</a>
+                </div>
+            <?php endif; ?>
         </div>
+    </div>
+
+    <div class="account-section billing-addons-section">
+        <h3>Дополнительные услуги</h3>
+        <p class="billing-addon-hint">
+            Разовая помощь от команды CleanMenu. Покупка с карты на странице (доступна
+            в Phase 32B — пока для заявки используйте контакт ниже).
+        </p>
+        <div class="billing-addon-grid">
+            <div class="billing-addon-card">
+                <h4>Express onboarding</h4>
+                <p class="billing-addon-price">9 900 ₽ <small>единоразово</small></p>
+                <p class="billing-addon-desc">3 часа: настройка аккаунта, бренд (логотип + цвета), импорт меню из CSV/Excel, печать QR-кодов на 1 локацию.</p>
+            </div>
+            <div class="billing-addon-card">
+                <h4>Full onboarding</h4>
+                <p class="billing-addon-price">24 900 ₽ <small>единоразово</small></p>
+                <p class="billing-addon-desc">8 часов: всё из Express + категории, модификаторы, рецепты с ингредиентами, KDS-станции, 54-ФЗ, Telegram-бот.</p>
+            </div>
+            <div class="billing-addon-card">
+                <h4>Миграция с iiko / R-Keeper / Quick Resto</h4>
+                <p class="billing-addon-price">49 900 ₽ <small>единоразово</small></p>
+                <p class="billing-addon-desc">12+ часов: экспорт данных от конкурента, mapping, валидация, parallel-run сопровождение до полного перехода.</p>
+            </div>
+            <div class="billing-addon-card">
+                <h4>Group training (онлайн)</h4>
+                <p class="billing-addon-price">6 900 ₽ <small>за 2 часа, до 5 человек</small></p>
+                <p class="billing-addon-desc">Обучение персонала: приём заказов, KDS, отчётность, маркетинговые рассылки.</p>
+            </div>
+            <div class="billing-addon-card">
+                <h4>Individual training</h4>
+                <p class="billing-addon-price">4 900 ₽ <small>за 1 час 1-on-1</small></p>
+                <p class="billing-addon-desc">Owner-training: настройки, аналитика v2, маркетинговые сегменты, лояльность.</p>
+            </div>
+            <div class="billing-addon-card">
+                <h4>Telegram-bot setup</h4>
+                <p class="billing-addon-price">4 900 ₽ <small>единоразово</small></p>
+                <p class="billing-addon-desc">Создание бота, webhook config, inline-buttons на pending-заказы, тестирование.</p>
+            </div>
+            <div class="billing-addon-card">
+                <h4>Custom domain config</h4>
+                <p class="billing-addon-price">2 900 ₽ <small>единоразово</small></p>
+                <p class="billing-addon-desc">DNS + Let's Encrypt SSL + nginx config для tenant-домена. На Pro как доплата; в Enterprise включено.</p>
+            </div>
+            <div class="billing-addon-card">
+                <h4>Recorded video course</h4>
+                <p class="billing-addon-price">2 900 ₽ <small>lifetime access</small></p>
+                <p class="billing-addon-desc">Запись полного курса по платформе для самообучения нового персонала.</p>
+            </div>
+        </div>
+        <p class="billing-addon-contact">
+            Чтобы заказать — пишите <a href="mailto:hello@labus.pro?subject=Onboarding%20%2F%20training%20request">hello@labus.pro</a> или в Telegram-чат поддержки.
+        </p>
     </div>
 
     <div class="account-section billing-invoices-section">

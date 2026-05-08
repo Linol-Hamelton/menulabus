@@ -126,11 +126,97 @@ $tenantSecondaryLabel = $hasTenantContacts
                     </article>
                     <article class="landing-entry-card landing-entry-card-muted">
                         <p class="landing-entry-kicker">Подключение</p>
-                        <h2>Показать сценарий запуска и обсудить подключение</h2>
-                        <p>Здесь остаются B2B-смысл, консультация и быстрый контакт для нового ресторана или сети.</p>
-                        <a href="#reservation" class="landing-entry-link">Оставить заявку</a>
+                        <h2>Запустить ресторан · 90 дней Pro бесплатно</h2>
+                        <p>Полная Pro-функциональность на 90 дней без ограничений. Карта при регистрации — без списания до 91-го дня.</p>
+                        <a href="/signup.php" class="landing-entry-link">Зарегистрироваться</a>
                     </article>
                 </div>
+            </div>
+        </section>
+
+        <section id="pricing" class="section pricing-section" aria-label="Тарифы и услуги">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Тарифы</h2>
+                    <p>Прозрачно. Без скрытых сборов. Без привязки к партнёрской сети и хардверу.</p>
+                </div>
+
+                <div class="pricing-grid">
+                    <article class="pricing-card pricing-card--featured">
+                        <p class="pricing-card-kicker">Самый популярный</p>
+                        <h3>Pro</h3>
+                        <p class="pricing-card-price">
+                            <span class="pricing-card-amount">6 990 ₽</span>
+                            <span class="pricing-card-period">/ месяц</span>
+                        </p>
+                        <p class="pricing-card-annual">или 69 900 ₽ в год — 2 месяца бесплатно</p>
+                        <ul class="pricing-card-features">
+                            <li>До 3 локаций · до 30 сотрудников</li>
+                            <li>KDS, склад с рецептами, лояльность</li>
+                            <li>Маркетинг (email/SMS/Telegram), сегменты</li>
+                            <li>54-ФЗ через АТОЛ Онлайн</li>
+                            <li>Group orders · split-bill · бронирования</li>
+                            <li>Outgoing webhooks для интеграций</li>
+                            <li>Multi-language (ru/en/kk)</li>
+                        </ul>
+                        <a href="/signup.php" class="btn hero-btn-primary">90 дней Pro бесплатно</a>
+                    </article>
+
+                    <article class="pricing-card">
+                        <h3>Enterprise</h3>
+                        <p class="pricing-card-price">
+                            <span class="pricing-card-amount">19 990 ₽</span>
+                            <span class="pricing-card-period">/ месяц</span>
+                        </p>
+                        <p class="pricing-card-annual">или 199 900 ₽ в год — 2 месяца бесплатно</p>
+                        <ul class="pricing-card-features">
+                            <li>До 10 локаций · без лимитов сотрудников</li>
+                            <li><strong>White-label на своём домене</strong></li>
+                            <li>Public API + dev-инструменты</li>
+                            <li>Priority support · SLA</li>
+                            <li>Всё из Pro</li>
+                            <li><strong>Включено:</strong> Express onboarding (3 ч) + 4 ч обучения персонала (~24 900 ₽ value)</li>
+                        </ul>
+                        <a href="/signup.php" class="btn hero-btn-secondary">Начать с 90 дней trial</a>
+                    </article>
+
+                    <article class="pricing-card pricing-card--sales">
+                        <h3>Enterprise+ / Сеть</h3>
+                        <p class="pricing-card-price">
+                            <span class="pricing-card-amount">Договорная</span>
+                        </p>
+                        <p class="pricing-card-annual">от 35 000 ₽/мес для сетей</p>
+                        <ul class="pricing-card-features">
+                            <li>Сети 10+ локаций</li>
+                            <li>SSO / SAML</li>
+                            <li>Dedicated DB · кастомная SLA</li>
+                            <li>Выделенный success-manager</li>
+                            <li>Всё из Enterprise</li>
+                            <li><strong>Включено:</strong> Full onboarding + 4 ч обучения + priority support</li>
+                        </ul>
+                        <a href="mailto:sales@labus.pro?subject=Enterprise%2B%20%2F%20Сеть%20inquiry" class="btn hero-btn-secondary">Связаться</a>
+                    </article>
+                </div>
+
+                <div class="pricing-addons">
+                    <h3>Дополнительные услуги</h3>
+                    <p class="pricing-addons-hint">Разовая помощь от команды CleanMenu. Цены фиксированные — никаких скрытых сборов или партнёрских комиссий.</p>
+                    <ul class="pricing-addons-list">
+                        <li><strong>Express onboarding</strong> · 9 900 ₽ — 3 часа: настройка, бренд, импорт меню, QR на 1 локацию</li>
+                        <li><strong>Full onboarding</strong> · 24 900 ₽ — 8 часов: всё из Express + категории + рецепты + KDS + 54-ФЗ + Telegram-бот</li>
+                        <li><strong>Миграция с iiko/R-Keeper/Quick Resto</strong> · 49 900 ₽ — 12+ часов: экспорт, mapping, parallel-run сопровождение</li>
+                        <li><strong>Group training</strong> · 6 900 ₽ — 2 часа онлайн, до 5 человек: приём заказов, KDS, отчётность</li>
+                        <li><strong>Individual training</strong> · 4 900 ₽ — 1 час 1-on-1: настройки, аналитика, маркетинг</li>
+                        <li><strong>Telegram-bot setup</strong> · 4 900 ₽ — создание бота, webhook, inline-кнопки</li>
+                        <li><strong>Custom domain config</strong> · 2 900 ₽ — DNS + Let's Encrypt + nginx (Pro доплата; в Enterprise included)</li>
+                        <li><strong>Recorded video course</strong> · 2 900 ₽ — lifetime access</li>
+                    </ul>
+                </div>
+
+                <p class="pricing-bottom-note">
+                    Все цены в рублях, без скрытых комиссий. Месячная оплата = гибкость (отмена в любой момент).
+                    Годовая оплата = lock-in цены 2026 на 12 месяцев + 2 месяца бесплатно. Платежи через YooKassa.
+                </p>
             </div>
         </section>
 

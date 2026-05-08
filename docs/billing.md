@@ -1,18 +1,41 @@
-# SaaS Billing Engine (Phase 14)
+# SaaS Billing Engine (Phase 14 + Phase 32)
 
 ## Implementation Status
 
-- Status: `Implemented` (scaffold + UI; live-traffic verification pending)
-- Last reviewed: `2026-05-03`
+- Status: `Phase 32A live (2026-05-08): pricing v3 (Pro Trial 90d / Pro 6 990 / Pro annual / Enterprise 19 990 / Enterprise annual / Enterprise+ договорная). Phase 32B in backlog: card-required signup, addon purchases, annual billing automation, trial-end conversion cron.`
+- Last reviewed: `2026-05-08`
 - Provider: YooKassa (recurring via `save_payment_method` + stored `payment_method_id`)
-- Plans: Trial (14 days) / Starter / Pro / Enterprise
+- Plans: see Pricing matrix below
+
+## Pricing matrix (Phase 32 v3)
+
+| Tier | Price | Trial | Card at signup | Notes |
+|---|---|---|---|---|
+| **Pro Trial** | 0 ₽ × **90 days** | n/a | required (Phase 32B) | Acquisition funnel. Full Pro features for 90 days. Card not charged until day 91 |
+| **Pro** | 6 990 ₽/mo | none | yes | Mainstream tier. KDS + inventory + loyalty + marketing + 54-ФЗ + group split + waitlist. Up to 3 locations / 30 staff |
+| **Pro annual** | 69 900 ₽/year (2 mo free) | none | yes | 16% discount, lock-in 2026 pricing |
+| **Enterprise** | 19 990 ₽/mo | none | yes | + white-label + custom domain + dev API + priority support + SLA. Up to 10 locations. **Bundled: Express onboarding + 4 h training** (~24 900 ₽ value) |
+| **Enterprise annual** | 199 900 ₽/year (2 mo free) | none | yes | Annual variant of Enterprise |
+| **Enterprise+ / Сеть** | договорная (от 35 000 ₽/mo) | none | sales-led | Chains 10+ locations, SSO, dedicated DB, custom SLA, dedicated success-manager. Bundled: Full onboarding + 4 h training + priority support |
+
+See full strategy + competitor analysis + GTM playbook in [marketing-strategy-2026.md](marketing-strategy-2026.md).
+
+## Phase 14 → 32 deltas
+
+What changed in Phase 32 vs the original Phase 14 model:
+
+- **Killed Starter tier (2 990 ₽)** — was a "starter trap" with severely gutted features (no KDS/inventory/loyalty/marketing). Cannibalized Pro upsells while not being competitive vs Frontpad (449 ₽) at low end.
+- **Trial 14 days → 90 days** — 90-day full-Pro trial replaces single-tier short trial. Lower-friction acquisition (no price decision in first 3 months) at cost of longer commit-to-paid window.
+- **Annual billing variants added** (`pro_annual`, `enterprise_annual`) — 2 months free as discount lock-in. Standard SaaS pattern; closes the cash-flow gap.
+- **Enterprise self-service** — was sales-only with negotiable price; now fixed 19 990 ₽/mo with bundled Express onboarding + training. New tier `enterprise_plus` carries the договорная sales-led contract.
+- **Add-on services catalog** — Express onboarding (9 900 ₽), Full onboarding (24 900 ₽), Migration from competitor (49 900 ₽), training packages, Telegram-bot setup, custom domain config. Phase 32B implements purchase API + UI.
 
 ## Overview
 
-Phase 14 turns CleanMenu from a tool the operator runs for one tenant into a real SaaS product that takes recurring monthly payments from many tenants. Three flows:
+Phase 14 turned CleanMenu into a SaaS product taking recurring payments. Phase 32 restructured the pricing v3 (above) and added the services-revenue surface. Three flows:
 
-1. **Self-service signup** — anyone visits `https://menu.labus.pro/signup.php`, fills brand + email + password, gets a 14-day trial tenant on `<slug>.menu.labus.pro`.
-2. **Conversion** — before trial expiry the owner adds a YooKassa card on `/owner.php?tab=billing`, picks a plan. After first successful charge the YK `payment_method_id` is saved for autocharges.
+1. **Self-service signup** — anyone visits `https://menu.labus.pro/signup.php`, fills brand + email + password, gets a **90-day Pro trial** tenant on `<slug>.menu.labus.pro`. (Phase 32B: card required at signup, charged on day 91 if not cancelled.)
+2. **Conversion** — before trial expiry the owner adds a YooKassa card on `/owner.php?tab=billing`, picks a plan. After first successful charge the YK `payment_method_id` is saved for autocharges. (Phase 32B: trial-end cron sends day 75/85 conversion offers — annual rate 49 900 ₽ instead of 69 900 ₽.)
 3. **Recurring billing** — `scripts/billing-cycle-worker.php` (cron `0 */6 * * *`) finds tenants whose `current_period_end` is approaching, creates an invoice, and charges via stored token. Soft dunning if it fails: retry day 1 / 4 / 7, then `past_due` (read-only), then `suspended` (503) at day 30.
 
 ## Data Model

@@ -500,3 +500,182 @@
     grid-column: 1 / -1;
   }
 }
+
+/* ===========================================================================
+ * Phase 32 — pricing section on /index.php (provider mode)
+ * =========================================================================== */
+
+.index-landing-page .pricing-section {
+  padding: 60px 0 40px;
+  background: linear-gradient(180deg, var(--ui-surface, #fff), var(--ui-surface-muted, #faf7f2));
+}
+
+.index-landing-page .pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin: 32px 0 40px;
+}
+
+.index-landing-page .pricing-card {
+  background: var(--white, #fff);
+  border: 1px solid var(--ui-border, rgba(18, 18, 18, 0.08));
+  border-radius: 20px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 8px 24px rgba(18, 18, 18, 0.04);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.index-landing-page .pricing-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 36px rgba(18, 18, 18, 0.08);
+}
+
+.index-landing-page .pricing-card--featured {
+  border: 2px solid var(--primary-color, #cd1719);
+  position: relative;
+  background: linear-gradient(180deg, var(--white, #fff), rgba(var(--primary-color-rgb, 205, 23, 25), 0.02));
+}
+
+.index-landing-page .pricing-card--sales {
+  border-style: dashed;
+  background: var(--ui-surface-muted, #faf7f2);
+}
+
+.index-landing-page .pricing-card-kicker {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary-color, #cd1719);
+  margin: 0;
+}
+
+.index-landing-page .pricing-card h3 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--ui-text, #121212);
+}
+
+.index-landing-page .pricing-card-price {
+  margin: 4px 0 0;
+}
+
+.index-landing-page .pricing-card-amount {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--ui-text, #121212);
+  letter-spacing: -0.01em;
+}
+
+.index-landing-page .pricing-card-period {
+  font-size: 16px;
+  color: var(--ui-text-muted, #666);
+  margin-left: 4px;
+}
+
+.index-landing-page .pricing-card-annual {
+  font-size: 13px;
+  color: var(--ui-text-muted, #666);
+  margin: 0 0 8px;
+}
+
+.index-landing-page .pricing-card-features {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-grow: 1;
+}
+
+.index-landing-page .pricing-card-features li {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ui-text, #121212);
+  padding-left: 18px;
+  position: relative;
+}
+
+.index-landing-page .pricing-card-features li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--primary-color, #cd1719);
+  font-weight: 700;
+}
+
+.index-landing-page .pricing-card .btn {
+  margin-top: auto;
+  text-align: center;
+}
+
+.index-landing-page .pricing-addons {
+  margin: 32px 0 0;
+  padding: 28px 24px;
+  background: var(--white, #fff);
+  border: 1px solid var(--ui-border, rgba(18, 18, 18, 0.08));
+  border-radius: 16px;
+}
+
+.index-landing-page .pricing-addons h3 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.index-landing-page .pricing-addons-hint {
+  color: var(--ui-text-muted, #666);
+  font-size: 14px;
+  margin: 0 0 18px;
+}
+
+.index-landing-page .pricing-addons-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 24px;
+}
+
+.index-landing-page .pricing-addons-list li {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ui-text, #121212);
+}
+
+.index-landing-page .pricing-bottom-note {
+  margin: 28px 0 0;
+  font-size: 13px;
+  color: var(--ui-text-muted, #666);
+  text-align: center;
+  line-height: 1.6;
+}
+
+@media (max-width: 1024px) {
+  .index-landing-page .pricing-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .index-landing-page .pricing-addons-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .index-landing-page .pricing-section {
+    padding: 40px 0 24px;
+  }
+  .index-landing-page .pricing-card {
+    padding: 22px 18px;
+  }
+  .index-landing-page .pricing-card-amount {
+    font-size: 30px;
+  }
+}

@@ -70,9 +70,13 @@ switch ($action) {
             echo json_encode(['success' => false, 'error' => 'invalid_plan']);
             break;
         }
-        if ($newPlan === 'enterprise') {
+        // Phase 32: enterprise / enterprise_annual now self-service with fixed pricing
+        // (was sales-only with negotiable price). Only enterprise_plus stays sales-only
+        // (custom contracts for chains 10+ locations, SSO, dedicated DB, etc).
+        $newPlanData = PlanRegistry::byId($newPlan);
+        if (!empty($newPlanData['sales_only']) || $newPlan === 'enterprise_plus') {
             http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'enterprise_via_sales']);
+            echo json_encode(['success' => false, 'error' => 'sales_only_plan', 'message' => 'Этот тариф доступен только через sales@labus.pro']);
             break;
         }
         $billing = SubscriptionStore::getTenantBilling($tenantId);

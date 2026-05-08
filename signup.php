@@ -1,9 +1,17 @@
 <?php
 /**
- * signup.php — self-service tenant signup (Phase 14.6, 2026-05-03).
+ * signup.php — self-service tenant signup (Phase 32, 2026-05-08).
  *
- * Public, no auth. Creates a trial tenant in 14 days. After successful
- * provisioning, redirects to the new tenant's domain with auto-login.
+ * Public, no auth. Creates a Pro-trial tenant for 90 days (Phase 32 v3
+ * pricing model). After successful provisioning, redirects to the new
+ * tenant's domain with auto-login.
+ *
+ * Card collection (full Phase 32B): card pre-auth via YooKassa SaveMethod
+ * required at signup; not charged until day 91 unless user explicitly
+ * upgrades earlier. The card-collection flow lives in /js/signup.js
+ * (Phase 32B). For Phase 32A this page only updates the messaging and
+ * tier picker; backend signup endpoint still creates trial without card
+ * (existing behaviour) — to be tightened in 32B.
  *
  * Available only on provider mode (menu.labus.pro itself); 404 on
  * tenant subdomains to avoid confusion.
@@ -43,26 +51,56 @@ $styleNonce  = $GLOBALS['styleNonce']  ?? '';
 <div class="signup-container">
     <header class="signup-hero">
         <p class="signup-kicker">SaaS для ресторанов</p>
-        <h1>Запустите своё меню за 5 минут</h1>
+        <h1>90 дней Pro бесплатно — запустите ресторан за 5 минут</h1>
         <p class="signup-lead">
-            14 дней бесплатно. Без карты. Полный доступ ко всем функциям —
-            меню, заказы, KDS, лояльность, аналитика, фискальные чеки.
+            Полный доступ ко всему: меню, заказы, KDS, склад, лояльность, маркетинг,
+            54-ФЗ, group split-bill, white-label на вашем домене (Enterprise).
+            Карта при регистрации — без списания до 91-го дня, отмена в любой момент.
         </p>
     </header>
 
-    <section class="signup-plans-row">
-        <?php foreach (PlanRegistry::selfServiceIds() as $pid):
-            $plan = PlanRegistry::byId($pid);
-            if (!$plan) continue;
+    <section class="signup-plans-row signup-plans-row--single">
+        <?php
+        $trialPlan = PlanRegistry::byId('trial');
+        if ($trialPlan):
+            $trialDays = PlanRegistry::trialDays('trial');
         ?>
-            <div class="signup-plan-card<?= $pid === 'trial' ? ' is-default' : '' ?>" data-plan-id="<?= htmlspecialchars($pid) ?>">
-                <h3><?= htmlspecialchars($plan['name']) ?></h3>
-                <p class="signup-plan-price"><?= htmlspecialchars(PlanRegistry::priceLabel($pid)) ?>
-                    <?php if ((int)$plan['price_kop'] > 0): ?><small> / мес</small><?php endif; ?>
+            <div class="signup-plan-card is-default is-featured" data-plan-id="trial">
+                <span class="signup-plan-badge">Старт здесь</span>
+                <h3><?= htmlspecialchars($trialPlan['name']) ?></h3>
+                <p class="signup-plan-price">
+                    Бесплатно <small>· <?= (int)$trialDays ?> дней</small>
                 </p>
-                <p class="signup-plan-desc"><?= htmlspecialchars($plan['description']) ?></p>
+                <p class="signup-plan-desc"><?= htmlspecialchars($trialPlan['description']) ?></p>
+                <ul class="signup-plan-features">
+                    <li>✓ KDS, склад, рецепты, лояльность</li>
+                    <li>✓ Маркетинг (email/SMS/Telegram)</li>
+                    <li>✓ 54-ФЗ через АТОЛ Онлайн</li>
+                    <li>✓ Group orders, split-bill, бронирования</li>
+                    <li>✓ До 3 локаций, до 30 сотрудников</li>
+                </ul>
+                <p class="signup-plan-after-trial">
+                    После trial — <strong>Pro 6 990 ₽/мес</strong>
+                    или <strong>69 900 ₽/год</strong> (2 мес бесплатно).
+                </p>
             </div>
-        <?php endforeach; ?>
+        <?php endif; ?>
+    </section>
+
+    <section class="signup-plans-also">
+        <h3>Нужно больше — Enterprise или сетевой план</h3>
+        <div class="signup-plans-also-row">
+            <div class="signup-plan-card-mini">
+                <h4>Enterprise · 19 990 ₽/мес</h4>
+                <p>До 10 локаций, white-label на своём домене, dev API, priority support, SLA.
+                    <strong>В цену включён Express onboarding (3 ч) + 4 ч обучения персонала</strong> (~24 900 ₽ value).</p>
+            </div>
+            <div class="signup-plan-card-mini">
+                <h4>Enterprise+ / Сеть · договорная</h4>
+                <p>Сети 10+ локаций, SSO/SAML, dedicated DB, кастомная SLA, выделенный success-manager.
+                    <a href="mailto:sales@labus.pro">sales@labus.pro</a></p>
+            </div>
+        </div>
     </section>
 
     <form id="signupForm" class="signup-form" autocomplete="off" novalidate>
@@ -93,10 +131,11 @@ $styleNonce  = $GLOBALS['styleNonce']  ?? '';
 
         <p class="signup-terms">
             Создавая аккаунт, вы соглашаетесь с условиями использования и политикой конфиденциальности.
-            Через 14 дней trial автоматически переходит в режим past_due, пока вы не выберете тариф и не введёте карту.
+            <strong>90 дней Pro бесплатно</strong>. На <strong>91-й день</strong> trial автоматически переходит в Pro
+            (6 990 ₽/мес) — карта на этом шаге понадобится. Отмена в любой момент в личном кабинете.
         </p>
 
-        <button type="submit" class="checkout-btn signup-submit">Создать ресторан</button>
+        <button type="submit" class="checkout-btn signup-submit">Запустить ресторан · 90 дней Pro бесплатно</button>
         <span class="signup-feedback" id="signupFeedback" hidden></span>
     </form>
 </div>
