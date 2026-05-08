@@ -23,10 +23,12 @@
 require_once __DIR__ . '/../lib/Billing/PlanRegistry.php';
 require_once __DIR__ . '/../lib/Billing/FeatureGate.php';
 require_once __DIR__ . '/../lib/Billing/SubscriptionStore.php';
+require_once __DIR__ . '/../lib/Billing/AddonCatalog.php';
 
 use Cleanmenu\Billing\PlanRegistry;
 use Cleanmenu\Billing\FeatureGate;
 use Cleanmenu\Billing\SubscriptionStore;
+use Cleanmenu\Billing\AddonCatalog;
 
 $tenantId = (int)($GLOBALS['tenantId'] ?? 0);
 $billing  = $tenantId > 0 ? SubscriptionStore::getTenantBilling($tenantId) : null;
@@ -181,54 +183,53 @@ $statusLabel = $statusLabels[$status] ?? $status;
     <div class="account-section billing-addons-section">
         <h3>Дополнительные услуги</h3>
         <p class="billing-addon-hint">
-            Разовая помощь от команды CleanMenu. Покупка с карты на странице (доступна
-            в Phase 32B — пока для заявки используйте контакт ниже).
+            Разовая помощь от команды CleanMenu. Услуги выполняются после оплаты.
+            После клика «Купить» вы попадёте на YooKassa для оплаты, после возврата
+            мы получим заявку и свяжемся с вами в течение 1 рабочего дня.
         </p>
         <div class="billing-addon-grid">
-            <div class="billing-addon-card">
-                <h4>Express onboarding</h4>
-                <p class="billing-addon-price">9 900 ₽ <small>единоразово</small></p>
-                <p class="billing-addon-desc">3 часа: настройка аккаунта, бренд (логотип + цвета), импорт меню из CSV/Excel, печать QR-кодов на 1 локацию.</p>
-            </div>
-            <div class="billing-addon-card">
-                <h4>Full onboarding</h4>
-                <p class="billing-addon-price">24 900 ₽ <small>единоразово</small></p>
-                <p class="billing-addon-desc">8 часов: всё из Express + категории, модификаторы, рецепты с ингредиентами, KDS-станции, 54-ФЗ, Telegram-бот.</p>
-            </div>
-            <div class="billing-addon-card">
-                <h4>Миграция с iiko / R-Keeper / Quick Resto</h4>
-                <p class="billing-addon-price">49 900 ₽ <small>единоразово</small></p>
-                <p class="billing-addon-desc">12+ часов: экспорт данных от конкурента, mapping, валидация, parallel-run сопровождение до полного перехода.</p>
-            </div>
-            <div class="billing-addon-card">
-                <h4>Group training (онлайн)</h4>
-                <p class="billing-addon-price">6 900 ₽ <small>за 2 часа, до 5 человек</small></p>
-                <p class="billing-addon-desc">Обучение персонала: приём заказов, KDS, отчётность, маркетинговые рассылки.</p>
-            </div>
-            <div class="billing-addon-card">
-                <h4>Individual training</h4>
-                <p class="billing-addon-price">4 900 ₽ <small>за 1 час 1-on-1</small></p>
-                <p class="billing-addon-desc">Owner-training: настройки, аналитика v2, маркетинговые сегменты, лояльность.</p>
-            </div>
-            <div class="billing-addon-card">
-                <h4>Telegram-bot setup</h4>
-                <p class="billing-addon-price">4 900 ₽ <small>единоразово</small></p>
-                <p class="billing-addon-desc">Создание бота, webhook config, inline-buttons на pending-заказы, тестирование.</p>
-            </div>
-            <div class="billing-addon-card">
-                <h4>Custom domain config</h4>
-                <p class="billing-addon-price">2 900 ₽ <small>единоразово</small></p>
-                <p class="billing-addon-desc">DNS + Let's Encrypt SSL + nginx config для tenant-домена. На Pro как доплата; в Enterprise включено.</p>
-            </div>
-            <div class="billing-addon-card">
-                <h4>Recorded video course</h4>
-                <p class="billing-addon-price">2 900 ₽ <small>lifetime access</small></p>
-                <p class="billing-addon-desc">Запись полного курса по платформе для самообучения нового персонала.</p>
-            </div>
+            <?php
+            // Render purchasable add-ons in a fixed display order.
+            $addonOrder = [
+                'express_onboarding',
+                'full_onboarding',
+                'migration_from_competitor',
+                'group_training',
+                'individual_training',
+                'telegram_bot_setup',
+                'custom_domain_config',
+                'recorded_video_course',
+                'priority_support',
+                'on_site_visit',
+            ];
+            $purchasable = AddonCatalog::purchasableSkus();
+            foreach ($addonOrder as $sku):
+                if (!in_array($sku, $purchasable, true)) continue;
+                $addon = AddonCatalog::bySku($sku);
+                if (!$addon) continue;
+                $isBundled = !empty($addon['bundled_in_plans']) && in_array($planId, $addon['bundled_in_plans'], true);
+            ?>
+                <div class="billing-addon-card<?= $isBundled ? ' is-bundled' : '' ?>">
+                    <h4><?= htmlspecialchars($addon['name']) ?></h4>
+                    <p class="billing-addon-price"><?= htmlspecialchars(AddonCatalog::priceLabel($sku)) ?></p>
+                    <p class="billing-addon-desc"><?= htmlspecialchars($addon['description']) ?></p>
+                    <?php if ($isBundled): ?>
+                        <p class="billing-addon-bundled-badge">Включено в ваш тариф</p>
+                    <?php else: ?>
+                        <button type="button" class="checkout-btn billing-buy-addon-btn"
+                                data-addon-sku="<?= htmlspecialchars($sku) ?>"
+                                data-addon-price="<?= htmlspecialchars(AddonCatalog::priceLabel($sku)) ?>"
+                                data-addon-name="<?= htmlspecialchars($addon['name']) ?>">
+                            Купить
+                        </button>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
         </div>
         <p class="billing-addon-contact">
-            Чтобы заказать — пишите <a href="mailto:hello@labus.pro?subject=Onboarding%20%2F%20training%20request">hello@labus.pro</a> или в Telegram-чат поддержки.
+            Вопросы? <a href="mailto:hello@labus.pro?subject=Onboarding%20%2F%20training%20request">hello@labus.pro</a> или в Telegram-чате поддержки.
         </p>
+        <span class="billing-addon-feedback" id="billingAddonFeedback" hidden></span>
     </div>
 
     <div class="account-section billing-invoices-section">

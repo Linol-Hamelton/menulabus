@@ -27,6 +27,7 @@
 namespace Cleanmenu\Billing;
 
 require_once __DIR__ . '/FeatureGate.php';
+require_once __DIR__ . '/YookassaRecurring.php';
 
 final class SubscriptionStore
 {
@@ -274,6 +275,32 @@ final class SubscriptionStore
         }
 
         if ($apiStatus === 'succeeded') {
+            // Phase 32B: short-circuit if this YK payment is an addon
+            // purchase (created by /api/billing-purchase-addon.php).
+            // Don't extend subscription period — addons are independent
+            // one-time charges that mustn't accidentally renew the plan.
+            try {
+                $addonStmt = self::pdo()->prepare(
+                    'SELECT id, addon_sku FROM addon_purchases
+                      WHERE yk_payment_id = :yk LIMIT 1'
+                );
+                $addonStmt->execute([':yk' => $paymentId]);
+                $addonRow = $addonStmt->fetch(\PDO::FETCH_ASSOC);
+            } catch (\Throwable $e) {
+                $addonRow = null; // table may not exist on legacy installs (pre-32B migration)
+            }
+            if ($addonRow) {
+                self::pdo()->prepare(
+                    'UPDATE addon_purchases SET status = "paid", delivered_at = NULL WHERE id = :id'
+                )->execute([':id' => (int)$addonRow['id']]);
+                self::logEvent($tenantId, 'addon_purchased', [
+                    'purchase_id'  => (int)$addonRow['id'],
+                    'addon_sku'    => $addonRow['addon_sku'],
+                    'yk_payment_id'=> $paymentId,
+                ]);
+                return; // do NOT extend subscription period
+            }
+
             // Save payment method on FIRST successful charge (initial phase).
             $pmInfo = $ykPayment['payment_method'] ?? [];
             if (!empty($pmInfo['id']) && !empty($pmInfo['saved'])) {
@@ -290,16 +317,61 @@ final class SubscriptionStore
             // Mark invoice paid (idempotent — repeated webhooks ok).
             self::updateInvoiceByYk($paymentId, 'paid');
 
-            // Bump tenant status to active + extend period.
             $billing = self::getTenantBilling($tenantId);
-            if ($billing) {
-                $newEnd = date('Y-m-d H:i:s', strtotime('+1 month'));
-                self::updateTenantStatus($tenantId, 'active', $newEnd, null);
+            $phase   = (string)($metadata['phase'] ?? '');
+            $amount  = (float)($ykPayment['amount']['value'] ?? 0);
+            $amountKop = (int)round($amount * 100);
+
+            // Phase 32B: detect signup card-binding charge (1 ₽).
+            // - phase=initial AND tenant in trial AND amount ≤ 100 kop = signup binding
+            // - any other initial succeeded payment = real upgrade/conversion charge
+            $isSignupBinding =
+                $phase === 'initial' &&
+                isset($billing['subscription_status']) &&
+                $billing['subscription_status'] === 'trial' &&
+                $amountKop <= 100;
+
+            if ($isSignupBinding) {
+                // Auto-refund the 1 ₽ binding so the customer pays nothing.
+                // Trial continues for full 90 days; first real charge happens
+                // at billing-cycle-worker on day 91 (or earlier if owner upgrades).
+                try {
+                    YookassaRecurring::refundPayment(
+                        $paymentId,
+                        $amountKop,
+                        'signup_binding_refund_' . $tenantId . '_' . substr(md5($paymentId), 0, 12)
+                    );
+                    self::logEvent($tenantId, 'card_binding_refunded', [
+                        'yk_payment_id' => $paymentId,
+                        'amount_kop'    => $amountKop,
+                    ]);
+                } catch (\Throwable $e) {
+                    // Don't fail the webhook — binding still succeeded; refund
+                    // can be reissued from the YK dashboard manually if needed.
+                    error_log('SubscriptionStore::onWebhook: signup-binding refund failed for tenant #' . $tenantId . ': ' . $e->getMessage());
+                    self::logEvent($tenantId, 'card_binding_refund_failed', [
+                        'yk_payment_id' => $paymentId,
+                        'error'         => $e->getMessage(),
+                    ]);
+                }
+                self::logEvent($tenantId, 'card_binding_succeeded', [
+                    'yk_payment_id' => $paymentId,
+                    'trial_ends_at' => $billing['trial_ends_at'] ?? null,
+                ]);
+                // Don't bump status / period_end — trial continues unchanged.
+            } else {
+                // Existing behavior: bump tenant to active + extend period
+                // by one month (real conversion charge or recurring autocharge).
+                if ($billing) {
+                    $newEnd = date('Y-m-d H:i:s', strtotime('+1 month'));
+                    self::updateTenantStatus($tenantId, 'active', $newEnd, null);
+                }
+                self::logEvent($tenantId, 'charge_success', [
+                    'yk_payment_id' => $paymentId,
+                    'phase'         => $phase ?: 'unknown',
+                    'amount_kop'    => $amountKop,
+                ]);
             }
-            self::logEvent($tenantId, 'charge_success', [
-                'yk_payment_id' => $paymentId,
-                'phase'         => $metadata['phase'] ?? 'unknown',
-            ]);
         } elseif ($apiStatus === 'canceled') {
             $reason = (string)(($ykPayment['cancellation_details']['reason'] ?? '') ?: 'canceled');
             self::updateInvoiceByYk($paymentId, 'failed', $reason);

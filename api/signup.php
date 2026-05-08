@@ -1,10 +1,25 @@
 <?php
 /**
- * api/signup.php — self-service tenant provisioning endpoint (Phase 14.6).
+ * api/signup.php — self-service tenant provisioning endpoint (Phase 32B).
  *
- * Validates input → checks slug/email collision → calls provision_run() →
- * stamps plan_id, trial_ends_at, owner_email on tenants row → returns
- * { success, tenant_url, owner_email }.
+ * Phase 14.6 → Phase 32B flow:
+ *   1. Validate input → check slug/email collision → provision_run() →
+ *      stamp plan_id='trial' / 90-day trial_ends_at on tenants row.
+ *   2. Phase 32B addition: immediately create a 1 ₽ binding payment via
+ *      YooKassa (save_payment_method=true). Returns the YK confirmation
+ *      URL as `redirect_url` so the frontend can redirect the customer
+ *      to YK to enter card details. After successful binding, the
+ *      payment-webhook handler:
+ *        - saves the resulting payment_method_id to payment_methods
+ *        - auto-refunds the 1 ₽ binding charge so the customer pays nothing
+ *        - leaves trial active for 90 days
+ *      On day 91 the billing-cycle-worker autocharges Pro 6 990 ₽ unless
+ *      the owner cancelled or downgraded mid-trial.
+ *
+ * If the YK binding payment creation fails (network blip, invalid creds),
+ * the tenant is still created in trial; signup returns {success: true,
+ * tenant_url, card_required: true, redirect_url: null} and the owner can
+ * add a card later via /owner.php?tab=billing.
  *
  * Public, no auth. CSRF-required to prevent drive-by tenant creation.
  * Rate-limited at the nginx layer (auth zone covers /api/signup.php).
@@ -15,9 +30,11 @@ require_once __DIR__ . '/../lib/Csrf.php';
 require_once __DIR__ . '/../lib/Billing/PlanRegistry.php';
 require_once __DIR__ . '/../lib/Billing/SubscriptionStore.php';
 require_once __DIR__ . '/../lib/Billing/FeatureGate.php';
+require_once __DIR__ . '/../lib/Billing/YookassaRecurring.php';
 
 use Cleanmenu\Billing\PlanRegistry;
 use Cleanmenu\Billing\SubscriptionStore;
+use Cleanmenu\Billing\YookassaRecurring;
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -143,9 +160,62 @@ try {
     // Don't fail the response — provisioning succeeded; admin can fix manually.
 }
 
+// ─── Phase 32B: card-required signup ───────────────────────────────────────
+// Initiate a 1 ₽ binding payment via YooKassa. Card data flows through
+// YK-hosted page (PCI-DSS compliant — we never see the PAN). On success,
+// payment-webhook.php saves the payment_method_id and refunds the 1 ₽.
+//
+// If YK is unreachable / misconfigured, signup still succeeds (tenant is
+// created in trial); the owner can attach a card later from the billing
+// tab. We surface the failure mode via card_required + redirect_url=null.
+$cardRedirectUrl = null;
+$cardError = null;
+try {
+    $bindingAmountKop = 100; // 1 ₽ minimum YK accepts
+    $idemKey = 'signup_card_' . $tenantId . '_' . substr(md5(microtime(true) . random_int(0, PHP_INT_MAX)), 0, 12);
+    $returnUrl = 'https://' . $domain . '/owner.php?tab=billing&card_added=1';
+    $resp = YookassaRecurring::createInitialPayment(
+        $tenantId,
+        $bindingAmountKop,
+        'Привязка карты для подписки CleanMenu (1 ₽ возвращается автоматически)',
+        $returnUrl,
+        $idemKey
+    );
+    $cardRedirectUrl = $resp['confirmation_url'] ?? null;
+
+    // Record this binding payment as a pending invoice so the webhook
+    // handler can correlate it back to the tenant. Reusing the same row
+    // pattern as /api/billing-action.php update_payment_method.
+    if (!empty($resp['id'])) {
+        $pdo->prepare(
+            'INSERT INTO subscription_invoices
+                (tenant_id, plan_id, period_start, period_end, amount_kop,
+                 status, yk_payment_id, retry_count)
+             VALUES (:tid, :pid, NOW(), NOW(), :amt, "pending", :ykid, 0)'
+        )->execute([
+            ':tid'  => $tenantId,
+            ':pid'  => 'trial',
+            ':amt'  => $bindingAmountKop,
+            ':ykid' => (string)$resp['id'],
+        ]);
+    }
+
+    SubscriptionStore::logEvent($tenantId, 'card_binding_initiated', [
+        'yk_payment_id' => $resp['id'] ?? null,
+        'amount_kop'    => $bindingAmountKop,
+    ]);
+} catch (Throwable $e) {
+    $cardError = $e->getMessage();
+    error_log('signup: YK card binding failed for tenant #' . $tenantId . ': ' . $cardError);
+    SubscriptionStore::logEvent($tenantId, 'card_binding_failed', ['error' => $cardError]);
+}
+
 echo json_encode([
-    'success'     => true,
-    'tenant_url'  => 'https://' . $domain,
-    'owner_email' => $ownerEmail,
-    'trial_ends'  => $trialEnds ?? null,
+    'success'      => true,
+    'tenant_url'   => 'https://' . $domain,
+    'owner_email'  => $ownerEmail,
+    'trial_ends'   => $trialEnds ?? null,
+    'redirect_url' => $cardRedirectUrl,        // → if non-null, frontend redirects to YK for card input
+    'card_required'=> true,
+    'card_error'   => $cardError,              // null on success; stringified exception on failure (signup still succeeded)
 ]);

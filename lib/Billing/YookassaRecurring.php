@@ -132,6 +132,55 @@ final class YookassaRecurring
     }
 
     /**
+     * Refund a previously-captured payment in part or in full.
+     * Used by the signup card-binding flow (Phase 32B): the 1 ₽
+     * binding charge is auto-refunded once the payment_method is saved,
+     * so the customer pays nothing for the trial.
+     *
+     * @param string $paymentId        YK payment.id from the original charge
+     * @param int    $amountKop        kopecks to refund (≤ original captured amount)
+     * @param string $idempotencyKey   unique-per-attempt opaque key
+     * @return array{id:string, status:string}
+     */
+    public static function refundPayment(string $paymentId, int $amountKop, string $idempotencyKey): array
+    {
+        if ($amountKop <= 0) {
+            throw new RuntimeException('YookassaRecurring::refundPayment: amount must be positive');
+        }
+        [$shopId, $secretKey] = self::credentials();
+
+        $payload = [
+            'payment_id' => $paymentId,
+            'amount' => [
+                'value'    => self::formatKopAsRub($amountKop),
+                'currency' => 'RUB',
+            ],
+        ];
+        $resp = self::http(
+            'POST',
+            'https://api.yookassa.ru/v3/refunds',
+            $payload,
+            [
+                'Authorization: Basic ' . base64_encode("{$shopId}:{$secretKey}"),
+                'Idempotence-Key: ' . $idempotencyKey,
+                'Content-Type: application/json',
+            ],
+            15
+        );
+        if ($resp['code'] !== 200) {
+            throw new RuntimeException("YookassaRecurring::refundPayment failed (HTTP {$resp['code']}): {$resp['body']}");
+        }
+        $json = json_decode($resp['body'], true);
+        if (!is_array($json) || empty($json['id'])) {
+            throw new RuntimeException("YookassaRecurring::refundPayment: malformed response: {$resp['body']}");
+        }
+        return [
+            'id'     => (string)$json['id'],
+            'status' => (string)($json['status'] ?? 'pending'),
+        ];
+    }
+
+    /**
      * Verify a webhook payload by re-fetching the payment from YK
      * (matches the existing payment-webhook.php pattern — never trust
      * the body alone).

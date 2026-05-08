@@ -2,7 +2,7 @@
 
 ## Implementation Status
 
-- Status: `Phase 32A shipped 2026-05-08 (pricing v3 live), 32B in backlog (card-required signup, addon purchase API, annual billing automation, trial-end conversion cron)`
+- Status: `Phase 32A + 32B shipped 2026-05-08. Live: pricing v3, card-required signup with YK 1 ₽ binding (auto-refunded), addon purchase API (10 SKUs), trial-end reminder cron (D-15/D-5 emails). Deferred: annual billing automation (manual flag works for first 5-10 annual customers; full impl in Phase 32C).`
 - Last reviewed: `2026-05-08`
 - Owner: provider founder (sole-decision-maker today: feldhausthorsen@gmail.com)
 

@@ -82,6 +82,18 @@ Add to crontab (`crontab -e -u webuser`):
 
 After installing, verify with `crontab -l -u webuser` and tail the logs after first scheduled run.
 
+### 2.4 Trial-end reminder emails (Phase 32B)
+
+- File: `scripts/billing-trial-reminder.php`
+- Purpose: email tenants on trial 15 days and 5 days before trial expiry
+- Recommended cadence: daily at 09:30 UTC
+
+```cron
+30 9 * * * /usr/bin/php8.1 /var/www/labus_pro_usr/data/www/menu.labus.pro/scripts/billing-trial-reminder.php >> /var/log/cleanmenu/trial-reminder.log 2>&1
+```
+
+Idempotent: dedup via `subscription_events` (event_type='trial_reminder_sent') ensures one email per tenant per window. Sends from `hello@labus.pro`. `--verbose` flag prints to stdout, `--dry-run` flag skips actual mail sending.
+
 ## 3. Network / SSH hardening (one-shot host scripts)
 
 These are repo-owned scripts that need to be **executed once** on the prod host, not scheduled.

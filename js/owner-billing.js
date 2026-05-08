@@ -105,4 +105,49 @@
     if (new URLSearchParams(window.location.search).get('card_added') === '1') {
         showFeedback(true, 'Карта успешно сохранена. Статус подписки обновится в течение минуты.');
     }
+
+    // ─── Phase 32B: addon purchase buttons ─────────────────────────────────
+    const addonFeedback = document.getElementById('billingAddonFeedback');
+    function showAddonFeedback(ok, message) {
+        if (!addonFeedback) return;
+        addonFeedback.hidden = false;
+        addonFeedback.textContent = (ok ? '✅ ' : '❌ ') + message;
+        addonFeedback.className = 'billing-addon-feedback billing-addon-feedback--' + (ok ? 'ok' : 'err');
+    }
+
+    document.querySelectorAll('.billing-buy-addon-btn').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+            const sku   = btn.dataset.addonSku;
+            const name  = btn.dataset.addonName || sku;
+            const price = btn.dataset.addonPrice || '';
+            if (!sku) return;
+            if (!window.confirm('Оплатить «' + name + '» — ' + price + '?\n\nПосле клика вы попадёте на YooKassa для оплаты картой.')) return;
+            btn.disabled = true;
+            showAddonFeedback(true, 'Готовим страницу оплаты YooKassa…');
+            try {
+                const resp = await fetch('/api/billing-purchase-addon.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+                    body: JSON.stringify({
+                        csrf_token: csrf,
+                        addon_sku:  sku
+                    })
+                });
+                const json = await resp.json().catch(() => ({ success: false, error: 'bad_response' }));
+                if (!json.success) throw new Error(json.message || json.error || 'unknown_error');
+                if (!json.redirect_url) throw new Error('no_payment_url');
+                showAddonFeedback(true, 'Переход на YooKassa…');
+                setTimeout(() => { window.location.href = json.redirect_url; }, 800);
+            } catch (err) {
+                showAddonFeedback(false, humanizeError(err));
+                btn.disabled = false;
+            }
+        });
+    });
+
+    // After-redirect feedback (?addon_paid=N)
+    const addonPaid = new URLSearchParams(window.location.search).get('addon_paid');
+    if (addonPaid && /^\d+$/.test(addonPaid)) {
+        showAddonFeedback(true, 'Оплата прошла. Мы свяжемся с вами в течение 1 рабочего дня для оказания услуги.');
+    }
 })();

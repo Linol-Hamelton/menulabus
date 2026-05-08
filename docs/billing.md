@@ -2,7 +2,7 @@
 
 ## Implementation Status
 
-- Status: `Phase 32A live (2026-05-08): pricing v3 (Pro Trial 90d / Pro 6 990 / Pro annual / Enterprise 19 990 / Enterprise annual / Enterprise+ договорная). Phase 32B in backlog: card-required signup, addon purchases, annual billing automation, trial-end conversion cron.`
+- Status: `Phase 32A + 32B live (2026-05-08): pricing v3 + card-required signup (YK 1₽ binding redirect, auto-refunded after success) + AddonCatalog with /api/billing-purchase-addon.php (10 SKUs) + scripts/billing-trial-reminder.php daily cron (D-15 / D-5 emails). Annual billing column deferred to Phase 32C — manual flag works for first dozen annual customers; full automation when first annual buyer signs up.`
 - Last reviewed: `2026-05-08`
 - Provider: YooKassa (recurring via `save_payment_method` + stored `payment_method_id`)
 - Plans: see Pricing matrix below

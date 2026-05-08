@@ -1,7 +1,12 @@
-// signup.js (Phase 14.6, 2026-05-03)
+// signup.js (Phase 32B, 2026-05-08)
 //
 // Handles plan selection (clickable cards) + form submission to
-// /api/signup.php. On success redirects to the new tenant subdomain.
+// /api/signup.php. After tenant creation, the API now returns a
+// `redirect_url` pointing to YooKassa for the 1 ₽ card-binding step.
+// On binding success YK redirects back to the tenant subdomain
+// (auto-refunded). If `redirect_url` is null (YK unreachable) we fall
+// back to the previous behavior — redirect straight to tenant /auth.php
+// and the owner can attach a card later from the billing tab.
 
 (function () {
     'use strict';
@@ -73,8 +78,16 @@
             if (!json.success) {
                 throw new Error(json.message || json.error || 'unknown_error');
             }
-            showFeedback(true, 'Готово! Перенаправляем на ' + json.tenant_url);
-            setTimeout(() => { window.location.href = json.tenant_url + '/auth.php'; }, 1500);
+            // Phase 32B: prefer YK card-binding redirect when available.
+            // Fallback to direct tenant redirect if YK was unreachable or
+            // misconfigured (signal: card_required:true + redirect_url:null).
+            if (json.redirect_url) {
+                showFeedback(true, 'Ресторан создан. Привязка карты — переходим на YooKassa (1 ₽ возвращается автоматически).');
+                setTimeout(() => { window.location.href = json.redirect_url; }, 1200);
+            } else {
+                showFeedback(true, 'Готово! Перенаправляем на ' + json.tenant_url);
+                setTimeout(() => { window.location.href = json.tenant_url + '/auth.php'; }, 1500);
+            }
         } catch (err) {
             showFeedback(false, err.message);
             submitBtn.disabled = false;
