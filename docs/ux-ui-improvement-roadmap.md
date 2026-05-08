@@ -2,8 +2,17 @@
 
 ## Implementation Status
 
-- Status: `Partial · Phase 29 owner.php mobile overflow fix 2026-05-06`
-- Last reviewed: `2026-05-06`
+- Status: `Partial · Phase 31 owner report-card gradient tune 2026-05-08`
+- Last reviewed: `2026-05-08`
+
+## Phase 31 — owner report-card gradient overlays (2026-05-08)
+
+Two visual tweaks on `body.owner-page` report cards' `::before` gradient overlays in `css/owner-styles.min.css`:
+
+- `.owner-report-tabs-card::before` height **68px → 90px** — primary-tinted gradient на «Срезы и метрики» теперь занимает более выраженную вертикальную полосу, бренд-акцент виднее.
+- `.owner-report-controls-card::before` height **4px → 100%** — был тонкий 4px акцент-strip сверху «Период» card, теперь gradient покрывает всю высоту карточки → soft brand-tinted фон вместо резкой полоски.
+
+CSS-only, без markup/backend. Видно на `/owner.php` desktop и mobile под любым активным report-табом.
 
 ## Phase 29 — `/owner.php` mobile overflow fix (2026-05-06)
 

@@ -1057,7 +1057,7 @@ body.owner-page .owner-report-controls-card::before {
 
 body.owner-page .owner-report-tabs-card::before {
   background: linear-gradient(90deg, rgba(var(--primary-color-rgb), 0.12), rgba(var(--primary-color-rgb), 0));
-  height: 68px;
+  height: 90px;
 }
 
 body.owner-page .owner-report-controls-card {
@@ -1068,7 +1068,7 @@ body.owner-page .owner-report-controls-card {
 
 body.owner-page .owner-report-controls-card::before {
   background: linear-gradient(90deg, rgba(var(--primary-color-rgb), 0.16), rgba(var(--primary-color-rgb), 0));
-  height: 4px;
+  height: 100%;
 }
 
 body.owner-page .owner-report-tabs-card > *,
