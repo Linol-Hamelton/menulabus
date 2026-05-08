@@ -37,4 +37,13 @@ if command -v php >/dev/null 2>&1 && [ -f "$ROOT_DIR/scripts/tenant/smoke.php" ]
   php "$ROOT_DIR/scripts/tenant/smoke.php" --provider-domain=menu.labus.pro --tenant-domain=test.milyidom.com > "$OUT_DIR/provider-tenant-smoke.json" 2>&1 || true
 fi
 
+# TLS cert expiry check (Phase 30) — flags any monitored domain expiring
+# within 30 days. Non-zero exit code is captured in cert-expiry.txt; the
+# monthly-review wrapper intentionally does not abort on it (the report
+# itself is the alert), but a separate daily cron at scripts/security/
+# cert-expiry-check.sh should be wired up for proactive Telegram alerts.
+if [ -x "$ROOT_DIR/scripts/security/cert-expiry-check.sh" ]; then
+  bash "$ROOT_DIR/scripts/security/cert-expiry-check.sh" > "$OUT_DIR/cert-expiry.txt" 2>&1 || true
+fi
+
 echo "$OUT_DIR"

@@ -122,3 +122,103 @@ Once all migrations + cron + hardening are done, verify the system is healthy:
 - Migrations from §1 are **forward-only**. If reverting, restore from `mysqldump` taken before the migration run. There is no automatic rollback script.
 - Cron entries can be removed via `crontab -e` — they don't modify state, just stop running workers. Active jobs in flight finish gracefully.
 - Hardening scripts modify `/etc/ufw/*` and `/etc/fail2ban/jail.local`. Each script has its own backup-before-write pattern; check the script source for the backup file path.
+
+## 6. TLS / Let's Encrypt cert lifecycle
+
+### Background — what went wrong on 2026-05-06
+
+The `menu.labus.pro` Let's Encrypt cert expired (notAfter `May 6 19:51:12 2026 GMT`). FastPanel had been failing auto-renewal for ~14 days because the SAN included `www.menu.labus.pro`, and ACME HTTP-01 validation for `www.` failed:
+
+- Default nginx `/.well-known/acme-challenge/` location lives in `/etc/nginx/fastpanel2-includes/letsencrypt.conf` (`alias /usr/local/fastpanel2/web/letsencrypt/`).
+- The site's per-host server-blocks (in `/etc/nginx/fastpanel2-sites/labus_pro_usr/menu.labus.pro.conf`) **did not include** that file.
+- Result: ACME validator hit the `:80` server-block for `www.menu.labus.pro` → `301 https://menu.labus.pro/...` → `:443` server-block → `location /` → PHP-FPM → 404.
+- LE marked validation as failed → entire renewal aborted (one failed SAN fails the whole cert).
+- HSTS preload meant Chrome/Firefox blocked the site without the user being able to bypass.
+
+**Fix applied (Phase 29-30)**:
+
+1. Both `:80` server-blocks (apex + `www.`) now `include /etc/nginx/fastpanel2-includes/letsencrypt.conf;` **before** the `return 301` (FastPanel's location handler matches first because of `^~` prefix → ACME challenge files are served directly without redirect).
+2. Cert reissued through FastPanel UI → success for both SANs.
+3. Daily monitoring added (see §6.3).
+
+### 6.1 Cert health check (one-shot)
+
+```bash
+echo "=== Cert ===" && \
+echo | openssl s_client -servername menu.labus.pro -connect menu.labus.pro:443 2>/dev/null \
+  | openssl x509 -noout -dates -ext subjectAltName ; \
+echo && echo "=== Security headers ===" && \
+curl -sI https://menu.labus.pro/menu.php \
+  | grep -iE "^(strict-|x-frame|x-content|cross-origin|referrer|permissions|content-security|x-xss)" \
+  | sort
+```
+
+`notAfter` should be ≥ 30 days in the future. SAN should include `DNS:menu.labus.pro` and `DNS:www.menu.labus.pro`. All 9 security headers should appear.
+
+### 6.2 Force-renew procedure (when monitor alerts)
+
+1. **FastPanel UI** — Sites → `menu.labus.pro` → SSL → "Issue / Renew Let's Encrypt".
+2. If renewal fails for `www.` SAN — verify both `:80` server-blocks include `letsencrypt.conf`:
+   ```bash
+   sudo nginx -T 2>/dev/null | grep -A3 "listen.*:80" | grep -E "server_name|letsencrypt.conf"
+   ```
+3. If include is missing — re-add it in FastPanel "Custom config" (same pattern as `nginx-optimized.conf`):
+   ```nginx
+   server {
+       listen 62.217.178.117:80;
+       server_name menu.labus.pro;
+       include /etc/nginx/fastpanel2-includes/letsencrypt.conf;
+       location / { return 301 https://$host$request_uri; }
+   }
+   ```
+4. After cert renewed, reload nginx: `sudo nginx -t && sudo systemctl reload nginx`.
+
+### 6.3 Daily monitoring cron (proactive alerting)
+
+```cron
+# Daily 06:00 UTC — alert if any monitored cert expires within 30 days
+0 6 * * * /var/www/labus_pro_usr/data/www/menu.labus.pro/scripts/security/cert-expiry-check.sh \
+    >> /var/log/cleanmenu/cert-expiry.log 2>&1 \
+    || /var/www/labus_pro_usr/data/www/menu.labus.pro/scripts/security/notify-telegram.sh \
+       "🔥 cert-expiry alert — see /var/log/cleanmenu/cert-expiry.log"
+```
+
+The script `scripts/security/cert-expiry-check.sh` returns:
+- `0` — every monitored domain has > 30 days until expiry
+- `1` — at least one domain expires within 30 days (or already expired)
+- `2` — at least one domain unreachable / cert unparseable
+
+`WARN_DAYS=14` env var tightens the threshold; positional args replace the default domain list (`menu.labus.pro`, `www.menu.labus.pro`, `test.milyidom.com`).
+
+The same script is also invoked by `scripts/security/monthly-review.sh` and its output appears in `output/security-monthly/<timestamp>/cert-expiry.txt`.
+
+### 6.4 HSTS preload submission
+
+`menu.labus.pro` already emits `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`. To get into Chrome/Firefox built-in preload list:
+
+1. Pre-flight — verify **all** `*.labus.pro` subdomains are HTTPS-only:
+   ```bash
+   dig labus.pro NS
+   # Manually verify each subdomain on FastPanel: app.labus.pro, www.labus.pro, etc.
+   curl -sI http://app.labus.pro    # should be 301 → https://
+   curl -sI http://www.labus.pro    # same
+   ```
+2. Submit at https://hstspreload.org/ → enter `menu.labus.pro` → wait 6-12 weeks for inclusion.
+3. **Once submitted, removal takes months**. Do not submit if any subdomain might need plain HTTP in the next year.
+
+### 6.5 Conflicting server name warnings
+
+After deploys, `nginx -t` may emit:
+
+```
+nginx: [warn] conflicting server name "app.labus.pro" on 62.217.178.117:80, ignored
+nginx: [warn] conflicting server name "www.labus.pro" on 62.217.178.117:80, ignored
+```
+
+These are **informational, not errors**. They mean two server-blocks declare the same `server_name`+`listen` pair (e.g. one in a default vhost and one site-specific) — nginx picks the first defined and ignores the duplicate. Investigation:
+
+```bash
+sudo grep -rn "server_name.*\(app\|www\)\.labus\.pro" /etc/nginx/ 2>/dev/null
+```
+
+Resolution: deduplicate by removing the duplicate `server_name` from the orphan vhost (typically the FastPanel default). Not blocking, but worth cleaning up.
