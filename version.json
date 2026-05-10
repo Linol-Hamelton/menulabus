@@ -1,6 +1,6 @@
 {
-  "version": "3.2.1",
+  "version": "3.2.2",
   "release_date": "2026-05-11",
-  "changelog": "Phase 33.1 — Nav entry for /admin/inventory.php. Add «Склад» link to the shared owner/admin nav row in account-header.php (between «Смены» and «Помощь»), role-gated to owner/admin only (employee role can't access inventory). Previously the only entry points were a deep link inside the recipe-tab of a dish editor and a mention on help.php — both required prior navigation. Cherry-pick fix on top of Phase 33 (v3.2.0).",
+  "changelog": "Phase 33.2 — Hide lang-picker + migrate VK OAuth to VK ID. (1) Language picker (RU/EN/KK) в header.php скрыт за `if (false)` до полноценной i18n полировки EN/KK (M1 продажи — только русскоговорящие рынки). (2) VK OAuth полностью переписан с legacy `oauth.vk.com/authorize` (теперь возвращает 401 Security Error) на VK ID (`id.vk.com`) с PKCE S256, scope `email vkid.personal_info`, OIDC id_token JWT decode. Файлы: auth/oauth/vk-start.php, auth/oauth/vk-callback.php, lib/OAuthVK.php, docs/vk-oauth-setup.md. Важно: VK app в Developer Console может потребовать миграцию на «VK ID» тип приложения — если Security Error сохранится после deploy, проблема не в коде, а в конфигурации VK app.",
   "critical": false
 }

@@ -1,39 +1,66 @@
 <?php
 
 /**
- * VK ID OAuth helper
+ * VK ID OAuth helper (Phase 33.2)
  *
- * Retrieves user info from VK API (users.get method).
- * VK does not provide JWT id_token — we must call API with access_token.
+ * VK migrated from the legacy oauth.vk.com flow to VK ID (id.vk.com) — the
+ * new protocol returns an OIDC-style `id_token` JWT alongside the access
+ * token. Email and basic profile claims are inside the JWT payload, so we
+ * decode it directly. If the JWT for some reason lacks claims, we fall back
+ * to the `/oauth2/user_info` endpoint with the access token.
+ *
+ * We do NOT verify the JWT signature: the token comes back over our own
+ * server-to-server HTTPS POST to id.vk.com (not via the user agent), so
+ * channel integrity is provided by TLS. Signature verification would only
+ * add value if the token were forwarded through an untrusted hop.
  */
 class OAuthVK
 {
     /**
-     * Get user info from VK API users.get method
+     * Decode a JWT and return its payload claims. No signature verification —
+     * see class docblock.
      *
-     * @param string $accessToken OAuth access token
-     * @param int $userId VK user ID from token response
-     * @return array Normalized claims ['subject', 'email', 'email_verified', 'name', 'phone']
-     * @throws RuntimeException if token is invalid or API fails
+     * @throws RuntimeException on malformed JWT
      */
-    public static function getUserInfo(string $accessToken, int $userId, ?string $email = null): array
+    public static function parseIdToken(string $jwt): array
     {
-        // Call VK API users.get to retrieve user profile
-        $params = [
-            'user_ids' => (string)$userId,
-            'fields' => 'photo_200', // можно добавить другие поля если нужно
-            'access_token' => $accessToken,
-            'v' => '5.131',
-        ];
+        $parts = explode('.', $jwt);
+        if (count($parts) !== 3) {
+            throw new RuntimeException('Invalid JWT structure');
+        }
+        $payloadB64 = $parts[1];
+        $pad = (4 - strlen($payloadB64) % 4) % 4;
+        $padded = strtr($payloadB64, '-_', '+/') . str_repeat('=', $pad);
+        $payload = base64_decode($padded, true);
+        if ($payload === false) {
+            throw new RuntimeException('Invalid JWT payload encoding');
+        }
+        $claims = json_decode($payload, true);
+        if (!is_array($claims)) {
+            throw new RuntimeException('Invalid JWT claims JSON');
+        }
+        return $claims;
+    }
 
-        $url = 'https://api.vk.com/method/users.get?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+    /**
+     * Fetch user info from id.vk.com/oauth2/user_info.
+     *
+     * @throws RuntimeException on transport/protocol error
+     */
+    public static function fetchUserInfo(string $accessToken, string $clientId): array
+    {
+        $body = http_build_query([
+            'access_token' => $accessToken,
+            'client_id' => $clientId,
+        ], '', '&', PHP_QUERY_RFC3986);
 
         $ctx = stream_context_create([
             'http' => [
-                'method' => 'GET',
+                'method' => 'POST',
                 'timeout' => 8,
                 'ignore_errors' => true,
-                'header' => "Accept: application/json\r\n",
+                'header' => "Content-Type: application/x-www-form-urlencoded\r\nAccept: application/json\r\n",
+                'content' => $body,
             ],
             'ssl' => [
                 'verify_peer' => true,
@@ -41,62 +68,84 @@ class OAuthVK
             ],
         ]);
 
-        $raw = @file_get_contents($url, false, $ctx);
+        $raw = @file_get_contents('https://id.vk.com/oauth2/user_info', false, $ctx);
         if (!is_string($raw) || $raw === '') {
-            throw new RuntimeException('VK API users.get request failed');
+            throw new RuntimeException('VK ID user_info request failed');
         }
-
         $data = json_decode($raw, true);
         if (!is_array($data)) {
-            throw new RuntimeException('VK API returned invalid JSON');
+            throw new RuntimeException('VK ID user_info returned invalid JSON');
         }
-
-        // Check for error response
         if (isset($data['error'])) {
-            $errMsg = $data['error']['error_msg'] ?? 'Unknown error';
-            throw new RuntimeException("VK API error: {$errMsg}");
+            $msg = $data['error_description'] ?? $data['error'];
+            throw new RuntimeException("VK ID user_info: {$msg}");
         }
-
-        // Extract user data from response
-        $response = $data['response'] ?? [];
-        if (!is_array($response) || empty($response)) {
-            throw new RuntimeException('VK API returned empty response');
-        }
-
-        $user = $response[0] ?? [];
+        $user = $data['user'] ?? null;
         if (!is_array($user)) {
-            throw new RuntimeException('VK API returned invalid user data');
+            // Some VK ID responses inline the user fields at top level.
+            $user = $data;
+        }
+        return $user;
+    }
+
+    /**
+     * Normalize claims from id_token (+ optional user_info fallback) into the
+     * shape our callback expects:
+     *   ['subject', 'email', 'email_verified', 'name', 'phone']
+     *
+     * @throws RuntimeException if neither source yields the required fields
+     */
+    public static function getUserInfo(?string $idToken, ?string $accessToken, string $clientId): array
+    {
+        $claims = [];
+        if (is_string($idToken) && $idToken !== '') {
+            try {
+                $claims = self::parseIdToken($idToken);
+            } catch (Throwable $e) {
+                error_log('OAuthVK::parseIdToken failed: ' . $e->getMessage());
+                $claims = [];
+            }
         }
 
-        $id = (int)($user['id'] ?? 0);
-        $firstName = trim((string)($user['first_name'] ?? ''));
-        $lastName = trim((string)($user['last_name'] ?? ''));
+        $sub = (string)($claims['sub'] ?? '');
+        $email = (string)($claims['email'] ?? '');
+        $firstName = (string)($claims['given_name'] ?? $claims['first_name'] ?? '');
+        $lastName = (string)($claims['family_name'] ?? $claims['last_name'] ?? '');
 
-        if ($id === 0) {
-            throw new RuntimeException('VK API missing user id');
+        // Fallback to /oauth2/user_info if id_token didn't carry what we need.
+        if (($sub === '' || $email === '' || $firstName === '') && is_string($accessToken) && $accessToken !== '') {
+            try {
+                $extra = self::fetchUserInfo($accessToken, $clientId);
+                if ($sub === '')       $sub       = (string)($extra['user_id'] ?? $extra['sub'] ?? $extra['id'] ?? '');
+                if ($email === '')     $email     = (string)($extra['email'] ?? '');
+                if ($firstName === '') $firstName = (string)($extra['first_name'] ?? $extra['given_name'] ?? '');
+                if ($lastName === '')  $lastName  = (string)($extra['last_name']  ?? $extra['family_name'] ?? '');
+            } catch (Throwable $e) {
+                error_log('OAuthVK::fetchUserInfo fallback failed: ' . $e->getMessage());
+            }
         }
 
-        // Combine first and last name
+        if ($sub === '') {
+            throw new RuntimeException('VK ID: subject (user id) missing in both id_token and user_info');
+        }
+        if ($email === '') {
+            throw new RuntimeException('VK ID: email is required but not provided. Grant email access in VK consent screen.');
+        }
+
         $name = trim($firstName . ' ' . $lastName);
         if ($name === '') {
             $name = 'User';
         }
 
-        // VK email comes from token response, not from users.get
-        // If no email provided, we can't proceed (email is required for account linking)
-        if (empty($email)) {
-            throw new RuntimeException('VK OAuth: email is required but not provided');
-        }
-
-        // VK emails are always verified (required on signup)
-        $emailVerified = true;
-
         return [
-            'subject' => (string)$id,
+            'subject' => $sub,
             'email' => strtolower(trim($email)),
-            'email_verified' => $emailVerified,
+            // VK ID requires email verification at account creation, so we
+            // treat all VK-returned emails as verified — matches the legacy
+            // OAuthVK behaviour and the comment in the original implementation.
+            'email_verified' => true,
             'name' => $name,
-            'phone' => null, // VK does not provide phone through basic OAuth scope
+            'phone' => null,
         ];
     }
 }

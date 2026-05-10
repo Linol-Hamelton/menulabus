@@ -1,7 +1,9 @@
 <?php
 
-// Web login/register via VK ID OAuth callback.
-// Exchanges code -> access_token, retrieves user info, links/creates a user, then creates a normal PHP session.
+// Phase 33.2 — Web login/register via VK ID callback.
+// Exchanges code -> id_token + access_token at id.vk.com/oauth2/auth (with
+// PKCE code_verifier), extracts user claims from the id_token (JWT), then
+// links/creates a user and creates a normal PHP session.
 
 require_once __DIR__ . '/../../session_init.php';
 require_once __DIR__ . '/../../db.php';
@@ -55,7 +57,7 @@ function oauth_verify_state(string $state): ?array
     return $payload;
 }
 
-function auth_fail(string $msg): void
+function auth_fail(string $msg): never
 {
     $_SESSION['auth_error_message'] = $msg;
     header('Location: ' . tenant_url('/auth.php', ['mode' => 'login']), true, 302);
@@ -76,13 +78,23 @@ if ($code === '' || $state === '') {
 
 // CSRF binding cookie check.
 $cookieState = (string)($_COOKIE['vk_oauth_state'] ?? '');
+$cookiePkce  = (string)($_COOKIE['vk_oauth_pkce'] ?? '');
+// Always clear the bind cookies right after read.
 setcookie('vk_oauth_state', '', tenant_host_only_cookie_options([
+    'expires' => time() - 3600,
+    'path' => '/auth/oauth/vk-callback.php',
+    'samesite' => 'Lax',
+]));
+setcookie('vk_oauth_pkce', '', tenant_host_only_cookie_options([
     'expires' => time() - 3600,
     'path' => '/auth/oauth/vk-callback.php',
     'samesite' => 'Lax',
 ]));
 if ($cookieState === '' || !hash_equals($cookieState, $state)) {
     auth_fail('VK OAuth: invalid state (cookie mismatch)');
+}
+if ($cookiePkce === '') {
+    auth_fail('VK OAuth: missing PKCE verifier — please retry the login flow');
 }
 
 $statePayload = oauth_verify_state($state);
@@ -103,9 +115,11 @@ if ($clientId === '' || $clientSecret === '') {
 
 $redirectUri = tenant_url('/auth/oauth/vk-callback.php');
 
-// Exchange code -> access_token
+// Exchange code -> id_token + access_token via VK ID (PKCE-protected).
 $body = http_build_query([
+    'grant_type' => 'authorization_code',
     'code' => $code,
+    'code_verifier' => $cookiePkce,
     'client_id' => $clientId,
     'client_secret' => $clientSecret,
     'redirect_uri' => $redirectUri,
@@ -125,9 +139,9 @@ $ctx = stream_context_create([
     ],
 ]);
 
-$raw = @file_get_contents('https://oauth.vk.com/access_token', false, $ctx);
+$raw = @file_get_contents('https://id.vk.com/oauth2/auth', false, $ctx);
 if (!is_string($raw) || $raw === '') {
-    auth_fail('VK OAuth: token exchange failed');
+    auth_fail('VK OAuth: token exchange failed (no response)');
 }
 $tok = json_decode($raw, true);
 if (!is_array($tok)) {
@@ -140,22 +154,15 @@ if (isset($tok['error'])) {
 }
 
 $accessToken = (string)($tok['access_token'] ?? '');
-$userId = (int)($tok['user_id'] ?? 0);
-$email = (string)($tok['email'] ?? '');
+$idToken     = (string)($tok['id_token'] ?? '');
 
-if ($accessToken === '' || $userId === 0) {
-    auth_fail('VK OAuth: missing access_token or user_id');
+if ($accessToken === '' && $idToken === '') {
+    auth_fail('VK OAuth: missing tokens in response');
 }
 
-// VK может не вернуть email, если пользователь не разрешил доступ
-// В этом случае нельзя создать аккаунт (email обязателен)
-if ($email === '') {
-    auth_fail('VK OAuth: email is required. Please grant access to your email in VK settings.');
-}
-
-// Retrieve user info from VK API
+// Resolve claims (id_token first; fall back to /oauth2/user_info if needed).
 try {
-    $claims = OAuthVK::getUserInfo($accessToken, $userId, $email);
+    $claims = OAuthVK::getUserInfo($idToken !== '' ? $idToken : null, $accessToken !== '' ? $accessToken : null, $clientId);
 } catch (Throwable $e) {
     auth_fail('VK OAuth: ' . $e->getMessage());
 }

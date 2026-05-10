@@ -72,6 +72,7 @@ $includeHeaderCss = empty($GLOBALS['header_css_in_head']);
           <ul class="nav-more-menu" id="nav-more-menu" role="menu">
             <li role="none"><a role="menuitem" href="/reservation.php"><?= htmlspecialchars(t('nav.reservation')) ?></a></li>
             <li role="none"><a role="menuitem" href="/group.php"><?= htmlspecialchars(t('nav.group')) ?></a></li>
+            <?php if (false): /* Phase 33.2: hidden in M1 — RU-only sales; re-enable when EN/KK surfaces are fully translated. */ ?>
             <li role="none" class="lang-picker-item">
               <?php
               $currentLang = I18n::locale();
@@ -84,6 +85,7 @@ $includeHeaderCss = empty($GLOBALS['header_css_in_head']);
                    aria-label="<?= htmlspecialchars(t('language.' . $code)) ?>"><?= strtoupper($code) ?></a>
               <?php endforeach; ?>
             </li>
+            <?php endif; ?>
           </ul>
         </li>
       </ul>

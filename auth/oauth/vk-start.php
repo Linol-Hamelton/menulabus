@@ -1,10 +1,17 @@
 <?php
 
-// Web login/register via VK ID OAuth (authorization code flow).
-// Does not use external JS (compatible with strict CSP).
+// Phase 33.2 — Web login/register via VK ID OAuth (PKCE flow).
+// Replaces the legacy oauth.vk.com endpoint, which now rejects requests with
+// `{"error":"invalid_request","error_description":"Security Error"}` for apps
+// that have not been migrated to VK ID.
 //
-// IMPORTANT: PHP session cookie is SameSite=Strict, so it will not be sent back after VK redirect.
-// We therefore use a short-lived Lax cookie to bind "state" to the browser (prevents login CSRF).
+// Does not use external JS (CSP-friendly).
+//
+// IMPORTANT: PHP session cookie is SameSite=Strict, so it will not be sent back
+// after the VK redirect. We use two short-lived Lax cookies bound to the
+// callback path:
+//   - vk_oauth_state — HMAC-signed state (CSRF)
+//   - vk_oauth_pkce  — PKCE code_verifier (required by id.vk.com)
 
 require_once __DIR__ . '/../../session_init.php';
 
@@ -48,27 +55,31 @@ if ($clientId === '') {
 
 $state = oauth_make_state($mode);
 
-// Bind state to the browser across cross-site redirect.
-// Lax is required so cookie is sent on top-level GET navigation back from VK.
+// PKCE — required by VK ID. RFC 7636: code_verifier 43-128 chars from
+// [A-Z][a-z][0-9]-._~ ; bin2hex(random_bytes(32)) = 64 hex chars, which fits.
+$codeVerifier = bin2hex(random_bytes(32));
+$codeChallenge = b64url_encode(hash('sha256', $codeVerifier, true));
+
 $cookieOpts = [
     'path' => '/auth/oauth/vk-callback.php',
     'expires' => time() + 300,
     'samesite' => 'Lax',
 ];
 setcookie('vk_oauth_state', $state, tenant_host_only_cookie_options($cookieOpts));
+setcookie('vk_oauth_pkce',  $codeVerifier, tenant_host_only_cookie_options($cookieOpts));
 
 $redirectUri = tenant_url('/auth/oauth/vk-callback.php');
 $params = [
+    'response_type' => 'code',
     'client_id' => $clientId,
     'redirect_uri' => $redirectUri,
-    'response_type' => 'code',
     'state' => $state,
-    'scope' => 'email', // phone scope requires approval from VK
-    'display' => 'popup',
-    'v' => '5.131', // VK API version
+    'code_challenge' => $codeChallenge,
+    'code_challenge_method' => 'S256',
+    'scope' => 'email vkid.personal_info',
 ];
 
-$url = 'https://oauth.vk.com/authorize?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+$url = 'https://id.vk.com/authorize?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Location: ' . $url, true, 302);
