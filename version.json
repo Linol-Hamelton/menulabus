@@ -1,6 +1,6 @@
 {
-  "version": "3.2.0",
+  "version": "3.2.1",
   "release_date": "2026-05-11",
-  "changelog": "Phase 33 — Recipe UX: structured units + CSV-import техкарт. (1) Новый lib/Inventory/UnitCatalog.php — master-list 7 канонических единиц («г», «кг», «мл», «л», «шт», «порц», «упак») как PHP-константа. (2) admin/inventory.php — unit column теперь structured <select> с опцией «Другое…» (inline free-text fallback) вместо free-form input. Backwards-compat: legacy values («гр», «грамм») автоматически отображаются как «Другое». saveIngredient() валидирует через UnitCatalog::isValid(). (3) Новый bulk CSV-import рецептов: db.php::bulkSyncRecipesFromCsv() + api/import-recipes.php endpoint + sql/recipes-import-migration.sql + download-recipe-sample.php. UI: кнопка «Загрузить из CSV» в recipe-tab модалки блюда → secondary dialog с radio Merge (additive)/Replace (per-dish full sync), auto-create-ingredients checkbox, ссылкой на sample. Replace mode имеет confirm-dialog. CSV format: dish_external_id;ingredient_name;unit;quantity;auto_create_ingredient.",
+  "changelog": "Phase 33.1 — Nav entry for /admin/inventory.php. Add «Склад» link to the shared owner/admin nav row in account-header.php (between «Смены» and «Помощь»), role-gated to owner/admin only (employee role can't access inventory). Previously the only entry points were a deep link inside the recipe-tab of a dish editor and a mention on help.php — both required prior navigation. Cherry-pick fix on top of Phase 33 (v3.2.0).",
   "critical": false
 }

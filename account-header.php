@@ -29,6 +29,9 @@
                     <a href="/kds/index.php" class="back-to-menu-btn" target="_blank" rel="noopener">Кухня</a>
                     <a href="/admin/waitlist.php" class="back-to-menu-btn">Очередь</a>
                     <a href="/admin/staff.php" class="back-to-menu-btn">Смены</a>
+                    <?php if (in_array(($user['role'] ?? ''), ['owner', 'admin'], true)): ?>
+                        <a href="/admin/inventory.php" class="back-to-menu-btn">Склад</a>
+                    <?php endif; ?>
                     <a href="/help.php" class="back-to-menu-btn">Помощь</a>
                 <?php endif; ?>
                 <a href="/customer_orders.php" class="back-to-menu-btn">История</a>
