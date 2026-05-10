@@ -14,6 +14,7 @@ $required_role = 'admin';
 require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../lib/Inventory/UnitCatalog.php';
 
 // Phase 14.8 — gate behind 'inventory' plan feature.
 $gate_feature = 'inventory';
@@ -24,6 +25,8 @@ $db = Database::getInstance();
 $ingredients = $db->listIngredients(true);
 $suppliers   = $db->listSuppliers(false);
 $lowStock    = $db->listLowStockIngredients();
+
+$unitOptions = \Cleanmenu\Inventory\UnitCatalog::CANONICAL;
 
 $siteName   = $GLOBALS['siteName'] ?? 'labus';
 $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
@@ -97,7 +100,24 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                                 class="<?= $isArchived ? 'inv-row-archived' : '' ?> <?= $isLow ? 'inv-row-low' : '' ?>">
                                 <td>#<?= (int)$i['id'] ?></td>
                                 <td><input type="text" class="inv-name" value="<?= htmlspecialchars((string)$i['name']) ?>" maxlength="255"></td>
-                                <td><input type="text" class="inv-unit" value="<?= htmlspecialchars((string)$i['unit']) ?>" maxlength="16" data-w="3xs"></td>
+                                <td class="inv-unit-cell">
+                                    <?php
+                                    $currentUnit = (string)$i['unit'];
+                                    $isCanonical = \Cleanmenu\Inventory\UnitCatalog::isCanonical($currentUnit);
+                                    ?>
+                                    <select class="inv-unit-select" data-w="sm">
+                                        <?php foreach ($unitOptions as $u): ?>
+                                            <option value="<?= htmlspecialchars($u) ?>" <?= ($isCanonical && $u === $currentUnit) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($u) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                        <option value="__other__" <?= $isCanonical ? '' : 'selected' ?>>Другое…</option>
+                                    </select>
+                                    <input type="text" class="inv-unit-other" maxlength="16" data-w="3xs"
+                                           value="<?= $isCanonical ? '' : htmlspecialchars($currentUnit) ?>"
+                                           placeholder="напр. гр"
+                                           <?= $isCanonical ? 'hidden' : '' ?>>
+                                </td>
                                 <td class="num-col">
                                     <span class="inv-stock-cell"><?= rtrim(rtrim(number_format((float)$i['stock_qty'], 3, '.', ''), '0'), '.') ?></span>
                                     <input type="number" step="0.001" class="inv-adjust-delta" placeholder="±" data-w="xs">
@@ -130,7 +150,17 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                         <tr class="inv-new-row" data-ingredient-id="">
                             <td>—</td>
                             <td><input type="text" class="inv-name" placeholder="Название" maxlength="255"></td>
-                            <td><input type="text" class="inv-unit" placeholder="шт" value="шт" maxlength="16" data-w="3xs"></td>
+                            <td class="inv-unit-cell">
+                                <select class="inv-unit-select" data-w="sm">
+                                    <?php foreach ($unitOptions as $u): ?>
+                                        <option value="<?= htmlspecialchars($u) ?>" <?= $u === 'шт' ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($u) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                    <option value="__other__">Другое…</option>
+                                </select>
+                                <input type="text" class="inv-unit-other" maxlength="16" data-w="3xs" placeholder="напр. гр" hidden>
+                            </td>
                             <td class="num-col"><input type="number" step="0.001" class="inv-new-stock" value="0" min="0" data-w="md"></td>
                             <td class="num-col"><input type="number" step="0.001" class="inv-threshold" value="0" min="0" data-w="sm"></td>
                             <td class="num-col"><input type="number" step="0.0001" class="inv-cost" value="0" min="0" data-w="md"></td>

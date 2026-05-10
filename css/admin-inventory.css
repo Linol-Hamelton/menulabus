@@ -123,3 +123,19 @@
 }
 .inv-mv-out td:nth-child(2) { color: var(--ui-danger); }
 .inv-mv-in  td:nth-child(2) { color: var(--ui-success); }
+
+/* Phase 33 — unit picker (select + "Другое…" free-text fallback) */
+.inv-unit-cell {
+    white-space: nowrap;
+}
+.inv-unit-cell .inv-unit-select {
+    min-width: 70px;
+    margin-right: 4px;
+}
+.inv-unit-cell .inv-unit-other {
+    width: 60px;
+    margin-top: 2px;
+}
+.inv-unit-cell .inv-unit-other[hidden] {
+    display: none;
+}

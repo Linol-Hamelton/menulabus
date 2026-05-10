@@ -2032,6 +2032,311 @@ class Database
         }
     }
 
+    /**
+     * Phase 33 — bulk-import recipe rows (techkarty) from a CSV handle.
+     *
+     * Expected header (case-insensitive, BOM-tolerant):
+     *   dish_external_id;ingredient_name;unit;quantity;auto_create_ingredient
+     *
+     * @param resource $csvHandle Open file pointer at byte 0.
+     * @param string $mode 'merge' (additive upsert) | 'replace' (per-dish full sync)
+     * @param string $delimiter ';' or ','
+     * @return array{
+     *   inserted:int, updated:int, deleted:int,
+     *   ingredients_created:int, dishes_touched:int,
+     *   errors: array<int, array{line:int, message:string}>,
+     *   warnings: array<int, string>
+     * } | false on fatal error
+     */
+    public function bulkSyncRecipesFromCsv($csvHandle, string $mode = 'merge', string $delimiter = ';', bool $autoCreateIngredients = true)
+    {
+        if (!class_exists('Cleanmenu\\Inventory\\UnitCatalog')) {
+            require_once __DIR__ . '/lib/Inventory/UnitCatalog.php';
+        }
+        $mode = in_array($mode, ['merge', 'replace'], true) ? $mode : 'merge';
+
+        try {
+            rewind($csvHandle);
+
+            $header = fgetcsv($csvHandle, 0, $delimiter, '"');
+            if ($header === false) {
+                throw new Exception('CSV файл пустой');
+            }
+
+            $normalizeHeader = static function ($value): string {
+                $value = (string)$value;
+                $value = ltrim($value, "\xEF\xBB\xBF");
+                $value = preg_replace('/^\x{FEFF}/u', '', $value);
+                return strtolower(trim($value));
+            };
+            $normalizedHeader = array_map($normalizeHeader, $header);
+            $expectedHeader = [
+                'dish_external_id',
+                'ingredient_name',
+                'unit',
+                'quantity',
+                'auto_create_ingredient',
+            ];
+            if ($normalizedHeader !== $expectedHeader) {
+                throw new Exception(
+                    'Неверный заголовок CSV. Ожидается: ' . implode(';', $expectedHeader)
+                );
+            }
+
+            // Idempotent staging table — matches sql/recipes-import-migration.sql.
+            $this->connection->exec("
+                CREATE TEMPORARY TABLE IF NOT EXISTS tmp_recipe_sync (
+                    dish_external_id  VARCHAR(64) NOT NULL,
+                    ingredient_name   VARCHAR(255) NOT NULL,
+                    unit              VARCHAR(16) NOT NULL,
+                    quantity          DECIMAL(10,3) NOT NULL,
+                    auto_create       TINYINT(1) NOT NULL DEFAULT 1,
+                    line_no           INT NOT NULL,
+                    PRIMARY KEY (dish_external_id, ingredient_name)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            ");
+            $this->connection->exec("DELETE FROM tmp_recipe_sync");
+
+            $insertTmp = $this->connection->prepare("
+                INSERT INTO tmp_recipe_sync
+                    (dish_external_id, ingredient_name, unit, quantity, auto_create, line_no)
+                VALUES
+                    (:dish, :ing, :unit, :qty, :ac, :line)
+                ON DUPLICATE KEY UPDATE
+                    unit = VALUES(unit),
+                    quantity = VALUES(quantity),
+                    auto_create = VALUES(auto_create),
+                    line_no = VALUES(line_no)
+            ");
+
+            $errors = [];
+            $warnings = [];
+            $lineNo = 1;
+            $rowsIngested = 0;
+
+            while (($row = fgetcsv($csvHandle, 0, $delimiter, '"')) !== false) {
+                $lineNo++;
+                if (count($row) === 1 && trim((string)$row[0]) === '') {
+                    continue;
+                }
+                if (count($row) !== 5) {
+                    $errors[] = ['line' => $lineNo, 'message' => 'Ожидается 5 колонок, получено ' . count($row)];
+                    continue;
+                }
+                if (function_exists('mb_check_encoding')) {
+                    $badEncoding = false;
+                    foreach ($row as $cell) {
+                        if (!mb_check_encoding((string)$cell, 'UTF-8')) { $badEncoding = true; break; }
+                    }
+                    if ($badEncoding) {
+                        $errors[] = ['line' => $lineNo, 'message' => 'CSV должен быть в UTF-8'];
+                        continue;
+                    }
+                }
+
+                $dishExt = trim((string)$row[0]);
+                $ingName = trim((string)$row[1]);
+                $unit    = trim((string)$row[2]);
+                $qtyRaw  = str_replace(',', '.', trim((string)$row[3]));
+                $acRaw   = strtolower(trim((string)$row[4]));
+
+                if ($dishExt === '' || strlen($dishExt) > 64) {
+                    $errors[] = ['line' => $lineNo, 'message' => 'dish_external_id обязателен и ≤64 символов'];
+                    continue;
+                }
+                if ($ingName === '' || mb_strlen($ingName) > 255) {
+                    $errors[] = ['line' => $lineNo, 'message' => 'ingredient_name обязателен и ≤255 символов'];
+                    continue;
+                }
+                if (!\Cleanmenu\Inventory\UnitCatalog::isValid($unit)) {
+                    $errors[] = ['line' => $lineNo, 'message' => 'unit обязателен и ≤16 символов'];
+                    continue;
+                }
+                if (!\Cleanmenu\Inventory\UnitCatalog::isCanonical($unit)) {
+                    $warnings[] = "Строка {$lineNo}: единица «{$unit}» не из стандартного списка — принята как есть.";
+                }
+                if ($qtyRaw === '' || !is_numeric($qtyRaw) || (float)$qtyRaw <= 0) {
+                    $errors[] = ['line' => $lineNo, 'message' => 'quantity должен быть положительным числом'];
+                    continue;
+                }
+                $autoCreate = ($acRaw === '' || $acRaw === '1' || $acRaw === 'true' || $acRaw === 'yes' || $acRaw === 'да') ? 1 : 0;
+
+                try {
+                    $insertTmp->execute([
+                        ':dish' => $dishExt,
+                        ':ing'  => $ingName,
+                        ':unit' => $unit,
+                        ':qty'  => (float)$qtyRaw,
+                        ':ac'   => $autoCreate,
+                        ':line' => $lineNo,
+                    ]);
+                    $rowsIngested++;
+                } catch (PDOException $e) {
+                    $errors[] = ['line' => $lineNo, 'message' => 'DB: ' . $e->getMessage()];
+                }
+            }
+
+            if ($rowsIngested === 0) {
+                throw new Exception('CSV не содержит валидных строк');
+            }
+
+            // ---- Resolve dish ids ----
+            $resolveDishStmt = $this->connection->query("
+                SELECT t.dish_external_id, mi.id AS dish_id
+                FROM tmp_recipe_sync t
+                LEFT JOIN menu_items mi
+                       ON mi.external_id = t.dish_external_id
+                      AND mi.archived_at IS NULL
+                GROUP BY t.dish_external_id
+            ");
+            $dishRows = $resolveDishStmt ? $resolveDishStmt->fetchAll() : [];
+            $dishMap = [];
+            $missingDishes = [];
+            foreach ($dishRows as $r) {
+                if ($r['dish_id'] === null) {
+                    $missingDishes[$r['dish_external_id']] = true;
+                } else {
+                    $dishMap[$r['dish_external_id']] = (int)$r['dish_id'];
+                }
+            }
+            if (!empty($missingDishes)) {
+                // Report each row from missing dishes as an error, then remove them
+                // from the staging table so subsequent upserts don't reference them.
+                $rowsForMissingStmt = $this->connection->prepare("
+                    SELECT line_no, dish_external_id
+                    FROM tmp_recipe_sync
+                    WHERE dish_external_id IN (" . implode(',', array_fill(0, count($missingDishes), '?')) . ")
+                ");
+                $rowsForMissingStmt->execute(array_keys($missingDishes));
+                foreach ($rowsForMissingStmt->fetchAll() as $r) {
+                    $errors[] = ['line' => (int)$r['line_no'], 'message' => 'Блюдо не найдено: ' . $r['dish_external_id']];
+                }
+                $delMissing = $this->connection->prepare("
+                    DELETE FROM tmp_recipe_sync
+                    WHERE dish_external_id IN (" . implode(',', array_fill(0, count($missingDishes), '?')) . ")
+                ");
+                $delMissing->execute(array_keys($missingDishes));
+            }
+
+            // Re-check after pruning missing dishes
+            $remaining = (int)$this->connection->query("SELECT COUNT(*) FROM tmp_recipe_sync")->fetchColumn();
+            if ($remaining === 0) {
+                return [
+                    'inserted' => 0, 'updated' => 0, 'deleted' => 0,
+                    'ingredients_created' => 0, 'dishes_touched' => 0,
+                    'errors' => $errors, 'warnings' => $warnings,
+                ];
+            }
+
+            // ---- Transaction: resolve/create ingredients, then upsert recipes ----
+            $this->connection->beginTransaction();
+
+            // Auto-create missing ingredients (respecting per-row auto_create flag).
+            $ingredientsCreated = 0;
+            $findIngStmt = $this->connection->prepare("
+                SELECT id, unit FROM ingredients
+                WHERE LOWER(TRIM(name)) = LOWER(TRIM(:n))
+                  AND archived_at IS NULL
+                LIMIT 1
+            ");
+            $insIngStmt = $this->connection->prepare("
+                INSERT INTO ingredients (name, unit, stock_qty, reorder_threshold, cost_per_unit)
+                VALUES (:name, :unit, 0, 0, 0)
+            ");
+
+            $allTmpStmt = $this->connection->query("
+                SELECT dish_external_id, ingredient_name, unit, quantity, auto_create, line_no
+                FROM tmp_recipe_sync
+                ORDER BY dish_external_id, ingredient_name
+            ");
+            $allTmpRows = $allTmpStmt ? $allTmpStmt->fetchAll() : [];
+            $resolved = []; // line_no => [dish_id, ing_id, qty]
+            $unresolvedLines = [];
+            foreach ($allTmpRows as $r) {
+                $findIngStmt->execute([':n' => $r['ingredient_name']]);
+                $found = $findIngStmt->fetch();
+                $ingId = $found ? (int)$found['id'] : 0;
+
+                if ($ingId === 0) {
+                    if ($autoCreateIngredients && (int)$r['auto_create'] === 1) {
+                        $insIngStmt->execute([':name' => $r['ingredient_name'], ':unit' => $r['unit']]);
+                        $ingId = (int)$this->connection->lastInsertId();
+                        $ingredientsCreated++;
+                    } else {
+                        $errors[] = [
+                            'line' => (int)$r['line_no'],
+                            'message' => 'Ингредиент не найден и auto_create=0: ' . $r['ingredient_name'],
+                        ];
+                        $unresolvedLines[(int)$r['line_no']] = true;
+                        continue;
+                    }
+                } else if ((string)$found['unit'] !== (string)$r['unit']) {
+                    $warnings[] = "Строка {$r['line_no']}: ингредиент «{$r['ingredient_name']}» уже хранится в «{$found['unit']}», в CSV указан «{$r['unit']}» — оставлен «{$found['unit']}».";
+                }
+
+                $resolved[] = [
+                    'dish_id' => $dishMap[$r['dish_external_id']],
+                    'ing_id'  => $ingId,
+                    'qty'     => (float)$r['quantity'],
+                ];
+            }
+
+            // mode=replace: delete recipes for each affected dish before insert
+            $deleted = 0;
+            if ($mode === 'replace' && !empty($dishMap)) {
+                $touchedDishIds = array_values($dishMap);
+                $placeholders = implode(',', array_fill(0, count($touchedDishIds), '?'));
+                $delStmt = $this->connection->prepare("DELETE FROM recipes WHERE menu_item_id IN ({$placeholders})");
+                $delStmt->execute($touchedDishIds);
+                $deleted = $delStmt->rowCount();
+            }
+
+            $upsertStmt = $this->connection->prepare("
+                INSERT INTO recipes (menu_item_id, ingredient_id, quantity)
+                VALUES (:mid, :iid, :qty)
+                ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)
+            ");
+            $inserted = 0;
+            $updated = 0;
+            foreach ($resolved as $r) {
+                if ($r['ing_id'] <= 0 || $r['dish_id'] <= 0 || $r['qty'] <= 0) continue;
+                $upsertStmt->execute([
+                    ':mid' => $r['dish_id'],
+                    ':iid' => $r['ing_id'],
+                    ':qty' => $r['qty'],
+                ]);
+                // rowCount: 1 = insert, 2 = update (MySQL convention with ON DUPLICATE KEY).
+                $rc = $upsertStmt->rowCount();
+                if ($rc === 1) $inserted++;
+                elseif ($rc === 2) $updated++;
+            }
+
+            $this->connection->commit();
+
+            return [
+                'inserted'            => $inserted,
+                'updated'             => $updated,
+                'deleted'             => $deleted,
+                'ingredients_created' => $ingredientsCreated,
+                'dishes_touched'      => count($dishMap),
+                'errors'              => $errors,
+                'warnings'            => $warnings,
+            ];
+        } catch (Throwable $e) {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+            error_log('bulkSyncRecipesFromCsv Error: ' . $e->getMessage());
+            return [
+                'inserted' => 0, 'updated' => 0, 'deleted' => 0,
+                'ingredients_created' => 0, 'dishes_touched' => 0,
+                'errors' => [['line' => 0, 'message' => $e->getMessage()]],
+                'warnings' => [],
+                'fatal' => true,
+            ];
+        }
+    }
+
     public function updateUser($userId, $name, $phone)
     {
         try {
@@ -3922,7 +4227,16 @@ class Database
     ): ?int {
         $name = trim($name);
         $unit = trim($unit);
-        if ($name === '' || $unit === '' || mb_strlen($name) > 255 || mb_strlen($unit) > 16) {
+        if ($name === '' || mb_strlen($name) > 255) {
+            return null;
+        }
+        // Phase 33: validate unit via UnitCatalog. Accepts canonical units OR
+        // any non-empty free-text ≤16 chars (backwards-compat for tenants
+        // with legacy values like "гр", "грамм").
+        if (!class_exists('Cleanmenu\\Inventory\\UnitCatalog')) {
+            require_once __DIR__ . '/lib/Inventory/UnitCatalog.php';
+        }
+        if (!\Cleanmenu\Inventory\UnitCatalog::isValid($unit)) {
             return null;
         }
         if ($stockQty < 0 || $reorderThreshold < 0 || $costPerUnit < 0) {

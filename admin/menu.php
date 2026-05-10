@@ -475,6 +475,7 @@ $savedDbFontsJson = htmlspecialchars(
                         <button type="submit" name="bulk_upload" class="checkout-btn">Загрузить</button>
                     </form>
                     <small>UTF-8 CSV. Полная синхронизация: позиции вне файла будут архивированы. Формат: external_id;name;description;composition;price;image;calories;protein;fat;carbs;category;available</small>
+                    <small class="admin-csv-recipe-hint">📋 Импорт <strong>техкарт</strong> (ингредиенты и количества для блюд) — в карточке блюда → вкладка «Рецепт» → «Загрузить из CSV». <a href="/download-recipe-sample.php">Скачать пример</a>.</small>
                 </section>
                 </div>
                 <datalist id="cats">
@@ -1244,6 +1245,7 @@ $savedDbFontsJson = htmlspecialchars(
                   <input type="number" step="0.001" min="0" id="recipeAddQty" placeholder="Кол-во">
                   <button type="button" id="recipeAddBtn" class="checkout-btn">Добавить</button>
                   <button type="button" id="recipeSaveBtn" class="checkout-btn admin-checkout-btn">Сохранить рецепт</button>
+                  <button type="button" id="recipeImportBtn" class="admin-checkout-btn" title="Загрузить рецепт из CSV">Загрузить из CSV</button>
                 </div>
                 <div id="recipeSaveMsg" class="recipe-save-msg" hidden></div>
               </div>
@@ -1297,6 +1299,55 @@ $savedDbFontsJson = htmlspecialchars(
             <button type="button" class="admin-checkout-btn btn-cancel-modal" data-modal-close>Отмена</button>
             <button type="button" class="checkout-btn btn-save" title="Ctrl+Enter">Сохранить</button>
           </div>
+        </footer>
+      </div>
+    </dialog>
+
+    <!-- Phase 33: Recipe CSV-import modal -->
+    <dialog id="recipeImportModal" class="design-modal" aria-labelledby="recipeImportTitle">
+      <div class="modal-card">
+        <header class="modal-head">
+          <div>
+            <h2 id="recipeImportTitle" class="modal-title">📋 Импорт техкарт из CSV</h2>
+            <p class="modal-subtitle">Загрузка ингредиентов для нескольких блюд за раз.</p>
+          </div>
+          <button type="button" class="modal-close" data-recipe-import-close aria-label="Закрыть">×</button>
+        </header>
+        <form id="recipeImportForm" class="modal-body recipe-import-body">
+          <p class="yk-desc">
+            Каждая строка — пара «блюдо + ингредиент». Колонки CSV:
+            <code>dish_external_id;ingredient_name;unit;quantity;auto_create_ingredient</code>.
+            <a href="/download-recipe-sample.php">Скачать пример CSV</a>.
+          </p>
+
+          <label class="recipe-import-field">
+            <span>Файл CSV (UTF-8, ≤ 2 МБ)</span>
+            <input type="file" id="recipeImportFile" accept=".csv,text/csv" required>
+          </label>
+
+          <fieldset class="recipe-import-mode">
+            <legend>Режим импорта</legend>
+            <label>
+              <input type="radio" name="recipeImportMode" value="merge" checked>
+              <strong>Дополнить рецепты</strong> — добавить/обновить указанные строки, существующие не трогать.
+            </label>
+            <label>
+              <input type="radio" name="recipeImportMode" value="replace">
+              <strong class="recipe-import-warn">Заменить рецепты полностью</strong> —
+              для каждого упомянутого в CSV блюда удалить весь текущий рецепт и вставить только новые строки.
+            </label>
+          </fieldset>
+
+          <label class="recipe-import-field recipe-import-inline">
+            <input type="checkbox" id="recipeImportAutoCreate" checked>
+            <span>Автоматически создавать новые ингредиенты, если их ещё нет в Складе</span>
+          </label>
+
+          <div id="recipeImportSummary" class="recipe-import-summary" hidden></div>
+        </form>
+        <footer class="modal-foot">
+          <button type="button" class="admin-checkout-btn btn-cancel-modal" data-recipe-import-close>Отмена</button>
+          <button type="submit" class="checkout-btn" id="recipeImportSubmit" form="recipeImportForm">Загрузить</button>
         </footer>
       </div>
     </dialog>

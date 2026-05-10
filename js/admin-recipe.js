@@ -171,7 +171,143 @@
             });
         }
 
+        // Phase 33: CSV-import modal trigger. Bound once per page-life; reuses
+        // the load() closure to refresh the grid after a successful import.
+        var importBtn = document.getElementById('recipeImportBtn');
+        if (importBtn && !importBtn.dataset.bound) {
+            importBtn.dataset.bound = '1';
+            importBtn.addEventListener('click', function () {
+                openImportModal(csrfToken, load);
+            });
+        }
+
         load();
+    }
+
+    // --- Phase 33: recipe CSV-import modal handling ---
+    function openImportModal(csrfToken, onSuccess) {
+        var dlg = document.getElementById('recipeImportModal');
+        if (!dlg) { window.alert('Модалка импорта не найдена.'); return; }
+        var form     = document.getElementById('recipeImportForm');
+        var fileEl   = document.getElementById('recipeImportFile');
+        var autoEl   = document.getElementById('recipeImportAutoCreate');
+        var summary  = document.getElementById('recipeImportSummary');
+        var submit   = document.getElementById('recipeImportSubmit');
+
+        function close() {
+            summary.hidden = true;
+            summary.innerHTML = '';
+            if (fileEl) fileEl.value = '';
+            try { dlg.close(); } catch (_) {}
+        }
+
+        // Bind once per page load.
+        if (!dlg.dataset.bound) {
+            dlg.dataset.bound = '1';
+            dlg.addEventListener('click', function (ev) {
+                if (ev.target && ev.target.matches && ev.target.matches('[data-recipe-import-close]')) {
+                    ev.preventDefault();
+                    close();
+                }
+            });
+            form.addEventListener('submit', function (ev) {
+                ev.preventDefault();
+                if (!fileEl.files || fileEl.files.length === 0) {
+                    window.alert('Выберите CSV файл.');
+                    return;
+                }
+                var mode = (form.querySelector('input[name="recipeImportMode"]:checked') || {}).value || 'merge';
+                if (mode === 'replace' && !window.confirm(
+                    'Режим «Заменить»: для каждого блюда из CSV будут удалены ВСЕ существующие строки рецепта и заменены на новые. Продолжить?'
+                )) {
+                    return;
+                }
+
+                var fd = new FormData();
+                fd.append('csv_file', fileEl.files[0]);
+                fd.append('mode', mode);
+                fd.append('auto_create', autoEl.checked ? '1' : '0');
+                fd.append('csrf_token', csrfToken);
+
+                submit.disabled = true;
+                summary.hidden = false;
+                summary.innerHTML = '<p>Загрузка…</p>';
+
+                fetch('/api/import-recipes.php', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'X-CSRF-Token': csrfToken, 'Accept': 'application/json' },
+                    body: fd,
+                }).then(function (r) {
+                    return r.json().then(function (d) { return { ok: r.ok, data: d }; });
+                }).then(function (resp) {
+                    submit.disabled = false;
+                    renderSummary(resp);
+                    if (resp.ok && resp.data && resp.data.success && typeof onSuccess === 'function') {
+                        // Re-load the parent recipe grid so newly imported rows
+                        // appear without forcing a full page reload.
+                        onSuccess();
+                    }
+                }).catch(function (err) {
+                    submit.disabled = false;
+                    summary.innerHTML = '<p class="recipe-save-msg-error">Сетевая ошибка: ' + escHtml(String(err && err.message || err)) + '</p>';
+                });
+            });
+        }
+
+        function renderSummary(resp) {
+            if (!resp.ok || !resp.data) {
+                summary.innerHTML = '<p class="recipe-save-msg-error">Ошибка: ' + escHtml(JSON.stringify(resp.data || {})) + '</p>';
+                return;
+            }
+            var data = resp.data;
+            if (!data.success) {
+                var s = data.summary || {};
+                var errs = (s.errors || []).map(function (e) {
+                    return '<li>Стр. ' + (e.line || '—') + ': ' + escHtml(e.message || '') + '</li>';
+                }).join('');
+                summary.innerHTML = ''
+                    + '<p class="recipe-save-msg-error">Не удалось импортировать: ' + escHtml(data.error || 'unknown') + '</p>'
+                    + (errs ? '<ul>' + errs + '</ul>' : '');
+                return;
+            }
+            var s = data.summary || {};
+            var parts = [
+                '<p class="recipe-save-msg-success"><strong>✓ Импорт завершён</strong></p>',
+                '<ul>',
+                '<li>Блюд затронуто: ' + (s.dishes_touched || 0) + '</li>',
+                '<li>Строк добавлено: ' + (s.inserted || 0) + '</li>',
+                '<li>Строк обновлено: ' + (s.updated || 0) + '</li>',
+            ];
+            if (s.deleted) parts.push('<li>Строк удалено (режим Replace): ' + s.deleted + '</li>');
+            if (s.ingredients_created) parts.push('<li>Создано новых ингредиентов: ' + s.ingredients_created + '</li>');
+            if ((s.errors || []).length) {
+                parts.push('<li>Ошибок: ' + s.errors.length + '<ul>');
+                s.errors.forEach(function (e) {
+                    parts.push('<li>Стр. ' + (e.line || '—') + ': ' + escHtml(e.message || '') + '</li>');
+                });
+                parts.push('</ul></li>');
+            }
+            if ((s.warnings || []).length) {
+                parts.push('<li>Предупреждения:<ul>');
+                s.warnings.forEach(function (w) { parts.push('<li>' + escHtml(w) + '</li>'); });
+                parts.push('</ul></li>');
+            }
+            parts.push('</ul>');
+            summary.innerHTML = parts.join('');
+        }
+
+        summary.hidden = true;
+        summary.innerHTML = '';
+        try {
+            if (typeof dlg.showModal === 'function') {
+                dlg.showModal();
+            } else {
+                dlg.setAttribute('open', '');
+            }
+        } catch (_) {
+            dlg.setAttribute('open', '');
+        }
     }
 
     window.AdminRecipe = { init: init };

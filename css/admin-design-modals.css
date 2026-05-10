@@ -761,3 +761,52 @@ dialog.design-modal::backdrop {
   }
   .design-modal .modal-tab-btn { flex: 0 0 auto; }
 }
+
+/* Phase 33 — recipe CSV-import modal content */
+.recipe-import-body { display: grid; gap: 16px; }
+.recipe-import-field { display: flex; flex-direction: column; gap: 6px; font-size: 0.9rem; }
+.recipe-import-field.recipe-import-inline {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+.recipe-import-field input[type="file"] {
+    padding: 8px;
+    border: 1px dashed var(--ui-border);
+    border-radius: 8px;
+    background: var(--ui-surface-muted, #f9fafb);
+}
+.recipe-import-mode {
+    border: 1px solid var(--ui-border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: grid;
+    gap: 10px;
+}
+.recipe-import-mode legend {
+    padding: 0 6px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+.recipe-import-mode label {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 8px;
+    font-size: 0.88rem;
+    line-height: 1.4;
+}
+.recipe-import-warn { color: var(--ui-danger, #c33); }
+.recipe-import-summary {
+    margin-top: 6px;
+    padding: 12px 14px;
+    background: var(--ui-surface-muted, #f9fafb);
+    border: 1px solid var(--ui-border);
+    border-radius: 10px;
+    font-size: 0.88rem;
+    max-height: 280px;
+    overflow: auto;
+}
+.recipe-import-summary ul { margin: 6px 0 0 18px; padding: 0; }
+.recipe-import-summary .recipe-save-msg-success { color: var(--ui-success, #2a8); margin: 0 0 6px; }
+.recipe-import-summary .recipe-save-msg-error   { color: var(--ui-danger,  #c33); margin: 0 0 6px; }

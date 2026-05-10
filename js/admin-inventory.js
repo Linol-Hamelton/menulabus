@@ -33,6 +33,45 @@
 
     // ---- Ingredients ----
     var ingrTable = document.getElementById('invIngredientsTable');
+
+    // Phase 33: read the current unit string from the unit cell.
+    //   Canonical units: <select> value.
+    //   "Другое…" sentinel: read from the adjacent <input class="inv-unit-other">.
+    function readUnit(tr) {
+        if (!tr) return '';
+        var sel = tr.querySelector('.inv-unit-select');
+        if (sel) {
+            if (sel.value === '__other__') {
+                var other = tr.querySelector('.inv-unit-other');
+                return ((other && other.value) || '').trim();
+            }
+            return (sel.value || '').trim();
+        }
+        // Backwards-compat: pages that still ship the old <input class="inv-unit">.
+        var legacy = tr.querySelector('.inv-unit');
+        return ((legacy && legacy.value) || '').trim();
+    }
+
+    // Toggle the inline "Другое" input when the <select> changes.
+    if (ingrTable) {
+        ingrTable.addEventListener('change', function (event) {
+            var sel = event.target && event.target.classList && event.target.classList.contains('inv-unit-select')
+                ? event.target : null;
+            if (!sel) return;
+            var cell = sel.closest('.inv-unit-cell');
+            if (!cell) return;
+            var other = cell.querySelector('.inv-unit-other');
+            if (!other) return;
+            if (sel.value === '__other__') {
+                other.hidden = false;
+                other.focus();
+            } else {
+                other.hidden = true;
+                other.value = '';
+            }
+        });
+    }
+
     if (ingrTable) {
         ingrTable.addEventListener('click', function (event) {
             var tr = event.target && event.target.closest ? event.target.closest('tr') : null;
@@ -47,7 +86,7 @@
             if (save) {
                 var id = parseInt(tr.getAttribute('data-ingredient-id') || '', 10) || null;
                 var name  = ((tr.querySelector('.inv-name') || {}).value || '').trim();
-                var unit  = ((tr.querySelector('.inv-unit') || {}).value || '').trim() || 'шт';
+                var unit  = readUnit(tr) || 'шт';
                 var threshold = parseFloat((tr.querySelector('.inv-threshold') || {}).value || '0') || 0;
                 var cost = parseFloat((tr.querySelector('.inv-cost') || {}).value || '0') || 0;
                 var supplier = (tr.querySelector('.inv-supplier') || {}).value || '';
