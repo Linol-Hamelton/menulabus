@@ -97,6 +97,14 @@ only add value if the token were forwarded through an untrusted hop.
 4. Complete authorization in VK
 5. Confirm redirect to `/account.php` and active session
 
+## Diagnostic logging (temporary, 2026-05-11)
+
+`vk-start.php` and `vk-callback.php` currently emit `error_log()` entries
+on every flow (cookie set status, received cookies, state-head match,
+host). These are temporary — added to debug an "invalid state (cookie
+mismatch)" symptom observed after VK ID migration — and will be removed
+once the cookie roundtrip is confirmed working end-to-end.
+
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |

@@ -79,6 +79,18 @@ if ($code === '' || $state === '') {
 // CSRF binding cookie check.
 $cookieState = (string)($_COOKIE['vk_oauth_state'] ?? '');
 $cookiePkce  = (string)($_COOKIE['vk_oauth_pkce'] ?? '');
+
+// Phase 33.2 diagnostic — remove once cookie roundtrip is verified.
+error_log(sprintf(
+    '[vk-callback] host=%s ref=%s cookies=%s url_state_head=%s cookie_state_head=%s state_match=%s pkce_len=%d',
+    (string)($_SERVER['HTTP_HOST'] ?? ''),
+    substr((string)($_SERVER['HTTP_REFERER'] ?? ''), 0, 64),
+    implode(',', array_keys($_COOKIE)),
+    substr($state, 0, 16),
+    $cookieState === '' ? '(empty)' : substr($cookieState, 0, 16),
+    ($cookieState !== '' && hash_equals($cookieState, $state)) ? 'yes' : 'no',
+    strlen($cookiePkce)
+));
 // Always clear the bind cookies right after read.
 setcookie('vk_oauth_state', '', tenant_host_only_cookie_options([
     'expires' => time() - 3600,

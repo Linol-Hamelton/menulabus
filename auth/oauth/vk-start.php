@@ -65,8 +65,20 @@ $cookieOpts = [
     'expires' => time() + 300,
     'samesite' => 'Lax',
 ];
-setcookie('vk_oauth_state', $state, tenant_host_only_cookie_options($cookieOpts));
-setcookie('vk_oauth_pkce',  $codeVerifier, tenant_host_only_cookie_options($cookieOpts));
+$cookieOptsFinal = tenant_host_only_cookie_options($cookieOpts);
+$okState = setcookie('vk_oauth_state', $state, $cookieOptsFinal);
+$okPkce  = setcookie('vk_oauth_pkce',  $codeVerifier, $cookieOptsFinal);
+
+// Phase 33.2 diagnostic — remove once cookie roundtrip is verified.
+error_log(sprintf(
+    '[vk-start] host=%s scheme=%s setcookie_state=%s setcookie_pkce=%s opts=%s state_head=%s',
+    (string)($_SERVER['HTTP_HOST'] ?? ''),
+    tenant_current_scheme(),
+    $okState ? 'ok' : 'fail',
+    $okPkce ? 'ok' : 'fail',
+    json_encode($cookieOptsFinal),
+    substr($state, 0, 16)
+));
 
 $redirectUri = tenant_url('/auth/oauth/vk-callback.php');
 $params = [
