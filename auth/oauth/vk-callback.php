@@ -34,10 +34,12 @@ function oauth_secret(): string
 
 function oauth_verify_state(string $state): ?array
 {
-    if (strpos($state, '.') === false) {
+    // Phase 33.2 — separator switched from '.' to '~' (VK ID strips '.'
+    // from the state query parameter, see vk-start.php for context).
+    if (strpos($state, '~') === false) {
         return null;
     }
-    [$p, $sig] = explode('.', $state, 2);
+    [$p, $sig] = explode('~', $state, 2);
     $expected = b64url_encode(hash_hmac('sha256', $p, oauth_secret(), true));
     if (!hash_equals($expected, $sig)) {
         return null;

@@ -81,6 +81,21 @@ new VK ID app, update the env-variables above, and restart php-fpm.
      first, then by email), creates the app session, redirects to
      `/account.php`
 
+## State parameter quirk (VK ID strips `.`)
+
+VK ID has been observed (2026-05-11) to silently strip `.` characters
+from the `state` query parameter when echoing it back to the OAuth
+callback. Concrete repro: we sent `state=PAYLOAD.SIGNATURE`, callback
+URL came back with `state=PAYLOADSIGNATURE` (dot removed). This breaks
+any HMAC-signed state that uses `.` as the payload/signature
+separator.
+
+Our `oauth_make_state()` therefore uses `~` as separator instead of
+`.`. Tilde is RFC 3986 unreserved AND outside the base64url alphabet
+`[A-Za-z0-9_-]`, so it's both URL-safe and an unambiguous separator
+for the HMAC-signed state encoding. Yandex/Google do not exhibit this
+bug — their start/callback scripts still use `.` as separator.
+
 ## JWT note
 
 The `id_token` is parsed without signature verification: it arrives over
