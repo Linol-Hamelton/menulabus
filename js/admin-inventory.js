@@ -77,6 +77,21 @@
             var tr = event.target && event.target.closest ? event.target.closest('tr') : null;
             if (!tr) return;
 
+            // Phase 34.1 — kebab toggle reveals the ± adjust + history controls
+            // inside the stock cell so the default row stays clean.
+            var kebab = event.target.closest('.inv-kebab-btn');
+            if (kebab) {
+                var ctrls = tr.querySelector('.inv-adjust-controls');
+                if (ctrls) {
+                    ctrls.hidden = !ctrls.hidden;
+                    if (!ctrls.hidden) {
+                        var d = ctrls.querySelector('.inv-adjust-delta');
+                        if (d) d.focus();
+                    }
+                }
+                return;
+            }
+
             var save = event.target.closest('.btn-inv-save');
             var arch = event.target.closest('.btn-inv-archive');
             var rest = event.target.closest('.btn-inv-restore');
@@ -93,7 +108,7 @@
                 var stockQty;
                 if (id) {
                     // For existing rows, keep the current stock — adjustments go through Apply.
-                    stockQty = parseFloat((tr.querySelector('.inv-stock-cell') || {}).textContent || '0') || 0;
+                    stockQty = parseFloat((tr.querySelector('.inv-stock-value') || {}).textContent || '0') || 0;
                 } else {
                     stockQty = parseFloat((tr.querySelector('.inv-new-stock') || {}).value || '0') || 0;
                 }
@@ -131,7 +146,7 @@
                         return;
                     }
                     var ing = r.data.ingredient || {};
-                    var cell = tr.querySelector('.inv-stock-cell');
+                    var cell = tr.querySelector('.inv-stock-value');
                     if (cell) cell.textContent = fmt(ing.stock_qty);
                     var deltaInput = tr.querySelector('.inv-adjust-delta');
                     if (deltaInput) deltaInput.value = '';
@@ -230,18 +245,26 @@
     var filterReset    = document.getElementById('invFilterReset');
 
     function applyFilters() {
-        if (!ingrTable) return;
         var q = (filterSearch && filterSearch.value || '').trim().toLowerCase();
         var sup = filterSupplier ? filterSupplier.value : '';
         var stat = filterStock ? filterStock.value : '';
-        var rows = ingrTable.querySelectorAll('tbody tr[data-ingredient-id]');
-        rows.forEach(function (tr) {
-            // Skip the empty "new ingredient" row.
-            if ((tr.getAttribute('data-ingredient-id') || '') === '') return;
-            var nameEl = tr.querySelector('.inv-name');
-            var name = (nameEl && nameEl.value ? nameEl.value : '').toLowerCase();
-            var supVal = tr.getAttribute('data-supplier-id') || '';
-            var stockStatus = tr.getAttribute('data-stock-status') || '';
+
+        // Phase 34.1: filter both the desktop table rows and mobile cards.
+        var hosts = document.querySelectorAll('.inv-table-wrapper tbody tr[data-ingredient-id], .inv-mcard[data-ingredient-id]');
+        hosts.forEach(function (host) {
+            if ((host.getAttribute('data-ingredient-id') || '') === '') return;
+            // Source of truth for name: desktop has .inv-name input; mobile has .inv-mcard-name text.
+            var name = '';
+            var nameInput = host.querySelector('.inv-name');
+            if (nameInput && typeof nameInput.value === 'string') {
+                name = nameInput.value;
+            } else {
+                var nameSpan = host.querySelector('.inv-mcard-name');
+                if (nameSpan) name = nameSpan.textContent || '';
+            }
+            name = name.toLowerCase();
+            var supVal = host.getAttribute('data-supplier-id') || '';
+            var stockStatus = host.getAttribute('data-stock-status') || '';
             var hide = false;
             if (q && name.indexOf(q) === -1) hide = true;
             if (!hide && sup !== '') {
@@ -249,7 +272,7 @@
                 if (sup !== '0' && supVal !== sup) hide = true;
             }
             if (!hide && stat !== '' && stockStatus !== stat) hide = true;
-            tr.hidden = hide;
+            host.hidden = hide;
         });
     }
 
@@ -274,16 +297,18 @@
     var bulkClear   = document.getElementById('invBulkClear');
     var selectAll   = document.getElementById('invSelectAll');
 
+    // Phase 34.1: bulk selection works across both the desktop table AND
+    // the mobile-card list (only one is visible at any time, but checkbox
+    // state must roll up the same way).
     function collectChecked() {
-        if (!ingrTable) return [];
-        var ids = [];
-        ingrTable.querySelectorAll('.inv-row-check:checked').forEach(function (cb) {
-            var tr = cb.closest('tr');
-            if (!tr) return;
-            var id = parseInt(tr.getAttribute('data-ingredient-id') || '0', 10);
-            if (id > 0) ids.push(id);
+        var ids = {};
+        document.querySelectorAll('.inv-row-check:checked').forEach(function (cb) {
+            var host = cb.closest('[data-ingredient-id]');
+            if (!host) return;
+            var id = parseInt(host.getAttribute('data-ingredient-id') || '0', 10);
+            if (id > 0) ids[id] = true;
         });
-        return ids;
+        return Object.keys(ids).map(function (k) { return parseInt(k, 10); });
     }
 
     function refreshBulkBar() {
@@ -293,20 +318,20 @@
         bulkBar.hidden = ids.length === 0;
     }
 
-    if (ingrTable) {
-        ingrTable.addEventListener('change', function (event) {
-            if (event.target && event.target.classList && event.target.classList.contains('inv-row-check')) {
-                refreshBulkBar();
-            }
-        });
-    }
+    // Phase 34.1 — listen for any .inv-row-check change anywhere on the page
+    // (covers both desktop table rows and mobile cards).
+    document.addEventListener('change', function (event) {
+        if (event.target && event.target.classList && event.target.classList.contains('inv-row-check')) {
+            refreshBulkBar();
+        }
+    });
     if (selectAll) {
         selectAll.addEventListener('change', function () {
             var checked = selectAll.checked;
-            ingrTable.querySelectorAll('tbody tr[data-ingredient-id] .inv-row-check').forEach(function (cb) {
-                var tr = cb.closest('tr');
-                // Skip hidden (filtered-out) rows so "select all" feels intuitive.
-                if (tr && tr.hidden) return;
+            document.querySelectorAll('[data-ingredient-id] .inv-row-check').forEach(function (cb) {
+                var host = cb.closest('[data-ingredient-id]');
+                // Skip hidden (filtered-out) rows/cards so "select all" matches what user sees.
+                if (host && host.hidden) return;
                 cb.checked = checked;
             });
             refreshBulkBar();
@@ -314,7 +339,7 @@
     }
     if (bulkClear) {
         bulkClear.addEventListener('click', function () {
-            ingrTable.querySelectorAll('.inv-row-check:checked').forEach(function (cb) { cb.checked = false; });
+            document.querySelectorAll('.inv-row-check:checked').forEach(function (cb) { cb.checked = false; });
             if (selectAll) selectAll.checked = false;
             refreshBulkBar();
         });
@@ -335,4 +360,260 @@
             }).catch(function () { bulkArchive.disabled = false; window.alert('Сетевая ошибка'); });
         });
     }
+
+    // ---- Phase 34.1: slide-down create panel ----
+    var createToggle = document.getElementById('invNewToggle');
+    var createPanel  = document.getElementById('invCreatePanel');
+    var createCancel = document.getElementById('invCreateCancel');
+    var createSubmit = document.getElementById('invCreateSubmit');
+    var createUnit   = document.getElementById('invNewUnit');
+    var createUnitOtherWrap = document.getElementById('invNewUnitOtherWrap');
+    var createUnitOther = document.getElementById('invNewUnitOther');
+
+    if (createToggle && createPanel) {
+        createToggle.addEventListener('click', function () {
+            createPanel.hidden = !createPanel.hidden;
+            if (!createPanel.hidden) {
+                var n = document.getElementById('invNewName');
+                if (n) n.focus();
+            }
+        });
+    }
+    if (createCancel && createPanel) {
+        createCancel.addEventListener('click', function () { createPanel.hidden = true; });
+    }
+    if (createUnit && createUnitOtherWrap) {
+        createUnit.addEventListener('change', function () {
+            createUnitOtherWrap.hidden = createUnit.value !== '__other__';
+            if (!createUnitOtherWrap.hidden && createUnitOther) createUnitOther.focus();
+        });
+    }
+    if (createSubmit) {
+        createSubmit.addEventListener('click', function () {
+            var name = (document.getElementById('invNewName').value || '').trim();
+            if (!name) { window.alert('Укажите название.'); return; }
+            var unit;
+            if (createUnit && createUnit.value === '__other__') {
+                unit = (createUnitOther && createUnitOther.value || '').trim() || 'шт';
+            } else {
+                unit = (createUnit && createUnit.value || '').trim() || 'шт';
+            }
+            var stock = parseFloat(document.getElementById('invNewStock').value || '0') || 0;
+            var thr   = parseFloat(document.getElementById('invNewThreshold').value || '0') || 0;
+            var cost  = parseFloat(document.getElementById('invNewCost').value || '0') || 0;
+            var supRaw = document.getElementById('invNewSupplier').value || '';
+            createSubmit.disabled = true;
+            api({
+                action: 'save_ingredient',
+                id: null,
+                name: name, unit: unit, stock_qty: stock,
+                reorder_threshold: thr, cost_per_unit: cost,
+                supplier_id: supRaw === '' ? null : parseInt(supRaw, 10),
+            }).then(function (r) {
+                createSubmit.disabled = false;
+                if (!r.ok || !r.data || !r.data.success) {
+                    window.alert('Не сохранилось: ' + ((r.data && r.data.error) || 'unknown'));
+                    return;
+                }
+                window.location.reload();
+            }).catch(function () { createSubmit.disabled = false; window.alert('Сетевая ошибка'); });
+        });
+    }
+
+    // ---- Phase 34.1: edit-ingredient modal ----
+    var editModal     = document.getElementById('invEditModal');
+    var editIdInput   = document.getElementById('invEditId');
+    var editSubtitle  = document.getElementById('invEditSubtitle');
+    var editName      = document.getElementById('invEditName');
+    var editUnit      = document.getElementById('invEditUnit');
+    var editUnitOtherWrap = document.getElementById('invEditUnitOtherWrap');
+    var editUnitOther = document.getElementById('invEditUnitOther');
+    var editStockRO   = document.getElementById('invEditStockReadonly');
+    var editThreshold = document.getElementById('invEditThreshold');
+    var editCost      = document.getElementById('invEditCost');
+    var editSupplier  = document.getElementById('invEditSupplier');
+    var editSave      = document.getElementById('invEditSave');
+    var editMsg       = document.getElementById('invEditMsg');
+
+    function closeEditModal() {
+        if (!editModal) return;
+        try { editModal.close(); } catch (_) { editModal.removeAttribute('open'); }
+        if (editMsg) { editMsg.hidden = true; editMsg.textContent = ''; }
+    }
+
+    function openEditModalById(id) {
+        if (!editModal) return;
+        // Read field values from the desktop row (it's still in DOM even when hidden).
+        var tr = document.querySelector('.inv-ingredients-table tbody tr[data-ingredient-id="' + id + '"]');
+        if (!tr) {
+            window.alert('Строка ингредиента не найдена.');
+            return;
+        }
+        editIdInput.value = String(id);
+        var nameVal = (tr.querySelector('.inv-name') || {}).value || '';
+        editName.value = nameVal;
+        editSubtitle.textContent = '#' + id + ' · ' + nameVal;
+        var unitVal = readUnit(tr) || 'шт';
+        var canonical = ['г','кг','мл','л','шт','порц','упак'].indexOf(unitVal) !== -1;
+        if (canonical) {
+            editUnit.value = unitVal;
+            editUnitOtherWrap.hidden = true;
+            editUnitOther.value = '';
+        } else {
+            editUnit.value = '__other__';
+            editUnitOtherWrap.hidden = false;
+            editUnitOther.value = unitVal;
+        }
+        editStockRO.textContent = ((tr.querySelector('.inv-stock-value') || {}).textContent || '0');
+        editThreshold.value = (tr.querySelector('.inv-threshold') || {}).value || '0';
+        editCost.value = (tr.querySelector('.inv-cost') || {}).value || '0';
+        editSupplier.value = (tr.querySelector('.inv-supplier') || {}).value || '';
+        try { editModal.showModal(); } catch (_) { editModal.setAttribute('open', ''); }
+    }
+
+    if (editModal) {
+        editModal.addEventListener('click', function (ev) {
+            if (ev.target && ev.target.matches && ev.target.matches('[data-inv-modal-close]')) {
+                ev.preventDefault();
+                closeEditModal();
+            }
+        });
+    }
+    if (editUnit && editUnitOtherWrap) {
+        editUnit.addEventListener('change', function () {
+            editUnitOtherWrap.hidden = editUnit.value !== '__other__';
+            if (!editUnitOtherWrap.hidden && editUnitOther) editUnitOther.focus();
+        });
+    }
+    if (editSave) {
+        editSave.addEventListener('click', function () {
+            var id = parseInt(editIdInput.value || '0', 10);
+            if (!id) return;
+            var name = (editName.value || '').trim();
+            if (!name) { window.alert('Укажите название.'); return; }
+            var unit = editUnit.value === '__other__'
+                ? ((editUnitOther.value || '').trim() || 'шт')
+                : (editUnit.value || 'шт');
+            var thr = parseFloat(editThreshold.value || '0') || 0;
+            var cost = parseFloat(editCost.value || '0') || 0;
+            var sup = editSupplier.value || '';
+            var stockQty = parseFloat(editStockRO.textContent || '0') || 0;
+            editSave.disabled = true;
+            api({
+                action: 'save_ingredient',
+                id: id,
+                name: name, unit: unit, stock_qty: stockQty,
+                reorder_threshold: thr, cost_per_unit: cost,
+                supplier_id: sup === '' ? null : parseInt(sup, 10),
+            }).then(function (r) {
+                editSave.disabled = false;
+                if (!r.ok || !r.data || !r.data.success) {
+                    editMsg.hidden = false;
+                    editMsg.className = 'recipe-save-msg recipe-save-msg-error';
+                    editMsg.textContent = 'Не сохранилось: ' + ((r.data && r.data.error) || 'unknown');
+                    return;
+                }
+                window.location.reload();
+            }).catch(function () { editSave.disabled = false; window.alert('Сетевая ошибка'); });
+        });
+    }
+
+    // ---- Phase 34.1: adjust-stock modal (mobile entrypoint) ----
+    var adjustModal = document.getElementById('invAdjustModal');
+    var adjustId    = document.getElementById('invAdjustId');
+    var adjustSub   = document.getElementById('invAdjustSubtitle');
+    var adjustDelta = document.getElementById('invAdjustDelta');
+    var adjustSave  = document.getElementById('invAdjustSave');
+    var adjustMsg   = document.getElementById('invAdjustMsg');
+
+    function closeAdjustModal() {
+        if (!adjustModal) return;
+        try { adjustModal.close(); } catch (_) { adjustModal.removeAttribute('open'); }
+        if (adjustMsg) { adjustMsg.hidden = true; adjustMsg.textContent = ''; }
+        if (adjustDelta) adjustDelta.value = '';
+    }
+
+    function openAdjustModalById(id) {
+        if (!adjustModal) return;
+        var host = document.querySelector('[data-ingredient-id="' + id + '"]');
+        if (!host) return;
+        adjustId.value = String(id);
+        var nameVal = (host.querySelector('.inv-name') || {}).value
+            || (host.querySelector('.inv-mcard-name') || {}).textContent
+            || '';
+        adjustSub.textContent = '#' + id + ' · ' + nameVal.trim();
+        try { adjustModal.showModal(); } catch (_) { adjustModal.setAttribute('open', ''); }
+        setTimeout(function () { if (adjustDelta) adjustDelta.focus(); }, 50);
+    }
+
+    if (adjustModal) {
+        adjustModal.addEventListener('click', function (ev) {
+            if (ev.target && ev.target.matches && ev.target.matches('[data-inv-adjust-close]')) {
+                ev.preventDefault();
+                closeAdjustModal();
+            }
+        });
+    }
+    if (adjustSave) {
+        adjustSave.addEventListener('click', function () {
+            var id = parseInt(adjustId.value || '0', 10);
+            if (!id) return;
+            var delta = parseFloat(adjustDelta.value || '0') || 0;
+            if (!delta) { window.alert('Введите положительное или отрицательное число.'); return; }
+            var reason = delta > 0 ? 'receipt' : 'waste';
+            adjustSave.disabled = true;
+            api({ action: 'adjust_stock', id: id, delta: delta, reason: reason }).then(function (r) {
+                adjustSave.disabled = false;
+                if (!r.ok || !r.data || !r.data.success) {
+                    adjustMsg.hidden = false;
+                    adjustMsg.className = 'recipe-save-msg recipe-save-msg-error';
+                    adjustMsg.textContent = 'Не получилось: ' + ((r.data && r.data.error) || 'unknown');
+                    return;
+                }
+                window.location.reload();
+            }).catch(function () { adjustSave.disabled = false; window.alert('Сетевая ошибка'); });
+        });
+    }
+
+    // ---- Phase 34.1: mobile card actions (Edit / ± Adjust / Archive / Restore) ----
+    document.addEventListener('click', function (ev) {
+        var editBtn = ev.target.closest && ev.target.closest('.js-edit-ing');
+        if (editBtn) {
+            var id = parseInt(editBtn.getAttribute('data-ing-id') || '0', 10);
+            if (id) openEditModalById(id);
+            return;
+        }
+        var adjBtn = ev.target.closest && ev.target.closest('.js-adjust-ing');
+        if (adjBtn) {
+            var aid = parseInt(adjBtn.getAttribute('data-ing-id') || '0', 10);
+            if (aid) openAdjustModalById(aid);
+            return;
+        }
+        var mArch = ev.target.closest && ev.target.closest('.inv-mcard .btn-inv-archive');
+        if (mArch) {
+            var card = mArch.closest('.inv-mcard');
+            var mid = parseInt(card && card.getAttribute('data-ingredient-id') || '0', 10);
+            if (!mid) return;
+            if (!window.confirm('Архивировать ингредиент #' + mid + '?')) return;
+            mArch.disabled = true;
+            api({ action: 'archive_ingredient', id: mid }).then(function (r) {
+                mArch.disabled = false;
+                if (!r.ok || !r.data || !r.data.success) { window.alert('Не получилось'); return; }
+                window.location.reload();
+            }).catch(function () { mArch.disabled = false; });
+            return;
+        }
+        var mRest = ev.target.closest && ev.target.closest('.inv-mcard .btn-inv-restore');
+        if (mRest) {
+            var rcard = mRest.closest('.inv-mcard');
+            var rid = parseInt(rcard && rcard.getAttribute('data-ingredient-id') || '0', 10);
+            if (!rid) return;
+            mRest.disabled = true;
+            api({ action: 'restore_ingredient', id: rid }).then(function (r) {
+                mRest.disabled = false;
+                if (!r.ok || !r.data || !r.data.success) { window.alert('Не получилось'); return; }
+                window.location.reload();
+            }).catch(function () { mRest.disabled = false; });
+        }
+    });
 })();

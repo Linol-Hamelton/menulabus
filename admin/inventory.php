@@ -1,11 +1,18 @@
 <?php
 /**
- * admin/inventory.php — admin UI for Inventory (Phase 6.2).
+ * admin/inventory.php — admin UI for Inventory (Phase 34.1 polish v2).
  *
- * Panels:
- *   1. Low-stock banner (if any ingredient ≤ threshold).
- *   2. Ingredients table — inline editable + per-row "+N / -N" adjust + movements drawer.
- *   3. Suppliers mini-table.
+ * Layout:
+ *   1. Section header (kicker / title / caption) + summary cards.
+ *   2. Low-stock chip banner (active view only).
+ *   3. Toolbar — view switch + "+ Создать ингредиент" button.
+ *   4. Slide-down create panel (hidden by default).
+ *   5. Filter bar + bulk-action bar.
+ *   6. Desktop table — fewer columns, stock cell with status badge +
+ *      kebab toggle, threshold tucked inside stock cell.
+ *   7. Mobile card list — compact rows with "Редактировать" → modal.
+ *   8. Edit modal — full form for one ingredient.
+ *   9. Suppliers section.
  *
  * Writes go through api/save-inventory.php.
  */
@@ -35,9 +42,6 @@ if (!in_array($invStock, ['low', 'out', 'ok'], true)) {
 }
 
 if ($invView === 'archived') {
-    // Archived view: only show archived rows. Pass includeArchived=true and
-    // post-filter to archived-only in the loop below (listIngredients doesn't
-    // have an "archived only" mode by design).
     $allRows     = $db->listIngredients(true, $invSearch ?: null, $invSupplier, $invStock ?: null);
     $ingredients = array_values(array_filter($allRows, static fn($r) => !empty($r['archived_at'])));
 } else {
@@ -51,6 +55,25 @@ $unitOptions = \Cleanmenu\Inventory\UnitCatalog::CANONICAL;
 
 $siteName   = $GLOBALS['siteName'] ?? 'labus';
 $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
+
+// Helper: status bucket for a row.
+$statusBucket = static function (array $i): string {
+    if (!empty($i['archived_at'])) return 'archived';
+    $stock = (float)$i['stock_qty'];
+    $thr   = (float)$i['reorder_threshold'];
+    if ($stock <= 0) return 'out';
+    if ($thr > 0 && $stock <= $thr) return 'low';
+    return 'ok';
+};
+$statusLabel = ['ok' => 'OK', 'low' => 'Низкий', 'out' => 'Нет', 'archived' => 'Архив'];
+
+// Helper: trim trailing zeros for nice display.
+$fmtQty = static function ($v): string {
+    return rtrim(rtrim(number_format((float)$v, 3, '.', ''), '0'), '.');
+};
+$fmtCost = static function ($v): string {
+    return rtrim(rtrim(number_format((float)$v, 4, '.', ''), '0'), '.');
+};
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -63,6 +86,7 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($appVersion) ?>">
+    <link rel="stylesheet" href="/css/admin-design-modals.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/mobile-polish.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/admin-inventory.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion) ?>">
@@ -85,7 +109,7 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                 <a href="/admin/menu.php" class="back-to-menu-btn">К админке</a>
             </div>
 
-            <!-- Phase 34: summary cards (active count, low-stock count, total stock value) -->
+            <!-- Summary cards -->
             <div class="inv-summary-row" role="status" aria-label="Сводка по складу">
                 <div class="inv-summary-card">
                     <span class="inv-summary-label">Активных позиций</span>
@@ -109,19 +133,76 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                     <?php foreach ($lowStock as $ls): ?>
                         <span class="inv-low-chip">
                             <?= htmlspecialchars((string)$ls['name']) ?>
-                            — <?= rtrim(rtrim(number_format((float)$ls['stock_qty'], 3, '.', ''), '0'), '.') ?> <?= htmlspecialchars((string)$ls['unit']) ?>
+                            — <?= $fmtQty($ls['stock_qty']) ?> <?= htmlspecialchars((string)$ls['unit']) ?>
                         </span>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
 
-            <!-- Phase 34: view toggle (active / archived) -->
-            <div class="form-actions inv-view-switch">
-                <a href="/admin/inventory.php?view=active" class="admin-checkout-btn<?= $invView !== 'archived' ? ' cancel' : '' ?>">Активные</a>
-                <a href="/admin/inventory.php?view=archived" class="admin-checkout-btn<?= $invView === 'archived' ? ' cancel' : '' ?>">Архив</a>
+            <!-- Phase 34.1: toolbar (view switch + create button), echoing admin/menu.php pattern -->
+            <div class="inv-toolbar">
+                <div class="form-actions inv-view-switch">
+                    <a href="/admin/inventory.php?view=active" class="admin-checkout-btn<?= $invView !== 'archived' ? ' cancel' : '' ?>">Активные</a>
+                    <a href="/admin/inventory.php?view=archived" class="admin-checkout-btn<?= $invView === 'archived' ? ' cancel' : '' ?>">Архив</a>
+                </div>
+                <?php if ($invView !== 'archived'): ?>
+                    <button type="button" class="checkout-btn" id="invNewToggle" title="Создать новый ингредиент">+ Создать ингредиент</button>
+                <?php endif; ?>
             </div>
 
-            <!-- Phase 34: filter bar (client-side filtering, applied to rendered rows) -->
+            <!-- Phase 34.1: slide-down create panel -->
+            <?php if ($invView !== 'archived'): ?>
+            <div class="inv-create-panel" id="invCreatePanel" hidden>
+                <div class="inv-create-grid">
+                    <label class="inv-create-field">
+                        <span class="inv-create-label">Название</span>
+                        <input type="text" id="invNewName" placeholder="Например: Мука В/С" maxlength="255">
+                    </label>
+                    <label class="inv-create-field">
+                        <span class="inv-create-label">Единица</span>
+                        <select id="invNewUnit">
+                            <?php foreach ($unitOptions as $u): ?>
+                                <option value="<?= htmlspecialchars($u) ?>" <?= $u === 'шт' ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($u) ?>
+                                </option>
+                            <?php endforeach; ?>
+                            <option value="__other__">Другое…</option>
+                        </select>
+                    </label>
+                    <label class="inv-create-field inv-create-field--other" id="invNewUnitOtherWrap" hidden>
+                        <span class="inv-create-label">Другое</span>
+                        <input type="text" id="invNewUnitOther" maxlength="16" placeholder="напр. гр">
+                    </label>
+                    <label class="inv-create-field">
+                        <span class="inv-create-label">Остаток</span>
+                        <input type="number" step="0.001" id="invNewStock" value="0" min="0">
+                    </label>
+                    <label class="inv-create-field">
+                        <span class="inv-create-label">Порог</span>
+                        <input type="number" step="0.001" id="invNewThreshold" value="0" min="0">
+                    </label>
+                    <label class="inv-create-field">
+                        <span class="inv-create-label">Цена/ед.</span>
+                        <input type="number" step="0.0001" id="invNewCost" value="0" min="0">
+                    </label>
+                    <label class="inv-create-field inv-create-field--wide">
+                        <span class="inv-create-label">Поставщик</span>
+                        <select id="invNewSupplier">
+                            <option value="">—</option>
+                            <?php foreach ($suppliers as $sup): ?>
+                                <option value="<?= (int)$sup['id'] ?>"><?= htmlspecialchars((string)$sup['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                </div>
+                <div class="inv-create-actions">
+                    <button type="button" class="admin-checkout-btn cancel" id="invCreateCancel">Отмена</button>
+                    <button type="button" class="checkout-btn" id="invCreateSubmit">Создать</button>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Filter bar -->
             <div class="inv-filter-bar" id="invFilterBar">
                 <label class="inv-filter-group inv-filter-search">
                     <span class="inv-filter-label">Поиск</span>
@@ -151,34 +232,34 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                 <button type="button" class="admin-checkout-btn cancel" id="invFilterReset">Сбросить</button>
             </div>
 
-            <!-- Phase 34: bulk-action bar (hidden until rows are checked) -->
+            <!-- Bulk-action bar -->
             <div class="inv-bulk-bar" id="invBulkBar" hidden>
                 <span class="inv-bulk-count">Выбрано: <strong id="invBulkCount">0</strong></span>
                 <button type="button" class="admin-checkout-btn cancel" id="invBulkArchive">Архивировать выбранные</button>
                 <button type="button" class="admin-checkout-btn" id="invBulkClear">Снять выделение</button>
             </div>
 
-            <div class="inv-table-wrapper">
-                <?php if (empty($ingredients)): ?>
-                    <div class="inv-empty-state">
-                        <?php if ($invView === 'archived'): ?>
-                            В архиве пусто. Архивные позиции сюда попадают по кнопке «Архив» у активного ингредиента.
-                        <?php elseif ($invSearch !== '' || $invSupplier !== null || $invStock !== ''): ?>
-                            По текущим фильтрам ничего не найдено. <a href="/admin/inventory.php?view=active">Сбросить фильтры</a>.
-                        <?php else: ?>
-                            Пока нет ни одного ингредиента — создайте первый в строке снизу.
-                        <?php endif; ?>
-                    </div>
-                <?php endif; ?>
+            <?php if (empty($ingredients)): ?>
+                <div class="inv-empty-state">
+                    <?php if ($invView === 'archived'): ?>
+                        В архиве пусто. Архивные позиции сюда попадают по кнопке «Архив» у активного ингредиента.
+                    <?php elseif ($invSearch !== '' || $invSupplier !== null || $invStock !== ''): ?>
+                        По текущим фильтрам ничего не найдено. <a href="/admin/inventory.php?view=active">Сбросить фильтры</a>.
+                    <?php else: ?>
+                        Пока нет ни одного ингредиента — нажмите «+ Создать ингредиент» сверху.
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- DESKTOP TABLE — fewer columns, stock cell merged with threshold + status badge -->
+            <div class="inv-table-wrapper desktop-table">
                 <table class="inv-ingredients-table" id="invIngredientsTable">
                     <thead>
                         <tr>
                             <th class="inv-col-check"><input type="checkbox" id="invSelectAll" aria-label="Выбрать все"></th>
-                            <th>ID</th>
                             <th>Название</th>
                             <th>Ед.</th>
-                            <th class="num-col">Остаток</th>
-                            <th class="num-col">Порог</th>
+                            <th class="num-col">Остаток · порог</th>
                             <th class="num-col">Цена/ед.</th>
                             <th>Поставщик</th>
                             <th>Действия</th>
@@ -188,20 +269,22 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                         <?php foreach ($ingredients as $i): ?>
                             <?php
                             $isArchived = !empty($i['archived_at']);
-                            $isLow = !$isArchived && (float)$i['reorder_threshold'] > 0 && (float)$i['stock_qty'] <= (float)$i['reorder_threshold'];
+                            $status     = $statusBucket($i);
+                            $isLow      = $status === 'low';
+                            $isOut      = $status === 'out';
+                            $currentUnit = (string)$i['unit'];
+                            $isCanonical = \Cleanmenu\Inventory\UnitCatalog::isCanonical($currentUnit);
                             ?>
                             <tr data-ingredient-id="<?= (int)$i['id'] ?>"
                                 data-supplier-id="<?= $i['supplier_id'] !== null ? (int)$i['supplier_id'] : '' ?>"
-                                data-stock-status="<?= $isLow ? 'low' : ((float)$i['stock_qty'] <= 0 ? 'out' : 'ok') ?>"
+                                data-stock-status="<?= htmlspecialchars($status) ?>"
                                 class="<?= $isArchived ? 'inv-row-archived' : '' ?> <?= $isLow ? 'inv-row-low' : '' ?>">
                                 <td class="inv-col-check"><input type="checkbox" class="inv-row-check" aria-label="Выбрать строку"></td>
-                                <td>#<?= (int)$i['id'] ?></td>
-                                <td><input type="text" class="inv-name" value="<?= htmlspecialchars((string)$i['name']) ?>" maxlength="255"></td>
+                                <td>
+                                    <input type="text" class="inv-name" value="<?= htmlspecialchars((string)$i['name']) ?>" maxlength="255">
+                                    <span class="inv-row-id-hint">#<?= (int)$i['id'] ?></span>
+                                </td>
                                 <td class="inv-unit-cell">
-                                    <?php
-                                    $currentUnit = (string)$i['unit'];
-                                    $isCanonical = \Cleanmenu\Inventory\UnitCatalog::isCanonical($currentUnit);
-                                    ?>
                                     <select class="inv-unit-select" data-w="sm">
                                         <?php foreach ($unitOptions as $u): ?>
                                             <option value="<?= htmlspecialchars($u) ?>" <?= ($isCanonical && $u === $currentUnit) ? 'selected' : '' ?>>
@@ -215,13 +298,23 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                                            placeholder="напр. гр"
                                            <?= $isCanonical ? 'hidden' : '' ?>>
                                 </td>
-                                <td class="num-col">
-                                    <span class="inv-stock-cell"><?= rtrim(rtrim(number_format((float)$i['stock_qty'], 3, '.', ''), '0'), '.') ?></span>
-                                    <input type="number" step="0.001" class="inv-adjust-delta" placeholder="±" data-w="xs">
-                                    <button type="button" class="admin-checkout-btn btn-inv-apply" data-adjust-action="apply">Применить</button>
+                                <td class="num-col inv-stock-merge">
+                                    <div class="inv-stock-display">
+                                        <span class="inv-stock-value"><?= $fmtQty($i['stock_qty']) ?></span>
+                                        <span class="inv-stock-badge inv-stock-badge--<?= htmlspecialchars($status) ?>"><?= htmlspecialchars($statusLabel[$status] ?? '') ?></span>
+                                        <button type="button" class="inv-kebab-btn" aria-label="Действия с остатком" title="Изменить остаток / История">⋯</button>
+                                    </div>
+                                    <div class="inv-stock-meta">
+                                        <span class="inv-stock-meta-label">Порог</span>
+                                        <input type="number" step="0.001" class="inv-threshold" value="<?= $fmtQty($i['reorder_threshold']) ?>" min="0" data-w="sm">
+                                    </div>
+                                    <div class="inv-adjust-controls" hidden>
+                                        <input type="number" step="0.001" class="inv-adjust-delta" placeholder="±">
+                                        <button type="button" class="admin-checkout-btn btn-inv-apply" data-adjust-action="apply">Применить</button>
+                                        <button type="button" class="admin-checkout-btn btn-inv-history">История</button>
+                                    </div>
                                 </td>
-                                <td class="num-col"><input type="number" step="0.001" class="inv-threshold" value="<?= rtrim(rtrim(number_format((float)$i['reorder_threshold'], 3, '.', ''), '0'), '.') ?>" min="0" data-w="sm"></td>
-                                <td class="num-col"><input type="number" step="0.0001" class="inv-cost" value="<?= rtrim(rtrim(number_format((float)$i['cost_per_unit'], 4, '.', ''), '0'), '.') ?>" min="0" data-w="md"></td>
+                                <td class="num-col"><input type="number" step="0.0001" class="inv-cost" value="<?= $fmtCost($i['cost_per_unit']) ?>" min="0" data-w="md"></td>
                                 <td>
                                     <select class="inv-supplier">
                                         <option value="">—</option>
@@ -235,7 +328,6 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                                 </td>
                                 <td class="inv-actions-cell">
                                     <button type="button" class="admin-checkout-btn btn-inv-save">Сохранить</button>
-                                    <button type="button" class="admin-checkout-btn btn-inv-history">История</button>
                                     <?php if ($isArchived): ?>
                                         <button type="button" class="admin-checkout-btn btn-inv-restore">Вернуть</button>
                                     <?php else: ?>
@@ -244,40 +336,59 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                                 </td>
                             </tr>
                         <?php endforeach; ?>
-                        <?php if ($invView !== 'archived'): ?>
-                        <tr class="inv-new-row" data-ingredient-id="">
-                            <td class="inv-col-check"></td>
-                            <td>—</td>
-                            <td><input type="text" class="inv-name" placeholder="Название" maxlength="255"></td>
-                            <td class="inv-unit-cell">
-                                <select class="inv-unit-select" data-w="sm">
-                                    <?php foreach ($unitOptions as $u): ?>
-                                        <option value="<?= htmlspecialchars($u) ?>" <?= $u === 'шт' ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($u) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                    <option value="__other__">Другое…</option>
-                                </select>
-                                <input type="text" class="inv-unit-other" maxlength="16" data-w="3xs" placeholder="напр. гр" hidden>
-                            </td>
-                            <td class="num-col"><input type="number" step="0.001" class="inv-new-stock" value="0" min="0" data-w="md"></td>
-                            <td class="num-col"><input type="number" step="0.001" class="inv-threshold" value="0" min="0" data-w="sm"></td>
-                            <td class="num-col"><input type="number" step="0.0001" class="inv-cost" value="0" min="0" data-w="md"></td>
-                            <td>
-                                <select class="inv-supplier">
-                                    <option value="">—</option>
-                                    <?php foreach ($suppliers as $sup): ?>
-                                        <option value="<?= (int)$sup['id'] ?>"><?= htmlspecialchars((string)$sup['name']) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </td>
-                            <td>
-                                <button type="button" class="admin-checkout-btn btn-inv-save">Создать</button>
-                            </td>
-                        </tr>
-                        <?php endif; ?>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- MOBILE CARDS — compact, click "Редактировать" → modal -->
+            <div class="inv-mobile-list" id="invMobileList">
+                <?php foreach ($ingredients as $i):
+                    $isArchived = !empty($i['archived_at']);
+                    $status     = $statusBucket($i);
+                ?>
+                <div class="inv-mcard"
+                     data-ingredient-id="<?= (int)$i['id'] ?>"
+                     data-supplier-id="<?= $i['supplier_id'] !== null ? (int)$i['supplier_id'] : '' ?>"
+                     data-stock-status="<?= htmlspecialchars($status) ?>">
+                    <div class="inv-mcard-head">
+                        <input type="checkbox" class="inv-row-check" aria-label="Выбрать">
+                        <div class="inv-mcard-name-block">
+                            <div class="inv-mcard-name"><?= htmlspecialchars((string)$i['name']) ?></div>
+                            <div class="inv-mcard-id">#<?= (int)$i['id'] ?></div>
+                        </div>
+                        <span class="inv-stock-badge inv-stock-badge--<?= htmlspecialchars($status) ?>"><?= htmlspecialchars($statusLabel[$status] ?? '') ?></span>
+                    </div>
+                    <dl class="inv-mcard-meta">
+                        <div class="inv-mcard-row">
+                            <dt>Остаток</dt>
+                            <dd><?= $fmtQty($i['stock_qty']) ?> <?= htmlspecialchars((string)$i['unit']) ?></dd>
+                        </div>
+                        <div class="inv-mcard-row">
+                            <dt>Порог</dt>
+                            <dd><?= $fmtQty($i['reorder_threshold']) ?> <?= htmlspecialchars((string)$i['unit']) ?></dd>
+                        </div>
+                        <div class="inv-mcard-row">
+                            <dt>Цена/ед.</dt>
+                            <dd><?= $fmtCost($i['cost_per_unit']) ?> ₽</dd>
+                        </div>
+                        <?php if (!empty($i['supplier_name'])): ?>
+                        <div class="inv-mcard-row">
+                            <dt>Поставщик</dt>
+                            <dd><?= htmlspecialchars((string)$i['supplier_name']) ?></dd>
+                        </div>
+                        <?php endif; ?>
+                    </dl>
+                    <div class="inv-mcard-actions">
+                        <button type="button" class="admin-checkout-btn js-edit-ing" data-ing-id="<?= (int)$i['id'] ?>">Редактировать</button>
+                        <button type="button" class="admin-checkout-btn js-adjust-ing" data-ing-id="<?= (int)$i['id'] ?>">± Остаток</button>
+                        <?php if ($isArchived): ?>
+                            <button type="button" class="admin-checkout-btn btn-inv-restore">Вернуть</button>
+                        <?php else: ?>
+                            <button type="button" class="admin-checkout-btn cancel btn-inv-archive">Архив</button>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
             </div>
 
             <div id="invHistoryPanel" class="inv-history-panel" hidden>
@@ -307,37 +418,161 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                     <p class="admin-pane-caption">Soft-reference на карточке ингредиента. Цены приходов фиксируются в стоимости ингредиента — отдельных закупочных накладных пока нет.</p>
                 </div>
             </div>
-            <table class="inv-suppliers-table" id="invSuppliersTable">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Название</th>
-                        <th>Контакт</th>
-                        <th>Заметки</th>
-                        <th>Действия</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($suppliers as $sup): ?>
-                        <tr data-supplier-id="<?= (int)$sup['id'] ?>">
-                            <td>#<?= (int)$sup['id'] ?></td>
-                            <td><input type="text" class="sup-name" value="<?= htmlspecialchars((string)$sup['name']) ?>" maxlength="255"></td>
-                            <td><input type="text" class="sup-contact" value="<?= htmlspecialchars((string)($sup['contact'] ?? '')) ?>" maxlength="255"></td>
-                            <td><input type="text" class="sup-notes" value="<?= htmlspecialchars((string)($sup['notes'] ?? '')) ?>" maxlength="500"></td>
-                            <td><button type="button" class="admin-checkout-btn btn-sup-save">Сохранить</button></td>
+            <div class="inv-table-wrapper desktop-table">
+                <table class="inv-suppliers-table" id="invSuppliersTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Название</th>
+                            <th>Контакт</th>
+                            <th>Заметки</th>
+                            <th>Действия</th>
                         </tr>
-                    <?php endforeach; ?>
-                    <tr class="inv-new-row" data-supplier-id="">
-                        <td>—</td>
-                        <td><input type="text" class="sup-name" placeholder="Новый поставщик" maxlength="255"></td>
-                        <td><input type="text" class="sup-contact" placeholder="телефон / email" maxlength="255"></td>
-                        <td><input type="text" class="sup-notes" placeholder="" maxlength="500"></td>
-                        <td><button type="button" class="admin-checkout-btn btn-sup-save">Создать</button></td>
-                    </tr>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($suppliers as $sup): ?>
+                            <tr data-supplier-id="<?= (int)$sup['id'] ?>">
+                                <td>#<?= (int)$sup['id'] ?></td>
+                                <td><input type="text" class="sup-name" value="<?= htmlspecialchars((string)$sup['name']) ?>" maxlength="255"></td>
+                                <td><input type="text" class="sup-contact" value="<?= htmlspecialchars((string)($sup['contact'] ?? '')) ?>" maxlength="255"></td>
+                                <td><input type="text" class="sup-notes" value="<?= htmlspecialchars((string)($sup['notes'] ?? '')) ?>" maxlength="500"></td>
+                                <td><button type="button" class="admin-checkout-btn btn-sup-save">Сохранить</button></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        <tr class="inv-new-row" data-supplier-id="">
+                            <td>—</td>
+                            <td><input type="text" class="sup-name" placeholder="Новый поставщик" maxlength="255"></td>
+                            <td><input type="text" class="sup-contact" placeholder="телефон / email" maxlength="255"></td>
+                            <td><input type="text" class="sup-notes" placeholder="" maxlength="500"></td>
+                            <td><button type="button" class="admin-checkout-btn btn-sup-save">Создать</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <!-- Mobile supplier cards -->
+            <div class="inv-mobile-list" id="invSuppliersMobile">
+                <?php foreach ($suppliers as $sup): ?>
+                    <div class="inv-mcard inv-mcard--supplier" data-supplier-id="<?= (int)$sup['id'] ?>">
+                        <div class="inv-mcard-head">
+                            <div class="inv-mcard-name-block">
+                                <div class="inv-mcard-name"><?= htmlspecialchars((string)$sup['name']) ?></div>
+                                <div class="inv-mcard-id">#<?= (int)$sup['id'] ?></div>
+                            </div>
+                        </div>
+                        <dl class="inv-mcard-meta">
+                            <?php if (!empty($sup['contact'])): ?>
+                                <div class="inv-mcard-row">
+                                    <dt>Контакт</dt>
+                                    <dd><?= htmlspecialchars((string)$sup['contact']) ?></dd>
+                                </div>
+                            <?php endif; ?>
+                            <?php if (!empty($sup['notes'])): ?>
+                                <div class="inv-mcard-row">
+                                    <dt>Заметки</dt>
+                                    <dd><?= htmlspecialchars((string)$sup['notes']) ?></dd>
+                                </div>
+                            <?php endif; ?>
+                        </dl>
+                        <div class="inv-mcard-actions">
+                            <button type="button" class="admin-checkout-btn js-edit-sup" data-sup-id="<?= (int)$sup['id'] ?>">Редактировать</button>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
         </section>
     </div>
+
+    <!-- Phase 34.1: Edit-ingredient modal — opened from mobile cards (and optionally desktop) -->
+    <dialog id="invEditModal" class="design-modal" aria-labelledby="invEditModalTitle">
+        <div class="modal-card">
+            <header class="modal-head">
+                <div>
+                    <h2 id="invEditModalTitle" class="modal-title">Редактировать ингредиент</h2>
+                    <p class="modal-subtitle" id="invEditSubtitle">—</p>
+                </div>
+                <button type="button" class="modal-close" data-inv-modal-close aria-label="Закрыть">×</button>
+            </header>
+            <form class="modal-body inv-edit-form" id="invEditForm">
+                <input type="hidden" id="invEditId" value="">
+                <label class="inv-edit-field">
+                    <span class="inv-edit-label">Название</span>
+                    <input type="text" id="invEditName" maxlength="255" required>
+                </label>
+                <div class="inv-edit-row">
+                    <label class="inv-edit-field">
+                        <span class="inv-edit-label">Единица</span>
+                        <select id="invEditUnit">
+                            <?php foreach ($unitOptions as $u): ?>
+                                <option value="<?= htmlspecialchars($u) ?>"><?= htmlspecialchars($u) ?></option>
+                            <?php endforeach; ?>
+                            <option value="__other__">Другое…</option>
+                        </select>
+                    </label>
+                    <label class="inv-edit-field" id="invEditUnitOtherWrap" hidden>
+                        <span class="inv-edit-label">Другое</span>
+                        <input type="text" id="invEditUnitOther" maxlength="16" placeholder="напр. гр">
+                    </label>
+                </div>
+                <div class="inv-edit-row">
+                    <div class="inv-edit-field">
+                        <span class="inv-edit-label">Текущий остаток</span>
+                        <div class="inv-edit-readonly" id="invEditStockReadonly">—</div>
+                    </div>
+                    <label class="inv-edit-field">
+                        <span class="inv-edit-label">Порог</span>
+                        <input type="number" step="0.001" id="invEditThreshold" min="0">
+                    </label>
+                </div>
+                <div class="inv-edit-row">
+                    <label class="inv-edit-field">
+                        <span class="inv-edit-label">Цена/ед., ₽</span>
+                        <input type="number" step="0.0001" id="invEditCost" min="0">
+                    </label>
+                    <label class="inv-edit-field">
+                        <span class="inv-edit-label">Поставщик</span>
+                        <select id="invEditSupplier">
+                            <option value="">—</option>
+                            <?php foreach ($suppliers as $sup): ?>
+                                <option value="<?= (int)$sup['id'] ?>"><?= htmlspecialchars((string)$sup['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                </div>
+                <p class="inv-edit-hint">Чтобы изменить остаток — используйте «± Остаток» на карточке ингредиента, тогда движение попадёт в аудит-лог.</p>
+                <div id="invEditMsg" class="recipe-save-msg" hidden></div>
+            </form>
+            <footer class="modal-foot">
+                <button type="button" class="admin-checkout-btn cancel" data-inv-modal-close>Отмена</button>
+                <button type="button" class="checkout-btn" id="invEditSave">Сохранить</button>
+            </footer>
+        </div>
+    </dialog>
+
+    <!-- Phase 34.1: Adjust-stock modal (mobile + as alternative kebab on desktop) -->
+    <dialog id="invAdjustModal" class="design-modal" aria-labelledby="invAdjustModalTitle">
+        <div class="modal-card">
+            <header class="modal-head">
+                <div>
+                    <h2 id="invAdjustModalTitle" class="modal-title">Изменить остаток</h2>
+                    <p class="modal-subtitle" id="invAdjustSubtitle">—</p>
+                </div>
+                <button type="button" class="modal-close" data-inv-adjust-close aria-label="Закрыть">×</button>
+            </header>
+            <form class="modal-body inv-adjust-form" id="invAdjustForm">
+                <input type="hidden" id="invAdjustId" value="">
+                <label class="inv-edit-field">
+                    <span class="inv-edit-label">Дельта (можно отрицательную)</span>
+                    <input type="number" step="0.001" id="invAdjustDelta" placeholder="±N">
+                </label>
+                <p class="inv-edit-hint">Положительная дельта = приход (receipt), отрицательная = списание (waste). Запись попадает в stock_movements.</p>
+                <div id="invAdjustMsg" class="recipe-save-msg" hidden></div>
+            </form>
+            <footer class="modal-foot">
+                <button type="button" class="admin-checkout-btn cancel" data-inv-adjust-close>Отмена</button>
+                <button type="button" class="checkout-btn" id="invAdjustSave">Применить</button>
+            </footer>
+        </div>
+    </dialog>
 
     <script src="/js/security.min.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/app.min.js?v=<?= htmlspecialchars($appVersion) ?>" defer nonce="<?= $scriptNonce ?>"></script>
