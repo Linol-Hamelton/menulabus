@@ -34,12 +34,16 @@ function oauth_secret(): string
 
 function oauth_verify_state(string $state): ?array
 {
-    // Phase 33.2 — separator switched from '.' to '~' (VK ID strips '.'
-    // from the state query parameter, see vk-start.php for context).
-    if (strpos($state, '~') === false) {
+    // Phase 33.2 — VK ID strips non-base64url chars from the `state` query
+    // parameter. State is encoded as b64url(payload) || b64url(signature)
+    // with NO separator; signature is exactly 43 chars (b64url of SHA256).
+    // See vk-start.php for the full rationale.
+    $sigLen = 43;
+    if (strlen($state) <= $sigLen) {
         return null;
     }
-    [$p, $sig] = explode('~', $state, 2);
+    $p   = substr($state, 0, -$sigLen);
+    $sig = substr($state, -$sigLen);
     $expected = b64url_encode(hash_hmac('sha256', $p, oauth_secret(), true));
     if (!hash_equals($expected, $sig)) {
         return null;

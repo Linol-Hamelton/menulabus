@@ -38,12 +38,13 @@ function oauth_make_state(string $mode): string
     ];
     $p = b64url_encode(json_encode($payload, JSON_UNESCAPED_SLASHES));
     $sig = b64url_encode(hash_hmac('sha256', $p, oauth_secret(), true));
-    // Phase 33.2 — use '~' instead of '.' as separator: VK ID echoes back
-    // the `state` query parameter with `.` characters stripped, breaking
-    // the payload/signature split. '~' is URL-unreserved (RFC 3986) AND
-    // outside the base64url alphabet [A-Za-z0-9_-], so it's a safe
-    // unambiguous separator that survives VK's roundtrip intact.
-    return $p . '~' . $sig;
+    // Phase 33.2 — VK ID strips ANY character outside the base64url alphabet
+    // [A-Za-z0-9_-] from the `state` query parameter (confirmed empirically:
+    // both '.' and '~' separators get deleted). Use NO separator instead and
+    // rely on the fixed length of an HMAC-SHA256 b64url signature: 32 bytes
+    // = 256 bits = exactly 43 base64url chars (no padding). The verifier
+    // takes the trailing 43 chars as the signature and the rest as payload.
+    return $p . $sig;
 }
 
 $mode = (string)($_GET['mode'] ?? 'login');

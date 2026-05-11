@@ -81,20 +81,27 @@ new VK ID app, update the env-variables above, and restart php-fpm.
      first, then by email), creates the app session, redirects to
      `/account.php`
 
-## State parameter quirk (VK ID strips `.`)
+## State parameter quirk (VK ID strips non-base64url chars)
 
-VK ID has been observed (2026-05-11) to silently strip `.` characters
-from the `state` query parameter when echoing it back to the OAuth
-callback. Concrete repro: we sent `state=PAYLOAD.SIGNATURE`, callback
-URL came back with `state=PAYLOADSIGNATURE` (dot removed). This breaks
-any HMAC-signed state that uses `.` as the payload/signature
-separator.
+VK ID has been observed (2026-05-11) to silently strip any character
+outside the base64url alphabet `[A-Za-z0-9_-]` from the `state` query
+parameter when echoing it back to the OAuth callback. Concrete repro:
+we sent `state=PAYLOAD.SIGNATURE`, callback URL came back with
+`state=PAYLOADSIGNATURE` (dot removed); switching the separator to
+`~` produced the same `state=PAYLOADSIGNATURE` (tilde also removed).
+This breaks any HMAC-signed state that uses a non-alphabet character
+as the payload/signature separator.
 
-Our `oauth_make_state()` therefore uses `~` as separator instead of
-`.`. Tilde is RFC 3986 unreserved AND outside the base64url alphabet
-`[A-Za-z0-9_-]`, so it's both URL-safe and an unambiguous separator
-for the HMAC-signed state encoding. Yandex/Google do not exhibit this
-bug — their start/callback scripts still use `.` as separator.
+Our `oauth_make_state()` therefore uses **no separator at all**. The
+state is `b64url(payload) || b64url(signature)`. We rely on the fixed
+length of a base64url-encoded SHA256 HMAC: 32 bytes = 256 bits / 6
+bits per char = exactly 43 chars (no padding). The verifier in
+`oauth_verify_state()` takes the trailing 43 chars as the signature
+and the rest as the payload. Every character in the resulting state
+is now in `[A-Za-z0-9_-]`, so there is nothing for VK to strip.
+
+Yandex/Google do not exhibit this bug — their start/callback scripts
+still use `.` as separator and continue to work.
 
 ## JWT note
 
