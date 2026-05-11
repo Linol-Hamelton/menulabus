@@ -1237,7 +1237,9 @@ $savedDbFontsJson = htmlspecialchars(
                   <select id="recipeAddIngredient">
                     <option value="">Выбрать ингредиент…</option>
                     <?php foreach ($db->listIngredients(false) as $ing): ?>
-                      <option value="<?= (int)$ing['id'] ?>" data-unit="<?= htmlspecialchars((string)$ing['unit']) ?>">
+                      <option value="<?= (int)$ing['id'] ?>"
+                              data-unit="<?= htmlspecialchars((string)$ing['unit']) ?>"
+                              data-cost="<?= htmlspecialchars((string)$ing['cost_per_unit']) ?>">
                         <?= htmlspecialchars((string)$ing['name']) ?> (<?= htmlspecialchars((string)$ing['unit']) ?>)
                       </option>
                     <?php endforeach; ?>
@@ -1246,6 +1248,10 @@ $savedDbFontsJson = htmlspecialchars(
                   <button type="button" id="recipeAddBtn" class="checkout-btn">Добавить</button>
                   <button type="button" id="recipeSaveBtn" class="checkout-btn admin-checkout-btn">Сохранить рецепт</button>
                   <button type="button" id="recipeImportBtn" class="admin-checkout-btn" title="Загрузить рецепт из CSV">Загрузить из CSV</button>
+                </div>
+                <div class="recipe-cost-summary" id="recipeCostSummary">
+                  <strong>Себестоимость рецепта:</strong>
+                  <span id="recipeCostValue">— ₽</span>
                 </div>
                 <div id="recipeSaveMsg" class="recipe-save-msg" hidden></div>
               </div>

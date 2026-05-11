@@ -60,6 +60,25 @@
     border-radius: 6px;
     font-size: 13px;
 }
+.recipe-cost-summary {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: var(--ui-surface-muted, #f9fafb);
+    border: 1px solid var(--ui-border, #e5e7eb);
+    border-radius: 8px;
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+.recipe-cost-summary #recipeCostValue {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--ui-text, #111);
+    font-variant-numeric: tabular-nums;
+}
+
 .recipe-save-msg {
     padding: 8px 12px;
     border-radius: 6px;

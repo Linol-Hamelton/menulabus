@@ -22,9 +22,30 @@ $gate_label   = 'Управление складом';
 require __DIR__ . '/../partials/billing_feature_gate.php';
 
 $db = Database::getInstance();
-$ingredients = $db->listIngredients(true);
-$suppliers   = $db->listSuppliers(false);
-$lowStock    = $db->listLowStockIngredients();
+
+// Phase 34 — view toggle: ?view=active (default) shows non-archived, ?view=archived shows archived only.
+$invView = (($_GET['view'] ?? 'active') === 'archived') ? 'archived' : 'active';
+
+// Optional URL-driven prefilters; the rest of the filter bar applies client-side.
+$invSearch   = trim((string)($_GET['q'] ?? ''));
+$invSupplier = isset($_GET['supplier']) && $_GET['supplier'] !== '' ? (int)$_GET['supplier'] : null;
+$invStock    = (string)($_GET['stock'] ?? '');
+if (!in_array($invStock, ['low', 'out', 'ok'], true)) {
+    $invStock = '';
+}
+
+if ($invView === 'archived') {
+    // Archived view: only show archived rows. Pass includeArchived=true and
+    // post-filter to archived-only in the loop below (listIngredients doesn't
+    // have an "archived only" mode by design).
+    $allRows     = $db->listIngredients(true, $invSearch ?: null, $invSupplier, $invStock ?: null);
+    $ingredients = array_values(array_filter($allRows, static fn($r) => !empty($r['archived_at'])));
+} else {
+    $ingredients = $db->listIngredients(false, $invSearch ?: null, $invSupplier, $invStock ?: null);
+}
+$suppliers     = $db->listSuppliers(false);
+$lowStock      = $db->listLowStockIngredients();
+$summary       = $db->getInventoryValueSummary();
 
 $unitOptions = \Cleanmenu\Inventory\UnitCatalog::CANONICAL;
 
@@ -51,13 +72,38 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
     <?php require_once __DIR__ . '/../account-header.php'; ?>
 
     <div class="account-container">
-        <section class="account-section">
-            <div class="section-header-menu">
-                <h2>Склад ингредиентов</h2>
+        <section class="account-section admin-section-card">
+            <div class="admin-pane-header">
+                <div class="admin-pane-header-copy">
+                    <p class="admin-pane-kicker">Склад</p>
+                    <h2 class="admin-pane-title">Ингредиенты</h2>
+                    <p class="admin-pane-caption">
+                        Остаток списывается автоматически при каждом заказе (по рецептам из карточки блюда).
+                        Порог — когда уведомлять в Telegram и по webhook-у <code>inventory.stock_low</code>.
+                    </p>
+                </div>
                 <a href="/admin/menu.php" class="back-to-menu-btn">К админке</a>
             </div>
 
-            <?php if (!empty($lowStock)): ?>
+            <!-- Phase 34: summary cards (active count, low-stock count, total stock value) -->
+            <div class="inv-summary-row" role="status" aria-label="Сводка по складу">
+                <div class="inv-summary-card">
+                    <span class="inv-summary-label">Активных позиций</span>
+                    <span class="inv-summary-value"><?= (int)$summary['active'] ?></span>
+                </div>
+                <div class="inv-summary-card<?= (int)$summary['low'] > 0 ? ' inv-summary-card--warn' : '' ?>">
+                    <span class="inv-summary-label">Низкий остаток</span>
+                    <span class="inv-summary-value"><?= (int)$summary['low'] ?></span>
+                </div>
+                <div class="inv-summary-card">
+                    <span class="inv-summary-label">Общая стоимость склада</span>
+                    <span class="inv-summary-value">
+                        <?= number_format((float)$summary['total_value'], 2, '.', ' ') ?> ₽
+                    </span>
+                </div>
+            </div>
+
+            <?php if (!empty($lowStock) && $invView !== 'archived'): ?>
                 <div class="inv-low-banner" role="status">
                     <strong>Низкий остаток (<?= count($lowStock) ?>):</strong>
                     <?php foreach ($lowStock as $ls): ?>
@@ -69,17 +115,65 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                 </div>
             <?php endif; ?>
 
-            <h3>Ингредиенты</h3>
-            <p class="inv-intro">
-                Остаток списывается автоматически при каждом заказе (по рецептам из
-                карточки блюда в админке меню). Порог — когда уведомлять в Telegram
-                и по webhook-у <code>inventory.stock_low</code>.
-            </p>
+            <!-- Phase 34: view toggle (active / archived) -->
+            <div class="form-actions inv-view-switch">
+                <a href="/admin/inventory.php?view=active" class="admin-checkout-btn<?= $invView !== 'archived' ? ' cancel' : '' ?>">Активные</a>
+                <a href="/admin/inventory.php?view=archived" class="admin-checkout-btn<?= $invView === 'archived' ? ' cancel' : '' ?>">Архив</a>
+            </div>
+
+            <!-- Phase 34: filter bar (client-side filtering, applied to rendered rows) -->
+            <div class="inv-filter-bar" id="invFilterBar">
+                <label class="inv-filter-group inv-filter-search">
+                    <span class="inv-filter-label">Поиск</span>
+                    <input type="search" id="invFilterSearch" placeholder="По названию…" autocomplete="off" value="<?= htmlspecialchars($invSearch, ENT_QUOTES) ?>">
+                </label>
+                <label class="inv-filter-group">
+                    <span class="inv-filter-label">Поставщик</span>
+                    <select id="invFilterSupplier">
+                        <option value="">Все</option>
+                        <option value="0" <?= $invSupplier === 0 ? 'selected' : '' ?>>Без поставщика</option>
+                        <?php foreach ($suppliers as $sup): ?>
+                            <option value="<?= (int)$sup['id'] ?>" <?= $invSupplier === (int)$sup['id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars((string)$sup['name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <label class="inv-filter-group">
+                    <span class="inv-filter-label">Статус остатка</span>
+                    <select id="invFilterStock">
+                        <option value="">Любой</option>
+                        <option value="low" <?= $invStock === 'low' ? 'selected' : '' ?>>Низкий</option>
+                        <option value="out" <?= $invStock === 'out' ? 'selected' : '' ?>>Закончился</option>
+                        <option value="ok"  <?= $invStock === 'ok'  ? 'selected' : '' ?>>В норме</option>
+                    </select>
+                </label>
+                <button type="button" class="admin-checkout-btn cancel" id="invFilterReset">Сбросить</button>
+            </div>
+
+            <!-- Phase 34: bulk-action bar (hidden until rows are checked) -->
+            <div class="inv-bulk-bar" id="invBulkBar" hidden>
+                <span class="inv-bulk-count">Выбрано: <strong id="invBulkCount">0</strong></span>
+                <button type="button" class="admin-checkout-btn cancel" id="invBulkArchive">Архивировать выбранные</button>
+                <button type="button" class="admin-checkout-btn" id="invBulkClear">Снять выделение</button>
+            </div>
 
             <div class="inv-table-wrapper">
+                <?php if (empty($ingredients)): ?>
+                    <div class="inv-empty-state">
+                        <?php if ($invView === 'archived'): ?>
+                            В архиве пусто. Архивные позиции сюда попадают по кнопке «Архив» у активного ингредиента.
+                        <?php elseif ($invSearch !== '' || $invSupplier !== null || $invStock !== ''): ?>
+                            По текущим фильтрам ничего не найдено. <a href="/admin/inventory.php?view=active">Сбросить фильтры</a>.
+                        <?php else: ?>
+                            Пока нет ни одного ингредиента — создайте первый в строке снизу.
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
                 <table class="inv-ingredients-table" id="invIngredientsTable">
                     <thead>
                         <tr>
+                            <th class="inv-col-check"><input type="checkbox" id="invSelectAll" aria-label="Выбрать все"></th>
                             <th>ID</th>
                             <th>Название</th>
                             <th>Ед.</th>
@@ -97,7 +191,10 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                             $isLow = !$isArchived && (float)$i['reorder_threshold'] > 0 && (float)$i['stock_qty'] <= (float)$i['reorder_threshold'];
                             ?>
                             <tr data-ingredient-id="<?= (int)$i['id'] ?>"
+                                data-supplier-id="<?= $i['supplier_id'] !== null ? (int)$i['supplier_id'] : '' ?>"
+                                data-stock-status="<?= $isLow ? 'low' : ((float)$i['stock_qty'] <= 0 ? 'out' : 'ok') ?>"
                                 class="<?= $isArchived ? 'inv-row-archived' : '' ?> <?= $isLow ? 'inv-row-low' : '' ?>">
+                                <td class="inv-col-check"><input type="checkbox" class="inv-row-check" aria-label="Выбрать строку"></td>
                                 <td>#<?= (int)$i['id'] ?></td>
                                 <td><input type="text" class="inv-name" value="<?= htmlspecialchars((string)$i['name']) ?>" maxlength="255"></td>
                                 <td class="inv-unit-cell">
@@ -147,7 +244,9 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                                 </td>
                             </tr>
                         <?php endforeach; ?>
+                        <?php if ($invView !== 'archived'): ?>
                         <tr class="inv-new-row" data-ingredient-id="">
+                            <td class="inv-col-check"></td>
                             <td>—</td>
                             <td><input type="text" class="inv-name" placeholder="Название" maxlength="255"></td>
                             <td class="inv-unit-cell">
@@ -176,6 +275,7 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
                                 <button type="button" class="admin-checkout-btn btn-inv-save">Создать</button>
                             </td>
                         </tr>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
@@ -199,10 +299,13 @@ $appVersion = (string)($_SESSION['app_version'] ?? '1.0.0');
             </div>
         </section>
 
-        <section class="account-section">
-            <div class="section-header-menu">
-                <h3>Поставщики</h3>
-                <small>Контакт-книга. Используется как soft-reference на карточке ингредиента.</small>
+        <section class="account-section admin-section-card">
+            <div class="admin-pane-header">
+                <div class="admin-pane-header-copy">
+                    <p class="admin-pane-kicker">Контакт-книга</p>
+                    <h2 class="admin-pane-title">Поставщики</h2>
+                    <p class="admin-pane-caption">Soft-reference на карточке ингредиента. Цены приходов фиксируются в стоимости ингредиента — отдельных закупочных накладных пока нет.</p>
+                </div>
             </div>
             <table class="inv-suppliers-table" id="invSuppliersTable">
                 <thead>

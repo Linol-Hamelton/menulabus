@@ -139,3 +139,154 @@
 .inv-unit-cell .inv-unit-other[hidden] {
     display: none;
 }
+
+/* ===== Phase 34 — Inventory UX overhaul ===== */
+
+/* Summary cards row above the table */
+.inv-summary-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 18px 0 14px;
+}
+.inv-summary-card {
+    background: var(--ui-surface, #fff);
+    border: 1px solid var(--ui-border, #e5e7eb);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.inv-summary-card--warn {
+    border-color: rgba(245, 158, 11, 0.45);
+    background: rgba(245, 158, 11, 0.06);
+}
+.inv-summary-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ui-text-muted, #6b7280);
+    font-weight: 600;
+}
+.inv-summary-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ui-text, #111);
+    font-variant-numeric: tabular-nums;
+}
+
+/* View switch (Active / Archive) — same look as menu-view-switch */
+.inv-view-switch {
+    display: flex;
+    gap: 8px;
+    margin: 12px 0;
+}
+
+/* Filter bar */
+.inv-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: end;
+    margin: 12px 0 14px;
+    padding: 12px 14px;
+    background: var(--ui-surface-muted, #f9fafb);
+    border: 1px solid var(--ui-border, #e5e7eb);
+    border-radius: 12px;
+}
+.inv-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 140px;
+}
+.inv-filter-group.inv-filter-search {
+    flex: 1 1 220px;
+}
+.inv-filter-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ui-text-muted, #6b7280);
+    font-weight: 600;
+}
+.inv-filter-bar input[type="search"],
+.inv-filter-bar select {
+    padding: 6px 10px;
+    border: 1px solid var(--ui-border, #c8d2dc);
+    border-radius: 8px;
+    font-size: 13px;
+    background: #fff;
+}
+.inv-filter-bar .admin-checkout-btn {
+    height: 34px;
+}
+
+/* Bulk-action bar */
+.inv-bulk-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    border-radius: 10px;
+    font-size: 13px;
+}
+.inv-bulk-count { font-weight: 600; }
+
+/* Row checkbox column */
+.inv-col-check {
+    width: 36px;
+    text-align: center;
+    padding: 4px 6px !important;
+}
+
+/* Empty state */
+.inv-empty-state {
+    padding: 24px;
+    text-align: center;
+    background: var(--ui-surface-muted, #f9fafb);
+    border: 1px dashed var(--ui-border, #d1d5db);
+    border-radius: 12px;
+    color: var(--ui-text-muted, #6b7280);
+    font-size: 14px;
+    margin-bottom: 14px;
+}
+
+/* Admin section card / pane header to match admin/menu.php */
+.account-section.admin-section-card {
+    padding: 22px;
+    margin-bottom: 22px;
+}
+.account-section.admin-section-card .admin-pane-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.account-section.admin-section-card .admin-pane-title {
+    margin: 4px 0 0;
+    font-size: 22px;
+    font-weight: 700;
+}
+
+/* Mobile stacking */
+@media (max-width: 768px) {
+    .inv-summary-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .inv-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .inv-filter-group {
+        width: 100%;
+    }
+    .inv-bulk-bar {
+        flex-wrap: wrap;
+    }
+}

@@ -18,11 +18,17 @@ $appVersion = $_SESSION['app_version'] ?? '1.0.0';
 
 $knownEvents = [
     'order.created'              => 'Заказ создан',
+    'order.ready'                => 'Заказ готов',
+    'payment.received'           => 'Платёж получен',
     'reservation.created'        => 'Бронь создана',
     'reservation.confirmed'      => 'Бронь подтверждена',
     'reservation.seated'         => 'Гость рассажен',
     'reservation.cancelled'      => 'Бронь отменена',
     'reservation.no_show'        => 'Гость не пришёл',
+    'inventory.stock_low'        => 'Ингредиент: низкий остаток',
+    'ingredient.archived'        => 'Ингредиент: архивирован',
+    'ingredient.restored'        => 'Ингредиент: восстановлен',
+    'ingredient.cost_changed'    => 'Ингредиент: цена изменена',
 ];
 ?>
 <!DOCTYPE html>

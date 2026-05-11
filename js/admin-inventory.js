@@ -220,4 +220,119 @@
             }).catch(function () { save.disabled = false; });
         });
     }
+
+    // ---- Phase 34: client-side filtering ----
+    // Server-side already pre-filtered by URL params (?q, ?supplier, ?stock).
+    // Live inputs apply additional filters without reloading the page.
+    var filterSearch   = document.getElementById('invFilterSearch');
+    var filterSupplier = document.getElementById('invFilterSupplier');
+    var filterStock    = document.getElementById('invFilterStock');
+    var filterReset    = document.getElementById('invFilterReset');
+
+    function applyFilters() {
+        if (!ingrTable) return;
+        var q = (filterSearch && filterSearch.value || '').trim().toLowerCase();
+        var sup = filterSupplier ? filterSupplier.value : '';
+        var stat = filterStock ? filterStock.value : '';
+        var rows = ingrTable.querySelectorAll('tbody tr[data-ingredient-id]');
+        rows.forEach(function (tr) {
+            // Skip the empty "new ingredient" row.
+            if ((tr.getAttribute('data-ingredient-id') || '') === '') return;
+            var nameEl = tr.querySelector('.inv-name');
+            var name = (nameEl && nameEl.value ? nameEl.value : '').toLowerCase();
+            var supVal = tr.getAttribute('data-supplier-id') || '';
+            var stockStatus = tr.getAttribute('data-stock-status') || '';
+            var hide = false;
+            if (q && name.indexOf(q) === -1) hide = true;
+            if (!hide && sup !== '') {
+                if (sup === '0' && supVal !== '') hide = true;
+                if (sup !== '0' && supVal !== sup) hide = true;
+            }
+            if (!hide && stat !== '' && stockStatus !== stat) hide = true;
+            tr.hidden = hide;
+        });
+    }
+
+    if (filterSearch)   filterSearch.addEventListener('input', applyFilters);
+    if (filterSupplier) filterSupplier.addEventListener('change', applyFilters);
+    if (filterStock)    filterStock.addEventListener('change', applyFilters);
+    if (filterReset) {
+        filterReset.addEventListener('click', function () {
+            if (filterSearch)   filterSearch.value = '';
+            if (filterSupplier) filterSupplier.value = '';
+            if (filterStock)    filterStock.value = '';
+            applyFilters();
+        });
+    }
+    // Run once on load — page may have arrived with pre-filled inputs.
+    applyFilters();
+
+    // ---- Phase 34: bulk selection + bulk-archive ----
+    var bulkBar     = document.getElementById('invBulkBar');
+    var bulkCountEl = document.getElementById('invBulkCount');
+    var bulkArchive = document.getElementById('invBulkArchive');
+    var bulkClear   = document.getElementById('invBulkClear');
+    var selectAll   = document.getElementById('invSelectAll');
+
+    function collectChecked() {
+        if (!ingrTable) return [];
+        var ids = [];
+        ingrTable.querySelectorAll('.inv-row-check:checked').forEach(function (cb) {
+            var tr = cb.closest('tr');
+            if (!tr) return;
+            var id = parseInt(tr.getAttribute('data-ingredient-id') || '0', 10);
+            if (id > 0) ids.push(id);
+        });
+        return ids;
+    }
+
+    function refreshBulkBar() {
+        if (!bulkBar || !bulkCountEl) return;
+        var ids = collectChecked();
+        bulkCountEl.textContent = String(ids.length);
+        bulkBar.hidden = ids.length === 0;
+    }
+
+    if (ingrTable) {
+        ingrTable.addEventListener('change', function (event) {
+            if (event.target && event.target.classList && event.target.classList.contains('inv-row-check')) {
+                refreshBulkBar();
+            }
+        });
+    }
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            var checked = selectAll.checked;
+            ingrTable.querySelectorAll('tbody tr[data-ingredient-id] .inv-row-check').forEach(function (cb) {
+                var tr = cb.closest('tr');
+                // Skip hidden (filtered-out) rows so "select all" feels intuitive.
+                if (tr && tr.hidden) return;
+                cb.checked = checked;
+            });
+            refreshBulkBar();
+        });
+    }
+    if (bulkClear) {
+        bulkClear.addEventListener('click', function () {
+            ingrTable.querySelectorAll('.inv-row-check:checked').forEach(function (cb) { cb.checked = false; });
+            if (selectAll) selectAll.checked = false;
+            refreshBulkBar();
+        });
+    }
+    if (bulkArchive) {
+        bulkArchive.addEventListener('click', function () {
+            var ids = collectChecked();
+            if (ids.length === 0) return;
+            if (!window.confirm('Архивировать ' + ids.length + ' ингредиент(ов)?')) return;
+            bulkArchive.disabled = true;
+            api({ action: 'bulk_archive_ingredients', ids: ids }).then(function (r) {
+                bulkArchive.disabled = false;
+                if (!r.ok || !r.data || !r.data.success) {
+                    window.alert('Не получилось: ' + ((r.data && r.data.error) || 'unknown'));
+                    return;
+                }
+                window.location.reload();
+            }).catch(function () { bulkArchive.disabled = false; window.alert('Сетевая ошибка'); });
+        });
+    }
 })();

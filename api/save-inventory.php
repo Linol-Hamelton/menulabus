@@ -79,6 +79,28 @@ switch ($action) {
         echo json_encode(['success' => $db->archiveIngredient($id)]);
         break;
 
+    case 'bulk_archive_ingredients':
+        // Phase 34 — bulk-archive from the inventory filter UI.
+        $ids = $input['ids'] ?? [];
+        if (!is_array($ids) || empty($ids)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'invalid_ids']);
+            exit;
+        }
+        $archived = 0;
+        $failed = 0;
+        foreach ($ids as $rawId) {
+            $iid = (int)$rawId;
+            if ($iid <= 0) { $failed++; continue; }
+            if ($db->archiveIngredient($iid)) {
+                $archived++;
+            } else {
+                $failed++;
+            }
+        }
+        echo json_encode(['success' => true, 'archived' => $archived, 'failed' => $failed]);
+        break;
+
     case 'restore_ingredient':
         $id = (int)($input['id'] ?? 0);
         if ($id <= 0) { http_response_code(400); echo json_encode(['success' => false, 'error' => 'invalid_id']); exit; }

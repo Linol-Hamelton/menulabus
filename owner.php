@@ -882,7 +882,7 @@ if (!empty($report_data)) {
                             <div class="analytics-v2-chart"><canvas id="anMarginsChart" height="200"></canvas></div>
                             <div class="analytics-v2-table-wrap">
                                 <table class="analytics-v2-table">
-                                    <thead><tr><th>Блюдо</th><th>Продажи</th><th>Выручка</th><th>Маржа, %</th></tr></thead>
+                                    <thead><tr><th>Блюдо</th><th>Продажи</th><th>Выручка</th><th>Ингр. cost</th><th>Маржа, %</th></tr></thead>
                                     <tbody id="anMarginsTable"></tbody>
                                 </table>
                             </div>

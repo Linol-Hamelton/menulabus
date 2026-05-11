@@ -184,6 +184,31 @@
 }
 .analytics-v2-forecast-big small { font-size: 16px; color: var(--ui-text-muted); }
 
+/* Phase 34 — ingredient COGS accuracy badge next to per-unit cost cell
+   in the dish-margins table. "exact" = recipe-derived, "coarse" =
+   falls back to legacy menu_items.cost. */
+.an-cogs-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+.an-cogs-badge--exact {
+    background: rgba(16, 185, 129, 0.12);
+    color: #047857;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.an-cogs-badge--coarse {
+    background: rgba(245, 158, 11, 0.12);
+    color: #b45309;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
 /* Phase 29: on narrow viewports the heatmap table forces a min-content
    width of ~590px (24 hour columns × 22px each). Without minmax(0, 1fr)
    the grid track grows to fit min-content, blowing past the container.

@@ -4174,8 +4174,24 @@ class Database
      * Inventory — see sql/inventory-migration.sql and docs/inventory.md.
      * Deduction is transactional; partial application would corrupt the audit log.
      */
-    public function listIngredients(bool $includeArchived = false): array
-    {
+    /**
+     * Phase 34 — extended filter support for the admin/inventory.php UX
+     * overhaul. Backwards-compatible: callers that pass only the bool flag
+     * keep their behaviour. New named params let the page narrow by search
+     * substring, supplier id, and stock-status bucket.
+     *
+     * @param bool        $includeArchived
+     * @param string|null $search         Case-insensitive substring on ingredient name.
+     * @param int|null    $supplierId     Filter by supplier; 0 means "no supplier set".
+     * @param string|null $stockStatus    'low' (stock ≤ threshold AND threshold > 0),
+     *                                    'out' (stock = 0), 'ok' (above threshold).
+     */
+    public function listIngredients(
+        bool $includeArchived = false,
+        ?string $search = null,
+        ?int $supplierId = null,
+        ?string $stockStatus = null
+    ): array {
         try {
             $sql = "SELECT i.id, i.name, i.unit, i.stock_qty, i.reorder_threshold,
                            i.cost_per_unit, i.supplier_id, i.archived_at,
@@ -4183,12 +4199,36 @@ class Database
                            s.name AS supplier_name
                     FROM ingredients i
                     LEFT JOIN suppliers s ON s.id = i.supplier_id";
+            $where = [];
+            $params = [];
             if (!$includeArchived) {
-                $sql .= " WHERE i.archived_at IS NULL";
+                $where[] = "i.archived_at IS NULL";
+            }
+            if ($search !== null && $search !== '') {
+                $where[] = "LOWER(i.name) LIKE :search";
+                $params[':search'] = '%' . strtolower($search) . '%';
+            }
+            if ($supplierId !== null) {
+                if ($supplierId === 0) {
+                    $where[] = "i.supplier_id IS NULL";
+                } else {
+                    $where[] = "i.supplier_id = :supplier_id";
+                    $params[':supplier_id'] = $supplierId;
+                }
+            }
+            if ($stockStatus === 'low') {
+                $where[] = "i.reorder_threshold > 0 AND i.stock_qty <= i.reorder_threshold";
+            } elseif ($stockStatus === 'out') {
+                $where[] = "i.stock_qty <= 0";
+            } elseif ($stockStatus === 'ok') {
+                $where[] = "(i.reorder_threshold = 0 OR i.stock_qty > i.reorder_threshold)";
+            }
+            if (!empty($where)) {
+                $sql .= " WHERE " . implode(" AND ", $where);
             }
             $sql .= " ORDER BY i.name ASC";
             $stmt = $this->connection->prepare($sql);
-            $stmt->execute();
+            $stmt->execute($params);
             $rows = $stmt->fetchAll();
             return is_array($rows) ? $rows : [];
         } catch (PDOException $e) {
@@ -4244,6 +4284,10 @@ class Database
         }
         try {
             if ($id !== null && $id > 0) {
+                // Pre-read so we can emit a `ingredient.cost_changed` webhook
+                // ONLY when the cost actually changes (avoids spamming
+                // subscribers on no-op admin saves).
+                $prev = $this->getIngredientById($id);
                 $stmt = $this->prepareCached("
                     UPDATE ingredients
                     SET name = :name, unit = :unit, stock_qty = :qty,
@@ -4260,6 +4304,24 @@ class Database
                     ':supplier' => $supplierId,
                     ':id'       => $id,
                 ]);
+                if ($prev && class_exists('WebhookDispatcher', false)) {
+                    $oldCost = (float)$prev['cost_per_unit'];
+                    // Compare with float tolerance to avoid stray-zero noise.
+                    if (abs($oldCost - $costPerUnit) > 0.00001) {
+                        $diffPct = $oldCost > 0
+                            ? round((($costPerUnit - $oldCost) / $oldCost) * 100, 2)
+                            : null;
+                        WebhookDispatcher::dispatch('ingredient.cost_changed', [
+                            'id'       => $id,
+                            'name'     => $name,
+                            'unit'     => $unit,
+                            'old_cost' => round($oldCost, 4),
+                            'new_cost' => round($costPerUnit, 4),
+                            'diff_pct' => $diffPct,
+                            'changed_at' => date('c'),
+                        ], $this);
+                    }
+                }
                 return $id;
             }
             $stmt = $this->prepareCached("
@@ -4286,12 +4348,27 @@ class Database
     public function archiveIngredient(int $id): bool
     {
         try {
+            // Snapshot the row BEFORE archiving so the webhook payload carries
+            // useful state (last known cost, supplier, etc.).
+            $row = $this->getIngredientById($id);
             $stmt = $this->prepareCached("
                 UPDATE ingredients SET archived_at = NOW()
                 WHERE id = :id AND archived_at IS NULL
             ");
             $stmt->execute([':id' => $id]);
-            return $stmt->rowCount() > 0;
+            $ok = $stmt->rowCount() > 0;
+            if ($ok && $row && class_exists('WebhookDispatcher', false)) {
+                WebhookDispatcher::dispatch('ingredient.archived', [
+                    'id'         => (int)$row['id'],
+                    'name'       => (string)$row['name'],
+                    'unit'       => (string)$row['unit'],
+                    'stock_qty'  => (float)$row['stock_qty'],
+                    'last_cost'  => (float)$row['cost_per_unit'],
+                    'supplier_id'=> $row['supplier_id'] !== null ? (int)$row['supplier_id'] : null,
+                    'archived_at'=> date('c'),
+                ], $this);
+            }
+            return $ok;
         } catch (PDOException $e) {
             error_log('archiveIngredient error: ' . $e->getMessage());
             return false;
@@ -4306,7 +4383,20 @@ class Database
                 WHERE id = :id AND archived_at IS NOT NULL
             ");
             $stmt->execute([':id' => $id]);
-            return $stmt->rowCount() > 0;
+            $ok = $stmt->rowCount() > 0;
+            if ($ok && class_exists('WebhookDispatcher', false)) {
+                $row = $this->getIngredientById($id);
+                if ($row) {
+                    WebhookDispatcher::dispatch('ingredient.restored', [
+                        'id'         => (int)$row['id'],
+                        'name'       => (string)$row['name'],
+                        'unit'       => (string)$row['unit'],
+                        'stock_qty'  => (float)$row['stock_qty'],
+                        'restored_at'=> date('c'),
+                    ], $this);
+                }
+            }
+            return $ok;
         } catch (PDOException $e) {
             error_log('restoreIngredient error: ' . $e->getMessage());
             return false;
@@ -4413,6 +4503,63 @@ class Database
         } catch (PDOException $e) {
             error_log('getRecipeForMenuItem error: ' . $e->getMessage());
             return [];
+        }
+    }
+
+    /**
+     * Phase 34 — sum of (recipe.quantity × ingredient.cost_per_unit) for one
+     * dish. Used to show «Себестоимость рецепта» in the recipe modal and to
+     * compute true ingredient COGS for owner analytics.
+     *
+     * Returns 0.0 when the dish has no recipe or all its ingredients are
+     * archived. Callers should treat 0.0 as "no data" rather than "free".
+     */
+    public function getRecipeCost(int $menuItemId): float
+    {
+        if ($menuItemId <= 0) return 0.0;
+        try {
+            $stmt = $this->prepareCached("
+                SELECT COALESCE(SUM(r.quantity * i.cost_per_unit), 0) AS cost
+                FROM recipes r
+                JOIN ingredients i ON i.id = r.ingredient_id
+                WHERE r.menu_item_id = :id AND i.archived_at IS NULL
+            ");
+            $stmt->execute([':id' => $menuItemId]);
+            $row = $stmt->fetch();
+            return $row ? (float)$row['cost'] : 0.0;
+        } catch (PDOException $e) {
+            error_log('getRecipeCost error: ' . $e->getMessage());
+            return 0.0;
+        }
+    }
+
+    /**
+     * Phase 34 — three rollup numbers for the inventory page summary cards:
+     *   active   — count of non-archived ingredients
+     *   low      — count of low-stock ingredients (threshold > 0 AND stock ≤ threshold)
+     *   total_value — SUM(stock_qty × cost_per_unit) over active rows (₽)
+     */
+    public function getInventoryValueSummary(): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT
+                    COUNT(*) AS active,
+                    SUM(CASE WHEN reorder_threshold > 0 AND stock_qty <= reorder_threshold THEN 1 ELSE 0 END) AS low,
+                    COALESCE(SUM(stock_qty * cost_per_unit), 0) AS total_value
+                FROM ingredients
+                WHERE archived_at IS NULL
+            ");
+            $stmt->execute();
+            $row = $stmt->fetch();
+            return [
+                'active'      => $row ? (int)$row['active']      : 0,
+                'low'         => $row ? (int)$row['low']         : 0,
+                'total_value' => $row ? (float)$row['total_value']: 0.0,
+            ];
+        } catch (PDOException $e) {
+            error_log('getInventoryValueSummary error: ' . $e->getMessage());
+            return ['active' => 0, 'low' => 0, 'total_value' => 0.0];
         }
     }
 
@@ -5084,6 +5231,12 @@ class Database
     {
         $limit = max(1, min(500, $limit));
         try {
+            // Phase 34 — additive `ingredient_cogs` column. Sums
+            // (recipes.quantity × ingredients.cost_per_unit) per dish across
+            // active ingredients, providing a true per-unit COGS that the
+            // owner can compare to the legacy dish-level `menu_items.cost`.
+            // Null/zero when the dish has no recipe (UI marks these as
+            // "Грубая оценка" / coarse-only).
             $stmt = $this->connection->prepare("
                 SELECT
                     mi.id,
@@ -5096,7 +5249,17 @@ class Database
                     ROUND(agg.revenue - agg.units_sold * mi.cost, 2) AS gross_margin,
                     CASE WHEN agg.revenue > 0
                          THEN ROUND((agg.revenue - agg.units_sold * mi.cost) / agg.revenue * 100, 2)
-                         ELSE 0 END AS gross_margin_pct
+                         ELSE 0 END AS gross_margin_pct,
+                    ic.ingredient_cogs_per_unit,
+                    CASE WHEN ic.ingredient_cogs_per_unit IS NOT NULL
+                         THEN ROUND(agg.units_sold * ic.ingredient_cogs_per_unit, 2)
+                         ELSE NULL END AS ingredient_cogs_total,
+                    CASE WHEN ic.ingredient_cogs_per_unit IS NOT NULL
+                         THEN ROUND(agg.revenue - agg.units_sold * ic.ingredient_cogs_per_unit, 2)
+                         ELSE NULL END AS ingredient_margin,
+                    CASE WHEN ic.ingredient_cogs_per_unit IS NOT NULL AND agg.revenue > 0
+                         THEN ROUND((agg.revenue - agg.units_sold * ic.ingredient_cogs_per_unit) / agg.revenue * 100, 2)
+                         ELSE NULL END AS ingredient_margin_pct
                 FROM menu_items mi
                 JOIN (
                     SELECT
@@ -5113,6 +5276,13 @@ class Database
                       AND o.status NOT IN ('отказ')
                     GROUP BY item_id
                 ) agg ON agg.item_id = mi.id
+                LEFT JOIN (
+                    SELECT r.menu_item_id, SUM(r.quantity * i.cost_per_unit) AS ingredient_cogs_per_unit
+                    FROM recipes r
+                    JOIN ingredients i ON i.id = r.ingredient_id
+                    WHERE i.archived_at IS NULL
+                    GROUP BY r.menu_item_id
+                ) ic ON ic.menu_item_id = mi.id
                 ORDER BY gross_margin DESC
                 LIMIT {$limit}
             ");

@@ -55,14 +55,40 @@
         var addBtn  = document.getElementById('recipeAddBtn');
         var saveBtn = document.getElementById('recipeSaveBtn');
         var msgEl   = document.getElementById('recipeSaveMsg');
+        var costEl  = document.getElementById('recipeCostValue');
 
         if (!rowsEl) return;
 
         var rows = [];
 
+        function fmtMoney(n) {
+            var v = Math.round(n * 100) / 100;
+            return v.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₽';
+        }
+
+        // Phase 34 — recompute "Себестоимость рецепта" from the current rows
+        // array (no extra fetch). Each row carries `cost_per_unit` captured
+        // at load-time or from the picker's data-cost attribute.
+        function renderCost() {
+            if (!costEl) return;
+            if (rows.length === 0) {
+                costEl.textContent = '— ₽';
+                return;
+            }
+            var anyCost = false;
+            var total = 0;
+            rows.forEach(function (r) {
+                var c = parseFloat(r.cost_per_unit) || 0;
+                if (c > 0) anyCost = true;
+                total += c * (parseFloat(r.quantity) || 0);
+            });
+            costEl.textContent = anyCost ? fmtMoney(total) : '— ₽';
+        }
+
         function render() {
             if (rows.length === 0) {
                 rowsEl.innerHTML = '<div class="recipe-empty">Рецепт пуст — заказы этого блюда не будут списывать со склада.</div>';
+                renderCost();
                 return;
             }
             var html = '<ul class="recipe-list">';
@@ -76,6 +102,7 @@
             });
             html += '</ul>';
             rowsEl.innerHTML = html;
+            renderCost();
         }
 
         function setMsg(text, kind) {
@@ -97,6 +124,7 @@
                         ingredient_name: row.ingredient_name,
                         unit: row.unit,
                         quantity: parseFloat(row.quantity),
+                        cost_per_unit: parseFloat(row.cost_per_unit) || 0,
                     };
                 });
                 render();
@@ -115,6 +143,7 @@
                 var idx = parseInt(li.getAttribute('data-recipe-idx') || '-1', 10);
                 if (idx < 0 || idx >= rows.length) return;
                 rows[idx].quantity = parseFloat(q.value) || 0;
+                renderCost();
             });
             rowsEl.addEventListener('click', function (event) {
                 var del = event.target && event.target.closest ? event.target.closest('.recipe-del') : null;
@@ -141,10 +170,11 @@
                 var opt = addSel.options[addSel.selectedIndex];
                 var label = opt ? opt.textContent.replace(/\s*\([^)]*\)\s*$/, '') : '';
                 var unit = opt ? (opt.getAttribute('data-unit') || '') : '';
+                var cost = opt ? parseFloat(opt.getAttribute('data-cost') || '0') : 0;
                 if (existingIdx >= 0) {
                     rows[existingIdx].quantity = qty;
                 } else {
-                    rows.push({ ingredient_id: iid, ingredient_name: label, unit: unit, quantity: qty });
+                    rows.push({ ingredient_id: iid, ingredient_name: label, unit: unit, quantity: qty, cost_per_unit: cost });
                 }
                 addSel.value = '';
                 addQty.value = '';

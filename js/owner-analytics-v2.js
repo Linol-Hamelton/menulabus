@@ -33,16 +33,34 @@
         if (!marginsTbl) return;
         marginsTbl.innerHTML = '';
         if (!rows || rows.length === 0) {
-            marginsTbl.innerHTML = '<tr><td colspan="4" class="an-empty">Нет продаж в выбранном окне.</td></tr>';
+            marginsTbl.innerHTML = '<tr><td colspan="5" class="an-empty">Нет продаж в выбранном окне.</td></tr>';
             return;
         }
+        // Phase 34 — Ингр. cost column. Shows the ingredient-level COGS per
+        // dish (sum of recipes.quantity × ingredients.cost_per_unit). Dishes
+        // with a recipe get a "Точная" badge; dishes without fall back to the
+        // legacy menu_items.cost ("Грубая").
         rows.forEach(function (r) {
+            var ingCogsPerUnit = r.ingredient_cogs_per_unit;
+            var hasIngCogs = ingCogsPerUnit !== null && ingCogsPerUnit !== undefined && Number(ingCogsPerUnit) > 0;
+            var marginPct = hasIngCogs && r.ingredient_margin_pct !== null
+                ? Number(r.ingredient_margin_pct)
+                : Number(r.gross_margin_pct);
+            var marginPctTxt = marginPct.toFixed(1) + '%';
+            var marginPill = '<span class="an-margin-pill ' + (marginPct >= 50 ? 'ok' : 'warn') + '">' + marginPctTxt + '</span>';
+            var badge = hasIngCogs
+                ? '<span class="an-cogs-badge an-cogs-badge--exact" title="Себестоимость рассчитана по техкарте">Точная</span>'
+                : '<span class="an-cogs-badge an-cogs-badge--coarse" title="Используется menu_items.cost — нет техкарты">Грубая</span>';
+            var ingCostCell = hasIngCogs
+                ? fmtRub(ingCogsPerUnit) + ' ₽'
+                : '—';
             var tr = document.createElement('tr');
             tr.innerHTML = ''
                 + '<td>' + escHtml(r.name) + '<div class="an-cat">' + escHtml(r.category) + '</div></td>'
                 + '<td class="num">' + (r.units_sold || 0) + '</td>'
                 + '<td class="num">' + fmtRub(r.revenue) + ' ₽</td>'
-                + '<td class="num"><span class="an-margin-pill ' + (Number(r.gross_margin_pct) >= 50 ? 'ok' : 'warn') + '">' + Number(r.gross_margin_pct).toFixed(1) + '%</span></td>';
+                + '<td class="num">' + ingCostCell + ' ' + badge + '</td>'
+                + '<td class="num">' + marginPill + '</td>';
             marginsTbl.appendChild(tr);
         });
 
