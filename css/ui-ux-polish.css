@@ -371,6 +371,42 @@ body.cart-page .account-section--cart-shell {
   display: grid;
   gap: 22px;
   min-height: min(74vh, 820px);
+  /* Phase 34.3 — explicit grid template. On mobile (default) every section
+     occupies its own row in a single column. On ≥768px viewports the bottom
+     row splits into three columns so that the nutrition summary is on the
+     LEFT, the total is centred, and the action buttons sit on the RIGHT
+     (primary CTA at the far edge — standard cart UX). */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "cart-head"
+    "cart-items"
+    "cart-summary"
+    "cart-total"
+    "cart-actions";
+}
+body.cart-page .account-section--cart-shell > .account-section-head { grid-area: cart-head; }
+body.cart-page #cart-items-container       { grid-area: cart-items; }
+body.cart-page .cart-summary-container     { grid-area: cart-summary; }
+body.cart-page #cart-total                 { grid-area: cart-total; }
+body.cart-page .clear-cart-container       { grid-area: cart-actions; }
+
+@media (min-width: 768px) {
+  body.cart-page .account-section--cart-shell {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-areas:
+      "cart-head    cart-head  cart-head"
+      "cart-items   cart-items cart-items"
+      "cart-summary cart-total cart-actions";
+    align-items: center;
+  }
+  body.cart-page .cart-summary-container { justify-self: stretch; }
+  body.cart-page #cart-total             { justify-self: center; }
+  body.cart-page .clear-cart-container   {
+    justify-self: end;
+    border-top: 0;
+    margin-top: 0;
+    padding-top: 0;
+  }
 }
 
 body.cart-page .empty-cart-shell {

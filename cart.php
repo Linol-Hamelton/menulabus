@@ -59,10 +59,11 @@ unset($_SESSION['qr_table']);
         <div class="account-container">
             <section class="account-section account-section--cart-shell">
                 <div class="account-header-bar account-section-head">
-            <div class="section-header-menu">
-                <h2>Заказ</h2>
-                <a href="menu.php" class="back-to-menu-btn">В меню</a>
-            </div>
+                    <div class="section-header-menu">
+                        <h2>Заказ</h2>
+                        <a href="menu.php" class="back-to-menu-btn">В меню</a>
+                    </div>
+                </div>
             <div id="cart-items-container" class="menu-content menu-content-empty">
                 <div class="empty-cart empty-cart-shell">
                     <div class="empty-cart-card">
@@ -91,7 +92,6 @@ unset($_SESSION['qr_table']);
             <div class="cart-summary-container is-empty">
                 <div id="nutrition-summary" class="nutrition-summary"></div>
             </div>
-                </div>
             </section>
         </div>
     </section>
