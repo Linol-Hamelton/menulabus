@@ -377,6 +377,7 @@ body.cart-page .account-section--cart-shell {
      LEFT, the total is centred, and the action buttons sit on the RIGHT
      (primary CTA at the far edge — standard cart UX). */
   grid-template-columns: minmax(0, 1fr);
+  margin-top: 80px;
   grid-template-areas:
     "cart-head"
     "cart-items"
@@ -435,8 +436,7 @@ body.cart-page .clear-cart-container {
   align-items: center;
   border-top: 1px solid rgba(18, 18, 18, 0.08);
   gap: 12px;
-  margin-top: 8px;
-  padding-top: 20px;
+  padding-top: 4%;
 }
 
 body.cart-page .cart-total,
@@ -1615,6 +1615,7 @@ body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .t
 
   body.account-page:not(.help-page):not(.admin-menu-page) .account-section:last-child {
     padding-bottom: calc(var(--bottom-tab-rail-clearance) + 18px) !important;
+    margin-top: 80px;
   }
 
   body.account-page:not(.help-page):not(.admin-menu-page) button[name="update_profile"],

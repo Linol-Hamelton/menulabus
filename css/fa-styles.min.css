@@ -1824,7 +1824,7 @@ body.cart-page #menu {
   border-top: 1px solid var(--light-text);
   display: flex;
   justify-content: space-between;
-  padding: 2% 4%;
+  padding: 4%;
 }
 .clear-cart-btn {
   background-color: var(--bg-light);
