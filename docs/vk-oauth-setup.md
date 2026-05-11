@@ -99,9 +99,11 @@ only add value if the token were forwarded through an untrusted hop.
 
 ## Diagnostic logging (temporary, 2026-05-11)
 
-`vk-start.php` and `vk-callback.php` currently emit `error_log()` entries
+`vk-start.php` and `vk-callback.php` currently emit diagnostic entries
 on every flow (cookie set status, received cookies, state-head match,
-host). These are temporary — added to debug an "invalid state (cookie
+host). Logged to BOTH `error_log()` AND `data/logs/vk-debug.log` (the
+latter is writable by the webuser regardless of PHP-FPM pool config).
+These are temporary — added to debug an "invalid state (cookie
 mismatch)" symptom observed after VK ID migration — and will be removed
 once the cookie roundtrip is confirmed working end-to-end.
 
