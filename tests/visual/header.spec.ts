@@ -71,8 +71,10 @@ test('mobile burger still shows secondary items inline', async ({ page }, testIn
   await page.waitForLoadState('domcontentloaded');
 
   // On mobile, the .nav-more wrapper dissolves via display:contents so
-  // reservation/group/lang-picker render as flat siblings inside the
-  // burger nav. They MUST be visible after the burger is toggled.
+  // reservation/group render as flat siblings inside the burger nav.
+  // They MUST be visible after the burger is toggled.
+  // Phase 33.2: lang-picker is hidden during M1 (RU-only sales) — assert
+  // it stays hidden so we notice if the markup is accidentally re-shown.
   const burger = page.locator('.mobile-menu-btn');
   await expect(burger).toBeVisible();
   await burger.click();
@@ -81,7 +83,7 @@ test('mobile burger still shows secondary items inline', async ({ page }, testIn
   await expect(nav).toBeVisible();
   await expect(nav.locator('a[href="/reservation.php"]')).toBeVisible();
   await expect(nav.locator('a[href="/group.php"]')).toBeVisible();
-  await expect(nav.locator('.lang-picker-link').first()).toBeVisible();
+  await expect(nav.locator('.lang-picker-link')).toHaveCount(0);
 
   // The .nav-more-toggle button MUST NOT show up on mobile.
   await expect(page.locator('.nav-more-toggle')).toBeHidden();
