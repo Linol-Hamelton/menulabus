@@ -150,15 +150,25 @@ if ($clientId === '' || $clientSecret === '') {
 
 $redirectUri = tenant_url('/auth/oauth/vk-callback.php');
 
+// Phase 33.2 — VK ID requires the `device_id` it issued in the callback
+// to be echoed back in the token exchange (token endpoint returns
+// "device_id is invalid" without it). The callback URL also carries
+// `expires_in` and `type` which the token endpoint ignores.
+$deviceId = (string)($_GET['device_id'] ?? '');
+
 // Exchange code -> id_token + access_token via VK ID (PKCE-protected).
-$body = http_build_query([
+$tokenParams = [
     'grant_type' => 'authorization_code',
     'code' => $code,
     'code_verifier' => $cookiePkce,
     'client_id' => $clientId,
     'client_secret' => $clientSecret,
     'redirect_uri' => $redirectUri,
-], '', '&', PHP_QUERY_RFC3986);
+];
+if ($deviceId !== '') {
+    $tokenParams['device_id'] = $deviceId;
+}
+$body = http_build_query($tokenParams, '', '&', PHP_QUERY_RFC3986);
 
 $ctx = stream_context_create([
     'http' => [

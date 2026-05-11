@@ -103,6 +103,15 @@ is now in `[A-Za-z0-9_-]`, so there is nothing for VK to strip.
 Yandex/Google do not exhibit this bug — their start/callback scripts
 still use `.` as separator and continue to work.
 
+## `device_id` requirement
+
+The VK ID callback URL carries an extra `device_id` query parameter
+alongside `code`, `state`, `expires_in`, `type`. The token-exchange
+endpoint `id.vk.com/oauth2/auth` returns `device_id is invalid` if the
+caller doesn't echo this value back in the POST body. Our
+`vk-callback.php` reads it from `$_GET['device_id']` and forwards it
+in the token request.
+
 ## JWT note
 
 The `id_token` is parsed without signature verification: it arrives over
