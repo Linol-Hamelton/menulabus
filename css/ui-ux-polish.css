@@ -447,6 +447,34 @@ body.cart-page .cart-summary-container {
   padding: 16px 18px;
 }
 
+/* Phase 34.3 — nutrition summary inside the cart card. Base rule in
+   fa-styles.min.css has flex with `gap: 40px` and no wrap, which on
+   narrow viewports pushes the 4 КБЖУ items past the card's right edge.
+   Allow wrapping and tighten the gap; scoped to cart-page so other
+   pages that ship `.nutrition-summary` (none today, but the class is
+   shared) keep their original layout. */
+body.cart-page .nutrition-summary {
+  flex-wrap: wrap;
+  gap: 14px 28px;
+  margin: 0;
+}
+body.cart-page .cart-summary-container {
+  margin: 0;
+  justify-content: flex-start;
+}
+body.cart-page #cart-total {
+  margin: 0;
+}
+@media (max-width: 480px) {
+  body.cart-page .nutrition-summary {
+    gap: 10px 18px;
+    justify-content: space-between;
+  }
+  body.cart-page .nutrition-summary .nutrition-item {
+    flex: 0 1 auto;
+  }
+}
+
 body.qr-print-page .qr-print-container {
   padding: 34px 0 40px;
 }
