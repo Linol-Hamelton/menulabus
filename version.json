@@ -1,6 +1,6 @@
 {
-  "version": "3.3.3",
+  "version": "3.3.4",
   "release_date": "2026-05-11",
-  "changelog": "Phase 34.3 — cart.php structural fix + responsive layout. (1) Корень bug: все 5 cart-секций (header, items, buttons, total, summary) были завёрнуты ВНУТРИ `.account-header-bar.account-section-head`, который рос до 382px из-за `padding: 50px 8% 0` на `.section-header-menu` (8% × ширина max-content создавала circular dependency и грид-блоут). Фикс: закрываем `account-section-head` сразу после `.section-header-menu` чтобы остальные секции были sibling'ами `.account-section--cart-shell`. (2) CSS: добавлена явная grid-template-areas раскладка. На desktop ≥768px нижний ряд `[summary] [total] [actions]` — КБЖУ слева, итого по центру, кнопки справа (primary CTA у правого края — стандартный UX корзины). На мобиле — single column stack без overflow. Изменения only в cart.php + ui-ux-polish.css, других страниц не касаются.",
+  "changelog": "Phase 34.4 — cart polish. (1) Реордер nutrition-items в cart.min.js (2 template strings): Калории перенесён в конец, теперь порядок Белки → Жиры → Углеводы → Калории. На desktop 3 макроса умещаются в одной строке, Калории отдельно ниже; на мобиле макросы wrap в 2×2 grid, Калории внизу. (2) `.clear-cart-container` получил `gap: 12px` чтобы кнопки Очистить + Заказать держались рядом независимо от viewport.",
   "critical": false
 }
