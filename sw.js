@@ -4,7 +4,7 @@
 // - Never proxy/intercept API/SSE/JS/CSS/fonts/assets (avoid subtle perf/protocol issues).
 // - Keep push notifications working.
 
-const CACHE_VERSION = "v13";
+const CACHE_VERSION = "v14";
 const CACHE_NAME = `labus-static-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline.html";
 
@@ -57,6 +57,19 @@ self.addEventListener("fetch", (event) => {
   if (!isNavigation(req)) {
     return;
   }
+
+  // Phase 33.2 — bypass SW for OAuth flows.
+  // Re-issuing a navigation request through SW's fetch() breaks the cookie
+  // binding used for state CSRF on the OAuth callback (the cookie set on
+  // /auth/oauth/*-start.php must roundtrip to /auth/oauth/*-callback.php
+  // with the same value; SW's re-fetch loses or rebinds it).
+  // Let the browser handle these navigations directly.
+  try {
+    const url = new URL(req.url);
+    if (url.pathname.startsWith("/auth/")) {
+      return;
+    }
+  } catch (_) { /* fall through */ }
 
   event.respondWith(
     (async () => {
