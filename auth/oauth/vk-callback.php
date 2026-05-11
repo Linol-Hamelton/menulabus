@@ -81,16 +81,30 @@ $cookieState = (string)($_COOKIE['vk_oauth_state'] ?? '');
 $cookiePkce  = (string)($_COOKIE['vk_oauth_pkce'] ?? '');
 
 // Phase 33.2 diagnostic — remove once cookie roundtrip is verified.
+$divergeAt = -1;
+if ($cookieState !== '') {
+    $min = min(strlen($state), strlen($cookieState));
+    for ($i = 0; $i < $min; $i++) {
+        if ($state[$i] !== $cookieState[$i]) { $divergeAt = $i; break; }
+    }
+    if ($divergeAt === -1 && strlen($state) !== strlen($cookieState)) {
+        $divergeAt = $min;
+    }
+}
 $diagLine = sprintf(
-    "[%s] [vk-callback] host=%s ref=%s cookies=%s url_state_head=%s cookie_state_head=%s state_match=%s pkce_len=%d\n",
+    "[%s] [vk-callback] host=%s ref=%s cookies=%s url_state_len=%d cookie_state_len=%d diverge_at=%d url_state=%s cookie_state=%s state_match=%s pkce_len=%d qstring=%s\n",
     date('Y-m-d H:i:s'),
     (string)($_SERVER['HTTP_HOST'] ?? ''),
     substr((string)($_SERVER['HTTP_REFERER'] ?? ''), 0, 64),
     implode(',', array_keys($_COOKIE)),
-    substr($state, 0, 16),
-    $cookieState === '' ? '(empty)' : substr($cookieState, 0, 16),
+    strlen($state),
+    strlen($cookieState),
+    $divergeAt,
+    $state,
+    $cookieState === '' ? '(empty)' : $cookieState,
     ($cookieState !== '' && hash_equals($cookieState, $state)) ? 'yes' : 'no',
-    strlen($cookiePkce)
+    strlen($cookiePkce),
+    substr((string)($_SERVER['QUERY_STRING'] ?? ''), 0, 256)
 );
 @file_put_contents(__DIR__ . '/../../data/logs/vk-debug.log', $diagLine, FILE_APPEND | LOCK_EX);
 error_log(trim($diagLine));

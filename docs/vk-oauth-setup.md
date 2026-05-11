@@ -104,8 +104,10 @@ on every flow (cookie set status, received cookies, state-head match,
 host). Logged to BOTH `error_log()` AND `data/logs/vk-debug.log` (the
 latter is writable by the webuser regardless of PHP-FPM pool config).
 These are temporary — added to debug an "invalid state (cookie
-mismatch)" symptom observed after VK ID migration — and will be removed
-once the cookie roundtrip is confirmed working end-to-end.
+mismatch)" symptom observed after VK ID migration. The log captures
+full state strings, diverge index, and raw QUERY_STRING so we can
+pinpoint where the URL-vs-cookie state divergence originates. Will be
+removed once the cookie roundtrip is confirmed working end-to-end.
 
 ## Troubleshooting
 

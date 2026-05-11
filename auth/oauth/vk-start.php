@@ -72,14 +72,15 @@ $okPkce  = setcookie('vk_oauth_pkce',  $codeVerifier, $cookieOptsFinal);
 // Phase 33.2 diagnostic — remove once cookie roundtrip is verified.
 // Write directly to data/logs/vk-debug.log (writable by the webuser, known path).
 $diagLine = sprintf(
-    "[%s] [vk-start] host=%s scheme=%s setcookie_state=%s setcookie_pkce=%s opts=%s state_head=%s\n",
+    "[%s] [vk-start] host=%s scheme=%s setcookie_state=%s setcookie_pkce=%s opts=%s state_len=%d state=%s\n",
     date('Y-m-d H:i:s'),
     (string)($_SERVER['HTTP_HOST'] ?? ''),
     tenant_current_scheme(),
     $okState ? 'ok' : 'fail',
     $okPkce ? 'ok' : 'fail',
     json_encode($cookieOptsFinal),
-    substr($state, 0, 16)
+    strlen($state),
+    $state
 );
 @file_put_contents(__DIR__ . '/../../data/logs/vk-debug.log', $diagLine, FILE_APPEND | LOCK_EX);
 error_log(trim($diagLine));
