@@ -528,6 +528,18 @@
     line-height: 1.4;
 }
 
+/* Phase 34.2 — guarantee [hidden] wins over the base display:flex rules on
+   these elements. Without this, the {.inv-bulk-bar, .inv-adjust-controls,
+   .inv-create-panel, .inv-mobile-list} classes are visible regardless of
+   their `hidden` attribute because `display: flex/block` ties with the UA
+   `[hidden] { display: none }` rule and wins by source order. */
+.inv-adjust-controls[hidden],
+.inv-bulk-bar[hidden],
+.inv-create-panel[hidden],
+.inv-mobile-list[hidden] {
+    display: none !important;
+}
+
 /* Mobile stacking */
 @media (max-width: 768px) {
     .inv-summary-row {
@@ -541,21 +553,30 @@
         width: 100%;
     }
     .inv-bulk-bar {
-        flex-wrap: wrap;
+        flex-direction: column;
+        align-items: stretch;
     }
+    .inv-bulk-bar .admin-checkout-btn { width: 100%; }
     .inv-toolbar {
         flex-direction: column;
         align-items: stretch;
     }
     .inv-toolbar #invNewToggle { width: 100%; }
-    .inv-toolbar .inv-view-switch { justify-content: stretch; }
+    .inv-toolbar .inv-view-switch {
+        display: flex;
+        gap: 6px;
+        justify-content: stretch;
+    }
     .inv-toolbar .inv-view-switch .admin-checkout-btn { flex: 1; text-align: center; }
     .inv-create-grid {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    /* Swap layouts: hide desktop table, show mobile cards. */
-    .inv-table-wrapper.desktop-table { display: none; }
+    /* Phase 34.2 — bump specificity to beat
+       `body.admin-page .inv-table-wrapper` (0,2,1) from admin-menu-polish.css
+       which would otherwise force display:block + overflow-x:auto on our
+       table wrappers and produce horizontal scroll on mobile. */
+    body.admin-page .inv-table-wrapper.desktop-table { display: none; }
     .inv-mobile-list { display: block; }
 
     .inv-edit-row {
