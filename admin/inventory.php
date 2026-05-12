@@ -449,10 +449,41 @@ $fmtCost = static function ($v): string {
                     </tbody>
                 </table>
             </div>
+            <!-- Phase 34.5: mobile-only toolbar with "+ Создать поставщика" -->
+            <div class="inv-toolbar inv-toolbar--mobile">
+                <button type="button" class="checkout-btn" id="invSupNewToggle" title="Создать нового поставщика">+ Создать поставщика</button>
+            </div>
+
+            <!-- Phase 34.5: slide-down supplier create panel (mobile-only) -->
+            <div class="inv-create-panel inv-create-panel--mobile" id="invSupCreatePanel" hidden>
+                <div class="inv-create-grid">
+                    <label class="inv-create-field inv-create-field--wide">
+                        <span class="inv-create-label">Название</span>
+                        <input type="text" id="invSupNewName" placeholder="Напр.: Поставщик муки" maxlength="255">
+                    </label>
+                    <label class="inv-create-field inv-create-field--wide">
+                        <span class="inv-create-label">Контакт</span>
+                        <input type="text" id="invSupNewContact" placeholder="телефон / email" maxlength="255">
+                    </label>
+                    <label class="inv-create-field inv-create-field--wide">
+                        <span class="inv-create-label">Заметки</span>
+                        <input type="text" id="invSupNewNotes" placeholder="" maxlength="500">
+                    </label>
+                </div>
+                <div class="inv-create-actions">
+                    <button type="button" class="admin-checkout-btn cancel" id="invSupCreateCancel">Отмена</button>
+                    <button type="button" class="checkout-btn" id="invSupCreateSubmit">Создать</button>
+                </div>
+            </div>
+
             <!-- Mobile supplier cards -->
             <div class="inv-mobile-list" id="invSuppliersMobile">
                 <?php foreach ($suppliers as $sup): ?>
-                    <div class="inv-mcard inv-mcard--supplier" data-supplier-id="<?= (int)$sup['id'] ?>">
+                    <div class="inv-mcard inv-mcard--supplier"
+                         data-supplier-id="<?= (int)$sup['id'] ?>"
+                         data-sup-name="<?= htmlspecialchars((string)$sup['name'], ENT_QUOTES) ?>"
+                         data-sup-contact="<?= htmlspecialchars((string)($sup['contact'] ?? ''), ENT_QUOTES) ?>"
+                         data-sup-notes="<?= htmlspecialchars((string)($sup['notes'] ?? ''), ENT_QUOTES) ?>">
                         <div class="inv-mcard-head">
                             <div class="inv-mcard-name-block">
                                 <div class="inv-mcard-name"><?= htmlspecialchars((string)$sup['name']) ?></div>
@@ -481,6 +512,39 @@ $fmtCost = static function ($v): string {
             </div>
         </section>
     </div>
+
+    <!-- Phase 34.5: Edit-supplier modal — opened from mobile supplier cards -->
+    <dialog id="invSupEditModal" class="design-modal" aria-labelledby="invSupEditModalTitle">
+        <div class="modal-card">
+            <header class="modal-head">
+                <div>
+                    <h2 id="invSupEditModalTitle" class="modal-title">Редактировать поставщика</h2>
+                    <p class="modal-subtitle" id="invSupEditSubtitle">—</p>
+                </div>
+                <button type="button" class="modal-close" data-inv-sup-modal-close aria-label="Закрыть">×</button>
+            </header>
+            <form class="modal-body inv-edit-form" id="invSupEditForm">
+                <input type="hidden" id="invSupEditId" value="">
+                <label class="inv-edit-field">
+                    <span class="inv-edit-label">Название</span>
+                    <input type="text" id="invSupEditName" maxlength="255" required>
+                </label>
+                <label class="inv-edit-field">
+                    <span class="inv-edit-label">Контакт</span>
+                    <input type="text" id="invSupEditContact" maxlength="255" placeholder="телефон / email">
+                </label>
+                <label class="inv-edit-field">
+                    <span class="inv-edit-label">Заметки</span>
+                    <input type="text" id="invSupEditNotes" maxlength="500">
+                </label>
+                <div id="invSupEditMsg" class="recipe-save-msg" hidden></div>
+            </form>
+            <footer class="modal-foot">
+                <button type="button" class="admin-checkout-btn cancel" data-inv-sup-modal-close>Отмена</button>
+                <button type="button" class="checkout-btn" id="invSupEditSave">Сохранить</button>
+            </footer>
+        </div>
+    </dialog>
 
     <!-- Phase 34.1: Edit-ingredient modal — opened from mobile cards (and optionally desktop) -->
     <dialog id="invEditModal" class="design-modal" aria-labelledby="invEditModalTitle">

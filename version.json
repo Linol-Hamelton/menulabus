@@ -1,6 +1,6 @@
 {
-  "version": "3.3.5",
-  "release_date": "2026-05-11",
-  "changelog": "Phase 34.4.2 — cache-bust: user manual CSS edits (margin-top 80px на cart-shell + .clear-cart-container padding 4% + fa-styles.min.css base padding 2% 4% → 4%) уже в репо с коммита c5eadb5, но `?v=3.3.4` cache-buster не менялся → браузеры тянули старый CSS из кэша. Бамп до 3.3.5 принуждает re-fetch всех CSS файлов и применяет правки.",
+  "version": "3.3.6",
+  "release_date": "2026-05-12",
+  "changelog": "Phase 34.5 — поставщики через мобильную версию /admin/inventory.php. (1) Кнопка «Редактировать» (.js-edit-sup) теперь рабочая: открывает новую <dialog id=\"invSupEditModal\"> с полями Название/Контакт/Заметки, сохранение через POST save_supplier. Значения берутся из data-sup-name/data-sup-contact/data-sup-notes атрибутов мобильной карточки (fallback на desktop-row если карточки нет). (2) На мобиле добавлена кнопка «+ Создать поставщика» в .inv-toolbar--mobile + slide-down форма .inv-create-panel--mobile (название, контакт, заметки → POST save_supplier с id=null). (3) Обе ноды скрыты на desktop через CSS (там уже есть inline new-row внизу таблицы — не дублируем UI). Также подхвачены пользовательские правки admin-inventory.css и ui-ux-polish.css.",
   "critical": false
 }

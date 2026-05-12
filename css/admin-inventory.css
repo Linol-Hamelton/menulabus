@@ -59,7 +59,6 @@
 .inv-ingredients-table th,
 .inv-history-table th,
 .inv-suppliers-table th {
-    background: var(--ui-surface-muted);
     font-weight: 600;
 }
 
@@ -582,4 +581,17 @@
     .inv-edit-row {
         grid-template-columns: minmax(0, 1fr);
     }
+}
+
+/* Phase 34.5 — supplier toolbar + create panel only show on mobile
+   (desktop already has an inline "new supplier" row at the bottom of
+   the suppliers table). */
+.inv-toolbar.inv-toolbar--mobile,
+.inv-create-panel.inv-create-panel--mobile {
+    display: none;
+}
+@media (max-width: 768px) {
+    .inv-toolbar.inv-toolbar--mobile { display: flex; }
+    .inv-create-panel.inv-create-panel--mobile[hidden] { display: none; }
+    .inv-create-panel.inv-create-panel--mobile { display: block; }
 }

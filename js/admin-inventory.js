@@ -616,4 +616,132 @@
             }).catch(function () { mRest.disabled = false; });
         }
     });
+
+    // ---- Phase 34.5: mobile supplier create-panel + edit modal ----
+    var supToggle  = document.getElementById('invSupNewToggle');
+    var supPanel   = document.getElementById('invSupCreatePanel');
+    var supCancel  = document.getElementById('invSupCreateCancel');
+    var supSubmit  = document.getElementById('invSupCreateSubmit');
+
+    if (supToggle && supPanel) {
+        supToggle.addEventListener('click', function () {
+            supPanel.hidden = !supPanel.hidden;
+            if (!supPanel.hidden) {
+                var n = document.getElementById('invSupNewName');
+                if (n) n.focus();
+            }
+        });
+    }
+    if (supCancel && supPanel) {
+        supCancel.addEventListener('click', function () { supPanel.hidden = true; });
+    }
+    if (supSubmit) {
+        supSubmit.addEventListener('click', function () {
+            var name = (document.getElementById('invSupNewName').value || '').trim();
+            if (!name) { window.alert('Укажите название поставщика.'); return; }
+            var contact = (document.getElementById('invSupNewContact').value || '').trim();
+            var notes   = (document.getElementById('invSupNewNotes').value || '').trim();
+            supSubmit.disabled = true;
+            api({
+                action: 'save_supplier',
+                id: null,
+                name: name,
+                contact: contact || null,
+                notes: notes || null,
+            }).then(function (r) {
+                supSubmit.disabled = false;
+                if (!r.ok || !r.data || !r.data.success) {
+                    window.alert('Не сохранилось: ' + ((r.data && r.data.error) || 'unknown'));
+                    return;
+                }
+                window.location.reload();
+            }).catch(function () { supSubmit.disabled = false; window.alert('Сетевая ошибка'); });
+        });
+    }
+
+    // Edit-supplier modal
+    var supEditModal    = document.getElementById('invSupEditModal');
+    var supEditIdInput  = document.getElementById('invSupEditId');
+    var supEditSubtitle = document.getElementById('invSupEditSubtitle');
+    var supEditName     = document.getElementById('invSupEditName');
+    var supEditContact  = document.getElementById('invSupEditContact');
+    var supEditNotes    = document.getElementById('invSupEditNotes');
+    var supEditSave     = document.getElementById('invSupEditSave');
+    var supEditMsg      = document.getElementById('invSupEditMsg');
+
+    function closeSupEditModal() {
+        if (!supEditModal) return;
+        try { supEditModal.close(); } catch (_) { supEditModal.removeAttribute('open'); }
+        if (supEditMsg) { supEditMsg.hidden = true; supEditMsg.textContent = ''; }
+    }
+
+    function openSupEditModalById(id) {
+        if (!supEditModal) return;
+        // Pull current values from the mobile card's data-attributes (they're
+        // pre-populated server-side; data-attrs avoid an extra API round-trip).
+        var card = document.querySelector('.inv-mcard--supplier[data-supplier-id="' + id + '"]');
+        var nameVal = '', contactVal = '', notesVal = '';
+        if (card) {
+            nameVal    = card.getAttribute('data-sup-name')    || '';
+            contactVal = card.getAttribute('data-sup-contact') || '';
+            notesVal   = card.getAttribute('data-sup-notes')   || '';
+        } else {
+            // Fallback: read from the desktop table row (still in DOM, just hidden via CSS).
+            var tr = document.querySelector('#invSuppliersTable tbody tr[data-supplier-id="' + id + '"]');
+            if (!tr) { window.alert('Поставщик не найден.'); return; }
+            nameVal    = (tr.querySelector('.sup-name')    || {}).value || '';
+            contactVal = (tr.querySelector('.sup-contact') || {}).value || '';
+            notesVal   = (tr.querySelector('.sup-notes')   || {}).value || '';
+        }
+        supEditIdInput.value = String(id);
+        supEditName.value    = nameVal;
+        supEditContact.value = contactVal;
+        supEditNotes.value   = notesVal;
+        supEditSubtitle.textContent = '#' + id + ' · ' + nameVal;
+        try { supEditModal.showModal(); } catch (_) { supEditModal.setAttribute('open', ''); }
+    }
+
+    if (supEditModal) {
+        supEditModal.addEventListener('click', function (ev) {
+            if (ev.target && ev.target.matches && ev.target.matches('[data-inv-sup-modal-close]')) {
+                ev.preventDefault();
+                closeSupEditModal();
+            }
+        });
+    }
+    if (supEditSave) {
+        supEditSave.addEventListener('click', function () {
+            var id = parseInt(supEditIdInput.value || '0', 10);
+            if (!id) return;
+            var name = (supEditName.value || '').trim();
+            if (!name) { window.alert('Укажите название поставщика.'); return; }
+            var contact = (supEditContact.value || '').trim();
+            var notes   = (supEditNotes.value   || '').trim();
+            supEditSave.disabled = true;
+            api({
+                action: 'save_supplier',
+                id: id,
+                name: name,
+                contact: contact || null,
+                notes: notes || null,
+            }).then(function (r) {
+                supEditSave.disabled = false;
+                if (!r.ok || !r.data || !r.data.success) {
+                    supEditMsg.hidden = false;
+                    supEditMsg.className = 'recipe-save-msg recipe-save-msg-error';
+                    supEditMsg.textContent = 'Не сохранилось: ' + ((r.data && r.data.error) || 'unknown');
+                    return;
+                }
+                window.location.reload();
+            }).catch(function () { supEditSave.disabled = false; window.alert('Сетевая ошибка'); });
+        });
+    }
+
+    // Bind .js-edit-sup click → open supplier-edit modal.
+    document.addEventListener('click', function (ev) {
+        var btn = ev.target.closest && ev.target.closest('.js-edit-sup');
+        if (!btn) return;
+        var id = parseInt(btn.getAttribute('data-sup-id') || '0', 10);
+        if (id) openSupEditModalById(id);
+    });
 })();

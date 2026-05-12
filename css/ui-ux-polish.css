@@ -727,7 +727,7 @@ body.tenant-homepage .footer-col h3 {
 
   body.account-page :is(.back-to-menu-btn, .checkout-btn),
   .account-header-bar .back-to-menu-btn {
-    min-width: 0;
+    min-width: fit-content;
   }
 
   body.account-page .menu-tabs,
