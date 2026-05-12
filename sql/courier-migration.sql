@@ -15,9 +15,9 @@ SET @col_courier = (
 );
 SET @sql_courier = IF(@col_courier = 0,
     "ALTER TABLE orders
-        ADD COLUMN courier_id INT NULL AFTER shift_id,
-        ADD COLUMN delivery_picked_up_at DATETIME NULL AFTER courier_id,
-        ADD COLUMN delivery_delivered_at DATETIME NULL AFTER delivery_picked_up_at,
+        ADD COLUMN courier_id INT NULL,
+        ADD COLUMN delivery_picked_up_at DATETIME NULL,
+        ADD COLUMN delivery_delivered_at DATETIME NULL,
         ADD KEY idx_orders_courier (courier_id, status)",
     "SELECT 'orders.courier_id already exists'"
 );

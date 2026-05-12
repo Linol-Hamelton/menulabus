@@ -19,8 +19,8 @@ SET @col_sf = (
 );
 SET @sql_sf = IF(@col_sf = 0,
     "ALTER TABLE ingredients
-        ADD COLUMN is_semi_finished TINYINT(1) NOT NULL DEFAULT 0 AFTER alc_code,
-        ADD COLUMN yield_per_batch DECIMAL(12,3) NOT NULL DEFAULT 0 AFTER is_semi_finished,
+        ADD COLUMN is_semi_finished TINYINT(1) NOT NULL DEFAULT 0,
+        ADD COLUMN yield_per_batch DECIMAL(12,3) NOT NULL DEFAULT 0,
         ADD KEY idx_ingredients_semi_finished (is_semi_finished)",
     "SELECT 'ingredients.is_semi_finished already exists'"
 );
