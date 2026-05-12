@@ -84,7 +84,7 @@ Sticky `<section class="shift-dock">` над меню табов `employee.php`.
 
 ## CSP / стиль
 
-- Никаких inline-стилей. Всё в `/css/employee-shift.css` + переиспользует `admin-design-modals.css` chrome.
+- Никаких inline-стилей. Всё в `/css/employee-shift.css` + переиспользует `admin-design-modals.css` chrome (employee.php теперь тоже подключает этот файл — иначе .design-modal dialogs ловят дефолтный браузерный layout без backdrop/centering).
 - Никаких inline-скриптов. Два файла с `nonce` атрибутом: `js/employee-shift.js` и `js/employee-refund.js`.
 - Использует существующие классы: `.checkout-btn`, `.admin-checkout-btn` + `cancel`, `.recipe-save-msg-success/error`, `.modal-card/head/body/foot`, `.inv-edit-form` / `.inv-edit-field`.
 
