@@ -154,17 +154,20 @@
 #shiftCloseModal .inv-edit-form,
 #shiftEncashModal .inv-edit-form,
 #orderRefundModal .inv-edit-form,
+#bottleOpenModal .inv-edit-form,
 #shiftOpenModal .modal-body,
 #shiftCloseModal .modal-body,
 #shiftEncashModal .modal-body,
-#orderRefundModal .modal-body {
+#orderRefundModal .modal-body,
+#bottleOpenModal .modal-body {
     display: grid;
     gap: 14px;
 }
 #shiftOpenModal .inv-edit-field,
 #shiftCloseModal .inv-edit-field,
 #shiftEncashModal .inv-edit-field,
-#orderRefundModal .inv-edit-field {
+#orderRefundModal .inv-edit-field,
+#bottleOpenModal .inv-edit-field {
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -173,7 +176,8 @@
 #shiftOpenModal .inv-edit-label,
 #shiftCloseModal .inv-edit-label,
 #shiftEncashModal .inv-edit-label,
-#orderRefundModal .inv-edit-label {
+#orderRefundModal .inv-edit-label,
+#bottleOpenModal .inv-edit-label {
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -187,7 +191,9 @@
 #shiftEncashModal .inv-edit-field input,
 #shiftEncashModal .inv-edit-field select,
 #orderRefundModal .inv-edit-field input,
-#orderRefundModal .inv-edit-field select {
+#orderRefundModal .inv-edit-field select,
+#bottleOpenModal .inv-edit-field input,
+#bottleOpenModal .inv-edit-field select {
     padding: 8px 10px;
     border: 1px solid var(--ui-border, #c8d2dc);
     border-radius: 8px;
