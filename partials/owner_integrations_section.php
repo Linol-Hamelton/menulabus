@@ -6,7 +6,10 @@
 // data attribute that JS reads from the response and surfaces in a banner.
 
 if (!isset($db)) return;
-if (($user['role'] ?? '') !== 'owner') {
+// Note: $user is clobbered by `foreach ($users as $user)` in the Users tab
+// above. Read role from session instead — owner.php already gated the page
+// with $required_role='owner', so this is a defence-in-depth check.
+if (($_SESSION['user_role'] ?? '') !== 'owner') {
     echo '<p class="vsd-empty">Доступ только для владельца.</p>';
     return;
 }
