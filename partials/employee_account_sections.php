@@ -231,6 +231,10 @@ $canRunStaleCleanup = in_array((string)($_SESSION['user_role'] ?? ''), ['owner',
                                     <div class="employee-order-main">
                                         <div class="employee-order-primary">
                                             <span class="order-id">#<?= (int)$order['id'] ?></span>
+                                            <?php if (!empty($order['aggregator_source'])): ?>
+                                                <?php $aggLabel = $order['aggregator_source'] === 'yandex_eda' ? 'Я.Еда' : 'DC'; ?>
+                                                <span class="aggregator-badge aggregator-badge--<?= htmlspecialchars((string)$order['aggregator_source']) ?>" title="<?= $order['aggregator_source'] === 'yandex_eda' ? 'Заказ из Яндекс.Еды' : 'Заказ из Delivery Club' ?>"><?= htmlspecialchars($aggLabel) ?></span>
+                                            <?php endif; ?>
                                             <span class="order-status <?= strtolower((string)$order['status']) ?>"><?= htmlspecialchars((string)$order['status']) ?></span>
                                             <span class="employee-order-delivery employee-order-delivery--<?= htmlspecialchars($deliveryType) ?>"><?= htmlspecialchars($deliveryLabel) ?></span>
                                         </div>

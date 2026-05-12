@@ -100,4 +100,96 @@
             }
         });
     }
+
+    // ---- Phase 36: aggregator settings + mapping ----
+    function aggregatorApi(body) {
+        var payload = Object.assign({ csrf_token: csrfToken }, body || {});
+        return fetch('/api/save-aggregator.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        }).then(function (r) {
+            return r.json().then(function (d) { return { ok: r.ok, data: d }; }, function () {
+                return { ok: r.ok, data: { success: false, error: 'invalid_json' } };
+            });
+        });
+    }
+
+    function aggregatorShowMsg(card, isError, text, selector) {
+        var el = card.querySelector(selector || '.js-agg-msg');
+        if (!el) return;
+        el.textContent = text || '';
+        el.hidden = !text;
+        el.classList.toggle('recipe-save-msg-success', !isError);
+        el.classList.toggle('recipe-save-msg-error', !!isError);
+    }
+
+    document.querySelectorAll('[data-aggregator-card]').forEach(function (card) {
+        var provider = card.getAttribute('data-aggregator-card');
+
+        // Save settings
+        var saveBtn = card.querySelector('.js-agg-save');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', function () {
+                var apiKey  = (card.querySelector('.js-agg-api-key') || {}).value || '';
+                var secret  = (card.querySelector('.js-agg-secret') || {}).value || '';
+                var enabled = !!(card.querySelector('.js-agg-enabled') && card.querySelector('.js-agg-enabled').checked);
+                saveBtn.disabled = true;
+                aggregatorApi({
+                    action: 'save_settings',
+                    provider: provider,
+                    api_key: apiKey,
+                    webhook_secret: secret,
+                    enabled: enabled,
+                }).then(function (res) {
+                    saveBtn.disabled = false;
+                    if (res.ok && res.data && res.data.success) {
+                        aggregatorShowMsg(card, false, 'Сохранено. Обновляем…');
+                        setTimeout(function () { window.location.reload(); }, 400);
+                    } else {
+                        aggregatorShowMsg(card, true, 'Ошибка: ' + ((res.data && res.data.error) || 'unknown'));
+                    }
+                }).catch(function (e) {
+                    saveBtn.disabled = false;
+                    aggregatorShowMsg(card, true, 'Сеть: ' + (e && e.message || ''));
+                });
+            });
+        }
+
+        // Save mapping
+        var saveMappingBtn = card.querySelector('.js-agg-mapping-save');
+        if (saveMappingBtn) {
+            saveMappingBtn.addEventListener('click', function () {
+                var rows = card.querySelectorAll('.aggregator-mapping tbody tr[data-menu-item-id]');
+                var mappings = [];
+                rows.forEach(function (tr) {
+                    var miId = parseInt(tr.getAttribute('data-menu-item-id') || '0', 10);
+                    if (!miId) return;
+                    var input = tr.querySelector('.js-agg-mapping');
+                    mappings.push({
+                        menu_item_id: miId,
+                        external_id: input ? (input.value || '').trim() : '',
+                    });
+                });
+                saveMappingBtn.disabled = true;
+                aggregatorApi({ action: 'save_mapping', provider: provider, mappings: mappings })
+                    .then(function (res) {
+                        saveMappingBtn.disabled = false;
+                        if (res.ok && res.data && res.data.success) {
+                            aggregatorShowMsg(card, false, 'Сохранено: ' + res.data.saved + ' позиций.', '.js-agg-mapping-msg');
+                        } else {
+                            aggregatorShowMsg(card, true, 'Ошибка: ' + ((res.data && res.data.error) || 'unknown'), '.js-agg-mapping-msg');
+                        }
+                    }).catch(function (e) {
+                        saveMappingBtn.disabled = false;
+                        aggregatorShowMsg(card, true, 'Сеть: ' + (e && e.message || ''), '.js-agg-mapping-msg');
+                    });
+            });
+        }
+    });
 })();

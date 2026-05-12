@@ -125,3 +125,86 @@
     .integrations-row { flex-direction: column; align-items: flex-start; }
     .integrations-label { min-width: 0; }
 }
+
+/* Phase 36: aggregator cards */
+.integrations-aggregator-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.aggregator-form {
+    display: grid;
+    gap: 10px;
+    margin-top: 4px;
+}
+.aggregator-form .inv-edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.aggregator-form .inv-edit-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ui-text-muted, #6b7280);
+    font-weight: 600;
+}
+.aggregator-form .inv-edit-field input[type="text"] {
+    padding: 8px 10px;
+    border: 1px solid var(--ui-border, #c8d2dc);
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fff;
+    width: 100%;
+}
+.aggregator-form .inv-edit-field--checkbox .inv-vsd-toggle-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.agg-mapping-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+.agg-mapping-table th,
+.agg-mapping-table td {
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--ui-divider, #e5e7eb);
+    vertical-align: middle;
+}
+.agg-mapping-table th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ui-text-muted, #6b7280);
+    font-weight: 600;
+}
+.agg-mapping-table .js-agg-mapping {
+    width: 100%;
+    padding: 5px 8px;
+    border: 1px solid var(--ui-border, #c8d2dc);
+    border-radius: 6px;
+    font-size: 13px;
+    background: #fff;
+    font-family: monospace, monospace;
+}
+
+/* Phase 36: aggregator badge on order cards (employee.php) */
+.aggregator-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    margin-left: 4px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+}
+.aggregator-badge--yandex_eda { background: #ffe580; color: #654b00; }
+.aggregator-badge--delivery_club { background: #ffd6e0; color: #80103a; }
+

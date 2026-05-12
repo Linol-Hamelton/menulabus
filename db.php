@@ -1233,10 +1233,11 @@ class Database
                 SELECT o.id, o.items, o.total, o.status, o.delivery_type, o.delivery_details,
                        o.created_at, o.last_updated_by,
                        o.payment_method, o.payment_id, o.payment_status,
+                       o.aggregator_source, o.aggregator_order_id, o.aggregator_status,
                        u.name as user_name, u.phone as user_phone,
                        updater.name as updater_name
                 FROM orders o
-                JOIN users u ON o.user_id = u.id
+                LEFT JOIN users u ON o.user_id = u.id
                 LEFT JOIN users updater ON o.last_updated_by = updater.id
                 ORDER BY o.created_at DESC
             ");
@@ -8221,6 +8222,294 @@ class Database
             return true;
         } catch (PDOException $e) {
             error_log('verifyOdataAuth error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // =========================================================================
+    // Phase 36 — Aggregator integration (Yandex.Еда + Delivery Club)
+    // =========================================================================
+
+    private const AGGREGATOR_PROVIDERS = ['yandex_eda', 'delivery_club'];
+
+    public function listAggregatorSettings(): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, provider, api_key, webhook_secret, enabled,
+                       last_webhook_at, last_push_at, created_at, updated_at
+                FROM aggregator_settings ORDER BY provider ASC
+            ");
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            $byProvider = [];
+            foreach ((is_array($rows) ? $rows : []) as $r) {
+                $byProvider[(string)$r['provider']] = $r;
+            }
+            // Always return all known providers (even if not yet configured).
+            $out = [];
+            foreach (self::AGGREGATOR_PROVIDERS as $p) {
+                $out[$p] = $byProvider[$p] ?? null;
+            }
+            return $out;
+        } catch (PDOException $e) {
+            error_log('listAggregatorSettings error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getAggregatorSettings(string $provider): ?array
+    {
+        if (!in_array($provider, self::AGGREGATOR_PROVIDERS, true)) return null;
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, provider, api_key, webhook_secret, enabled,
+                       last_webhook_at, last_push_at, created_at, updated_at
+                FROM aggregator_settings WHERE provider = :p LIMIT 1
+            ");
+            $stmt->execute([':p' => $provider]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getAggregatorSettings error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function saveAggregatorSettings(string $provider, string $apiKey, ?string $webhookSecret, bool $enabled): bool
+    {
+        if (!in_array($provider, self::AGGREGATOR_PROVIDERS, true)) return false;
+        try {
+            $existing = $this->getAggregatorSettings($provider);
+            // If secret missing or "rotate" signal — generate a new one.
+            $secret = $webhookSecret !== null && $webhookSecret !== ''
+                ? $webhookSecret
+                : ($existing['webhook_secret'] ?? rtrim(strtr(base64_encode(random_bytes(24)), '+/', '-_'), '='));
+            if ($existing) {
+                $stmt = $this->prepareCached("
+                    UPDATE aggregator_settings
+                    SET api_key = :k, webhook_secret = :s, enabled = :e, updated_at = NOW()
+                    WHERE provider = :p
+                ");
+                $stmt->execute([
+                    ':k' => $apiKey,
+                    ':s' => $secret,
+                    ':e' => $enabled ? 1 : 0,
+                    ':p' => $provider,
+                ]);
+            } else {
+                $stmt = $this->prepareCached("
+                    INSERT INTO aggregator_settings (provider, api_key, webhook_secret, enabled, created_at, updated_at)
+                    VALUES (:p, :k, :s, :e, NOW(), NOW())
+                ");
+                $stmt->execute([
+                    ':p' => $provider,
+                    ':k' => $apiKey,
+                    ':s' => $secret,
+                    ':e' => $enabled ? 1 : 0,
+                ]);
+            }
+            return true;
+        } catch (PDOException $e) {
+            error_log('saveAggregatorSettings error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function touchAggregatorWebhookAt(string $provider): void
+    {
+        if (!in_array($provider, self::AGGREGATOR_PROVIDERS, true)) return;
+        try {
+            $stmt = $this->prepareCached(
+                "UPDATE aggregator_settings SET last_webhook_at = NOW() WHERE provider = :p"
+            );
+            $stmt->execute([':p' => $provider]);
+        } catch (Throwable $ignored) {}
+    }
+
+    public function touchAggregatorPushAt(string $provider): void
+    {
+        if (!in_array($provider, self::AGGREGATOR_PROVIDERS, true)) return;
+        try {
+            $stmt = $this->prepareCached(
+                "UPDATE aggregator_settings SET last_push_at = NOW() WHERE provider = :p"
+            );
+            $stmt->execute([':p' => $provider]);
+        } catch (Throwable $ignored) {}
+    }
+
+    public function saveAggregatorItemMapping(int $menuItemId, string $provider, ?string $externalId): bool
+    {
+        if (!in_array($provider, self::AGGREGATOR_PROVIDERS, true)) return false;
+        $col = $provider === 'yandex_eda' ? 'aggregator_yandex_id' : 'aggregator_dc_id';
+        $externalId = $externalId !== null ? trim($externalId) : null;
+        if ($externalId === '') $externalId = null;
+        try {
+            $stmt = $this->connection->prepare(
+                "UPDATE menu_items SET {$col} = :ext, updated_at = NOW() WHERE id = :id"
+            );
+            $stmt->execute([':ext' => $externalId, ':id' => $menuItemId]);
+            return $stmt->rowCount() >= 0;
+        } catch (PDOException $e) {
+            error_log('saveAggregatorItemMapping error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function listMenuItemsWithAggregatorIds(): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, name, price, category, is_available,
+                       aggregator_yandex_id, aggregator_dc_id
+                FROM menu_items
+                ORDER BY category ASC, name ASC
+            ");
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listMenuItemsWithAggregatorIds error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function findMenuItemByAggregatorId(string $provider, string $externalId): ?array
+    {
+        if (!in_array($provider, self::AGGREGATOR_PROVIDERS, true)) return null;
+        $col = $provider === 'yandex_eda' ? 'aggregator_yandex_id' : 'aggregator_dc_id';
+        try {
+            $stmt = $this->connection->prepare(
+                "SELECT id, name, price FROM menu_items WHERE {$col} = :ext LIMIT 1"
+            );
+            $stmt->execute([':ext' => $externalId]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('findMenuItemByAggregatorId error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Create an order from a normalized aggregator payload.
+     * $normalized must contain: external_id, items[], total, customer_name?, customer_phone?, delivery_address?
+     */
+    public function createOrderFromAggregator(string $provider, array $normalized)
+    {
+        if (!in_array($provider, self::AGGREGATOR_PROVIDERS, true)) return false;
+        $external = (string)($normalized['external_id'] ?? '');
+        if ($external === '') return false;
+
+        // Idempotency: if we already have this aggregator_order_id, return existing.
+        try {
+            $check = $this->prepareCached("
+                SELECT id FROM orders
+                WHERE aggregator_source = :p AND aggregator_order_id = :ext LIMIT 1
+            ");
+            $check->execute([':p' => $provider, ':ext' => $external]);
+            $existing = $check->fetch();
+            if ($existing) {
+                return (int)$existing['id'];
+            }
+        } catch (PDOException $e) {
+            error_log('createOrderFromAggregator idempotency check: ' . $e->getMessage());
+            return false;
+        }
+
+        $items = is_array($normalized['items'] ?? null) ? $normalized['items'] : [];
+        $total = (float)($normalized['total'] ?? 0);
+        $details = trim((string)($normalized['delivery_address'] ?? ''));
+        $detailsJson = json_encode([
+            'aggregator'    => $provider,
+            'external_id'   => $external,
+            'address'       => $details,
+            'customer_name' => $normalized['customer_name'] ?? null,
+            'customer_phone'=> $normalized['customer_phone'] ?? null,
+        ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+
+        try {
+            $this->connection->beginTransaction();
+            $initialStatus = $this->getInitialOrderStatus();
+            $shift = $this->getAnyOpenShift();
+            $shiftId = $shift ? (int)$shift['id'] : null;
+
+            $stmt = $this->prepareCached("
+                INSERT INTO orders
+                    (user_id, items, total, tips, status, delivery_type, delivery_details,
+                     payment_method, payment_status, shift_id,
+                     aggregator_source, aggregator_order_id, aggregator_status, aggregator_payload,
+                     created_at, updated_at)
+                VALUES (NULL, :items, :total, 0, :initial_status, 'delivery', :details,
+                        'online', 'paid', :shift_id,
+                        :prov, :ext, 'new', :payload,
+                        NOW(), NOW())
+            ");
+            $stmt->execute([
+                ':items'         => json_encode($items, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE),
+                ':total'         => $total,
+                ':initial_status'=> $initialStatus,
+                ':details'       => $detailsJson,
+                ':shift_id'      => $shiftId,
+                ':prov'          => $provider,
+                ':ext'           => $external,
+                ':payload'       => json_encode($normalized, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE),
+            ]);
+            $orderId = (int)$this->connection->lastInsertId();
+
+            $histStmt = $this->prepareCached("
+                INSERT INTO order_status_history (order_id, status, changed_by, changed_at)
+                VALUES (:oid, :st, NULL, NOW())
+            ");
+            $histStmt->execute([':oid' => $orderId, ':st' => $initialStatus]);
+
+            $this->persistOrderItems($orderId, $items);
+
+            $this->connection->commit();
+            $this->invalidateOrderCache($orderId);
+            $this->touchOrdersLastUpdate();
+            return $orderId;
+        } catch (Throwable $e) {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+            error_log('createOrderFromAggregator error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getOrdersPendingAggregatorPush(int $limit = 50): array
+    {
+        $limit = max(1, min(200, $limit));
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, aggregator_source, aggregator_order_id, aggregator_status, status, updated_at
+                FROM orders
+                WHERE aggregator_source IS NOT NULL
+                  AND aggregator_status IS NOT NULL
+                  AND aggregator_status NOT IN ('pushed', 'delivered_pushed', 'cancelled_pushed', 'final')
+                ORDER BY updated_at DESC
+                LIMIT {$limit}
+            ");
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('getOrdersPendingAggregatorPush error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function setOrderAggregatorStatus(int $orderId, string $status): bool
+    {
+        try {
+            $stmt = $this->prepareCached(
+                "UPDATE orders SET aggregator_status = :s, updated_at = NOW() WHERE id = :id"
+            );
+            $stmt->execute([':s' => $status, ':id' => $orderId]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('setOrderAggregatorStatus error: ' . $e->getMessage());
             return false;
         }
     }
