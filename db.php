@@ -8360,9 +8360,10 @@ class Database
     {
         try {
             $stmt = $this->prepareCached("
-                SELECT id, name, price, category, is_available,
+                SELECT id, name, price, category, available,
                        aggregator_yandex_id, aggregator_dc_id
                 FROM menu_items
+                WHERE archived_at IS NULL
                 ORDER BY category ASC, name ASC
             ");
             $stmt->execute();

@@ -44,6 +44,15 @@
     gap: 8px;
     align-items: center;
 }
+/* Ensure anchor-as-button looks identical to <button> sibling. */
+.vsd-filter-actions a.admin-checkout-btn,
+.vsd-filter-actions a.checkout-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    line-height: 1;
+}
 
 .inv-toolbar-end {
     display: flex;
