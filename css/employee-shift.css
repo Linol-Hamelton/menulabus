@@ -222,6 +222,21 @@
     color: #3730a3;
 }
 
+/* Phase 43: scheduled-for badge on order cards */
+.scheduled-badge {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+}
+.scheduled-badge--soon   { background: #fee2e2; color: #991b1b; }
+.scheduled-badge--future { background: #dbeafe; color: #1e40af; }
+
 /* Refund modal: mode radio group */
 .refund-mode {
     display: flex;

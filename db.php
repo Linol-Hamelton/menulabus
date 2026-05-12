@@ -1235,6 +1235,7 @@ class Database
                        o.payment_method, o.payment_id, o.payment_status,
                        o.aggregator_source, o.aggregator_order_id, o.aggregator_status,
                        o.courier_id, o.delivery_picked_up_at, o.delivery_delivered_at,
+                       o.scheduled_for,
                        u.name as user_name, u.phone as user_phone,
                        updater.name as updater_name,
                        courier.name as courier_name
@@ -9072,6 +9073,90 @@ class Database
             return is_array($rows) ? $rows : [];
         } catch (PDOException $e) {
             error_log('listMyCourierOrders error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    // =========================================================================
+    // Phase 43 — Предзаказы + Kitchen routing
+    // =========================================================================
+
+    /**
+     * Set scheduled_for on a fresh order. Used right after createOrder() when
+     * the customer specified a desired pickup/delivery time.
+     */
+    public function setOrderScheduledFor(int $orderId, ?string $scheduledFor): bool
+    {
+        try {
+            if ($scheduledFor !== null && $scheduledFor !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?$/', $scheduledFor)) {
+                return false;
+            }
+            $normalized = $scheduledFor !== null && $scheduledFor !== ''
+                ? str_replace('T', ' ', $scheduledFor)
+                : null;
+            $stmt = $this->prepareCached(
+                "UPDATE orders SET scheduled_for = :s, updated_at = NOW() WHERE id = :id"
+            );
+            $stmt->execute([':s' => $normalized, ':id' => $orderId]);
+            $this->invalidateOrderCache($orderId);
+            return $stmt->rowCount() >= 0;
+        } catch (PDOException $e) {
+            error_log('setOrderScheduledFor error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getOrdersDueSoon(int $minutesAhead = 60): array
+    {
+        $minutesAhead = max(1, min(1440, $minutesAhead));
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, status, scheduled_for, total, delivery_type, courier_id
+                FROM orders
+                WHERE scheduled_for IS NOT NULL
+                  AND status NOT IN ('завершён', 'отказ', 'cancelled', 'completed')
+                  AND scheduled_for BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL :mins MINUTE)
+                ORDER BY scheduled_for ASC
+            ");
+            $stmt->execute([':mins' => $minutesAhead]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('getOrdersDueSoon error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function setMenuItemKitchenStation(int $menuItemId, ?string $station): bool
+    {
+        try {
+            $station = $station !== null ? trim($station) : null;
+            if ($station === '') $station = null;
+            $stmt = $this->prepareCached(
+                "UPDATE menu_items SET kitchen_station = :ks, updated_at = NOW() WHERE id = :id"
+            );
+            $stmt->execute([':ks' => $station, ':id' => $menuItemId]);
+            return $stmt->rowCount() >= 0;
+        } catch (PDOException $e) {
+            error_log('setMenuItemKitchenStation error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function listDistinctKitchenStations(): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT DISTINCT kitchen_station
+                FROM menu_items
+                WHERE kitchen_station IS NOT NULL AND kitchen_station <> ''
+                ORDER BY kitchen_station ASC
+            ");
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            return array_values(array_map(static fn($r) => (string)$r['kitchen_station'], is_array($rows) ? $rows : []));
+        } catch (PDOException $e) {
+            error_log('listDistinctKitchenStations error: ' . $e->getMessage());
             return [];
         }
     }

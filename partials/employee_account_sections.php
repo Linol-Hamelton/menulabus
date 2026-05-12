@@ -241,6 +241,14 @@ $canRunStaleCleanup = in_array((string)($_SESSION['user_role'] ?? ''), ['owner',
                                                 <?php $aggLabel = $order['aggregator_source'] === 'yandex_eda' ? 'Я.Еда' : 'DC'; ?>
                                                 <span class="aggregator-badge aggregator-badge--<?= htmlspecialchars((string)$order['aggregator_source']) ?>" title="<?= $order['aggregator_source'] === 'yandex_eda' ? 'Заказ из Яндекс.Еды' : 'Заказ из Delivery Club' ?>"><?= htmlspecialchars($aggLabel) ?></span>
                                             <?php endif; ?>
+                                            <?php if (!empty($order['scheduled_for'])): ?>
+                                                <?php
+                                                $schedTs = strtotime((string)$order['scheduled_for']);
+                                                $minutesAhead = $schedTs > 0 ? round(($schedTs - time()) / 60) : null;
+                                                $schedClass = $minutesAhead !== null && $minutesAhead <= 30 ? 'scheduled-badge--soon' : 'scheduled-badge--future';
+                                                ?>
+                                                <span class="scheduled-badge <?= $schedClass ?>" title="К <?= date('d.m H:i', $schedTs) ?>">⏰ к <?= date('H:i', $schedTs) ?></span>
+                                            <?php endif; ?>
                                             <span class="order-status <?= strtolower((string)$order['status']) ?>"><?= htmlspecialchars((string)$order['status']) ?></span>
                                             <span class="employee-order-delivery employee-order-delivery--<?= htmlspecialchars($deliveryType) ?>"><?= htmlspecialchars($deliveryLabel) ?></span>
                                         </div>
