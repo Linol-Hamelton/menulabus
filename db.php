@@ -8419,14 +8419,16 @@ class Database
 
         $items = is_array($normalized['items'] ?? null) ? $normalized['items'] : [];
         $total = (float)($normalized['total'] ?? 0);
-        $details = trim((string)($normalized['delivery_address'] ?? ''));
-        $detailsJson = json_encode([
-            'aggregator'    => $provider,
-            'external_id'   => $external,
-            'address'       => $details,
-            'customer_name' => $normalized['customer_name'] ?? null,
-            'customer_phone'=> $normalized['customer_phone'] ?? null,
-        ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        // delivery_details is VARCHAR(255) — only the short human-readable summary goes here.
+        // Full structured payload (customer name/phone, external_id, etc.) is stored
+        // in orders.aggregator_payload (JSON column).
+        $addr = trim((string)($normalized['delivery_address'] ?? ''));
+        $phone = trim((string)($normalized['customer_phone'] ?? ''));
+        $summary = $addr;
+        if ($phone !== '') {
+            $summary .= ($summary !== '' ? ' · ' : '') . $phone;
+        }
+        $detailsShort = mb_substr($summary, 0, 255, 'UTF-8');
 
         try {
             $this->connection->beginTransaction();
@@ -8449,7 +8451,7 @@ class Database
                 ':items'         => json_encode($items, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE),
                 ':total'         => $total,
                 ':initial_status'=> $initialStatus,
-                ':details'       => $detailsJson,
+                ':details'       => $detailsShort,
                 ':shift_id'      => $shiftId,
                 ':prov'          => $provider,
                 ':ext'           => $external,

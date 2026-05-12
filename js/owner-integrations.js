@@ -4,7 +4,10 @@
     var section = document.getElementById('integrations');
     if (!section) return;
 
-    var csrfToken = (document.body && document.body.getAttribute('data-csrf-token')) || '';
+    var csrfToken = (document.body && document.body.getAttribute('data-csrf-token'))
+        || (section && section.querySelector('[data-csrf-token]') && section.querySelector('[data-csrf-token]').getAttribute('data-csrf-token'))
+        || (document.querySelector('meta[name="csrf-token"]') && document.querySelector('meta[name="csrf-token"]').getAttribute('content'))
+        || '';
 
     function api(action) {
         return fetch('/api/save-odata-creds.php', {
