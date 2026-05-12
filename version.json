@@ -1,5 +1,5 @@
 {
-  "version": "3.8.3",
+  "version": "3.8.4",
   "release_date": "2026-05-12",
-  "changelog": "Phase 36.3 — последний фикс схемы: order_status_history.changed_by был INT NOT NULL, aggregator-заказы не имеют user → INSERT падал. Миграция теперь MODIFY COLUMN changed_by INT NULL (idempotent через IS_NULLABLE check). После накачки aggregator webhook должен создавать заказы успешно."
+  "changelog": "Phase 36 — verified end-to-end на проде. Webhook → 200 + order_id. Idempotency → same order_id. Wrong sig → 401. Бэйдж .aggregator-badge--yandex_eda на карточке заказа в /employee.php. Откатили debug=1 surface в webhook.php (PDO error message больше не возвращается в response — только в error_log как и было задумано). v3.8.4 — финальный релиз Tier-1 программы (Phase 35-39, 5 фаз закрыто)."
 }
