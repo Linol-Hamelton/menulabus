@@ -146,6 +146,56 @@
     margin-top: 4px;
 }
 
+/* Form layout — mirrors admin-inventory.css (which employee.php does not load).
+ * Without these rules, label+input render inline and form looks broken.
+ */
+.shift-dock + dialog .inv-edit-form,
+#shiftOpenModal .inv-edit-form,
+#shiftCloseModal .inv-edit-form,
+#shiftEncashModal .inv-edit-form,
+#orderRefundModal .inv-edit-form,
+#shiftOpenModal .modal-body,
+#shiftCloseModal .modal-body,
+#shiftEncashModal .modal-body,
+#orderRefundModal .modal-body {
+    display: grid;
+    gap: 14px;
+}
+#shiftOpenModal .inv-edit-field,
+#shiftCloseModal .inv-edit-field,
+#shiftEncashModal .inv-edit-field,
+#orderRefundModal .inv-edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+#shiftOpenModal .inv-edit-label,
+#shiftCloseModal .inv-edit-label,
+#shiftEncashModal .inv-edit-label,
+#orderRefundModal .inv-edit-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ui-text-muted, #6b7280);
+    font-weight: 600;
+}
+#shiftOpenModal .inv-edit-field input,
+#shiftOpenModal .inv-edit-field select,
+#shiftCloseModal .inv-edit-field input,
+#shiftCloseModal .inv-edit-field select,
+#shiftEncashModal .inv-edit-field input,
+#shiftEncashModal .inv-edit-field select,
+#orderRefundModal .inv-edit-field input,
+#orderRefundModal .inv-edit-field select {
+    padding: 8px 10px;
+    border: 1px solid var(--ui-border, #c8d2dc);
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fff;
+    width: 100%;
+}
+
 /* Refund modal: mode radio group */
 .refund-mode {
     display: flex;
