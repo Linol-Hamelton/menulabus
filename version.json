@@ -1,5 +1,5 @@
 {
-  "version": "3.8.1",
+  "version": "3.8.2",
   "release_date": "2026-05-12",
-  "changelog": "Phase 36.1 — фиксы после MCP verify. (1) js/owner-integrations.js: csrfToken fallback на meta[name=csrf-token] (на /owner.php в body нет data-csrf-token, в отличие от /admin/* — settings/mapping submit не работал). (2) db.php createOrderFromAggregator: orders.delivery_details — VARCHAR(255), мой JSON со всеми полями туда не влезал → create_failed. Теперь там короткий human-readable summary (address + phone, mb_substr 255), полный normalized payload — в orders.aggregator_payload (JSON column)."
+  "changelog": "Phase 36.2 — root cause создания aggregator-заказов: orders.user_id был INT NOT NULL + FK на users(id), а агрегатор-заказы не имеют локального user_id. Миграция теперь делает MODIFY COLUMN user_id INT NULL (FK constraint остаётся; NULL — валидное значение для NULLABLE FK). Идемпотентно через INFORMATION_SCHEMA IS_NULLABLE check."
 }

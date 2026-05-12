@@ -41,6 +41,21 @@ PREPARE stmt_src FROM @sql_src;
 EXECUTE stmt_src;
 DEALLOCATE PREPARE stmt_src;
 
+-- orders.user_id — relax NOT NULL so aggregator-sourced orders (no local user) can be created.
+SET @col_uid_nullable = (
+    SELECT IS_NULLABLE FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'orders'
+       AND COLUMN_NAME = 'user_id'
+);
+SET @sql_uid = IF(@col_uid_nullable = 'NO',
+    "ALTER TABLE orders MODIFY COLUMN user_id INT NULL",
+    "SELECT 'orders.user_id already nullable'"
+);
+PREPARE stmt_uid FROM @sql_uid;
+EXECUTE stmt_uid;
+DEALLOCATE PREPARE stmt_uid;
+
 -- menu_items.aggregator_*_id — mapping from external product IDs.
 SET @col_y = (
     SELECT COUNT(*) FROM information_schema.COLUMNS
