@@ -278,6 +278,7 @@ $fmtCost = static function ($v): string {
                             <tr data-ingredient-id="<?= (int)$i['id'] ?>"
                                 data-supplier-id="<?= $i['supplier_id'] !== null ? (int)$i['supplier_id'] : '' ?>"
                                 data-stock-status="<?= htmlspecialchars($status) ?>"
+                                data-requires-vsd="<?= !empty($i['requires_vsd']) ? '1' : '0' ?>"
                                 class="<?= $isArchived ? 'inv-row-archived' : '' ?> <?= $isLow ? 'inv-row-low' : '' ?>">
                                 <td class="inv-col-check"><input type="checkbox" class="inv-row-check" aria-label="Выбрать строку"></td>
                                 <td>
@@ -602,7 +603,16 @@ $fmtCost = static function ($v): string {
                         </select>
                     </label>
                 </div>
-                <p class="inv-edit-hint">Чтобы изменить остаток — используйте «± Остаток» на карточке ингредиента, тогда движение попадёт в аудит-лог.</p>
+                <div class="inv-edit-row">
+                    <label class="inv-edit-field inv-edit-field--checkbox">
+                        <span class="inv-edit-label">Меркурий</span>
+                        <span class="inv-vsd-toggle-wrap">
+                            <input type="checkbox" id="invEditRequiresVsd">
+                            <span>Требует ВСД (мясо/рыба/молочка по 243-ФЗ)</span>
+                        </span>
+                    </label>
+                </div>
+                <p class="inv-edit-hint">Чтобы изменить остаток — используйте «± Остаток» на карточке ингредиента, тогда движение попадёт в аудит-лог. ВСД-записи редактируются на странице <a href="/admin/vsd.php">ВСД</a>.</p>
                 <div id="invEditMsg" class="recipe-save-msg" hidden></div>
             </form>
             <footer class="modal-foot">

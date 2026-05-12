@@ -7437,6 +7437,277 @@ class Database
         }
     }
 
+    // =========================================================================
+    // Phase 38 — Меркурий / ВСД (manual MVP, no Vetis API yet)
+    // =========================================================================
+
+    public function setIngredientRequiresVsd(int $ingredientId, bool $requires): bool
+    {
+        try {
+            $stmt = $this->prepareCached(
+                "UPDATE ingredients SET requires_vsd = :v, updated_at = NOW() WHERE id = :id"
+            );
+            $stmt->execute([':v' => $requires ? 1 : 0, ':id' => $ingredientId]);
+            return $stmt->rowCount() >= 0;
+        } catch (PDOException $e) {
+            error_log('setIngredientRequiresVsd error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function listVsdRecords(
+        ?string $status = null,
+        ?int $ingredientId = null,
+        ?string $fromDate = null,
+        ?string $toDate = null,
+        int $limit = 200
+    ): array {
+        $limit = max(1, min(500, $limit));
+        $sql = "
+            SELECT v.id, v.ingredient_id, v.vsd_number, v.vsd_date,
+                   v.supplier_inn, v.supplier_name, v.quantity, v.unit,
+                   v.status, v.accepted_at, v.accepted_by, v.notes,
+                   v.created_at, v.updated_at,
+                   i.name AS ingredient_name, i.unit AS ingredient_unit,
+                   u.name AS accepter_name
+            FROM vsd_records v
+            JOIN ingredients i ON i.id = v.ingredient_id
+            LEFT JOIN users u ON u.id = v.accepted_by
+            WHERE 1=1
+        ";
+        $params = [];
+        if ($status !== null && in_array($status, ['pending', 'accepted', 'rejected'], true)) {
+            $sql .= " AND v.status = :status";
+            $params[':status'] = $status;
+        }
+        if ($ingredientId !== null && $ingredientId > 0) {
+            $sql .= " AND v.ingredient_id = :iid";
+            $params[':iid'] = $ingredientId;
+        }
+        if ($fromDate !== null && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fromDate)) {
+            $sql .= " AND v.vsd_date >= :from";
+            $params[':from'] = $fromDate;
+        }
+        if ($toDate !== null && preg_match('/^\d{4}-\d{2}-\d{2}$/', $toDate)) {
+            $sql .= " AND v.vsd_date <= :to";
+            $params[':to'] = $toDate;
+        }
+        $sql .= " ORDER BY v.id DESC LIMIT {$limit}";
+        try {
+            $stmt = $this->prepareCached($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listVsdRecords error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getVsdRecord(int $id): ?array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, ingredient_id, vsd_number, vsd_date,
+                       supplier_inn, supplier_name, quantity, unit,
+                       status, accepted_at, accepted_by, notes, created_at, updated_at
+                FROM vsd_records WHERE id = :id LIMIT 1
+            ");
+            $stmt->execute([':id' => $id]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getVsdRecord error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function saveVsdRecord(
+        ?int $id,
+        int $ingredientId,
+        string $vsdNumber,
+        string $vsdDate,
+        ?string $supplierInn,
+        ?string $supplierName,
+        float $quantity,
+        ?string $unit,
+        ?string $notes = null
+    ) {
+        $vsdNumber = trim($vsdNumber);
+        if ($vsdNumber === '' || $ingredientId <= 0) {
+            return false;
+        }
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $vsdDate)) {
+            return false;
+        }
+        $quantity = max(0.0, (float)$quantity);
+        $supplierInn = $supplierInn !== null ? trim($supplierInn) : null;
+        if ($supplierInn === '') $supplierInn = null;
+        $supplierName = $supplierName !== null ? trim($supplierName) : null;
+        if ($supplierName === '') $supplierName = null;
+        $unit = $unit !== null ? trim($unit) : null;
+        if ($unit === '') $unit = null;
+        $notes = $notes !== null ? trim($notes) : null;
+        if ($notes === '') $notes = null;
+
+        try {
+            if ($id !== null && $id > 0) {
+                $stmt = $this->prepareCached("
+                    UPDATE vsd_records SET
+                        ingredient_id = :iid,
+                        vsd_number = :num,
+                        vsd_date = :dt,
+                        supplier_inn = :inn,
+                        supplier_name = :sname,
+                        quantity = :qty,
+                        unit = :unit,
+                        notes = :notes,
+                        updated_at = NOW()
+                    WHERE id = :id
+                ");
+                $stmt->execute([
+                    ':iid'   => $ingredientId,
+                    ':num'   => $vsdNumber,
+                    ':dt'    => $vsdDate,
+                    ':inn'   => $supplierInn,
+                    ':sname' => $supplierName,
+                    ':qty'   => $quantity,
+                    ':unit'  => $unit,
+                    ':notes' => $notes,
+                    ':id'    => $id,
+                ]);
+                return $id;
+            }
+            $stmt = $this->prepareCached("
+                INSERT INTO vsd_records
+                    (ingredient_id, vsd_number, vsd_date, supplier_inn, supplier_name,
+                     quantity, unit, status, notes, created_at, updated_at)
+                VALUES (:iid, :num, :dt, :inn, :sname, :qty, :unit, 'pending', :notes, NOW(), NOW())
+            ");
+            $stmt->execute([
+                ':iid'   => $ingredientId,
+                ':num'   => $vsdNumber,
+                ':dt'    => $vsdDate,
+                ':inn'   => $supplierInn,
+                ':sname' => $supplierName,
+                ':qty'   => $quantity,
+                ':unit'  => $unit,
+                ':notes' => $notes,
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('saveVsdRecord error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Гашение ВСД: status → accepted, опционально пушит остаток в stock_movements
+     * (если $applyToStock=true). Это «принять товар по этому ВСД» = receipt-приход.
+     */
+    public function acceptVsd(int $id, int $userId, bool $applyToStock = true): bool
+    {
+        $rec = $this->getVsdRecord($id);
+        if (!$rec || $rec['status'] !== 'pending') {
+            return false;
+        }
+        try {
+            $this->connection->beginTransaction();
+            $stmt = $this->prepareCached("
+                UPDATE vsd_records
+                SET status = 'accepted', accepted_at = NOW(), accepted_by = :uid, updated_at = NOW()
+                WHERE id = :id AND status = 'pending'
+            ");
+            $stmt->execute([':uid' => $userId, ':id' => $id]);
+            if ($stmt->rowCount() === 0) {
+                $this->connection->rollBack();
+                return false;
+            }
+
+            if ($applyToStock && (float)$rec['quantity'] > 0) {
+                $upd = $this->prepareCached(
+                    "UPDATE ingredients SET stock_qty = stock_qty + :qty WHERE id = :iid AND archived_at IS NULL"
+                );
+                $upd->execute([':qty' => (float)$rec['quantity'], ':iid' => (int)$rec['ingredient_id']]);
+
+                $log = $this->prepareCached("
+                    INSERT INTO stock_movements (ingredient_id, delta, reason, note, created_by, created_at)
+                    VALUES (:iid, :delta, 'receipt', :note, :uid, NOW())
+                ");
+                $log->execute([
+                    ':iid'   => (int)$rec['ingredient_id'],
+                    ':delta' => (float)$rec['quantity'],
+                    ':note'  => 'ВСД №' . $rec['vsd_number'],
+                    ':uid'   => $userId,
+                ]);
+            }
+            $this->connection->commit();
+            return true;
+        } catch (PDOException $e) {
+            try { $this->connection->rollBack(); } catch (Throwable $ignored) {}
+            error_log('acceptVsd error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function rejectVsd(int $id, int $userId, ?string $reason = null): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE vsd_records
+                SET status = 'rejected',
+                    accepted_at = NOW(),
+                    accepted_by = :uid,
+                    notes = CASE WHEN :reason IS NULL THEN notes
+                                 ELSE CONCAT(COALESCE(notes,''), CASE WHEN notes IS NULL OR notes='' THEN '' ELSE '\n' END, 'Отклонено: ', :reason2) END,
+                    updated_at = NOW()
+                WHERE id = :id AND status = 'pending'
+            ");
+            $stmt->execute([
+                ':uid'    => $userId,
+                ':reason' => $reason,
+                ':reason2'=> $reason,
+                ':id'     => $id,
+            ]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('rejectVsd error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function deleteVsdRecord(int $id): bool
+    {
+        try {
+            $stmt = $this->prepareCached(
+                "DELETE FROM vsd_records WHERE id = :id AND status = 'pending'"
+            );
+            $stmt->execute([':id' => $id]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('deleteVsdRecord error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function listVsdEligibleIngredients(): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, name, unit, requires_vsd
+                FROM ingredients
+                WHERE archived_at IS NULL
+                ORDER BY requires_vsd DESC, name ASC
+            ");
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listVsdEligibleIngredients error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getConnection()
     {
         return $this->connection;

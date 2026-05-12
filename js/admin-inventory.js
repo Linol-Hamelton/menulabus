@@ -468,6 +468,10 @@
         editThreshold.value = (tr.querySelector('.inv-threshold') || {}).value || '0';
         editCost.value = (tr.querySelector('.inv-cost') || {}).value || '0';
         editSupplier.value = (tr.querySelector('.inv-supplier') || {}).value || '';
+        var requiresVsd = document.getElementById('invEditRequiresVsd');
+        if (requiresVsd) {
+            requiresVsd.checked = (tr.getAttribute('data-requires-vsd') === '1');
+        }
         try { editModal.showModal(); } catch (_) { editModal.setAttribute('open', ''); }
     }
 
@@ -498,6 +502,8 @@
             var cost = parseFloat(editCost.value || '0') || 0;
             var sup = editSupplier.value || '';
             var stockQty = parseFloat(editStockRO.textContent || '0') || 0;
+            var requiresVsdEl = document.getElementById('invEditRequiresVsd');
+            var requiresVsd = !!(requiresVsdEl && requiresVsdEl.checked);
             editSave.disabled = true;
             api({
                 action: 'save_ingredient',
@@ -506,13 +512,32 @@
                 reorder_threshold: thr, cost_per_unit: cost,
                 supplier_id: sup === '' ? null : parseInt(sup, 10),
             }).then(function (r) {
-                editSave.disabled = false;
                 if (!r.ok || !r.data || !r.data.success) {
+                    editSave.disabled = false;
                     editMsg.hidden = false;
                     editMsg.className = 'recipe-save-msg recipe-save-msg-error';
                     editMsg.textContent = 'Не сохранилось: ' + ((r.data && r.data.error) || 'unknown');
-                    return;
+                    return null;
                 }
+                // Phase 38: persist requires_vsd flag via /api/save-vsd.php
+                return fetch('/api/save-vsd.php', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'toggle_requires',
+                        ingredient_id: id,
+                        requires: requiresVsd,
+                        csrf_token: csrfToken,
+                    }),
+                });
+            }).then(function (res) {
+                if (res === null) return;
+                editSave.disabled = false;
                 window.location.reload();
             }).catch(function () { editSave.disabled = false; window.alert('Сетевая ошибка'); });
         });

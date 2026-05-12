@@ -31,6 +31,7 @@
                     <a href="/admin/staff.php" class="back-to-menu-btn">Смены</a>
                     <?php if (in_array(($user['role'] ?? ''), ['owner', 'admin'], true)): ?>
                         <a href="/admin/inventory.php" class="back-to-menu-btn">Склад</a>
+                        <a href="/admin/vsd.php" class="back-to-menu-btn">ВСД</a>
                     <?php endif; ?>
                     <a href="/help.php" class="back-to-menu-btn">Помощь</a>
                 <?php endif; ?>
