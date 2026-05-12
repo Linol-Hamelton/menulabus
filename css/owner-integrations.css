@@ -64,6 +64,8 @@
     display: grid;
     gap: 8px;
 }
+/* `display: grid` above clobbers UA [hidden] { display: none } — restore. */
+.integrations-key-banner[hidden] { display: none !important; }
 .integrations-key-label {
     margin: 0;
     font-weight: 600;

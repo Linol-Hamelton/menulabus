@@ -557,7 +557,7 @@ body.menu-catalog-page :is(.cart-item, .menu-item) {
 }
 
 body.menu-catalog-page .cart-item-info {
-  gap: 14px;
+  gap: 10%;
 }
 
 body.menu-catalog-page .cart-item-image {

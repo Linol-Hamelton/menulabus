@@ -315,7 +315,6 @@ a {
 .cart-item-image {
   border-radius: 8px;
   height: auto;
-  margin-right: 10%;
   object-fit: cover;
   width: 9vw;
 }
