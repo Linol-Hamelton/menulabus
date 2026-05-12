@@ -480,6 +480,14 @@
             if (alcCodeWrap) alcCodeWrap.hidden = !isAlc.checked;
         }
         if (alcCode) alcCode.value = tr.getAttribute('data-alc-code') || '';
+        var isSf = document.getElementById('invEditIsSemiFinished');
+        var yieldWrap = document.getElementById('invEditYieldWrap');
+        var yieldInput = document.getElementById('invEditYieldPerBatch');
+        if (isSf) {
+            isSf.checked = (tr.getAttribute('data-is-semi-finished') === '1');
+            if (yieldWrap) yieldWrap.hidden = !isSf.checked;
+        }
+        if (yieldInput) yieldInput.value = tr.getAttribute('data-yield-per-batch') || '0';
         try { editModal.showModal(); } catch (_) { editModal.setAttribute('open', ''); }
     }
 
@@ -503,6 +511,14 @@
     if (isAlcCheckbox && alcCodeWrapEl) {
         isAlcCheckbox.addEventListener('change', function () {
             alcCodeWrapEl.hidden = !isAlcCheckbox.checked;
+        });
+    }
+    // Phase 40: toggle yield_per_batch field visibility
+    var isSfCheckbox = document.getElementById('invEditIsSemiFinished');
+    var yieldWrapEl = document.getElementById('invEditYieldWrap');
+    if (isSfCheckbox && yieldWrapEl) {
+        isSfCheckbox.addEventListener('change', function () {
+            yieldWrapEl.hidden = !isSfCheckbox.checked;
         });
     }
     if (editSave) {
@@ -571,6 +587,29 @@
                         ingredient_id: id,
                         is_alcohol: isAlcohol,
                         alc_code: alcCodeVal,
+                        csrf_token: csrfToken,
+                    }),
+                });
+            }).then(function (res) {
+                if (res === null) return null;
+                // Phase 40: persist is_semi_finished + yield_per_batch
+                var isSfEl = document.getElementById('invEditIsSemiFinished');
+                var yieldEl = document.getElementById('invEditYieldPerBatch');
+                var isSf = !!(isSfEl && isSfEl.checked);
+                var yieldVal = parseFloat((yieldEl && yieldEl.value) || '0') || 0;
+                return fetch('/api/save-semi-finished.php', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'toggle',
+                        ingredient_id: id,
+                        is_semi_finished: isSf,
+                        yield_per_batch: yieldVal,
                         csrf_token: csrfToken,
                     }),
                 });

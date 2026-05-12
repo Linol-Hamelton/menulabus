@@ -8522,6 +8522,211 @@ class Database
         }
     }
 
+    // =========================================================================
+    // Phase 40 — Полуфабрикаты (semi-finished products)
+    // =========================================================================
+
+    public function setIngredientSemiFinished(int $ingredientId, bool $isSemiFinished, float $yieldPerBatch = 0): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE ingredients
+                SET is_semi_finished = :v,
+                    yield_per_batch = :y,
+                    updated_at = NOW()
+                WHERE id = :id
+            ");
+            $stmt->execute([
+                ':v'  => $isSemiFinished ? 1 : 0,
+                ':y'  => max(0.0, $yieldPerBatch),
+                ':id' => $ingredientId,
+            ]);
+            return $stmt->rowCount() >= 0;
+        } catch (PDOException $e) {
+            error_log('setIngredientSemiFinished error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function listSemiFinishedIngredients(): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, name, unit, stock_qty, yield_per_batch
+                FROM ingredients
+                WHERE is_semi_finished = 1 AND archived_at IS NULL
+                ORDER BY name ASC
+            ");
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listSemiFinishedIngredients error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getSemiFinishedRecipe(int $parentId): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT r.parent_ingredient_id, r.child_ingredient_id, r.quantity,
+                       i.name AS child_name, i.unit AS child_unit, i.stock_qty AS child_stock
+                FROM semi_finished_recipes r
+                JOIN ingredients i ON i.id = r.child_ingredient_id
+                WHERE r.parent_ingredient_id = :pid
+                ORDER BY i.name ASC
+            ");
+            $stmt->execute([':pid' => $parentId]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('getSemiFinishedRecipe error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Replace the semi-finished recipe atomically. $items = [{child_ingredient_id, quantity}, ...].
+     */
+    public function saveSemiFinishedRecipe(int $parentId, array $items): bool
+    {
+        try {
+            $this->connection->beginTransaction();
+            $del = $this->prepareCached(
+                "DELETE FROM semi_finished_recipes WHERE parent_ingredient_id = :pid"
+            );
+            $del->execute([':pid' => $parentId]);
+
+            $ins = $this->prepareCached("
+                INSERT INTO semi_finished_recipes (parent_ingredient_id, child_ingredient_id, quantity)
+                VALUES (:pid, :cid, :qty)
+            ");
+            foreach ($items as $it) {
+                $cid = (int)($it['child_ingredient_id'] ?? 0);
+                $qty = (float)($it['quantity'] ?? 0);
+                if ($cid <= 0 || $qty <= 0 || $cid === $parentId) continue;
+                $ins->execute([':pid' => $parentId, ':cid' => $cid, ':qty' => $qty]);
+            }
+            $this->connection->commit();
+            return true;
+        } catch (PDOException $e) {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+            error_log('saveSemiFinishedRecipe error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * "Cook a batch" of a semi-finished product:
+     *   - decrement each child ingredient by quantity * batchSize
+     *   - increment parent's stock_qty by yield_per_batch * batchSize
+     *   - write stock_movements rows (reason=waste for children, reason=adjustment for parent)
+     *   - write semi_finished_batches log entry
+     * Atomic — rolls back on any insufficient stock or DB error.
+     */
+    public function cookSemiFinishedBatch(int $parentId, float $batchSize, ?int $userId = null, ?string $notes = null)
+    {
+        $batchSize = (float)$batchSize;
+        if ($batchSize <= 0) return false;
+        try {
+            $this->connection->beginTransaction();
+            $parent = $this->prepareCached(
+                "SELECT id, name, yield_per_batch, is_semi_finished, archived_at
+                 FROM ingredients WHERE id = :id LIMIT 1"
+            );
+            $parent->execute([':id' => $parentId]);
+            $p = $parent->fetch();
+            if (!$p || (int)$p['is_semi_finished'] !== 1 || !empty($p['archived_at'])) {
+                $this->connection->rollBack();
+                return false;
+            }
+            $recipe = $this->getSemiFinishedRecipe($parentId);
+            if (empty($recipe)) {
+                $this->connection->rollBack();
+                return false;
+            }
+            $decChild = $this->prepareCached(
+                "UPDATE ingredients SET stock_qty = stock_qty - :qty WHERE id = :id AND stock_qty >= :qty2 AND archived_at IS NULL"
+            );
+            $logMove = $this->prepareCached("
+                INSERT INTO stock_movements (ingredient_id, delta, reason, note, created_by, created_at)
+                VALUES (:iid, :delta, :reason, :note, :uid, NOW())
+            ");
+            foreach ($recipe as $r) {
+                $need = (float)$r['quantity'] * $batchSize;
+                $decChild->execute([':qty' => $need, ':id' => (int)$r['child_ingredient_id'], ':qty2' => $need]);
+                if ($decChild->rowCount() === 0) {
+                    $this->connection->rollBack();
+                    return ['error' => 'insufficient_stock', 'ingredient' => (string)$r['child_name']];
+                }
+                $logMove->execute([
+                    ':iid'    => (int)$r['child_ingredient_id'],
+                    ':delta'  => -$need,
+                    ':reason' => 'waste',
+                    ':note'   => 'Полуфабрикат: ' . $p['name'] . ' × ' . $batchSize,
+                    ':uid'    => $userId,
+                ]);
+            }
+            $yieldUnits = (float)$p['yield_per_batch'] * $batchSize;
+            if ($yieldUnits > 0) {
+                $incParent = $this->prepareCached(
+                    "UPDATE ingredients SET stock_qty = stock_qty + :qty WHERE id = :id"
+                );
+                $incParent->execute([':qty' => $yieldUnits, ':id' => $parentId]);
+                $logMove->execute([
+                    ':iid'    => $parentId,
+                    ':delta'  => $yieldUnits,
+                    ':reason' => 'adjustment',
+                    ':note'   => 'Готовка партии × ' . $batchSize,
+                    ':uid'    => $userId,
+                ]);
+            }
+            $batch = $this->prepareCached("
+                INSERT INTO semi_finished_batches (ingredient_id, batch_size, made_at, made_by, notes)
+                VALUES (:iid, :sz, NOW(), :uid, :notes)
+            ");
+            $batch->execute([
+                ':iid'   => $parentId,
+                ':sz'    => $batchSize,
+                ':uid'   => $userId,
+                ':notes' => $notes !== null && $notes !== '' ? $notes : null,
+            ]);
+            $batchId = (int)$this->connection->lastInsertId();
+            $this->connection->commit();
+            return $batchId;
+        } catch (PDOException $e) {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+            error_log('cookSemiFinishedBatch error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function listSemiFinishedBatches(int $parentId, int $limit = 50): array
+    {
+        $limit = max(1, min(200, $limit));
+        try {
+            $stmt = $this->prepareCached("
+                SELECT b.id, b.ingredient_id, b.batch_size, b.made_at, b.made_by, b.notes,
+                       u.name AS made_by_name
+                FROM semi_finished_batches b
+                LEFT JOIN users u ON u.id = b.made_by
+                WHERE b.ingredient_id = :iid
+                ORDER BY b.id DESC LIMIT {$limit}
+            ");
+            $stmt->execute([':iid' => $parentId]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listSemiFinishedBatches error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getConnection()
     {
         return $this->connection;

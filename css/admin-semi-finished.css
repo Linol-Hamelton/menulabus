@@ -1,0 +1,134 @@
+/* css/admin-semi-finished.css — Phase 40 (полуфабрикаты).
+ * Card grid + recipe list layout. Reuses .admin-section-card chrome and
+ * .inv-edit-form pattern.
+ */
+
+.sf-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+}
+
+.sf-card {
+    border: 1px solid var(--ui-divider, #e5e7eb);
+    border-radius: 12px;
+    padding: 14px;
+    background: var(--bg-surface, #ffffff);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sf-card-head {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--ui-divider, #e5e7eb);
+}
+.sf-card-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+.sf-card-meta {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: var(--ui-text-muted, #6b7280);
+}
+
+.sf-recipe-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.sf-section-label {
+    margin: 0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ui-text-muted, #6b7280);
+    font-weight: 600;
+}
+.sf-recipe-list {
+    margin: 0;
+    padding: 0 0 0 0;
+    list-style: none;
+    display: grid;
+    gap: 4px;
+}
+.sf-recipe-list li {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 8px;
+    align-items: baseline;
+    font-size: 0.9rem;
+}
+.sf-recipe-qty {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+}
+
+.sf-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 4px;
+}
+
+/* Recipe modal — same layout as Phase 35.1 modals */
+#sfRecipeModal .inv-edit-form,
+#sfCookModal .inv-edit-form,
+#sfRecipeModal .modal-body,
+#sfCookModal .modal-body {
+    display: grid;
+    gap: 14px;
+}
+#sfRecipeModal .inv-edit-field,
+#sfCookModal .inv-edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+#sfRecipeModal .inv-edit-label,
+#sfCookModal .inv-edit-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ui-text-muted, #6b7280);
+    font-weight: 600;
+}
+#sfRecipeModal .inv-edit-field input,
+#sfRecipeModal .inv-edit-field select,
+#sfCookModal .inv-edit-field input,
+#sfCookModal .inv-edit-field select {
+    padding: 8px 10px;
+    border: 1px solid var(--ui-border, #c8d2dc);
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fff;
+    width: 100%;
+}
+.sf-recipe-items {
+    display: grid;
+    gap: 10px;
+}
+.sf-recipe-row {
+    display: flex;
+    gap: 10px;
+    align-items: end;
+    padding: 8px;
+    border: 1px solid var(--ui-divider, #e5e7eb);
+    border-radius: 8px;
+    background: var(--ui-surface-muted, #f9fafb);
+    flex-wrap: wrap;
+}
+.sf-recipe-row .inv-edit-field { flex: 1 1 100px; }
+.sf-recipe-row .js-sf-row-remove {
+    padding: 6px 10px;
+    font-size: 14px;
+    line-height: 1;
+}

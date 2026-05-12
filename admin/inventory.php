@@ -281,6 +281,8 @@ $fmtCost = static function ($v): string {
                                 data-requires-vsd="<?= !empty($i['requires_vsd']) ? '1' : '0' ?>"
                                 data-is-alcohol="<?= !empty($i['is_alcohol']) ? '1' : '0' ?>"
                                 data-alc-code="<?= htmlspecialchars((string)($i['alc_code'] ?? '')) ?>"
+                                data-is-semi-finished="<?= !empty($i['is_semi_finished']) ? '1' : '0' ?>"
+                                data-yield-per-batch="<?= htmlspecialchars((string)($i['yield_per_batch'] ?? '0')) ?>"
                                 class="<?= $isArchived ? 'inv-row-archived' : '' ?> <?= $isLow ? 'inv-row-low' : '' ?>">
                                 <td class="inv-col-check"><input type="checkbox" class="inv-row-check" aria-label="Выбрать строку"></td>
                                 <td>
@@ -625,6 +627,19 @@ $fmtCost = static function ($v): string {
                     <label class="inv-edit-field" id="invEditAlcCodeWrap" hidden>
                         <span class="inv-edit-label">АСНА код</span>
                         <input type="text" id="invEditAlcCode" maxlength="64" placeholder="напр. 0123456789012345678">
+                    </label>
+                </div>
+                <div class="inv-edit-row">
+                    <label class="inv-edit-field inv-edit-field--checkbox">
+                        <span class="inv-edit-label">Заготовки</span>
+                        <span class="inv-vsd-toggle-wrap">
+                            <input type="checkbox" id="invEditIsSemiFinished">
+                            <span>Полуфабрикат (готовится из других ингредиентов)</span>
+                        </span>
+                    </label>
+                    <label class="inv-edit-field" id="invEditYieldWrap" hidden>
+                        <span class="inv-edit-label">Выход партии</span>
+                        <input type="number" id="invEditYieldPerBatch" step="0.001" min="0" value="0" placeholder="напр. 5 (для 5 кг соуса)">
                     </label>
                 </div>
                 <p class="inv-edit-hint">Чтобы изменить остаток — используйте «± Остаток» на карточке ингредиента, тогда движение попадёт в аудит-лог. ВСД-записи редактируются на странице <a href="/admin/vsd.php">ВСД</a>.</p>
