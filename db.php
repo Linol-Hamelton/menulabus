@@ -8395,8 +8395,12 @@ class Database
      * Create an order from a normalized aggregator payload.
      * $normalized must contain: external_id, items[], total, customer_name?, customer_phone?, delivery_address?
      */
+    /** Last error message from createOrderFromAggregator() — used for debug. */
+    public ?string $lastAggregatorError = null;
+
     public function createOrderFromAggregator(string $provider, array $normalized)
     {
+        $this->lastAggregatorError = null;
         if (!in_array($provider, self::AGGREGATOR_PROVIDERS, true)) return false;
         $external = (string)($normalized['external_id'] ?? '');
         if ($external === '') return false;
@@ -8475,6 +8479,7 @@ class Database
             if ($this->connection->inTransaction()) {
                 $this->connection->rollBack();
             }
+            $this->lastAggregatorError = $e->getMessage();
             error_log('createOrderFromAggregator error: ' . $e->getMessage());
             return false;
         }

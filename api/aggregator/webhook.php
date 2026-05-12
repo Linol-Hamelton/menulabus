@@ -83,7 +83,12 @@ try {
     $orderId = $db->createOrderFromAggregator($provider, $normalized);
     if (!$orderId) {
         http_response_code(500);
-        echo json_encode(['ok' => false, 'error' => 'create_failed']);
+        $resp = ['ok' => false, 'error' => 'create_failed'];
+        // Surface PDO error message only when ?debug=1 is passed (for diagnostics).
+        if (isset($_GET['debug'])) {
+            $resp['debug'] = $db->lastAggregatorError ?? null;
+        }
+        echo json_encode($resp);
         exit;
     }
     $db->touchAggregatorWebhookAt($provider);
