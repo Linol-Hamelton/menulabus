@@ -59,6 +59,12 @@ $getDeliveryExpandedDetail = static function (array $order): string {
 };
 
 $orders = $db->getAllOrders();
+$availableCouriers = [];
+$currentRoleForCourier = $_SESSION['user_role'] ?? '';
+$currentUserIdForCourier = (int)($_SESSION['user_id'] ?? 0);
+if (in_array($currentRoleForCourier, ['admin', 'owner'], true) && method_exists($db, 'listAvailableCouriers')) {
+    $availableCouriers = $db->listAvailableCouriers();
+}
 $statuses = array_map(
     static fn(string $status): array => ['status' => $status],
     cleanmenu_order_board_statuses()
@@ -338,6 +344,34 @@ $canRunStaleCleanup = in_array((string)($_SESSION['user_role'] ?? ''), ['owner',
                                                     data-order-total="<?= htmlspecialchars((string)$order['total']) ?>">
                                                 Возврат
                                             </button>
+                                        <?php endif; ?>
+                                        <?php
+                                        // Phase 42: courier controls
+                                        $isDeliveryOrder = $deliveryType === 'delivery';
+                                        $assignedCourierId = isset($order['courier_id']) ? (int)$order['courier_id'] : 0;
+                                        $isPickedUp = !empty($order['delivery_picked_up_at']);
+                                        $isDelivered = !empty($order['delivery_delivered_at']);
+                                        $isManagerForCourier = in_array($currentRoleForCourier, ['admin', 'owner'], true);
+                                        $isAssignedToMe = $assignedCourierId === $currentUserIdForCourier && $currentUserIdForCourier > 0;
+                                        ?>
+                                        <?php if ($isDeliveryOrder && !$isDelivered && $isManagerForCourier && !empty($availableCouriers)): ?>
+                                            <select class="js-courier-select" data-order-id="<?= (int)$order['id'] ?>" aria-label="Назначить курьера">
+                                                <option value="">— курьер —</option>
+                                                <?php foreach ($availableCouriers as $cu): ?>
+                                                    <option value="<?= (int)$cu['id'] ?>" <?= $assignedCourierId === (int)$cu['id'] ? 'selected' : '' ?>>
+                                                        <?= htmlspecialchars((string)$cu['name']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        <?php endif; ?>
+                                        <?php if ($isDeliveryOrder && $isAssignedToMe && !$isPickedUp): ?>
+                                            <button type="button" class="status-btn js-courier-pickup" data-order-id="<?= (int)$order['id'] ?>">Забрал</button>
+                                        <?php endif; ?>
+                                        <?php if ($isDeliveryOrder && $isAssignedToMe && $isPickedUp && !$isDelivered): ?>
+                                            <button type="button" class="status-btn js-courier-deliver" data-order-id="<?= (int)$order['id'] ?>">Доставил</button>
+                                        <?php endif; ?>
+                                        <?php if ($isDeliveryOrder && !empty($order['courier_name'])): ?>
+                                            <span class="courier-assigned-meta">🛵 <?= htmlspecialchars((string)$order['courier_name']) ?></span>
                                         <?php endif; ?>
                                     </form>
                                 </div>

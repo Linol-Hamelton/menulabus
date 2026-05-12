@@ -1234,11 +1234,14 @@ class Database
                        o.created_at, o.last_updated_by,
                        o.payment_method, o.payment_id, o.payment_status,
                        o.aggregator_source, o.aggregator_order_id, o.aggregator_status,
+                       o.courier_id, o.delivery_picked_up_at, o.delivery_delivered_at,
                        u.name as user_name, u.phone as user_phone,
-                       updater.name as updater_name
+                       updater.name as updater_name,
+                       courier.name as courier_name
                 FROM orders o
                 LEFT JOIN users u ON o.user_id = u.id
                 LEFT JOIN users updater ON o.last_updated_by = updater.id
+                LEFT JOIN users courier ON o.courier_id = courier.id
                 ORDER BY o.created_at DESC
             ");
             $stmt->execute();
@@ -8938,6 +8941,138 @@ class Database
         } catch (PDOException $e) {
             error_log('cancelStocktakeSession error: ' . $e->getMessage());
             return false;
+        }
+    }
+
+    // =========================================================================
+    // Phase 42 — Своя курьерская доставка
+    // =========================================================================
+
+    public function listAvailableCouriers(): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, name, phone, role
+                FROM users
+                WHERE is_active = 1 AND role IN ('employee', 'admin', 'owner')
+                ORDER BY name ASC
+            ");
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listAvailableCouriers error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function assignOrderCourier(int $orderId, ?int $courierUserId): bool
+    {
+        try {
+            $stmt = $this->prepareCached(
+                "UPDATE orders SET courier_id = :cid, updated_at = NOW() WHERE id = :id"
+            );
+            $stmt->execute([':cid' => $courierUserId, ':id' => $orderId]);
+            $this->invalidateOrderCache($orderId);
+            $this->touchOrdersLastUpdate();
+            return $stmt->rowCount() >= 0;
+        } catch (PDOException $e) {
+            error_log('assignOrderCourier error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function markOrderPickedUp(int $orderId, int $courierUserId): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE orders
+                SET delivery_picked_up_at = NOW(),
+                    status = 'доставляем',
+                    last_updated_by = :uid,
+                    updated_at = NOW()
+                WHERE id = :id
+                  AND courier_id = :uid2
+                  AND delivery_picked_up_at IS NULL
+            ");
+            $stmt->execute([':uid' => $courierUserId, ':id' => $orderId, ':uid2' => $courierUserId]);
+            if ($stmt->rowCount() > 0) {
+                $this->insertOrderStatusHistory($orderId, 'доставляем', $courierUserId);
+                $this->invalidateOrderCache($orderId);
+                $this->touchOrdersLastUpdate();
+                return true;
+            }
+            return false;
+        } catch (PDOException $e) {
+            error_log('markOrderPickedUp error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function markOrderDelivered(int $orderId, int $courierUserId): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE orders
+                SET delivery_delivered_at = NOW(),
+                    status = 'завершён',
+                    last_updated_by = :uid,
+                    updated_at = NOW()
+                WHERE id = :id
+                  AND courier_id = :uid2
+                  AND delivery_delivered_at IS NULL
+            ");
+            $stmt->execute([':uid' => $courierUserId, ':id' => $orderId, ':uid2' => $courierUserId]);
+            if ($stmt->rowCount() > 0) {
+                $this->insertOrderStatusHistory($orderId, 'завершён', $courierUserId);
+                $this->invalidateOrderCache($orderId);
+                $this->touchOrdersLastUpdate();
+                return true;
+            }
+            return false;
+        } catch (PDOException $e) {
+            error_log('markOrderDelivered error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function insertOrderStatusHistory(int $orderId, string $status, ?int $userId): void
+    {
+        try {
+            $stmt = $this->prepareCached("
+                INSERT INTO order_status_history (order_id, status, changed_by, changed_at)
+                VALUES (:oid, :st, :uid, NOW())
+            ");
+            $stmt->execute([':oid' => $orderId, ':st' => $status, ':uid' => $userId]);
+        } catch (Throwable $ignored) {
+            // Best-effort — main UPDATE already committed.
+        }
+    }
+
+    public function listMyCourierOrders(int $courierUserId, int $limit = 50): array
+    {
+        $limit = max(1, min(200, $limit));
+        try {
+            $stmt = $this->prepareCached("
+                SELECT o.id, o.total, o.status, o.delivery_type, o.delivery_details,
+                       o.created_at, o.courier_id,
+                       o.delivery_picked_up_at, o.delivery_delivered_at,
+                       o.aggregator_source,
+                       u.name AS user_name, u.phone AS user_phone
+                FROM orders o
+                LEFT JOIN users u ON o.user_id = u.id
+                WHERE o.courier_id = :uid
+                  AND o.status NOT IN ('отказ', 'cancelled')
+                  AND (o.delivery_delivered_at IS NULL OR o.delivery_delivered_at > DATE_SUB(NOW(), INTERVAL 7 DAY))
+                ORDER BY o.delivery_delivered_at IS NULL DESC, o.id DESC
+                LIMIT {$limit}
+            ");
+            $stmt->execute([':uid' => $courierUserId]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listMyCourierOrders error: ' . $e->getMessage());
+            return [];
         }
     }
 

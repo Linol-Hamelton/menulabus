@@ -202,6 +202,26 @@
     width: 100%;
 }
 
+/* Phase 42: courier controls inline in order cards */
+.js-courier-select {
+    padding: 5px 8px;
+    border: 1px solid var(--ui-border, #c8d2dc);
+    border-radius: 6px;
+    font-size: 13px;
+    background: #fff;
+    max-width: 160px;
+}
+.courier-assigned-meta {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
 /* Refund modal: mode radio group */
 .refund-mode {
     display: flex;
