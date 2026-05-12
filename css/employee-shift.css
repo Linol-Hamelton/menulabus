@@ -1,0 +1,167 @@
+/* css/employee-shift.css — Phase 35 (Кассовая смена + Refund).
+ *
+ * Sticky dock above the employee tabs + supplemental styles for the
+ * three shift modals and one refund modal. Relies on the existing
+ * `.design-modal` shell (admin-design-modals.css) for chrome.
+ */
+
+.shift-dock {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--bg-surface, #ffffff);
+    border: 1px solid var(--ui-divider, #e5e7eb);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin: 0 0 14px 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.shift-dock-row {
+    display: grid;
+    grid-template-columns: minmax(160px, 1fr) auto auto;
+    grid-template-areas: "status metrics actions";
+    align-items: center;
+    gap: 14px;
+}
+
+.shift-dock-row--closed {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "status actions";
+}
+
+.shift-dock-status {
+    grid-area: status;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+    font-size: 0.95rem;
+}
+
+.shift-dock-label {
+    font-weight: 600;
+}
+
+.shift-dock-caption {
+    flex-basis: 100%;
+    color: var(--light-text, #6b7280);
+    font-size: 0.85rem;
+}
+
+.shift-dock-cashier,
+.shift-dock-time {
+    color: var(--light-text, #6b7280);
+    font-size: 0.9rem;
+}
+
+.shift-dock-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+}
+.shift-dock-dot--off {
+    background: #9ca3af;
+    box-shadow: 0 0 0 3px rgba(156, 163, 175, 0.15);
+}
+
+.shift-dock-metrics {
+    grid-area: metrics;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 22px;
+}
+
+.shift-dock-metric {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+}
+.shift-dock-metric-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--light-text, #6b7280);
+}
+.shift-dock-metric-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text, #111827);
+    margin-top: 2px;
+}
+
+.shift-dock-actions {
+    grid-area: actions;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+    .shift-dock-row,
+    .shift-dock-row--closed {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "status"
+            "metrics"
+            "actions";
+    }
+    .shift-dock-actions { justify-content: stretch; }
+    .shift-dock-actions > .checkout-btn,
+    .shift-dock-actions > .admin-checkout-btn { flex: 1 1 auto; }
+}
+
+/* Z-report inside shiftCloseModal */
+.shift-zreport {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 14px;
+    margin-bottom: 14px;
+    padding: 12px;
+    border: 1px solid var(--ui-divider, #e5e7eb);
+    border-radius: 8px;
+    background: var(--bg-subtle, #f9fafb);
+}
+.shift-zreport-row {
+    display: contents;
+}
+.shift-zreport-label {
+    color: var(--light-text, #6b7280);
+    font-size: 0.88rem;
+}
+.shift-zreport-value {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+}
+.shift-zreport-row--accent .shift-zreport-label,
+.shift-zreport-row--accent .shift-zreport-value {
+    font-weight: 700;
+    color: var(--text, #111827);
+    padding-top: 4px;
+    border-top: 1px dashed var(--ui-divider, #e5e7eb);
+    margin-top: 4px;
+}
+
+/* Refund modal: mode radio group */
+.refund-mode {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 6px;
+}
+.refund-mode-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border: 1px solid var(--ui-divider, #e5e7eb);
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+.refund-mode-option input[type="radio"] {
+    margin: 0;
+}

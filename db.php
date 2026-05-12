@@ -3286,10 +3286,14 @@ class Database
             $this->connection->beginTransaction();
             $initialStatus = $this->getInitialOrderStatus();
 
+            // Phase 35: bind to any currently-open cashier shift, when one exists.
+            $openShift = $this->getAnyOpenShift();
+            $shiftId = $openShift ? (int)$openShift['id'] : null;
+
             $stmt = $this->prepareCached("
                 INSERT INTO orders
-                (user_id, items, total, tips, status, delivery_type, delivery_details, payment_method, payment_status, created_at, updated_at)
-                VALUES (:user_id, :items, :total, :tips, :initial_status, :delivery_type, :delivery_details, :payment_method, :payment_status, NOW(), NOW())
+                (user_id, items, total, tips, status, delivery_type, delivery_details, payment_method, payment_status, shift_id, created_at, updated_at)
+                VALUES (:user_id, :items, :total, :tips, :initial_status, :delivery_type, :delivery_details, :payment_method, :payment_status, :shift_id, NOW(), NOW())
             ");
 
             $itemsJson = json_encode($items, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
@@ -3307,6 +3311,7 @@ class Database
                 ':delivery_details' => $deliveryDetail,
                 ':payment_method' => $paymentMethod,
                 ':payment_status' => $paymentStatus,
+                ':shift_id' => $shiftId,
             ];
 
             $stmt->execute($params);
@@ -7064,6 +7069,371 @@ class Database
         } catch (PDOException $e) {
             error_log('getRecentWebhookDeliveries error: ' . $e->getMessage());
             return [];
+        }
+    }
+
+    // =========================================================================
+    // Phase 35 — Кассовая смена (cashier_shifts / shift_encashments)
+    // =========================================================================
+
+    public function getOpenShift(int $cashierId): ?array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, cashier_id, location_id, opened_at, closed_at,
+                       opening_cash, closing_cash, encashment_total, notes,
+                       created_at, updated_at
+                FROM cashier_shifts
+                WHERE cashier_id = :cid AND closed_at IS NULL
+                ORDER BY id DESC LIMIT 1
+            ");
+            $stmt->execute([':cid' => $cashierId]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getOpenShift error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getAnyOpenShift(): ?array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, cashier_id, location_id, opened_at, closed_at,
+                       opening_cash, closing_cash, encashment_total, notes,
+                       created_at, updated_at
+                FROM cashier_shifts
+                WHERE closed_at IS NULL
+                ORDER BY id DESC LIMIT 1
+            ");
+            $stmt->execute();
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getAnyOpenShift error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getShiftById(int $shiftId): ?array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, cashier_id, location_id, opened_at, closed_at,
+                       opening_cash, closing_cash, encashment_total, notes,
+                       created_at, updated_at
+                FROM cashier_shifts
+                WHERE id = :id LIMIT 1
+            ");
+            $stmt->execute([':id' => $shiftId]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getShiftById error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function openCashierShift(int $cashierId, float $openingCash, ?int $locationId = null, ?string $notes = null)
+    {
+        try {
+            // Guard against double-open by same cashier.
+            if ($this->getOpenShift($cashierId) !== null) {
+                return false;
+            }
+            $stmt = $this->prepareCached("
+                INSERT INTO cashier_shifts
+                    (cashier_id, location_id, opened_at, opening_cash, notes, created_at, updated_at)
+                VALUES (:cid, :loc, NOW(), :cash, :notes, NOW(), NOW())
+            ");
+            $stmt->execute([
+                ':cid'   => $cashierId,
+                ':loc'   => $locationId,
+                ':cash'  => max(0.0, (float)$openingCash),
+                ':notes' => $notes,
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('openCashierShift error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function closeCashierShift(int $shiftId, float $closingCash, ?string $notes = null): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE cashier_shifts
+                SET closed_at = NOW(),
+                    closing_cash = :cash,
+                    notes = COALESCE(:notes, notes),
+                    updated_at = NOW()
+                WHERE id = :id AND closed_at IS NULL
+            ");
+            $stmt->execute([
+                ':id'    => $shiftId,
+                ':cash'  => max(0.0, (float)$closingCash),
+                ':notes' => $notes,
+            ]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('closeCashierShift error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function addEncashment(int $shiftId, float $amount, string $reason = 'other'): bool
+    {
+        $amount = max(0.0, (float)$amount);
+        if ($amount <= 0) {
+            return false;
+        }
+        $allowed = ['bank_deposit', 'safe', 'other'];
+        if (!in_array($reason, $allowed, true)) {
+            $reason = 'other';
+        }
+        try {
+            $this->connection->beginTransaction();
+            $stmt = $this->prepareCached("
+                INSERT INTO shift_encashments (shift_id, amount, reason, noted_at)
+                VALUES (:sid, :amt, :reason, NOW())
+            ");
+            $stmt->execute([':sid' => $shiftId, ':amt' => $amount, ':reason' => $reason]);
+
+            $stmt = $this->prepareCached("
+                UPDATE cashier_shifts
+                SET encashment_total = encashment_total + :amt, updated_at = NOW()
+                WHERE id = :sid AND closed_at IS NULL
+            ");
+            $stmt->execute([':amt' => $amount, ':sid' => $shiftId]);
+            $this->connection->commit();
+            return true;
+        } catch (PDOException $e) {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+            error_log('addEncashment error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function listShiftEncashments(int $shiftId): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, shift_id, amount, reason, noted_at
+                FROM shift_encashments
+                WHERE shift_id = :sid
+                ORDER BY id ASC
+            ");
+            $stmt->execute([':sid' => $shiftId]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listShiftEncashments error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function attachOrderToShift(int $orderId, int $shiftId): bool
+    {
+        try {
+            $stmt = $this->prepareCached(
+                "UPDATE orders SET shift_id = :sid, updated_at = NOW() WHERE id = :oid AND shift_id IS NULL"
+            );
+            $stmt->execute([':sid' => $shiftId, ':oid' => $orderId]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('attachOrderToShift error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * X/Z report aggregator. X = snapshot of an open shift; Z = closure snapshot.
+     * Returns gross sales split by payment_method, count of orders, refunded total,
+     * tips total, expected cash (opening + cash sales − encashments − refunds_cash).
+     */
+    public function getShiftReport(int $shiftId): array
+    {
+        $shift = $this->getShiftById($shiftId);
+        if (!$shift) {
+            return [];
+        }
+
+        $report = [
+            'shift'             => $shift,
+            'orders_count'      => 0,
+            'refunds_count'     => 0,
+            'gross_total'       => 0.0,
+            'tips_total'        => 0.0,
+            'refund_total'      => 0.0,
+            'by_method'         => [],
+            'encashment_total'  => (float)($shift['encashment_total'] ?? 0),
+            'opening_cash'      => (float)($shift['opening_cash'] ?? 0),
+            'expected_cash'     => 0.0,
+        ];
+
+        try {
+            $stmt = $this->prepareCached("
+                SELECT
+                    COUNT(*) AS cnt,
+                    COALESCE(SUM(total),0) AS gross,
+                    COALESCE(SUM(tips),0)  AS tips
+                FROM orders
+                WHERE shift_id = :sid AND status <> 'cancelled'
+            ");
+            $stmt->execute([':sid' => $shiftId]);
+            $agg = $stmt->fetch();
+            $report['orders_count'] = (int)($agg['cnt'] ?? 0);
+            $report['gross_total']  = (float)($agg['gross'] ?? 0);
+            $report['tips_total']   = (float)($agg['tips'] ?? 0);
+
+            $stmt = $this->prepareCached("
+                SELECT COALESCE(payment_method,'cash') AS method,
+                       COUNT(*) AS cnt,
+                       COALESCE(SUM(total),0) AS gross
+                FROM orders
+                WHERE shift_id = :sid AND status <> 'cancelled'
+                GROUP BY COALESCE(payment_method,'cash')
+            ");
+            $stmt->execute([':sid' => $shiftId]);
+            $rows = $stmt->fetchAll() ?: [];
+            foreach ($rows as $r) {
+                $report['by_method'][$r['method']] = [
+                    'count' => (int)$r['cnt'],
+                    'gross' => (float)$r['gross'],
+                ];
+            }
+
+            $stmt = $this->prepareCached("
+                SELECT COUNT(*) AS cnt, COALESCE(SUM(amount),0) AS gross
+                FROM order_refunds
+                WHERE shift_id = :sid
+            ");
+            $stmt->execute([':sid' => $shiftId]);
+            $ref = $stmt->fetch();
+            $report['refunds_count'] = (int)($ref['cnt'] ?? 0);
+            $report['refund_total']  = (float)($ref['gross'] ?? 0);
+
+            $cashSales = (float)($report['by_method']['cash']['gross'] ?? 0);
+            $report['expected_cash'] = $report['opening_cash']
+                + $cashSales
+                - $report['encashment_total']
+                - $report['refund_total'];
+        } catch (PDOException $e) {
+            error_log('getShiftReport error: ' . $e->getMessage());
+        }
+
+        return $report;
+    }
+
+    // =========================================================================
+    // Phase 35 — Refund / чек коррекции (order_refunds)
+    // =========================================================================
+
+    public function createOrderRefund(int $orderId, int $refundedBy, float $amount, bool $isPartial = false, ?string $reason = null, ?int $shiftId = null)
+    {
+        $amount = max(0.0, (float)$amount);
+        if ($amount <= 0) {
+            return false;
+        }
+        try {
+            $stmt = $this->prepareCached("
+                INSERT INTO order_refunds
+                    (order_id, refunded_by, amount, is_partial, reason, shift_id, created_at, updated_at)
+                VALUES (:oid, :uid, :amt, :part, :reason, :sid, NOW(), NOW())
+            ");
+            $stmt->execute([
+                ':oid'    => $orderId,
+                ':uid'    => $refundedBy,
+                ':amt'    => $amount,
+                ':part'   => $isPartial ? 1 : 0,
+                ':reason' => $reason,
+                ':sid'    => $shiftId,
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('createOrderRefund error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getOrderRefund(int $refundId): ?array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, order_id, refunded_by, amount, is_partial, reason,
+                       fiscal_receipt_uuid, fiscal_receipt_status, fiscal_receipt_url,
+                       shift_id, created_at, updated_at
+                FROM order_refunds WHERE id = :id LIMIT 1
+            ");
+            $stmt->execute([':id' => $refundId]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getOrderRefund error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function listOrderRefunds(int $orderId): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, order_id, refunded_by, amount, is_partial, reason,
+                       fiscal_receipt_uuid, fiscal_receipt_status, fiscal_receipt_url,
+                       shift_id, created_at, updated_at
+                FROM order_refunds
+                WHERE order_id = :oid
+                ORDER BY id DESC
+            ");
+            $stmt->execute([':oid' => $orderId]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listOrderRefunds error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function updateRefundFiscal(int $refundId, ?string $uuid, ?string $status, ?string $url = null): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE order_refunds
+                SET fiscal_receipt_uuid = COALESCE(:uuid, fiscal_receipt_uuid),
+                    fiscal_receipt_status = COALESCE(:status, fiscal_receipt_status),
+                    fiscal_receipt_url = COALESCE(:url, fiscal_receipt_url),
+                    updated_at = NOW()
+                WHERE id = :id
+            ");
+            $stmt->execute([
+                ':uuid'   => $uuid,
+                ':status' => $status,
+                ':url'    => $url,
+                ':id'     => $refundId,
+            ]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('updateRefundFiscal error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function sumRefundsForOrder(int $orderId): float
+    {
+        try {
+            $stmt = $this->prepareCached(
+                "SELECT COALESCE(SUM(amount),0) AS s FROM order_refunds WHERE order_id = :oid"
+            );
+            $stmt->execute([':oid' => $orderId]);
+            $row = $stmt->fetch();
+            return (float)($row['s'] ?? 0);
+        } catch (PDOException $e) {
+            error_log('sumRefundsForOrder error: ' . $e->getMessage());
+            return 0.0;
         }
     }
 

@@ -327,6 +327,14 @@ $canRunStaleCleanup = in_array((string)($_SESSION['user_role'] ?? ''), ['owner',
                                                 </button>
                                             <?php endif; ?>
                                         <?php endif; ?>
+                                        <?php if ($paymentStatus === 'paid'): ?>
+                                            <button type="button"
+                                                    class="status-btn-r js-refund-trigger"
+                                                    data-order-id="<?= (int)$order['id'] ?>"
+                                                    data-order-total="<?= htmlspecialchars((string)$order['total']) ?>">
+                                                Возврат
+                                            </button>
+                                        <?php endif; ?>
                                     </form>
                                 </div>
                             </article>

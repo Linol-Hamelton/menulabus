@@ -176,6 +176,126 @@ final class AtolOnline
     }
 
     /**
+     * Send a "возврат прихода" (refund) receipt per 54-ФЗ.
+     *
+     * Issuing a refund receipt against a paid order — the operation
+     * АТОЛ calls /sell_refund. Either full amount (with line-item
+     * detail mirroring the original order) or a partial sum (single
+     * synthetic line "Частичный возврат").
+     *
+     * @param array $order   Same shape as emitSaleReceipt() input; only
+     *                       fields used are id + items[] + payment_method.
+     * @param float $refundTotal  Сумма возврата, ₽ (must be > 0).
+     * @param bool  $isPartial    true → single synthetic line; false →
+     *                            возврат всех позиций оригинала.
+     * @param string $customerEmail  customer email or empty string
+     * @param string $idempotencyKey unique per refund attempt
+     *
+     * @return array{uuid:string,status:string}
+     */
+    public function sendCorrectionReceipt(
+        array $order,
+        float $refundTotal,
+        bool $isPartial,
+        string $customerEmail,
+        string $idempotencyKey
+    ): array {
+        $refundTotal = round($refundTotal, 2);
+        if ($refundTotal <= 0) {
+            throw new RuntimeException('AtolOnline: refund total must be > 0');
+        }
+        $token = $this->ensureToken();
+
+        if ($isPartial) {
+            $items = [[
+                'name'           => 'Частичный возврат заказа #' . (int)($order['id'] ?? 0),
+                'price'          => $refundTotal,
+                'quantity'       => 1,
+                'sum'            => $refundTotal,
+                'payment_method' => 'full_payment',
+                'payment_object' => 'commodity',
+                'vat'            => ['type' => 'none'],
+            ]];
+        } else {
+            $items = [];
+            foreach (($order['items'] ?? []) as $i) {
+                $name  = (string)($i['name'] ?? '');
+                $price = round((float)($i['price'] ?? 0), 2);
+                $qty   = max(1, (int)($i['quantity'] ?? 1));
+                if ($name === '' || $price <= 0) continue;
+                $items[] = [
+                    'name'           => mb_substr($name, 0, 128),
+                    'price'          => $price,
+                    'quantity'       => $qty,
+                    'sum'            => round($price * $qty, 2),
+                    'payment_method' => 'full_payment',
+                    'payment_object' => 'commodity',
+                    'vat'            => ['type' => 'none'],
+                ];
+            }
+            if (empty($items)) {
+                // Fallback to synthetic single line if original items are missing.
+                $items = [[
+                    'name'           => 'Возврат заказа #' . (int)($order['id'] ?? 0),
+                    'price'          => $refundTotal,
+                    'quantity'       => 1,
+                    'sum'            => $refundTotal,
+                    'payment_method' => 'full_payment',
+                    'payment_object' => 'commodity',
+                    'vat'            => ['type' => 'none'],
+                ]];
+            }
+        }
+
+        $paymentType = match ((string)($order['payment_method'] ?? '')) {
+            'cash' => 0,
+            default => 1,
+        };
+
+        $receipt = [
+            'external_id' => 'refund-' . (int)($order['id'] ?? 0) . '-' . substr($idempotencyKey, 0, 16),
+            'receipt' => [
+                'client'   => array_filter([
+                    'email' => $customerEmail !== '' ? $customerEmail : null,
+                ], static fn ($v) => $v !== null),
+                'company'  => [
+                    'inn'              => $this->inn,
+                    'sno'              => $this->sno,
+                    'payment_address'  => $this->paymentAddress,
+                ],
+                'items'    => $items,
+                'payments' => [[
+                    'type' => $paymentType,
+                    'sum'  => $refundTotal,
+                ]],
+                'total'    => $refundTotal,
+            ],
+            'timestamp' => date('d.m.Y H:i:s'),
+        ];
+
+        $url = $this->endpoint() . '/' . rawurlencode($this->groupCode) . '/sell_refund';
+        $resp = $this->http(
+            'POST',
+            $url,
+            $receipt,
+            ['Token: ' . $token, 'Content-Type: application/json; charset=utf-8'],
+            15
+        );
+
+        if ($resp['code'] !== 200) {
+            throw new RuntimeException("AtolOnline sell_refund failed (HTTP {$resp['code']}): {$resp['body']}");
+        }
+        $json = json_decode($resp['body'], true);
+        if (!is_array($json) || empty($json['uuid'])) {
+            throw new RuntimeException("AtolOnline sell_refund malformed body: {$resp['body']}");
+        }
+        return [
+            'uuid'   => (string)$json['uuid'],
+            'status' => (string)($json['status'] ?? 'wait'),
+        ];
+    }
+
+    /**
      * Poll receipt status. Returns ['status' => string, 'url' => ?string].
      * Status meanings:
      *   wait — provider has accepted and is processing
