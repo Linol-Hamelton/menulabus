@@ -1,5 +1,5 @@
 {
-  "version": "3.8.2",
+  "version": "3.8.3",
   "release_date": "2026-05-12",
-  "changelog": "Phase 36.2 — root cause создания aggregator-заказов: orders.user_id был INT NOT NULL + FK на users(id), а агрегатор-заказы не имеют локального user_id. Миграция теперь делает MODIFY COLUMN user_id INT NULL (FK constraint остаётся; NULL — валидное значение для NULLABLE FK). Идемпотентно через INFORMATION_SCHEMA IS_NULLABLE check."
+  "changelog": "Phase 36.3 — последний фикс схемы: order_status_history.changed_by был INT NOT NULL, aggregator-заказы не имеют user → INSERT падал. Миграция теперь MODIFY COLUMN changed_by INT NULL (idempotent через IS_NULLABLE check). После накачки aggregator webhook должен создавать заказы успешно."
 }

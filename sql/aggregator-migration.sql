@@ -41,6 +41,21 @@ PREPARE stmt_src FROM @sql_src;
 EXECUTE stmt_src;
 DEALLOCATE PREPARE stmt_src;
 
+-- order_status_history.changed_by — relax NOT NULL: aggregator-sourced orders have no user.
+SET @col_cb_nullable = (
+    SELECT IS_NULLABLE FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'order_status_history'
+       AND COLUMN_NAME = 'changed_by'
+);
+SET @sql_cb = IF(@col_cb_nullable = 'NO',
+    "ALTER TABLE order_status_history MODIFY COLUMN changed_by INT NULL",
+    "SELECT 'order_status_history.changed_by already nullable'"
+);
+PREPARE stmt_cb FROM @sql_cb;
+EXECUTE stmt_cb;
+DEALLOCATE PREPARE stmt_cb;
+
 -- orders.user_id — relax NOT NULL so aggregator-sourced orders (no local user) can be created.
 SET @col_uid_nullable = (
     SELECT IS_NULLABLE FROM information_schema.COLUMNS
