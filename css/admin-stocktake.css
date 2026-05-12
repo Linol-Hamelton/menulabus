@@ -1,0 +1,57 @@
+/* css/admin-stocktake.css — Phase 41 (физическая инвентаризация). */
+
+.stocktake-open-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px;
+    margin: 14px 0;
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: 8px;
+}
+.stocktake-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.stocktake-table-wrapper {
+    margin-top: 14px;
+}
+
+.st-counted-input {
+    width: 100px;
+    padding: 5px 8px;
+    border: 1px solid var(--ui-border, #c8d2dc);
+    border-radius: 6px;
+    font-size: 14px;
+    background: #fff;
+    transition: background-color 0.5s ease;
+}
+.st-counted-input.st-saved-flash {
+    background-color: #d1fae5;
+}
+.st-counted-input.st-error-flash {
+    background-color: #fee2e2;
+}
+
+.js-stocktake-variance {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+}
+.st-variance-zero { color: #6b7280; }
+.st-variance-pos  { color: #065f46; }
+.st-variance-neg  { color: #991b1b; }
+
+.stocktake-history { margin-top: 18px; }
+
+@media (max-width: 720px) {
+    .stocktake-open-banner { flex-direction: column; align-items: flex-start; }
+    .stocktake-actions { width: 100%; }
+    .stocktake-actions .checkout-btn,
+    .stocktake-actions .admin-checkout-btn { flex: 1 1 auto; }
+    .st-counted-input { width: 100%; }
+}

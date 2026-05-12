@@ -8727,6 +8727,220 @@ class Database
         }
     }
 
+    // =========================================================================
+    // Phase 41 — Stocktake (физическая инвентаризация)
+    // =========================================================================
+
+    public function getOpenStocktakeSession(): ?array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT s.id, s.name, s.status, s.started_at, s.started_by, s.notes,
+                       u.name AS started_by_name,
+                       (SELECT COUNT(*) FROM stocktake_items i WHERE i.session_id = s.id) AS items_total,
+                       (SELECT COUNT(*) FROM stocktake_items i WHERE i.session_id = s.id AND i.counted_qty IS NOT NULL) AS items_counted
+                FROM stocktake_sessions s
+                LEFT JOIN users u ON u.id = s.started_by
+                WHERE s.status = 'open' ORDER BY s.id DESC LIMIT 1
+            ");
+            $stmt->execute();
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getOpenStocktakeSession error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function listStocktakeSessions(int $limit = 50): array
+    {
+        $limit = max(1, min(200, $limit));
+        try {
+            $stmt = $this->prepareCached("
+                SELECT s.id, s.name, s.status, s.started_at, s.started_by, s.closed_at, s.closed_by, s.notes,
+                       us.name AS started_by_name, uc.name AS closed_by_name,
+                       (SELECT COUNT(*) FROM stocktake_items i WHERE i.session_id = s.id) AS items_total,
+                       (SELECT COUNT(*) FROM stocktake_items i WHERE i.session_id = s.id AND i.counted_qty IS NOT NULL) AS items_counted
+                FROM stocktake_sessions s
+                LEFT JOIN users us ON us.id = s.started_by
+                LEFT JOIN users uc ON uc.id = s.closed_by
+                ORDER BY s.id DESC LIMIT {$limit}
+            ");
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listStocktakeSessions error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getStocktakeSession(int $sessionId): ?array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, name, status, started_at, started_by, closed_at, closed_by, notes
+                FROM stocktake_sessions WHERE id = :id LIMIT 1
+            ");
+            $stmt->execute([':id' => $sessionId]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getStocktakeSession error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getStocktakeItems(int $sessionId): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT si.id, si.session_id, si.ingredient_id,
+                       si.expected_qty, si.counted_qty, si.counted_at, si.counted_by, si.notes,
+                       i.name AS ingredient_name, i.unit AS ingredient_unit,
+                       u.name AS counted_by_name
+                FROM stocktake_items si
+                JOIN ingredients i ON i.id = si.ingredient_id
+                LEFT JOIN users u ON u.id = si.counted_by
+                WHERE si.session_id = :sid
+                ORDER BY i.name ASC
+            ");
+            $stmt->execute([':sid' => $sessionId]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('getStocktakeItems error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Start a new stocktake session and snapshot all non-archived ingredients.
+     * Refuses to start when an open session already exists.
+     */
+    public function startStocktakeSession(string $name, int $userId, ?string $notes = null)
+    {
+        $name = trim($name);
+        if ($name === '') $name = 'Инвентаризация ' . date('Y-m-d H:i');
+        if ($this->getOpenStocktakeSession() !== null) {
+            return ['error' => 'session_already_open'];
+        }
+        try {
+            $this->connection->beginTransaction();
+            $stmt = $this->prepareCached("
+                INSERT INTO stocktake_sessions (name, status, started_at, started_by, notes)
+                VALUES (:n, 'open', NOW(), :uid, :notes)
+            ");
+            $stmt->execute([':n' => $name, ':uid' => $userId, ':notes' => $notes]);
+            $sessionId = (int)$this->connection->lastInsertId();
+
+            // Snapshot all active ingredients
+            $snapshot = $this->prepareCached("
+                INSERT INTO stocktake_items (session_id, ingredient_id, expected_qty)
+                SELECT :sid, id, stock_qty FROM ingredients WHERE archived_at IS NULL
+            ");
+            $snapshot->execute([':sid' => $sessionId]);
+            $this->connection->commit();
+            return $sessionId;
+        } catch (PDOException $e) {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+            error_log('startStocktakeSession error: ' . $e->getMessage());
+            return ['error' => 'create_failed'];
+        }
+    }
+
+    public function updateStocktakeItem(int $sessionId, int $ingredientId, float $countedQty, int $userId, ?string $notes = null): bool
+    {
+        try {
+            // Refuse update when session is closed.
+            $sess = $this->getStocktakeSession($sessionId);
+            if (!$sess || $sess['status'] !== 'open') return false;
+            $stmt = $this->prepareCached("
+                UPDATE stocktake_items
+                SET counted_qty = :q,
+                    counted_at = NOW(),
+                    counted_by = :uid,
+                    notes = COALESCE(:notes, notes)
+                WHERE session_id = :sid AND ingredient_id = :iid
+            ");
+            $stmt->execute([
+                ':q'     => $countedQty,
+                ':uid'   => $userId,
+                ':notes' => $notes,
+                ':sid'   => $sessionId,
+                ':iid'   => $ingredientId,
+            ]);
+            return $stmt->rowCount() >= 0;
+        } catch (PDOException $e) {
+            error_log('updateStocktakeItem error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Close a session: applies all variances (counted - expected) to ingredients
+     * via adjustIngredientStock(reason='stocktake'), then sets session.status=closed.
+     * Items without counted_qty are skipped (assume "not counted" = no adjustment).
+     */
+    public function closeStocktakeSession(int $sessionId, int $userId): array
+    {
+        $sess = $this->getStocktakeSession($sessionId);
+        if (!$sess || $sess['status'] !== 'open') {
+            return ['error' => 'session_not_open'];
+        }
+        $items = $this->getStocktakeItems($sessionId);
+        $applied = 0;
+        $skipped = 0;
+        $totalDelta = 0.0;
+        try {
+            foreach ($items as $it) {
+                if ($it['counted_qty'] === null) {
+                    $skipped++;
+                    continue;
+                }
+                $delta = (float)$it['counted_qty'] - (float)$it['expected_qty'];
+                if (abs($delta) < 0.0005) {
+                    // No-op for zero-variance entries (still write a stock_movement for audit? Skip — too noisy).
+                    continue;
+                }
+                $note = 'Инвентаризация #' . $sessionId . ': ' . (string)$it['ingredient_name']
+                      . ' ожид. ' . $it['expected_qty'] . ' / факт ' . $it['counted_qty'];
+                if ($this->adjustIngredientStock((int)$it['ingredient_id'], $delta, 'stocktake', $note, $userId)) {
+                    $applied++;
+                    $totalDelta += $delta;
+                }
+            }
+            $stmt = $this->prepareCached("
+                UPDATE stocktake_sessions
+                SET status = 'closed', closed_at = NOW(), closed_by = :uid
+                WHERE id = :id AND status = 'open'
+            ");
+            $stmt->execute([':uid' => $userId, ':id' => $sessionId]);
+            return ['success' => true, 'applied' => $applied, 'skipped' => $skipped, 'total_delta' => $totalDelta];
+        } catch (Throwable $e) {
+            error_log('closeStocktakeSession error: ' . $e->getMessage());
+            return ['error' => 'close_failed', 'message' => $e->getMessage()];
+        }
+    }
+
+    public function cancelStocktakeSession(int $sessionId, int $userId): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE stocktake_sessions
+                SET status = 'cancelled', closed_at = NOW(), closed_by = :uid
+                WHERE id = :id AND status = 'open'
+            ");
+            $stmt->execute([':uid' => $userId, ':id' => $sessionId]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('cancelStocktakeSession error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function getConnection()
     {
         return $this->connection;

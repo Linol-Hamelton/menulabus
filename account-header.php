@@ -32,6 +32,7 @@
                     <?php if (in_array(($user['role'] ?? ''), ['owner', 'admin'], true)): ?>
                         <a href="/admin/inventory.php" class="back-to-menu-btn">Склад</a>
                         <a href="/admin/semi-finished.php" class="back-to-menu-btn">Заготовки</a>
+                        <a href="/admin/stocktake.php" class="back-to-menu-btn">Инвент.</a>
                         <a href="/admin/vsd.php" class="back-to-menu-btn">ВСД</a>
                         <a href="/admin/egais.php" class="back-to-menu-btn">ЕГАИС</a>
                     <?php endif; ?>
