@@ -60,6 +60,10 @@ Toggle «Алкоголь (171-ФЗ)» + поле «АСНА код» (пока�
 - Использует существующие классы: `.admin-section-card`, `.admin-pane-header`, `.design-modal`, `.checkout-btn`, `.admin-checkout-btn`+`.cancel`, `.inv-edit-form`/`.inv-edit-field`, `.inv-table`/`.vsd-status-badge`, `.recipe-save-msg-success/error`.
 - Embedded JSON для алко-ингредиентов в admin/egais.php: `<script type="application/json" id="egaisAlcIngredients" nonce>` — статический data-payload, не выполняется как JS, CSP-compliant.
 
+## Polish (Phase 39.1, v3.6.1)
+
+Bottle-open modal изначально получал inline-layout (Phase 35.1 polish был scoped только на 4 ID; `#bottleOpenModal` забыл добавить). Расширил селекторы в `css/employee-shift.css` — теперь форма consistent.
+
 ## Verification
 
 1. Включить «Алкоголь (171-ФЗ)» на ингредиенте «Виски Jameson» в /admin/inventory.php → edit. Указать АСНА код. Сохранить.
