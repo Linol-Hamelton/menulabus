@@ -136,6 +136,10 @@ curl -u odata_xxx:plaintext_key \
 4. Toggle «Выключить интеграцию». curl с правильными creds → 401 (enabled=0).
 5. Toggle обратно. Curl снова работает. last_used_at обновляется в UI.
 
+## Известная гача в /owner.php
+
+Tab «Пользователи» (`tab=users`) использует `foreach ($users as $user)` — после loop'а переменная `$user` глобально перетёрта последним customer в массиве. Любой partial после tab=users (включая `owner_integrations_section.php`) должен читать роль из `$_SESSION['user_role']`, а не из `$user['role']`. Сама страница уже gated через `$required_role='owner'` в верхушке owner.php — этот session-check — defence in depth.
+
 ## Rollback
 
 Atomic commit. `git revert <sha>`. Таблица `odata_credentials` остаётся в схеме безвредно.
