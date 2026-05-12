@@ -88,6 +88,7 @@ $fmtMoney = static function ($value): string {
             </div>
             <div class="shift-dock-actions">
                 <?php if ($canCloseShift): ?>
+                    <button type="button" class="admin-checkout-btn js-shift-bottle">Вскрыть бутылку</button>
                     <button type="button" class="admin-checkout-btn js-shift-encash">Инкассация</button>
                     <button type="button" class="checkout-btn js-shift-close">Закрыть смену</button>
                 <?php endif; ?>
@@ -261,6 +262,52 @@ $fmtMoney = static function ($value): string {
         <footer class="modal-foot">
             <button type="button" class="admin-checkout-btn cancel" data-refund-modal-close>Отмена</button>
             <button type="button" class="checkout-btn" id="orderRefundSubmit">Оформить возврат</button>
+        </footer>
+    </div>
+</dialog>
+
+<!-- Modal: Phase 39 — вскрытие бутылки (alc_openings) -->
+<?php
+// Pre-fetch alcohol ingredients so the modal has its options.
+$alcDockIngredients = [];
+if (method_exists($db, 'listAlcoholIngredients')) {
+    try { $alcDockIngredients = $db->listAlcoholIngredients(); } catch (Throwable $ignored) {}
+}
+?>
+<dialog id="bottleOpenModal" class="design-modal" aria-labelledby="bottleOpenModalTitle">
+    <div class="modal-card">
+        <header class="modal-head">
+            <div>
+                <h2 id="bottleOpenModalTitle" class="modal-title">Вскрыть бутылку</h2>
+                <p class="modal-subtitle">Акт вскрытия по 171-ФЗ. Привязка к открытой смене — автоматически.</p>
+            </div>
+            <button type="button" class="modal-close" data-shift-modal-close aria-label="Закрыть">×</button>
+        </header>
+        <form class="modal-body inv-edit-form" id="bottleOpenForm">
+            <label class="inv-edit-field">
+                <span class="inv-edit-label">Продукт</span>
+                <select id="bottleOpenIngredient" required>
+                    <option value="">— выберите —</option>
+                    <?php foreach ($alcDockIngredients as $a): ?>
+                        <option value="<?= (int)$a['id'] ?>" data-code="<?= htmlspecialchars((string)($a['alc_code'] ?? '')) ?>">
+                            <?= htmlspecialchars((string)$a['name']) ?><?= !empty($a['alc_code']) ? ' · ' . htmlspecialchars((string)$a['alc_code']) : '' ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+            <label class="inv-edit-field">
+                <span class="inv-edit-label">Объём бутылки, мл</span>
+                <input type="number" id="bottleOpenVolume" value="750" min="1" step="1" required>
+            </label>
+            <label class="inv-edit-field">
+                <span class="inv-edit-label">Заметки</span>
+                <input type="text" id="bottleOpenNotes" maxlength="500" placeholder="опционально">
+            </label>
+            <div id="bottleOpenMsg" class="recipe-save-msg" hidden></div>
+        </form>
+        <footer class="modal-foot">
+            <button type="button" class="admin-checkout-btn cancel" data-shift-modal-close>Отмена</button>
+            <button type="button" class="checkout-btn" id="bottleOpenSubmit">Вскрыть</button>
         </footer>
     </div>
 </dialog>

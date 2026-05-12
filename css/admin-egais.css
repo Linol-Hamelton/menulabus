@@ -1,0 +1,75 @@
+/* css/admin-egais.css — Phase 39 (ЕГАИС).
+ *
+ * Tab strip + invoice-items list layout. Inherits everything else
+ * from admin-inventory.css / admin-design-modals.css / admin-vsd.css.
+ */
+
+.egais-tabs {
+    display: flex;
+    gap: 8px;
+    margin: 14px 0;
+    border-bottom: 1px solid var(--ui-divider, #e5e7eb);
+}
+
+.egais-tab {
+    padding: 8px 16px;
+    text-decoration: none;
+    color: var(--ui-text-muted, #6b7280);
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+}
+.egais-tab:hover { color: var(--text, #111827); }
+.egais-tab.is-active {
+    color: var(--text, #111827);
+    border-bottom-color: #dc2626;
+    font-weight: 600;
+}
+
+.egais-inn {
+    display: block;
+    color: var(--ui-text-muted, #6b7280);
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+/* Invoice items list inside create-modal */
+.egais-items {
+    display: grid;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.egais-items-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.egais-items-head .admin-checkout-btn {
+    padding: 5px 10px;
+    font-size: 13px;
+}
+
+.egais-item-row {
+    align-items: end;
+    padding: 8px;
+    border: 1px solid var(--ui-divider, #e5e7eb);
+    border-radius: 8px;
+    background: var(--ui-surface-muted, #f9fafb);
+    flex-wrap: wrap;
+}
+.egais-item-row .inv-edit-field { flex: 1 1 100px; }
+.egais-item-row .js-egais-item-remove {
+    padding: 6px 10px;
+    font-size: 14px;
+    line-height: 1;
+    align-self: end;
+}
+
+@media (max-width: 720px) {
+    .egais-tabs { flex-wrap: wrap; }
+    .egais-tab { flex: 1 1 auto; text-align: center; }
+    .egais-item-row { gap: 8px; }
+    .egais-item-row .inv-edit-field { flex: 1 1 45%; }
+}

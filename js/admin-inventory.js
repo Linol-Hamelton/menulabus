@@ -472,6 +472,14 @@
         if (requiresVsd) {
             requiresVsd.checked = (tr.getAttribute('data-requires-vsd') === '1');
         }
+        var isAlc = document.getElementById('invEditIsAlcohol');
+        var alcCodeWrap = document.getElementById('invEditAlcCodeWrap');
+        var alcCode = document.getElementById('invEditAlcCode');
+        if (isAlc) {
+            isAlc.checked = (tr.getAttribute('data-is-alcohol') === '1');
+            if (alcCodeWrap) alcCodeWrap.hidden = !isAlc.checked;
+        }
+        if (alcCode) alcCode.value = tr.getAttribute('data-alc-code') || '';
         try { editModal.showModal(); } catch (_) { editModal.setAttribute('open', ''); }
     }
 
@@ -489,6 +497,14 @@
             if (!editUnitOtherWrap.hidden && editUnitOther) editUnitOther.focus();
         });
     }
+    // Phase 39: toggle alc_code field visibility based on is_alcohol checkbox
+    var isAlcCheckbox = document.getElementById('invEditIsAlcohol');
+    var alcCodeWrapEl = document.getElementById('invEditAlcCodeWrap');
+    if (isAlcCheckbox && alcCodeWrapEl) {
+        isAlcCheckbox.addEventListener('change', function () {
+            alcCodeWrapEl.hidden = !isAlcCheckbox.checked;
+        });
+    }
     if (editSave) {
         editSave.addEventListener('click', function () {
             var id = parseInt(editIdInput.value || '0', 10);
@@ -504,6 +520,10 @@
             var stockQty = parseFloat(editStockRO.textContent || '0') || 0;
             var requiresVsdEl = document.getElementById('invEditRequiresVsd');
             var requiresVsd = !!(requiresVsdEl && requiresVsdEl.checked);
+            var isAlcEl = document.getElementById('invEditIsAlcohol');
+            var alcCodeEl = document.getElementById('invEditAlcCode');
+            var isAlcohol = !!(isAlcEl && isAlcEl.checked);
+            var alcCodeVal = (alcCodeEl && alcCodeEl.value || '').trim();
             editSave.disabled = true;
             api({
                 action: 'save_ingredient',
@@ -532,6 +552,25 @@
                         action: 'toggle_requires',
                         ingredient_id: id,
                         requires: requiresVsd,
+                        csrf_token: csrfToken,
+                    }),
+                });
+            }).then(function (res) {
+                if (res === null) return null;
+                // Phase 39: persist is_alcohol + alc_code via /api/save-egais.php
+                return fetch('/api/save-egais.php', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'toggle_alcohol',
+                        ingredient_id: id,
+                        is_alcohol: isAlcohol,
+                        alc_code: alcCodeVal,
                         csrf_token: csrfToken,
                     }),
                 });

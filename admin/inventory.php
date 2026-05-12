@@ -279,6 +279,8 @@ $fmtCost = static function ($v): string {
                                 data-supplier-id="<?= $i['supplier_id'] !== null ? (int)$i['supplier_id'] : '' ?>"
                                 data-stock-status="<?= htmlspecialchars($status) ?>"
                                 data-requires-vsd="<?= !empty($i['requires_vsd']) ? '1' : '0' ?>"
+                                data-is-alcohol="<?= !empty($i['is_alcohol']) ? '1' : '0' ?>"
+                                data-alc-code="<?= htmlspecialchars((string)($i['alc_code'] ?? '')) ?>"
                                 class="<?= $isArchived ? 'inv-row-archived' : '' ?> <?= $isLow ? 'inv-row-low' : '' ?>">
                                 <td class="inv-col-check"><input type="checkbox" class="inv-row-check" aria-label="Выбрать строку"></td>
                                 <td>
@@ -610,6 +612,19 @@ $fmtCost = static function ($v): string {
                             <input type="checkbox" id="invEditRequiresVsd">
                             <span>Требует ВСД (мясо/рыба/молочка по 243-ФЗ)</span>
                         </span>
+                    </label>
+                </div>
+                <div class="inv-edit-row">
+                    <label class="inv-edit-field inv-edit-field--checkbox">
+                        <span class="inv-edit-label">ЕГАИС</span>
+                        <span class="inv-vsd-toggle-wrap">
+                            <input type="checkbox" id="invEditIsAlcohol">
+                            <span>Алкоголь (171-ФЗ)</span>
+                        </span>
+                    </label>
+                    <label class="inv-edit-field" id="invEditAlcCodeWrap" hidden>
+                        <span class="inv-edit-label">АСНА код</span>
+                        <input type="text" id="invEditAlcCode" maxlength="64" placeholder="напр. 0123456789012345678">
                     </label>
                 </div>
                 <p class="inv-edit-hint">Чтобы изменить остаток — используйте «± Остаток» на карточке ингредиента, тогда движение попадёт в аудит-лог. ВСД-записи редактируются на странице <a href="/admin/vsd.php">ВСД</a>.</p>

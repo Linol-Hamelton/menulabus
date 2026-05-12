@@ -7708,6 +7708,421 @@ class Database
         }
     }
 
+    // =========================================================================
+    // Phase 39 — ЕГАИС (alc_invoices / alc_invoice_items / alc_openings, manual MVP)
+    // =========================================================================
+
+    public function setIngredientAlcohol(int $ingredientId, bool $isAlcohol, ?string $alcCode = null): bool
+    {
+        $alcCode = $alcCode !== null ? trim($alcCode) : null;
+        if ($alcCode === '') $alcCode = null;
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE ingredients
+                SET is_alcohol = :v, alc_code = :code, updated_at = NOW()
+                WHERE id = :id
+            ");
+            $stmt->execute([
+                ':v'    => $isAlcohol ? 1 : 0,
+                ':code' => $isAlcohol ? $alcCode : null,
+                ':id'   => $ingredientId,
+            ]);
+            return $stmt->rowCount() >= 0;
+        } catch (PDOException $e) {
+            error_log('setIngredientAlcohol error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function listAlcInvoices(
+        ?string $status = null,
+        ?string $supplierInn = null,
+        ?string $fromDate = null,
+        ?string $toDate = null,
+        int $limit = 200
+    ): array {
+        $limit = max(1, min(500, $limit));
+        $sql = "
+            SELECT inv.id, inv.ttn_number, inv.ttn_date, inv.supplier_inn, inv.supplier_name,
+                   inv.total_amount, inv.status, inv.accepted_at, inv.accepted_by,
+                   inv.notes, inv.created_at, inv.updated_at,
+                   u.name AS accepter_name,
+                   (SELECT COUNT(*) FROM alc_invoice_items i WHERE i.invoice_id = inv.id) AS items_count
+            FROM alc_invoices inv
+            LEFT JOIN users u ON u.id = inv.accepted_by
+            WHERE 1=1
+        ";
+        $params = [];
+        if ($status !== null && in_array($status, ['pending', 'accepted', 'rejected'], true)) {
+            $sql .= " AND inv.status = :status";
+            $params[':status'] = $status;
+        }
+        if ($supplierInn !== null && $supplierInn !== '') {
+            $sql .= " AND inv.supplier_inn = :inn";
+            $params[':inn'] = $supplierInn;
+        }
+        if ($fromDate !== null && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fromDate)) {
+            $sql .= " AND inv.ttn_date >= :from";
+            $params[':from'] = $fromDate;
+        }
+        if ($toDate !== null && preg_match('/^\d{4}-\d{2}-\d{2}$/', $toDate)) {
+            $sql .= " AND inv.ttn_date <= :to";
+            $params[':to'] = $toDate;
+        }
+        $sql .= " ORDER BY inv.id DESC LIMIT {$limit}";
+        try {
+            $stmt = $this->prepareCached($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listAlcInvoices error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getAlcInvoice(int $id): ?array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, ttn_number, ttn_date, supplier_inn, supplier_name,
+                       total_amount, status, accepted_at, accepted_by, notes,
+                       created_at, updated_at
+                FROM alc_invoices WHERE id = :id LIMIT 1
+            ");
+            $stmt->execute([':id' => $id]);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getAlcInvoice error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getAlcInvoiceItems(int $invoiceId): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT i.id, i.invoice_id, i.ingredient_id, i.alc_code, i.name,
+                       i.quantity, i.unit, i.price_per_unit,
+                       ing.name AS ingredient_name
+                FROM alc_invoice_items i
+                LEFT JOIN ingredients ing ON ing.id = i.ingredient_id
+                WHERE i.invoice_id = :iid
+                ORDER BY i.id ASC
+            ");
+            $stmt->execute([':iid' => $invoiceId]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('getAlcInvoiceItems error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Save invoice + replace items. Returns invoice ID or false on failure.
+     * $items: [['ingredient_id'=>int|null, 'alc_code'=>string, 'name'=>?string,
+     *          'quantity'=>float, 'unit'=>?string, 'price_per_unit'=>float], ...]
+     */
+    public function saveAlcInvoice(
+        ?int $id,
+        string $ttnNumber,
+        string $ttnDate,
+        string $supplierInn,
+        ?string $supplierName,
+        float $totalAmount,
+        array $items,
+        ?string $notes = null
+    ) {
+        $ttnNumber = trim($ttnNumber);
+        $supplierInn = trim($supplierInn);
+        if ($ttnNumber === '' || $supplierInn === '') return false;
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $ttnDate)) return false;
+        if (!preg_match('/^(\d{10}|\d{12})$/', $supplierInn)) return false;
+
+        $supplierName = $supplierName !== null ? trim($supplierName) : null;
+        if ($supplierName === '') $supplierName = null;
+        $notes = $notes !== null ? trim($notes) : null;
+        if ($notes === '') $notes = null;
+        $totalAmount = max(0.0, (float)$totalAmount);
+
+        try {
+            $this->connection->beginTransaction();
+            if ($id !== null && $id > 0) {
+                $stmt = $this->prepareCached("
+                    UPDATE alc_invoices SET
+                        ttn_number = :num, ttn_date = :dt,
+                        supplier_inn = :inn, supplier_name = :sname,
+                        total_amount = :total, notes = :notes,
+                        updated_at = NOW()
+                    WHERE id = :id
+                ");
+                $stmt->execute([
+                    ':num'   => $ttnNumber,
+                    ':dt'    => $ttnDate,
+                    ':inn'   => $supplierInn,
+                    ':sname' => $supplierName,
+                    ':total' => $totalAmount,
+                    ':notes' => $notes,
+                    ':id'    => $id,
+                ]);
+                // Replace items.
+                $del = $this->prepareCached("DELETE FROM alc_invoice_items WHERE invoice_id = :iid");
+                $del->execute([':iid' => $id]);
+                $invoiceId = $id;
+            } else {
+                $stmt = $this->prepareCached("
+                    INSERT INTO alc_invoices
+                        (ttn_number, ttn_date, supplier_inn, supplier_name, total_amount,
+                         status, notes, created_at, updated_at)
+                    VALUES (:num, :dt, :inn, :sname, :total, 'pending', :notes, NOW(), NOW())
+                ");
+                $stmt->execute([
+                    ':num'   => $ttnNumber,
+                    ':dt'    => $ttnDate,
+                    ':inn'   => $supplierInn,
+                    ':sname' => $supplierName,
+                    ':total' => $totalAmount,
+                    ':notes' => $notes,
+                ]);
+                $invoiceId = (int)$this->connection->lastInsertId();
+            }
+
+            $ins = $this->prepareCached("
+                INSERT INTO alc_invoice_items
+                    (invoice_id, ingredient_id, alc_code, name, quantity, unit, price_per_unit)
+                VALUES (:iid, :ing, :code, :name, :qty, :unit, :price)
+            ");
+            foreach ($items as $it) {
+                $alcCode = trim((string)($it['alc_code'] ?? ''));
+                if ($alcCode === '') continue;
+                $ins->execute([
+                    ':iid'   => $invoiceId,
+                    ':ing'   => isset($it['ingredient_id']) && $it['ingredient_id'] !== '' ? (int)$it['ingredient_id'] : null,
+                    ':code'  => mb_substr($alcCode, 0, 64),
+                    ':name'  => isset($it['name']) && $it['name'] !== '' ? mb_substr((string)$it['name'], 0, 255) : null,
+                    ':qty'   => max(0.0, (float)($it['quantity'] ?? 0)),
+                    ':unit'  => isset($it['unit']) && $it['unit'] !== '' ? mb_substr((string)$it['unit'], 0, 16) : null,
+                    ':price' => max(0.0, (float)($it['price_per_unit'] ?? 0)),
+                ]);
+            }
+            $this->connection->commit();
+            return $invoiceId;
+        } catch (PDOException $e) {
+            try { $this->connection->rollBack(); } catch (Throwable $ignored) {}
+            error_log('saveAlcInvoice error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function acceptAlcInvoice(int $invoiceId, int $userId, bool $applyToStock = true): bool
+    {
+        $inv = $this->getAlcInvoice($invoiceId);
+        if (!$inv || $inv['status'] !== 'pending') return false;
+        try {
+            $this->connection->beginTransaction();
+            $stmt = $this->prepareCached("
+                UPDATE alc_invoices
+                SET status = 'accepted', accepted_at = NOW(), accepted_by = :uid, updated_at = NOW()
+                WHERE id = :id AND status = 'pending'
+            ");
+            $stmt->execute([':uid' => $userId, ':id' => $invoiceId]);
+            if ($stmt->rowCount() === 0) {
+                $this->connection->rollBack();
+                return false;
+            }
+            if ($applyToStock) {
+                $items = $this->getAlcInvoiceItems($invoiceId);
+                $upd = $this->prepareCached(
+                    "UPDATE ingredients SET stock_qty = stock_qty + :qty WHERE id = :iid AND archived_at IS NULL"
+                );
+                $log = $this->prepareCached("
+                    INSERT INTO stock_movements (ingredient_id, delta, reason, note, created_by, created_at)
+                    VALUES (:iid, :delta, 'receipt', :note, :uid, NOW())
+                ");
+                foreach ($items as $it) {
+                    if (empty($it['ingredient_id'])) continue;
+                    $qty = (float)$it['quantity'];
+                    if ($qty <= 0) continue;
+                    $upd->execute([':qty' => $qty, ':iid' => (int)$it['ingredient_id']]);
+                    $log->execute([
+                        ':iid'   => (int)$it['ingredient_id'],
+                        ':delta' => $qty,
+                        ':note'  => 'ТТН №' . $inv['ttn_number'] . ' (АСНА ' . (string)$it['alc_code'] . ')',
+                        ':uid'   => $userId,
+                    ]);
+                }
+            }
+            $this->connection->commit();
+            return true;
+        } catch (PDOException $e) {
+            try { $this->connection->rollBack(); } catch (Throwable $ignored) {}
+            error_log('acceptAlcInvoice error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function rejectAlcInvoice(int $invoiceId, int $userId, ?string $reason = null): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                UPDATE alc_invoices
+                SET status = 'rejected',
+                    accepted_at = NOW(),
+                    accepted_by = :uid,
+                    notes = CASE WHEN :reason IS NULL THEN notes
+                                 ELSE CONCAT(COALESCE(notes,''), CASE WHEN notes IS NULL OR notes='' THEN '' ELSE '\n' END, 'Отклонено: ', :reason2) END,
+                    updated_at = NOW()
+                WHERE id = :id AND status = 'pending'
+            ");
+            $stmt->execute([
+                ':uid'    => $userId,
+                ':reason' => $reason,
+                ':reason2'=> $reason,
+                ':id'     => $invoiceId,
+            ]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('rejectAlcInvoice error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function deleteAlcInvoice(int $invoiceId): bool
+    {
+        try {
+            $stmt = $this->prepareCached(
+                "DELETE FROM alc_invoices WHERE id = :id AND status = 'pending'"
+            );
+            $stmt->execute([':id' => $invoiceId]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('deleteAlcInvoice error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function saveAlcOpening(int $ingredientId, int $bottleVolumeMl, int $userId, ?int $shiftId = null, ?string $notes = null): int|false
+    {
+        $bottleVolumeMl = max(1, $bottleVolumeMl);
+        try {
+            $stmt = $this->prepareCached("
+                INSERT INTO alc_openings
+                    (ingredient_id, bottle_volume_ml, opened_at, opened_by, shift_id, notes)
+                VALUES (:iid, :vol, NOW(), :uid, :sid, :notes)
+            ");
+            $stmt->execute([
+                ':iid'   => $ingredientId,
+                ':vol'   => $bottleVolumeMl,
+                ':uid'   => $userId,
+                ':sid'   => $shiftId,
+                ':notes' => $notes !== null && $notes !== '' ? $notes : null,
+            ]);
+            return (int)$this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('saveAlcOpening error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function listAlcOpenings(?int $shiftId = null, int $limit = 200): array
+    {
+        $limit = max(1, min(500, $limit));
+        $sql = "
+            SELECT o.id, o.ingredient_id, o.bottle_volume_ml, o.opened_at,
+                   o.opened_by, o.shift_id, o.notes,
+                   ing.name AS ingredient_name, ing.alc_code,
+                   u.name AS opener_name
+            FROM alc_openings o
+            LEFT JOIN ingredients ing ON ing.id = o.ingredient_id
+            LEFT JOIN users u ON u.id = o.opened_by
+            WHERE 1=1
+        ";
+        $params = [];
+        if ($shiftId !== null && $shiftId > 0) {
+            $sql .= " AND o.shift_id = :sid";
+            $params[':sid'] = $shiftId;
+        }
+        $sql .= " ORDER BY o.id DESC LIMIT {$limit}";
+        try {
+            $stmt = $this->prepareCached($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listAlcOpenings error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function listAlcoholIngredients(): array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, name, unit, alc_code, stock_qty, is_alcohol
+                FROM ingredients
+                WHERE is_alcohol = 1 AND archived_at IS NULL
+                ORDER BY name ASC
+            ");
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('listAlcoholIngredients error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Отчёт об остатках ЕГАИС за период: каждый алкогольный ингредиент —
+     * принято по ТТН (accepted в окне), вскрыто бутылок, текущий stock_qty.
+     */
+    public function getEgaisStockReport(string $fromDate, string $toDate): array
+    {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fromDate) ||
+            !preg_match('/^\d{4}-\d{2}-\d{2}$/', $toDate)) {
+            return [];
+        }
+        try {
+            $stmt = $this->prepareCached("
+                SELECT
+                    ing.id, ing.name, ing.alc_code, ing.unit, ing.stock_qty,
+                    COALESCE(rec.received, 0) AS received_qty,
+                    COALESCE(op.opened_count, 0) AS opened_count
+                FROM ingredients ing
+                LEFT JOIN (
+                    SELECT i.ingredient_id, SUM(i.quantity) AS received
+                    FROM alc_invoice_items i
+                    JOIN alc_invoices inv ON inv.id = i.invoice_id
+                    WHERE inv.status = 'accepted'
+                      AND inv.accepted_at IS NOT NULL
+                      AND DATE(inv.accepted_at) BETWEEN :from AND :to
+                    GROUP BY i.ingredient_id
+                ) rec ON rec.ingredient_id = ing.id
+                LEFT JOIN (
+                    SELECT ingredient_id, COUNT(*) AS opened_count
+                    FROM alc_openings
+                    WHERE DATE(opened_at) BETWEEN :from2 AND :to2
+                    GROUP BY ingredient_id
+                ) op ON op.ingredient_id = ing.id
+                WHERE ing.is_alcohol = 1 AND ing.archived_at IS NULL
+                ORDER BY ing.name ASC
+            ");
+            $stmt->execute([
+                ':from'  => $fromDate,
+                ':to'    => $toDate,
+                ':from2' => $fromDate,
+                ':to2'   => $toDate,
+            ]);
+            $rows = $stmt->fetchAll();
+            return is_array($rows) ? $rows : [];
+        } catch (PDOException $e) {
+            error_log('getEgaisStockReport error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getConnection()
     {
         return $this->connection;

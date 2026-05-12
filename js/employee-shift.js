@@ -10,6 +10,7 @@
     var openModal   = document.getElementById('shiftOpenModal');
     var closeModal  = document.getElementById('shiftCloseModal');
     var encashModal = document.getElementById('shiftEncashModal');
+    var bottleModal = document.getElementById('bottleOpenModal');
 
     function api(action, body) {
         var payload = Object.assign({ action: action, csrf_token: csrfToken }, body || {});
@@ -68,6 +69,7 @@
     bindClose(openModal);
     bindClose(closeModal);
     bindClose(encashModal);
+    bindClose(bottleModal);
 
     function fmtMoney(value) {
         var n = Number(value || 0);
@@ -209,6 +211,63 @@
             }).catch(function (e) {
                 btnEncashSubmit.disabled = false;
                 showMsg('shiftEncashMsg', 'Сеть: ' + (e && e.message || ''), true);
+            });
+        });
+    }
+
+    // Phase 39: Вскрыть бутылку (alc_openings) — calls /api/save-egais.php
+    var btnBottle = dock.querySelector('.js-shift-bottle');
+    if (btnBottle && bottleModal) {
+        btnBottle.addEventListener('click', function () {
+            showMsg('bottleOpenMsg', '');
+            var sel = document.getElementById('bottleOpenIngredient');
+            if (sel) sel.value = '';
+            var vol = document.getElementById('bottleOpenVolume');
+            if (vol) vol.value = '750';
+            var notes = document.getElementById('bottleOpenNotes');
+            if (notes) notes.value = '';
+            openDialog(bottleModal);
+        });
+    }
+    var btnBottleSubmit = document.getElementById('bottleOpenSubmit');
+    if (btnBottleSubmit) {
+        btnBottleSubmit.addEventListener('click', function () {
+            var ingId = parseInt((document.getElementById('bottleOpenIngredient') || {}).value || '0', 10);
+            if (!ingId) { showMsg('bottleOpenMsg', 'Выберите продукт.', true); return; }
+            var vol = parseInt((document.getElementById('bottleOpenVolume') || {}).value || '0', 10);
+            if (!isFinite(vol) || vol <= 0) { showMsg('bottleOpenMsg', 'Объём должен быть > 0.', true); return; }
+            var notes = ((document.getElementById('bottleOpenNotes') || {}).value || '').trim();
+            btnBottleSubmit.disabled = true;
+            fetch('/api/save-egais.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'open_bottle',
+                    ingredient_id: ingId,
+                    bottle_volume_ml: vol,
+                    notes: notes,
+                    csrf_token: csrfToken,
+                }),
+            }).then(function (r) {
+                return r.json().then(function (d) { return { ok: r.ok, data: d }; }, function () {
+                    return { ok: r.ok, data: { success: false, error: 'invalid_json' } };
+                });
+            }).then(function (res) {
+                btnBottleSubmit.disabled = false;
+                if (res.ok && res.data && res.data.success) {
+                    showMsg('bottleOpenMsg', 'Бутылка вскрыта (акт записан).', false);
+                    setTimeout(function () { closeDialog(bottleModal); }, 600);
+                } else {
+                    showMsg('bottleOpenMsg', 'Ошибка: ' + ((res.data && res.data.error) || 'unknown'), true);
+                }
+            }).catch(function (e) {
+                btnBottleSubmit.disabled = false;
+                showMsg('bottleOpenMsg', 'Сеть: ' + (e && e.message || ''), true);
             });
         });
     }
