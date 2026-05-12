@@ -32,9 +32,10 @@ interface AggregatorAdapter
      *     delivery_address?: string,
      *   }
      *
-     * @param \Database $db  for menu_items.aggregator_*_id lookup
+     * @param object $db  any object with a `findMenuItemByAggregatorId(string, string): ?array`
+     *                    method (typically \Database, but duck-typed for unit tests).
      */
-    public static function normalize(array $raw, \Database $db): array;
+    public static function normalize(array $raw, object $db): array;
 
     /**
      * Map our internal status → aggregator's status string for outbound push.

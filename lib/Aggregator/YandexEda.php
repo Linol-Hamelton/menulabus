@@ -38,7 +38,7 @@ final class YandexEda implements AggregatorAdapter
         return hash_equals($expected, $signatureHeader);
     }
 
-    public static function normalize(array $raw, \Database $db): array
+    public static function normalize(array $raw, object $db): array
     {
         $items = [];
         foreach (($raw['items'] ?? []) as $i) {

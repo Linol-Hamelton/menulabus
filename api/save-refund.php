@@ -22,6 +22,7 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../lib/Csrf.php';
+require_once __DIR__ . '/../lib/AuditLog.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -109,6 +110,13 @@ if (!$refundId) {
     echo json_encode(['success' => false, 'error' => 'create_failed']);
     exit;
 }
+AuditLog::record('order.refund', 'order', (string)$orderId, [
+    'refund_id'  => $refundId,
+    'amount'     => $amount,
+    'is_partial' => $isPartial,
+    'reason'     => $reason,
+    'shift_id'   => $shiftId,
+]);
 
 // If a full refund (after this call) leaves nothing remaining → mark order refunded.
 if (!$isPartial || abs(($alreadyRefunded + $amount) - $total) < 0.01) {

@@ -17,6 +17,7 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../lib/Csrf.php';
+require_once __DIR__ . '/../lib/AuditLog.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -53,6 +54,7 @@ switch ($action) {
         $notes = isset($input['notes']) && $input['notes'] !== '' ? (string)$input['notes'] : null;
         $newId = $db->openCashierShift($userId, $openingCash, null, $notes);
         if (!$newId) { shift_fail(500, 'open_failed'); }
+        AuditLog::record('cashier_shift.open', 'cashier_shift', (string)$newId, ['opening_cash' => $openingCash]);
         echo json_encode(['success' => true, 'shift_id' => $newId]);
         break;
     }
@@ -70,6 +72,7 @@ switch ($action) {
         $notes = isset($input['notes']) && $input['notes'] !== '' ? (string)$input['notes'] : null;
         $ok = $db->closeCashierShift($shiftId, $closingCash, $notes);
         if (!$ok) { shift_fail(500, 'close_failed'); }
+        AuditLog::record('cashier_shift.close', 'cashier_shift', (string)$shiftId, ['closing_cash' => $closingCash]);
         echo json_encode([
             'success' => true,
             'report' => $db->getShiftReport($shiftId),
@@ -90,6 +93,7 @@ switch ($action) {
         $reason = (string)($input['reason'] ?? 'other');
         $ok = $db->addEncashment($shiftId, $amount, $reason);
         if (!$ok) { shift_fail(400, 'encash_failed'); }
+        AuditLog::record('cashier_shift.encash', 'cashier_shift', (string)$shiftId, ['amount' => $amount, 'reason' => $reason]);
         echo json_encode([
             'success' => true,
             'report' => $db->getShiftReport($shiftId),

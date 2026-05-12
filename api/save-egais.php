@@ -18,6 +18,7 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../lib/Csrf.php';
+require_once __DIR__ . '/../lib/AuditLog.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -102,6 +103,7 @@ switch ($action) {
         if (!$db->acceptAlcInvoice($id, $userId, $applyToStock)) {
             egais_fail(409, 'cannot_accept');
         }
+        AuditLog::record('egais.invoice.accept', 'alc_invoice', (string)$id, ['apply_to_stock' => $applyToStock]);
         echo json_encode(['success' => true]);
         break;
     }
@@ -115,6 +117,7 @@ switch ($action) {
         if (!$db->rejectAlcInvoice($id, $userId, $reason)) {
             egais_fail(409, 'cannot_reject');
         }
+        AuditLog::record('egais.invoice.reject', 'alc_invoice', (string)$id, ['reason' => $reason]);
         echo json_encode(['success' => true]);
         break;
     }
@@ -141,6 +144,11 @@ switch ($action) {
         $shiftId = $shift ? (int)$shift['id'] : null;
         $opId = $db->saveAlcOpening($ingredientId, $volume, $userId, $shiftId, $notes !== '' ? $notes : null);
         if (!$opId) { egais_fail(500, 'save_failed'); }
+        AuditLog::record('egais.bottle_open', 'alc_opening', (string)$opId, [
+            'ingredient_id' => $ingredientId,
+            'volume_ml'     => $volume,
+            'shift_id'      => $shiftId,
+        ]);
         echo json_encode(['success' => true, 'id' => $opId, 'shift_id' => $shiftId]);
         break;
     }

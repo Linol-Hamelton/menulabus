@@ -17,6 +17,7 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../lib/Csrf.php';
+require_once __DIR__ . '/../lib/AuditLog.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -59,6 +60,11 @@ switch ($action) {
             echo json_encode(['success' => false, 'error' => 'save_failed']);
             exit;
         }
+        AuditLog::record('aggregator.settings.save', 'aggregator_settings', $provider, [
+            'enabled'    => $enabled,
+            'secret_set' => $secret !== null && $secret !== '',
+            'key_set'    => $apiKey !== '',
+        ]);
         // Return fresh settings so UI can show the (possibly auto-generated) secret.
         $fresh = $db->getAggregatorSettings($provider);
         echo json_encode([
@@ -82,6 +88,7 @@ switch ($action) {
             echo json_encode(['success' => false, 'error' => 'rotate_failed']);
             exit;
         }
+        AuditLog::record('aggregator.secret.rotate', 'aggregator_settings', $provider, []);
         echo json_encode(['success' => true, 'webhook_secret' => $newSecret]);
         break;
     }

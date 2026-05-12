@@ -12,6 +12,7 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../lib/Csrf.php';
+require_once __DIR__ . '/../lib/AuditLog.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -49,6 +50,9 @@ switch ($action) {
         if ($existing && (int)$existing['enabled'] !== 1) {
             $db->setOdataEnabled(true);
         }
+        AuditLog::record('odata.creds.rotate', 'odata_credentials', $resp['username'], [
+            'auto_enabled' => $existing && (int)$existing['enabled'] !== 1,
+        ]);
         echo json_encode([
             'success'  => true,
             'username' => $resp['username'],
@@ -64,6 +68,7 @@ switch ($action) {
             echo json_encode(['success' => false, 'error' => 'no_credentials']);
             exit;
         }
+        AuditLog::record('odata.creds.' . $action, 'odata_credentials', null, []);
         echo json_encode(['success' => true]);
         break;
     }

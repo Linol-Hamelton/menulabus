@@ -16,6 +16,7 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../lib/Csrf.php';
+require_once __DIR__ . '/../lib/AuditLog.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -87,6 +88,7 @@ switch ($action) {
         if (!$db->acceptVsd($id, $userId, $applyToStock)) {
             vsd_fail(409, 'cannot_accept');
         }
+        AuditLog::record('vsd.accept', 'vsd_record', (string)$id, ['apply_to_stock' => $applyToStock]);
         echo json_encode(['success' => true]);
         break;
     }
@@ -99,6 +101,7 @@ switch ($action) {
         if (!$db->rejectVsd($id, $userId, $reason)) {
             vsd_fail(409, 'cannot_reject');
         }
+        AuditLog::record('vsd.reject', 'vsd_record', (string)$id, ['reason' => $reason]);
         echo json_encode(['success' => true]);
         break;
     }

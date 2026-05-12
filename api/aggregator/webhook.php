@@ -13,6 +13,8 @@
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../lib/Aggregator/YandexEda.php';
 require_once __DIR__ . '/../../lib/Aggregator/DeliveryClub.php';
+require_once __DIR__ . '/../../lib/AuditLog.php';
+require_once __DIR__ . '/../../lib/RateLimiter.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -23,6 +25,17 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $provider = (string)($_GET['provider'] ?? '');
+
+// Rate limit: 60 webhooks per minute per (provider + IP). Real partners
+// don't burst — anything above is either misconfigured client or attacker.
+$clientIp = RateLimiter::clientIp();
+if (!RateLimiter::allow('webhook:' . $provider . ':' . $clientIp, 60, 60)) {
+    http_response_code(429);
+    header('Retry-After: 60');
+    echo json_encode(['ok' => false, 'error' => 'rate_limited']);
+    AuditLog::record('aggregator.webhook.rate_limited', 'aggregator_settings', $provider, ['ip' => $clientIp]);
+    exit;
+}
 $adapters = [
     'yandex_eda'    => \Cleanmenu\Aggregator\YandexEda::class,
     'delivery_club' => \Cleanmenu\Aggregator\DeliveryClub::class,
@@ -87,6 +100,11 @@ try {
         exit;
     }
     $db->touchAggregatorWebhookAt($provider);
+    AuditLog::record('aggregator.webhook.received', 'order', (string)$orderId, [
+        'provider'    => $provider,
+        'external_id' => $normalized['external_id'],
+        'total'       => $normalized['total'] ?? 0,
+    ]);
     echo json_encode([
         'ok'           => true,
         'order_id'     => $orderId,
