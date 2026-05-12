@@ -8123,6 +8123,108 @@ class Database
         }
     }
 
+    // =========================================================================
+    // Phase 37 — OData credentials (1С integration)
+    // =========================================================================
+
+    public function getOdataCreds(): ?array
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, username, api_key_hash, enabled, last_used_at, created_at, updated_at
+                FROM odata_credentials ORDER BY id ASC LIMIT 1
+            ");
+            $stmt->execute();
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } catch (PDOException $e) {
+            error_log('getOdataCreds error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Generate (or rotate) the OData API key. Returns plaintext key — caller
+     * must show it once and discard. DB stores only password_hash().
+     */
+    public function rotateOdataCreds(?string $username = null): ?array
+    {
+        try {
+            $existing = $this->getOdataCreds();
+            $username = trim($username ?? '');
+            if ($username === '') {
+                $username = $existing['username'] ?? ('odata_' . bin2hex(random_bytes(4)));
+            }
+            // Generate a 32-char base64url-ish secret.
+            $plain = rtrim(strtr(base64_encode(random_bytes(24)), '+/', '-_'), '=');
+            $hash = password_hash($plain, PASSWORD_DEFAULT);
+
+            if ($existing) {
+                $stmt = $this->prepareCached("
+                    UPDATE odata_credentials
+                    SET username = :u, api_key_hash = :h, updated_at = NOW()
+                    WHERE id = :id
+                ");
+                $stmt->execute([':u' => $username, ':h' => $hash, ':id' => (int)$existing['id']]);
+            } else {
+                $stmt = $this->prepareCached("
+                    INSERT INTO odata_credentials (username, api_key_hash, enabled, created_at, updated_at)
+                    VALUES (:u, :h, 0, NOW(), NOW())
+                ");
+                $stmt->execute([':u' => $username, ':h' => $hash]);
+            }
+            return ['username' => $username, 'api_key' => $plain];
+        } catch (Throwable $e) {
+            error_log('rotateOdataCreds error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function setOdataEnabled(bool $enabled): bool
+    {
+        try {
+            $existing = $this->getOdataCreds();
+            if (!$existing) return false;
+            $stmt = $this->prepareCached(
+                "UPDATE odata_credentials SET enabled = :e, updated_at = NOW() WHERE id = :id"
+            );
+            $stmt->execute([':e' => $enabled ? 1 : 0, ':id' => (int)$existing['id']]);
+            return true;
+        } catch (PDOException $e) {
+            error_log('setOdataEnabled error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Verify (username, plaintext api_key) pair. Returns true on match
+     * and only when enabled=1. Touches last_used_at on success.
+     */
+    public function verifyOdataAuth(string $username, string $apiKey): bool
+    {
+        try {
+            $stmt = $this->prepareCached("
+                SELECT id, api_key_hash, enabled FROM odata_credentials
+                WHERE username = :u LIMIT 1
+            ");
+            $stmt->execute([':u' => $username]);
+            $row = $stmt->fetch();
+            if (!$row || (int)$row['enabled'] !== 1) return false;
+            if (!password_verify($apiKey, (string)$row['api_key_hash'])) return false;
+            // Touch last_used_at (best-effort; failure should not block auth).
+            try {
+                $upd = $this->prepareCached(
+                    "UPDATE odata_credentials SET last_used_at = NOW() WHERE id = :id"
+                );
+                $upd->execute([':id' => (int)$row['id']]);
+            } catch (Throwable $ignored) {}
+            return true;
+        } catch (PDOException $e) {
+            error_log('verifyOdataAuth error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function getConnection()
     {
         return $this->connection;

@@ -397,6 +397,7 @@ if (!empty($report_data)) {
     <link rel="stylesheet" href="/css/owner-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/owner-fiscal.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/owner-billing.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/owner-integrations.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/hotkeys.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/owner-analytics-v2.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/published-reviews.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
@@ -418,6 +419,7 @@ if (!empty($report_data)) {
                 <button type="button" class="admin-tab-btn <?= $tab === 'analytics-v2' ? 'active' : '' ?>" data-tab="analytics-v2">Аналитика</button>
                 <button type="button" class="admin-tab-btn <?= $tab === 'fiscal' ? 'active' : '' ?>" data-tab="fiscal">Чеки 54-ФЗ</button>
                 <button type="button" class="admin-tab-btn <?= $tab === 'billing' ? 'active' : '' ?>" data-tab="billing">Подписка</button>
+                <button type="button" class="admin-tab-btn <?= $tab === 'integrations' ? 'active' : '' ?>" data-tab="integrations">Интеграции</button>
             </div>
         </div>
         <section class="admin-form-container">
@@ -925,6 +927,11 @@ if (!empty($report_data)) {
             <div class="admin-tab-pane <?= $tab === 'billing' ? 'active' : '' ?>" id="billing">
                 <?php require_once __DIR__ . '/partials/owner_billing_section.php'; ?>
             </div>
+
+            <!-- Phase 37 — integrations tab (1С OData; future home for aggregators) -->
+            <div class="admin-tab-pane <?= $tab === 'integrations' ? 'active' : '' ?>" id="integrations">
+                <?php require_once __DIR__ . '/partials/owner_integrations_section.php'; ?>
+            </div>
         </section>
     </div>
     <textarea id="owner-page-data" hidden><?= htmlspecialchars(json_encode([
@@ -941,6 +948,7 @@ if (!empty($report_data)) {
     <script src="/js/owner-review-moderation.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/push-notifications.min.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
     <script src="/js/mobile-tabs-scroll.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
+    <script src="/js/owner-integrations.js?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>" defer nonce="<?= $scriptNonce ?>"></script>
 </body>
 
 </html>
