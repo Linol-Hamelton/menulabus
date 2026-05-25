@@ -1652,3 +1652,201 @@ body.menu-catalog-page .menu-content,
 body.admin-menu-page .account-form-container {
   scroll-padding-bottom: calc(var(--bottom-tab-rail-clearance) + 18px);
 }
+
+/* =====================================================================
+   L99 Polish — adaptive density (2026-05-25).
+   CSS-only оптимизация отступов / заполняемости пространства / тач-таргетов
+   на разных viewport'ах. Никаких изменений разметки.
+   ===================================================================== */
+
+/* 1. Adaptive shell width — 1180px на ≥1024 хорошо для читаемости,
+      но на FullHD/4K это даёт ~740px пустоты по бокам. Масштабируем. */
+@media (min-width: 1440px) {
+  :root { --shell-max-width: 1280px; }
+}
+@media (min-width: 1600px) {
+  :root { --shell-max-width: 1380px; }
+}
+@media (min-width: 1920px) {
+  :root { --shell-max-width: 1520px; }
+}
+
+/* 2. .back-to-menu-btn внутри admin-pane-header — это secondary nav,
+      не CTA. Делаем outline-style чтобы не конкурировать визуально
+      с основной кнопкой действия на странице (например «+Принять ВСД»). */
+body.admin-page .admin-pane-header .back-to-menu-btn,
+body.account-page .admin-pane-header .back-to-menu-btn {
+  background: transparent;
+  color: rgba(18, 18, 18, 0.78);
+  border: 1px solid rgba(18, 18, 18, 0.16);
+  box-shadow: none;
+  font-weight: 500;
+}
+body.admin-page .admin-pane-header .back-to-menu-btn:hover,
+body.account-page .admin-pane-header .back-to-menu-btn:hover {
+  background: rgba(18, 18, 18, 0.04);
+  color: var(--text, #111827);
+  box-shadow: none;
+}
+
+/* 3. Toolbar: при недостатке ширины «+Принять» button должен переноситься
+      целиком на новую строку, не наплывая на filter-bar. */
+.inv-toolbar {
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+.inv-toolbar > form,
+.inv-toolbar > .vsd-filter-bar {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.inv-toolbar-end {
+  flex: 0 0 auto;
+}
+@media (max-width: 900px) {
+  .inv-toolbar-end {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+  .inv-toolbar-end > .checkout-btn,
+  .inv-toolbar-end > .admin-checkout-btn {
+    width: 100%;
+  }
+}
+
+/* 4. shift-dock на /employee.php: при wide viewport (1280+) метрики
+      должны быть просторнее — иначе всё кучкуется слева. */
+@media (min-width: 1280px) {
+  .shift-dock-row {
+    gap: 28px;
+  }
+  .shift-dock-metrics {
+    gap: 18px 32px;
+  }
+  .shift-dock-actions {
+    gap: 10px;
+  }
+}
+
+/* 5. Modal max-width — `.design-modal .modal-card` имеет дефолт ~720px.
+      При большом viewport длинные форм-ряды (egais items + headers) сжимаются.
+      Даём чуть больше места под широкие модалы. */
+@media (min-width: 1280px) {
+  dialog.design-modal#egaisInvoiceModal .modal-card,
+  dialog.design-modal#sfRecipeModal .modal-card {
+    max-width: 880px;
+  }
+}
+
+/* 6. Card grid на /admin/semi-finished.php — при 1920 рассредоточить
+      больше карточек в ряд (auto-fill уже работает, но min 320px чуть тесно
+      для длинных названий). */
+@media (min-width: 1440px) {
+  .sf-list {
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  }
+}
+
+/* 7. Aggregator mapping table — длинные названия блюд + categories
+      на узких viewport'ах слишком тесно. Wrapping на мобильных. */
+@media (max-width: 720px) {
+  .agg-mapping-table {
+    min-width: 0;
+  }
+  .agg-mapping-table th:nth-child(2),
+  .agg-mapping-table td:nth-child(2) {
+    display: none; /* hide category на mobile — name + ext_id достаточно */
+  }
+}
+
+/* 8. Stocktake counted-input — на мобиле 100px ширины узко, длинные числа
+      обрезаются. Растягиваем под viewport. */
+@media (max-width: 720px) {
+  .st-counted-input {
+    width: 100%;
+    min-width: 80px;
+  }
+}
+
+/* 9. Touch targets ≥44px на mobile — admin tables имеют inline buttons
+      ~30px высотой. WCAG 2.5.5 minimum. */
+@media (max-width: 720px) {
+  .vsd-actions-cell .checkout-btn,
+  .vsd-actions-cell .admin-checkout-btn,
+  .egais-item-row .js-egais-item-remove,
+  .sf-recipe-row .js-sf-row-remove {
+    min-height: 40px;
+    padding: 8px 12px;
+  }
+}
+
+/* 10. KPI/summary cards на mobile — текущие 3 cards в ряд при 375 viewport
+       очень узко. Stack vertically для readability. */
+@media (max-width: 480px) {
+  .inv-summary-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 11. Aggregator card "Я.Еда" badge + courier select на cards: при tablet
+       (768-1024) wrap action-row аккуратнее. */
+@media (min-width: 720px) and (max-width: 1024px) {
+  .employee-order-card .order-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}
+
+/* 12. Integration endpoint codeblocks — на узких экранах длинная URL не должна
+       заставлять весь row горизонтально скроллиться. */
+@media (max-width: 720px) {
+  .integrations-endpoint {
+    font-size: 11px;
+    padding: 4px 6px;
+    word-break: break-all;
+  }
+}
+
+/* 13. nav links на admin pages — сейчас 11 ссылок (Заказы..ВСД..ЕГАИС..)
+       на narrow viewport переносятся, но иногда слипаются. Гарантируем gap. */
+.account-header-bar .section-header-nav-actions {
+  gap: 8px !important;
+}
+@media (max-width: 720px) {
+  .account-header-bar .section-header-nav-actions {
+    gap: 6px !important;
+  }
+  .account-header-bar .section-header-nav-actions .back-to-menu-btn {
+    padding: 6px 12px;
+    min-width: auto;
+    font-size: 13px;
+  }
+}
+
+/* 14. admin-pane-header layout — на узком viewport copy + back button
+       должны стэкаться вертикально, иначе кнопка налезает на caption. */
+.admin-pane-header {
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.admin-pane-header-copy {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+@media (max-width: 720px) {
+  .admin-pane-header .back-to-menu-btn {
+    align-self: flex-start;
+  }
+}
+
+/* 15. tables — горизонтальный scroll для wide-content на узких viewport. */
+@media (max-width: 900px) {
+  .inv-table-wrapper.desktop-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .inv-table-wrapper.desktop-table .inv-table {
+    min-width: 720px;
+  }
+}
