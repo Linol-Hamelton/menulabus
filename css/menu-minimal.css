@@ -24,16 +24,22 @@ body.menu-view-minimal {
     font-family: var(--font-text, "proxima-nova", sans-serif);
 }
 
-/* ===== Header ===== */
+/* ===== Header. Симметричный отступ сверху + снизу (то же значение что и
+   margin-bottom), чтобы header был визуально centered между discovery
+   strip выше и tabs ниже. ===== */
 body.menu-view-minimal .menu-minimal-header {
     align-items: baseline;
+    margin-top: clamp(24px, 3vw, 40px);
     margin-bottom: clamp(24px, 3vw, 40px);
     padding: 0;
 }
+/* «Меню» heading — высоко-контрастный текст. var(--text-color) это canonical
+   primary-text token проекта; literal fallback #0a0a0a гарантирует max
+   contrast в случае tenant override на muted value. */
 body.menu-view-minimal .menu-minimal-h2 {
-    color: var(--mm-ink);
+    color: var(--text-color, #0a0a0a);
     font-family: var(--font-heading, var(--font-text, "Inter", sans-serif));
-    font-weight: 500;
+    font-weight: 700;
     letter-spacing: -0.01em;
     margin: 0;
 }
@@ -86,12 +92,18 @@ body.menu-view-minimal .menu-minimal-tab.active {
 }
 
 /* ===== Grid ===== */
-/* Legacy menu-alt.min.css даёт .tab-pane.active { display: grid } — single
-   column. Override: возвращаем block для tab-panes в minimal view. */
-body.menu-view-minimal .tab-pane,
+/* Legacy menu-alt.min.css даёт `.tab-pane.active { display: grid }`
+   (single-column grid). Override на block для full-width minimal layout.
+   КРИТИЧНО: только .active получает display:block — selector без .active
+   (предыдущая версия v3.14.x) делал ВСЕ panes видимыми → весь контент
+   всех категорий стекался вертикально, активный showing пустой gap до
+   тайлов. Inactive .tab-pane should stay hidden. */
 body.menu-view-minimal .tab-pane.active {
     display: block;
     width: 100%;
+}
+body.menu-view-minimal .tab-pane:not(.active) {
+    display: none;
 }
 body.menu-view-minimal .menu-minimal-grid {
     display: grid;
@@ -247,6 +259,7 @@ body.menu-view-minimal .menu-minimal-tile .buy {
     background: transparent;
     border: 1.5px solid var(--mm-accent);
     border-radius: 50%;
+    box-shadow: none;
     color: var(--mm-accent);
     cursor: pointer;
     display: inline-flex;
