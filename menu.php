@@ -17,6 +17,25 @@ $activeCategory = $_COOKIE['activeMenuCategory'] ?? ($categories[0]['category'] 
 if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['table'] > 0) {
     $_SESSION['qr_table'] = min((int)$_GET['table'], 999);
 }
+
+// Sync user + compute menu_view BEFORE rendering <body> so body class is correct
+// on first request after user changes view in account.php.
+$now = time();
+$user = $_SESSION['user'] ?? null;
+$userSyncInterval = 300;
+if (isset($_SESSION['user_id'])) {
+    $lastSync = $_SESSION['user_last_sync'] ?? 0;
+    if (!$user || ($now - $lastSync) >= $userSyncInterval) {
+        $user = $db->getUserById($_SESSION['user_id']);
+        if ($user) {
+            $_SESSION['user'] = $user;
+            $_SESSION['user_last_sync'] = $now;
+        }
+    }
+}
+$menuView = $user['menu_view'] ?? 'default';
+$csrfToken = $_SESSION['csrf_token'] ?? ($GLOBALS['csrfToken'] ?? '');
+$GLOBALS['menu_request_ts'] = $now;
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -34,41 +53,14 @@ if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion) ?>">
 </head>
 <?php
-    // Pre-compute body class — menu_view affects available styling hooks.
-    // Must run before <body> tag rendered.
-    $earlyMenuView = 'default';
-    if (isset($_SESSION['user_id'])) {
-        $earlyUser = $_SESSION['user'] ?? null;
-        if ($earlyUser && isset($earlyUser['menu_view'])) {
-            $earlyMenuView = (string)$earlyUser['menu_view'];
-        }
-    }
-    $bodyClasses = 'menu-catalog-page';
-    if ($earlyMenuView === 'minimal') {
-        $bodyClasses .= ' menu-view-minimal';
-    }
+$bodyClasses = 'menu-catalog-page';
+if ($menuView === 'minimal') {
+    $bodyClasses .= ' menu-view-minimal';
+}
 ?>
 <body id="body" class="<?= htmlspecialchars($bodyClasses) ?>">
     <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     <?php
-    $now = time();
-    $user = $_SESSION['user'] ?? null;
-    $userSyncInterval = 300;
-    if (isset($_SESSION['user_id'])) {
-        $lastSync = $_SESSION['user_last_sync'] ?? 0;
-        if (!$user || ($now - $lastSync) >= $userSyncInterval) {
-            $user = $db->getUserById($_SESSION['user_id']);
-            if ($user) {
-                $_SESSION['user'] = $user;
-                $_SESSION['user_last_sync'] = $now;
-            }
-        }
-    }
-
-    $menuView = $user['menu_view'] ?? 'default';
-    $csrfToken = $_SESSION['csrf_token'] ?? ($GLOBALS['csrfToken'] ?? '');
-    $GLOBALS['menu_request_ts'] = $now;
-
     if (session_status() === PHP_SESSION_ACTIVE) {
         session_write_close();
     }

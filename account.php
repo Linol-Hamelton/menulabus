@@ -135,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (isset($_POST['change_menu_view'])) {
             // Изменение вида меню
             $newView = $_POST['menu_view'] ?? 'default';
-            if (in_array($newView, ['default', 'alt', 'info'])) {
+            if (in_array($newView, ['default', 'alt', 'info', 'minimal'], true)) {
                 if ($db->updateMenuView($_SESSION['user_id'], $newView)) {
                     $menuView = $newView;
                     // Обновляем данные пользователя в сессии
