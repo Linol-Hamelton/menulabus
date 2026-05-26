@@ -43,11 +43,23 @@ unset($_SESSION['qr_table']);
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/menu-alt.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
+    <link rel="stylesheet" href="/css/menu-minimal.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
 </head>
 
+<?php
+// Phase L100: propagate user.menu_view → body class so cart inherits styling.
+$cartBodyClasses = 'cart-page account-page';
+if (isset($_SESSION['user_id'])) {
+    $cartUserView = $_SESSION['user']['menu_view']
+        ?? ($db->getUserById((int)$_SESSION['user_id'])['menu_view'] ?? 'default');
+    if ($cartUserView === 'minimal') {
+        $cartBodyClasses .= ' menu-view-minimal';
+    }
+}
+?>
 <body id="body"
-    class="cart-page account-page"
+    class="<?= htmlspecialchars($cartBodyClasses) ?>"
     data-is-logged-in="<?= isset($_SESSION['user_id']) ? 'true' : 'false' ?>"
     data-repeat-order-payload="<?= htmlspecialchars($repeatOrderPayloadAttr, ENT_QUOTES, 'UTF-8') ?>"
     data-qr-table="<?= $prefilledQrTable > 0 ? $prefilledQrTable : '' ?>">

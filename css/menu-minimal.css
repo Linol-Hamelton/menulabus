@@ -1,0 +1,375 @@
+/* css/menu-minimal.css — Phase L100 (minimal-tile view).
+ *
+ * Самостоятельная реализация на основе общих принципов minimalism design:
+ * tight typography, ample whitespace, subtle borders, off-white surfaces,
+ * single accent color, refined hover lift. Без зависимостей от внешних
+ * проектов — собственный шифт-pattern.
+ *
+ * Активируется через body.menu-view-minimal (выставляется в menu.php
+ * когда users.menu_view === 'minimal').
+ */
+
+body.menu-view-minimal {
+    --mm-bg: #fbfaf8;
+    --mm-surface: #ffffff;
+    --mm-border: rgba(18, 18, 18, 0.08);
+    --mm-border-hover: rgba(18, 18, 18, 0.16);
+    --mm-ink: #1a1a1a;
+    --mm-ink-muted: rgba(18, 18, 18, 0.6);
+    --mm-accent: var(--primary-color, #d23434);
+    --mm-radius: 14px;
+    --mm-radius-lg: 22px;
+    --mm-shadow-hover: 0 12px 28px rgba(18, 18, 18, 0.08);
+    --mm-shadow-subtle: 0 1px 2px rgba(18, 18, 18, 0.04);
+    --mm-tile-gap: clamp(20px, 2.4vw, 36px);
+
+    background: var(--mm-bg);
+    color: var(--mm-ink);
+}
+
+/* ===== Header ===== */
+body.menu-view-minimal .menu-minimal-header {
+    align-items: baseline;
+    margin-bottom: clamp(24px, 3vw, 40px);
+    padding: 0;
+}
+body.menu-view-minimal .menu-minimal-h2 {
+    color: var(--mm-ink);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    margin: 0;
+}
+body.menu-view-minimal .menu-minimal-cart-link {
+    background: var(--mm-surface);
+    border: 1px solid var(--mm-border);
+    border-radius: 999px;
+    color: var(--mm-ink);
+    padding: 10px 20px;
+    transition: border-color 0.18s ease, transform 0.18s ease;
+}
+body.menu-view-minimal .menu-minimal-cart-link:hover {
+    border-color: var(--mm-border-hover);
+    transform: translateY(-1px);
+}
+
+/* ===== Tabs ===== */
+body.menu-view-minimal .menu-minimal-tabs-container {
+    margin-bottom: clamp(20px, 2.4vw, 32px);
+}
+body.menu-view-minimal .menu-minimal-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    border: none;
+    background: transparent;
+    padding: 0;
+}
+body.menu-view-minimal .menu-minimal-tab {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    color: var(--mm-ink-muted);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 16px;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+body.menu-view-minimal .menu-minimal-tab:hover {
+    color: var(--mm-ink);
+    border-color: var(--mm-border);
+}
+body.menu-view-minimal .menu-minimal-tab.active {
+    background: var(--mm-ink);
+    color: #ffffff;
+    border-color: var(--mm-ink);
+}
+
+/* ===== Grid ===== */
+body.menu-view-minimal .menu-minimal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--mm-tile-gap);
+    padding: 4px 0 32px;
+}
+@media (min-width: 1440px) {
+    body.menu-view-minimal .menu-minimal-grid {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+}
+@media (max-width: 480px) {
+    body.menu-view-minimal .menu-minimal-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 14px;
+    }
+}
+
+/* ===== Tile ===== */
+body.menu-view-minimal .menu-minimal-tile {
+    background: var(--mm-surface);
+    border: 1px solid var(--mm-border);
+    border-radius: var(--mm-radius);
+    box-shadow: var(--mm-shadow-subtle);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+body.menu-view-minimal .menu-minimal-tile:hover {
+    transform: translateY(-3px);
+    border-color: var(--mm-border-hover);
+    box-shadow: var(--mm-shadow-hover);
+}
+body.menu-view-minimal .menu-item--unavailable.menu-minimal-tile {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+body.menu-view-minimal .menu-minimal-tile-imagewrap {
+    aspect-ratio: 4 / 3;
+    background: var(--mm-bg);
+    overflow: hidden;
+    position: relative;
+}
+body.menu-view-minimal .menu-minimal-tile-image {
+    cursor: zoom-in;
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+    width: 100%;
+}
+body.menu-view-minimal .menu-minimal-tile:hover .menu-minimal-tile-image {
+    transform: scale(1.04);
+}
+body.menu-view-minimal .menu-minimal-tile-stop {
+    background: rgba(18, 18, 18, 0.78);
+    border-radius: 999px;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 600;
+    left: 12px;
+    letter-spacing: 0.04em;
+    padding: 4px 10px;
+    position: absolute;
+    text-transform: uppercase;
+    top: 12px;
+}
+
+body.menu-view-minimal .menu-minimal-tile-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px 18px 18px;
+}
+body.menu-view-minimal .menu-minimal-tile-name {
+    color: var(--mm-ink);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    line-height: 1.35;
+    margin: 0;
+    min-height: 2.7em; /* keep tiles even when names are 1 vs 2 lines */
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+body.menu-view-minimal .menu-minimal-tile-footer {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    margin-top: auto;
+}
+body.menu-view-minimal .menu-minimal-tile-price {
+    color: var(--mm-ink);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+/* Buy button — outline ring with +, counter inline */
+body.menu-view-minimal .menu-minimal-tile-buy {
+    align-items: center;
+    background: var(--mm-surface);
+    border: 1px solid var(--mm-ink);
+    border-radius: 999px;
+    color: var(--mm-ink);
+    cursor: pointer;
+    display: inline-flex;
+    font-weight: 500;
+    height: 36px;
+    justify-content: center;
+    line-height: 1;
+    min-width: 36px;
+    padding: 0 12px;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+body.menu-view-minimal .menu-minimal-tile-buy:hover {
+    background: var(--mm-ink);
+    color: #ffffff;
+}
+body.menu-view-minimal .menu-minimal-tile-buy .buy-text {
+    font-size: 22px;
+    font-weight: 400;
+    line-height: 1;
+}
+body.menu-view-minimal .menu-minimal-tile-buy .buy-counter {
+    align-items: center;
+    background: transparent;
+    color: inherit;
+    display: inline-flex;
+    flex-direction: row;
+    gap: 8px;
+}
+body.menu-view-minimal .menu-minimal-tile-buy .buy-counter.hidden { display: none; }
+body.menu-view-minimal .menu-minimal-tile-buy .counter-minus,
+body.menu-view-minimal .menu-minimal-tile-buy .counter-plus {
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 4px;
+}
+body.menu-view-minimal .menu-minimal-tile-buy .counter-value {
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 12px;
+    text-align: center;
+}
+
+/* ===== Modal ===== */
+body.menu-view-minimal .menu-minimal-modal {
+    background: rgba(18, 18, 18, 0.55);
+}
+body.menu-view-minimal .menu-minimal-modal-content {
+    background: var(--mm-surface);
+    border-radius: var(--mm-radius-lg);
+    box-shadow: 0 30px 60px rgba(18, 18, 18, 0.16);
+    display: grid;
+    grid-template-rows: auto auto auto;
+    max-width: min(960px, 96vw);
+    overflow: hidden;
+    padding: 0;
+}
+body.menu-view-minimal .menu-minimal-modal-hero {
+    aspect-ratio: 16 / 9;
+    background: var(--mm-bg);
+    overflow: hidden;
+}
+body.menu-view-minimal .menu-minimal-modal-image {
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+}
+body.menu-view-minimal .menu-minimal-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: clamp(20px, 3vw, 36px);
+}
+body.menu-view-minimal .menu-minimal-modal-title {
+    color: var(--mm-ink);
+    font-size: clamp(20px, 2.6vw, 28px);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+    margin: 0;
+}
+body.menu-view-minimal .menu-minimal-modal-description {
+    color: var(--mm-ink-muted);
+    font-size: 15px;
+    line-height: 1.55;
+    margin: 0;
+}
+body.menu-view-minimal .menu-minimal-meta {
+    border-top: 1px solid var(--mm-border);
+    display: grid;
+    gap: 0;
+    margin: 6px 0 0;
+}
+body.menu-view-minimal .menu-minimal-meta-row {
+    align-items: baseline;
+    border-bottom: 1px solid var(--mm-border);
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 100px 1fr;
+    padding: 12px 0;
+}
+body.menu-view-minimal .menu-minimal-meta-row dt {
+    color: var(--mm-ink-muted);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    margin: 0;
+    text-transform: uppercase;
+}
+body.menu-view-minimal .menu-minimal-meta-row dd {
+    color: var(--mm-ink);
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+}
+body.menu-view-minimal .menu-minimal-modal-footer {
+    border-top: 1px solid var(--mm-border);
+    display: flex;
+    justify-content: flex-end;
+    padding: 16px clamp(20px, 3vw, 36px);
+}
+body.menu-view-minimal .menu-minimal-modal-close {
+    background: var(--mm-ink);
+    border: none;
+    border-radius: 999px;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 24px;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+body.menu-view-minimal .menu-minimal-modal-close:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+}
+
+@media (min-width: 720px) {
+    body.menu-view-minimal .menu-minimal-modal-content {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+        grid-template-rows: auto auto;
+    }
+    body.menu-view-minimal .menu-minimal-modal-hero {
+        aspect-ratio: auto;
+        grid-row: 1 / span 2;
+        min-height: 100%;
+    }
+    body.menu-view-minimal .menu-minimal-modal-body {
+        grid-column: 2;
+    }
+    body.menu-view-minimal .menu-minimal-modal-footer {
+        grid-column: 2;
+    }
+}
+
+/* ===== Cart page adaptation (when user has menu_view=minimal active) ===== */
+body.menu-view-minimal.cart-page .cart-item {
+    background: var(--mm-surface);
+    border: 1px solid var(--mm-border);
+    border-radius: var(--mm-radius);
+    box-shadow: var(--mm-shadow-subtle);
+}
+body.menu-view-minimal.cart-page .cart-item-quantity {
+    background: var(--mm-surface);
+    border: 1px solid var(--mm-ink);
+    color: var(--mm-ink);
+}
+body.menu-view-minimal.cart-page .checkout-btn {
+    background: var(--mm-ink);
+    border-radius: 999px;
+}
+body.menu-view-minimal.cart-page .clear-cart-btn {
+    background: var(--mm-surface);
+    border: 1px solid var(--mm-border);
+    color: var(--mm-ink);
+}

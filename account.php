@@ -361,6 +361,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <input type="radio" name="menu_view" value="alt" <?= $menuView === 'alt' ? 'checked' : '' ?>>
                             <p class="menu-view-text">Меню плиткой без информации о составе и увеличения фото.</p>
                         </label>
+                        <label>
+                            <input type="radio" name="menu_view" value="minimal" <?= $menuView === 'minimal' ? 'checked' : '' ?>>
+                            <p class="menu-view-text">Меню плитка в стиле минимализм с информацией о составе и увеличением фото.</p>
+                        </label>
                     </div>
                 </div>
                 <div class="section-header-menu">

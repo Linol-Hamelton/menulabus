@@ -29,10 +29,26 @@ if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/menu-alt.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/menu-content-info.min.css?v=<?= htmlspecialchars($appVersion) ?>">
+    <link rel="stylesheet" href="/css/menu-minimal.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/menu-discovery.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion) ?>">
 </head>
-<body id="body" class="menu-catalog-page">
+<?php
+    // Pre-compute body class — menu_view affects available styling hooks.
+    // Must run before <body> tag rendered.
+    $earlyMenuView = 'default';
+    if (isset($_SESSION['user_id'])) {
+        $earlyUser = $_SESSION['user'] ?? null;
+        if ($earlyUser && isset($earlyUser['menu_view'])) {
+            $earlyMenuView = (string)$earlyUser['menu_view'];
+        }
+    }
+    $bodyClasses = 'menu-catalog-page';
+    if ($earlyMenuView === 'minimal') {
+        $bodyClasses .= ' menu-view-minimal';
+    }
+?>
+<body id="body" class="<?= htmlspecialchars($bodyClasses) ?>">
     <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     <?php
     $now = time();
@@ -87,6 +103,9 @@ if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['
             break;
         case 'info':
             require_once __DIR__ . '/menu-content-info.php';
+            break;
+        case 'minimal':
+            require_once __DIR__ . '/menu-content-minimal.php';
             break;
         default:
             require_once __DIR__ . '/menu-alt.php';
