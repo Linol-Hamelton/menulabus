@@ -1,5 +1,5 @@
 {
-  "version": "3.14.2",
+  "version": "3.14.3",
   "release_date": "2026-05-26",
-  "changelog": "Phase L100.2 — fix grid collapse в minimal view. Legacy menu-alt.min.css задаёт `.tab-pane.active { display: grid }` (single-column grid), что сжимало мой `.menu-minimal-grid` wrapper до одной ячейки (469px вместо 1444px родителя). Override в css/menu-minimal.css: `body.menu-view-minimal .tab-pane{display:block;width:100%}` возвращает block layout для tab-panes когда minimal view активен; мой grid теперь занимает full width родителя. Также добавил width:100% на .menu-minimal-grid для надёжности."
+  "changelog": "Phase L100.3 — polish minimal view. Применил generic minimalist e-commerce design tokens: pure-white bg вместо off-white, borderless tile + soft двухслойный shadow (resting/hover), 1:1 square image вместо 4:3, semibold (600) title вместо 500, bolder price (700), filled rounded-rect buy button с brand accent (вместо outline pill), tighter grid gap (16-24px вместо 20-36px), spirit calmer hover (-2px lift без image scale). Cart-page tail переключён на тот же borderless+shadow язык и accent-filled checkout. CSS-only — markup не трогал."
 }
