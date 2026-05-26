@@ -86,11 +86,20 @@ body.menu-view-minimal .menu-minimal-tab.active {
 }
 
 /* ===== Grid ===== */
+/* Legacy menu-alt.min.css даёт .tab-pane.active { display: grid } — single
+   column которая сжимает наш wrapper. Override: возвращаем block так чтобы
+   наш .menu-minimal-grid занимал всю ширину родителя. */
+body.menu-view-minimal .tab-pane,
+body.menu-view-minimal .tab-pane.active {
+    display: block;
+    width: 100%;
+}
 body.menu-view-minimal .menu-minimal-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: var(--mm-tile-gap);
     padding: 4px 0 32px;
+    width: 100%;
 }
 @media (min-width: 1440px) {
     body.menu-view-minimal .menu-minimal-grid {

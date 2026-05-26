@@ -1,5 +1,5 @@
 {
-  "version": "3.14.1",
+  "version": "3.14.2",
   "release_date": "2026-05-26",
-  "changelog": "Phase L100 fixes: (A) Critical — account.php whitelist `in_array($newView, ['default','alt','info'])` не включал 'minimal' → save handler silently отклонял (нет error → нет сигнала пользователю). Добавил 'minimal' + strict mode (third arg=true). (B) Race condition — body class в menu.php вычислялся до user-sync, поэтому при первом запросе после view-change body class брался из stale session. Перенёс user sync + computation $menuView выше <body> tag, body class теперь использует свежее значение."
+  "changelog": "Phase L100.2 — fix grid collapse в minimal view. Legacy menu-alt.min.css задаёт `.tab-pane.active { display: grid }` (single-column grid), что сжимало мой `.menu-minimal-grid` wrapper до одной ячейки (469px вместо 1444px родителя). Override в css/menu-minimal.css: `body.menu-view-minimal .tab-pane{display:block;width:100%}` возвращает block layout для tab-panes когда minimal view активен; мой grid теперь занимает full width родителя. Также добавил width:100% на .menu-minimal-grid для надёжности."
 }
