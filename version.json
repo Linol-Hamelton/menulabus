@@ -1,5 +1,5 @@
 {
-  "version": "3.14.3",
+  "version": "3.14.4",
   "release_date": "2026-05-26",
-  "changelog": "Phase L100.3 — polish minimal view. Применил generic minimalist e-commerce design tokens: pure-white bg вместо off-white, borderless tile + soft двухслойный shadow (resting/hover), 1:1 square image вместо 4:3, semibold (600) title вместо 500, bolder price (700), filled rounded-rect buy button с brand accent (вместо outline pill), tighter grid gap (16-24px вместо 20-36px), spirit calmer hover (-2px lift без image scale). Cart-page tail переключён на тот же borderless+shadow язык и accent-filled checkout. CSS-only — markup не трогал."
+  "changelog": "Phase L100.4 — labelled CTA + tile rhythm polish в minimal view. Главный gap: buy button был tiny circular '+' (default e-commerce icon), читалось как weak afterthought рядом с photo. Заменил на textual label 'В корзину' (universal Russian e-commerce idiom). CSS: chip min-width 96px, font-size 12px, letter-spacing 0.02em, white-space nowrap; mobile (<=480px) — min-width auto, font-size 11px. Также: image-wrap background #f4f3f0 (chalky) → pure #ffffff (cleaner blend с tile), tile-body padding 16/16/18 → 14/14/16 (more breathing), gap 12 → 14px. Modal close button: dark filled → brand accent filled (matches buy CTA visual language). CSS + 1 markup edit (menu-content-minimal.php buy-text content)."
 }

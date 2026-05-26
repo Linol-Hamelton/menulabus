@@ -137,7 +137,7 @@ body.menu-view-minimal .menu-item--unavailable.menu-minimal-tile {
 
 body.menu-view-minimal .menu-minimal-tile-imagewrap {
     aspect-ratio: 1 / 1;
-    background: #f4f3f0;
+    background: #ffffff;
     overflow: hidden;
     position: relative;
 }
@@ -166,8 +166,8 @@ body.menu-view-minimal .menu-minimal-tile-body {
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 12px;
-    padding: 16px 16px 18px;
+    gap: 14px;
+    padding: 14px 14px 16px;
 }
 body.menu-view-minimal .menu-minimal-tile-name {
     color: var(--mm-ink);
@@ -196,7 +196,7 @@ body.menu-view-minimal .menu-minimal-tile-price {
     letter-spacing: -0.01em;
 }
 
-/* Buy button — filled rounded-rect with brand accent */
+/* Buy button — filled rounded-rect with brand accent + textual label */
 body.menu-view-minimal .menu-minimal-tile-buy {
     align-items: center;
     background: var(--mm-accent);
@@ -206,23 +206,36 @@ body.menu-view-minimal .menu-minimal-tile-buy {
     cursor: pointer;
     display: inline-flex;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 12px;
     height: 36px;
     justify-content: center;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.02em;
     line-height: 1;
-    min-width: 36px;
+    min-width: 96px;
     padding: 0 14px;
+    text-align: center;
     transition: filter 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    white-space: nowrap;
 }
 body.menu-view-minimal .menu-minimal-tile-buy:hover {
     filter: brightness(0.94);
     box-shadow: 0 4px 10px rgba(210, 52, 52, 0.18);
 }
 body.menu-view-minimal .menu-minimal-tile-buy .buy-text {
-    font-size: 20px;
-    font-weight: 500;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     line-height: 1;
+}
+@media (max-width: 480px) {
+    body.menu-view-minimal .menu-minimal-tile-buy {
+        min-width: 0;
+        padding: 0 10px;
+        font-size: 11px;
+    }
+    body.menu-view-minimal .menu-minimal-tile-buy .buy-text {
+        font-size: 11px;
+    }
 }
 body.menu-view-minimal .menu-minimal-tile-buy .buy-counter {
     align-items: center;
@@ -326,20 +339,23 @@ body.menu-view-minimal .menu-minimal-modal-footer {
     justify-content: flex-end;
     padding: 16px clamp(20px, 3vw, 36px);
 }
-body.menu-view-minimal .menu-minimal-modal-close {
-    background: var(--mm-ink);
-    border: none;
-    border-radius: 999px;
-    color: #ffffff;
+body.menu-view-minimal .menu-minimal-modal-close,
+body.menu-view-minimal .menu-minimal-modal-close.cancel {
+    background: var(--mm-accent);
+    border: 1px solid var(--mm-accent);
+    border-radius: var(--mm-radius-sm);
+    color: var(--mm-accent-text);
     cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    padding: 10px 24px;
-    transition: opacity 0.15s ease, transform 0.15s ease;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 10px 22px;
+    transition: filter 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 body.menu-view-minimal .menu-minimal-modal-close:hover {
-    opacity: 0.88;
+    filter: brightness(0.94);
     transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(210, 52, 52, 0.18);
 }
 
 @media (min-width: 720px) {
