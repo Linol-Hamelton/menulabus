@@ -117,6 +117,15 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
                                 </div>
                                 <div class="menu-minimal-tile-body">
                                     <h3 class="menu-minimal-tile-name"><?= htmlspecialchars($item['name']) ?></h3>
+                                    <?php
+                                    $caption = trim((string)($item['composition'] ?? ''));
+                                    if ($caption === '') {
+                                        $caption = trim((string)($item['description'] ?? ''));
+                                    }
+                                    if ($caption !== ''):
+                                    ?>
+                                        <p class="menu-minimal-tile-caption"><?= htmlspecialchars($caption) ?></p>
+                                    <?php endif; ?>
                                     <div class="menu-minimal-tile-footer">
                                         <span class="price menu-minimal-tile-price"><?= number_format($item['price'], 0, '.', '') ?> ₽</span>
                                         <?php if (!$unavail): ?>

@@ -1,5 +1,5 @@
 {
-  "version": "3.14.5",
+  "version": "3.14.6",
   "release_date": "2026-05-26",
-  "changelog": "Phase L100.5 — fix mobile footer overflow. v3.14.4 mobile chip был 44px wide (min-content) и не вмещал «В корзину» (9 Cyrillic chars at 11px). Fix: на mobile (<=480px) footer переключается на flex-direction:column — price и full-width buy chip stack vertically. Также: chip width 100%, height 34px, price font 18→16px для денсити. Desktop (>=481px) — без изменений (chip 96px min-width inline с price, как в v3.14.4)."
+  "changelog": "Phase L100.6 — composition caption на плитке. Original feature spec был «Меню плитка в стиле минимализм с информацией о составе и увеличением фото», но v3.14.5 showed только name + price; состав был только в modal. Закрыто: добавлен `<p class='menu-minimal-tile-caption'>` между title и footer с composition (fallback на description если composition пустой). CSS: muted цвет (var --mm-ink-muted), 12px desktop / 11px mobile, line-clamp 2, calm line-height 1.4. Title min-height снят — теперь caption даёт visual weight чтобы tiles были consistent. Markup: 1 conditional блок в menu-content-minimal.php, CSS: 1 new rule + 1 mobile override."
 }
