@@ -556,8 +556,14 @@ body.menu-catalog-page :is(.cart-item, .menu-item) {
   padding: 16px;
 }
 
+/* Universal gap for cart-item-info (used on both /cart.php and /menu.php
+   catalog cards). Без этого правила image touched text directly. */
+.cart-item-info {
+  gap: clamp(14px, 1.6vw, 28px);
+  align-items: center;
+}
 body.menu-catalog-page .cart-item-info {
-  gap: 10%;
+  gap: clamp(16px, 2vw, 32px);
 }
 
 body.menu-catalog-page .cart-item-image {

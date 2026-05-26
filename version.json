@@ -1,5 +1,5 @@
 {
-  "version": "3.13.1",
-  "release_date": "2026-05-25",
-  "changelog": "Fix(cart-counter): updateCartCounter() обновлял только data-value attribute но не textContent. Пользователь видел «Заказ 0» в шапке даже когда localStorage cart содержал items. Bug найден через end-to-end QA. Одна строка: добавил `t.textContent = e` параллельно с `setAttribute(\"data-value\", e)`. Косвенный effect: badge с числом теперь корректно показывает count на меню и cart странице."
+  "version": "3.13.2",
+  "release_date": "2026-05-26",
+  "changelog": "Fix(cart-item gap): на /cart.php image touched text directly. `.cart-item-info` имел `display: flex` но `gap: normal` (для body.cart-page никаких правил не было — раньше polished только body.menu-catalog-page с `gap: 10%`). Универсальное правило для `.cart-item-info` теперь `gap: clamp(14px, 1.6vw, 28px)` + `align-items: center`. Для body.menu-catalog-page (более крупная карта) — `gap: clamp(16px, 2vw, 32px)`. Использован clamp() вместо процентов чтобы избежать чрезмерного gap при широких контейнерах. Найдено через MCP DOM-инспекцию + специфичный example screenshot от пользователя."
 }
