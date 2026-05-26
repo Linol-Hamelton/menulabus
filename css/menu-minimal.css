@@ -11,7 +11,7 @@
  */
 
 body.menu-view-minimal {
-    --mm-ink: var(--ui-text, var(--text-color, #1a1a1a));
+    --mm-ink: var(--text-color, var(--ui-text, #1a1a1a));
     --mm-ink-muted: var(--ui-text-muted, rgba(18, 18, 18, 0.55));
     --mm-border: var(--ui-border, rgba(0, 0, 0, 0.08));
     --mm-accent: var(--primary-color, #cd1719);
@@ -237,23 +237,29 @@ body.menu-view-minimal .menu-minimal-tile .price {
 }
 
 /* Buy button — outline circle. Legacy .buy уже даёт min-width/height 44 +
-   brand box-shadow; в minimal scope превращаем в круг (radius 50%) с
-   outline стилем (transparent fill, brand border + icon). */
+   brand box-shadow; в minimal scope explicit 44x44 + radius 50% делают
+   гарантированный круг (без explicit dims кнопка растягивалась по
+   контенту в oval pill). */
 body.menu-view-minimal .menu-minimal-tile-buy,
 body.menu-view-minimal .menu-minimal-tile .buy {
     align-items: center;
+    aspect-ratio: 1 / 1;
     background: transparent;
     border: 1.5px solid var(--mm-accent);
     border-radius: 50%;
     color: var(--mm-accent);
     cursor: pointer;
     display: inline-flex;
-    flex: 0 0 auto;
+    flex: 0 0 44px;
     font-family: inherit;
     font-weight: 400;
+    height: 44px;
     justify-content: center;
     line-height: 1;
+    max-width: 44px;
+    min-width: 44px;
     padding: 0;
+    width: 44px;
     transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 body.menu-view-minimal .menu-minimal-tile-buy:hover {
