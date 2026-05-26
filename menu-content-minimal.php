@@ -139,7 +139,7 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
                                                 data-fat="<?= (int)($item['fat'] ?? 0) ?>"
                                                 data-carbs="<?= (int)($item['carbs'] ?? 0) ?>"
                                                 data-csrf="<?= $csrfToken ?>"<?php if ($itemMods): ?> data-modifiers="<?= htmlspecialchars(json_encode($itemMods, JSON_UNESCAPED_UNICODE)) ?>"<?php endif; ?>>
-                                                <span class="buy-text">В&nbsp;корзину</span>
+                                                <span class="buy-text">+</span>
                                                 <span class="buy-counter hidden">
                                                     <span class="counter-minus" data-action="decrease">−</span>
                                                     <span class="counter-value">1</span>
