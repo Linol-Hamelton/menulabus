@@ -114,22 +114,25 @@ body.menu-view-minimal .menu-minimal-grid {
     }
 }
 
-/* ===== Tile — карточка с тонкой рамкой и rounded corners, transparent
-   background (matches page bg). Фото нестит внутри с собственным
-   radius, внутренний padding ~14px даёт inset эффект. ===== */
-body.menu-view-minimal .menu-minimal-tile {
+/* ===== Tile — без card chrome: bg transparent (matches page), no border,
+   sharp corners (radius 0), no shadow. Photo, name, caption, price+button
+   stack без card frame; визуальное разделение между плитками — gap grid.
+   Все эти rules — overrides для legacy menu-alt.min.css правил
+   .menu-item / .cart-item-image / .menu-item h3 / .price / .buy которые
+   остаются как есть для других 3 views (default/alt/info). ===== */
+body.menu-view-minimal .menu-minimal-tile,
+body.menu-view-minimal .menu-item.menu-minimal-tile {
     background: transparent;
-    border: 1px solid var(--ui-border, rgba(0, 0, 0, 0.08));
-    border-radius: 18px;
+    border: 0;
+    border-radius: 0;
     box-shadow: none;
     display: flex;
     flex-direction: column;
     overflow: visible;
-    padding: 14px;
-    transition: transform 0.22s ease, border-color 0.22s ease;
+    padding: 16px;
+    transition: transform 0.22s ease;
 }
 body.menu-view-minimal .menu-minimal-tile:hover {
-    border-color: rgba(var(--mm-accent-rgb), 0.35);
     transform: translateY(-2px);
 }
 body.menu-view-minimal .menu-item--unavailable.menu-minimal-tile {
@@ -140,11 +143,13 @@ body.menu-view-minimal .menu-item--unavailable.menu-minimal-tile {
 body.menu-view-minimal .menu-minimal-tile-imagewrap {
     aspect-ratio: 1 / 1;
     background: transparent;
-    border-radius: 12px;
+    border-radius: 0;
     overflow: hidden;
     position: relative;
 }
-body.menu-view-minimal .menu-minimal-tile-image {
+body.menu-view-minimal .menu-minimal-tile-image,
+body.menu-view-minimal .menu-minimal-tile .cart-item-image {
+    border-radius: 0;
     cursor: zoom-in;
     display: block;
     height: 100%;
@@ -171,9 +176,13 @@ body.menu-view-minimal .menu-minimal-tile-body {
     flex: 1;
     flex-direction: column;
     gap: 0;
-    padding: 18px 4px 4px;
+    padding: 18px 0 0;
 }
-body.menu-view-minimal .menu-minimal-tile-name {
+/* Override legacy .menu-item h3 (background: var(--white), padding 10 30,
+   text-align center, font-size 22) и устанавливаем minimal-specific look */
+body.menu-view-minimal .menu-minimal-tile-name,
+body.menu-view-minimal .menu-item.menu-minimal-tile h3 {
+    background: transparent;
     color: var(--mm-ink);
     font-family: var(--font-heading, var(--font-text, inherit));
     font-size: 18px;
@@ -182,6 +191,8 @@ body.menu-view-minimal .menu-minimal-tile-name {
     line-height: 1.3;
     margin: 0 0 14px;
     overflow: hidden;
+    padding: 10px;
+    text-align: left;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
@@ -193,6 +204,8 @@ body.menu-view-minimal .menu-minimal-tile-caption {
     line-height: 1.5;
     margin: 0 0 24px;
     overflow: hidden;
+    padding: 0 10px;
+    text-align: left;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
@@ -203,18 +216,31 @@ body.menu-view-minimal .menu-minimal-tile-footer {
     gap: 12px;
     justify-content: space-between;
     margin-top: auto;
-    padding-top: 0;
+    padding: 0 10px;
 }
-body.menu-view-minimal .menu-minimal-tile-price {
+/* Override legacy .price (background var(--light-text), color white, margin
+   0 0 35px 35px, font-size 20). В minimal: transparent bg, ink color, dark
+   typography. */
+body.menu-view-minimal .menu-minimal-tile-price,
+body.menu-view-minimal .menu-minimal-tile .price {
+    background: transparent;
+    background-color: transparent;
+    border: none;
     color: var(--mm-ink);
+    float: none;
     font-family: var(--font-heading, var(--font-text, inherit));
     font-size: 22px;
     font-weight: 700;
     letter-spacing: -0.01em;
+    margin: 0;
+    padding: 0;
 }
 
-/* Buy button — outline circle с brand-color border + brand-color «+» icon */
-body.menu-view-minimal .menu-minimal-tile-buy {
+/* Buy button — outline circle. Legacy .buy уже даёт min-width/height 44 +
+   brand box-shadow; в minimal scope превращаем в круг (radius 50%) с
+   outline стилем (transparent fill, brand border + icon). */
+body.menu-view-minimal .menu-minimal-tile-buy,
+body.menu-view-minimal .menu-minimal-tile .buy {
     align-items: center;
     background: transparent;
     border: 1.5px solid var(--mm-accent);
@@ -225,10 +251,8 @@ body.menu-view-minimal .menu-minimal-tile-buy {
     flex: 0 0 auto;
     font-family: inherit;
     font-weight: 400;
-    height: 42px;
     justify-content: center;
     line-height: 1;
-    width: 42px;
     padding: 0;
     transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
@@ -244,15 +268,28 @@ body.menu-view-minimal .menu-minimal-tile-buy .buy-text {
     line-height: 1;
 }
 
-/* Mobile / narrow tile — tighten typography and chrome */
+/* Mobile / narrow tile — пропорционально уменьшаем typography */
 @media (max-width: 768px) {
-    body.menu-view-minimal .menu-minimal-tile { padding: 10px; border-radius: 14px; }
-    body.menu-view-minimal .menu-minimal-tile-imagewrap { border-radius: 10px; }
-    body.menu-view-minimal .menu-minimal-tile-body { padding: 14px 2px 2px; }
-    body.menu-view-minimal .menu-minimal-tile-name { font-size: 15px; margin-bottom: 10px; }
-    body.menu-view-minimal .menu-minimal-tile-caption { font-size: 12px; margin-bottom: 18px; }
-    body.menu-view-minimal .menu-minimal-tile-price { font-size: 18px; }
-    body.menu-view-minimal .menu-minimal-tile-buy { width: 36px; height: 36px; }
+    body.menu-view-minimal .menu-minimal-tile { padding: 8px; }
+    body.menu-view-minimal .menu-minimal-tile-body { padding: 14px 0 0; }
+    body.menu-view-minimal .menu-minimal-tile-name,
+    body.menu-view-minimal .menu-item.menu-minimal-tile h3 {
+        font-size: 14px;
+        margin-bottom: 8px;
+        padding: 6px;
+    }
+    body.menu-view-minimal .menu-minimal-tile-caption {
+        font-size: 11px;
+        margin-bottom: 14px;
+        padding: 0 6px;
+    }
+    body.menu-view-minimal .menu-minimal-tile-footer {
+        padding: 0 6px;
+    }
+    body.menu-view-minimal .menu-minimal-tile-price,
+    body.menu-view-minimal .menu-minimal-tile .price {
+        font-size: 17px;
+    }
     body.menu-view-minimal .menu-minimal-tile-buy .buy-text { font-size: 22px; }
 }
 body.menu-view-minimal .menu-minimal-tile-buy .buy-counter {
