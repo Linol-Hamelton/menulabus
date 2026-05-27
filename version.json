@@ -1,5 +1,5 @@
 {
-  "version": "3.14.21",
+  "version": "3.14.22",
   "release_date": "2026-05-27",
-  "changelog": "Phase L100.21 — user tweak: cart-item-quantity pill padding tightened `4px 8px → 2px 1px`. Compact spacing inside qty controls на /cart.php при minimal view. Scope unchanged: только body.menu-view-minimal.cart-page."
+  "changelog": "Phase L100.22 — cart-link refinement в minimal view. Element имеет два class'а (.order-summary-btn + .menu-minimal-cart-link). Per user — локальный override без правки global rule .order-summary-btn (которое имеет brand box-shadow): border 1px solid var(--primary-color) (brand outline), box-shadow none (override global brand glow), font-weight 700, min-height 50px, display inline-flex + align-items center + gap 10px для vertical alignment текста и иконки. Compound selector `.order-summary-btn.menu-minimal-cart-link` bumps specificity чтобы override стабильно выигрывал у global. Scope unchanged: только body.menu-view-minimal."
 }
