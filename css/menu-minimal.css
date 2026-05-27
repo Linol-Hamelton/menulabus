@@ -341,7 +341,7 @@ body.menu-view-minimal .menu-minimal-tile-buy .buy-text {
 }
 /* ===== Buy button expanded counter state. cart.js добавляет .buy-active
    и swaps .hidden между .buy-text и .buy-counter. В этом состоянии button
-   превращается в outline pill размером по content «− N шт. +» (НЕ
+   превращается в outline pill размером по content «− N +» (НЕ
    растягивается на 100%). Background transparent, brand outline тот же. */
 body.menu-view-minimal .menu-minimal-tile-buy.buy-active,
 body.menu-view-minimal .menu-minimal-tile .buy.buy-active {
@@ -387,14 +387,6 @@ body.menu-view-minimal .menu-minimal-tile-buy .counter-value {
     line-height: 1;
     min-width: 0;
     text-align: center;
-}
-/* «шт.» suffix через CSS-only — markup не трогаем; cart.js пишет в
-   .counter-value только число, мы рисуем единицу измерения после
-   через ::after, только в minimal scope. */
-body.menu-view-minimal .menu-minimal-tile-buy .counter-value::after {
-    content: " шт.";
-    color: var(--mm-ink-strong);
-    font-weight: 600;
 }
 /* Hover не должен инвертировать button когда он в counter mode — это
    мешало бы interaction с ± buttons. */

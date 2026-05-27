@@ -1,5 +1,5 @@
 {
-  "version": "3.14.19",
+  "version": "3.14.20",
   "release_date": "2026-05-27",
-  "changelog": "Phase L100.19 — buy-active pill sizes to content + «шт.» suffix. Раньше .buy-active растягивался: min-width 120 на desktop, width 100% на ≤1280. Per user — должен sizes to content (компактный outline pill, как на референс-изображении). Fix: min-width 0, max-width none, width auto, padding 0 10px; @media (≤1280) — align-self: flex-start + align-items: flex-start на footer (вместо stretch) чтобы pill не растягивался в column-stretch. Counter-value получает «шт.» suffix через CSS `::after { content: \" шт.\" }` — markup не тронут, cart.js пишет только число. Counter typography tuned: `−` / `+` 20px / weight 500, value 13px / weight 600 (вместо 22/700 — компактнее под pill). Counter gap 10px (вместо space-between/14gap). Scope unchanged."
+  "changelog": "Phase L100.20 — remove «шт.» suffix. Per user — убрать «шт.» отовсюду. Удалён `.counter-value::after { content: \" шт.\" }` правило из menu-minimal.css. Counter теперь показывает только число между `−` и `+` (например «− 1 +»). Comment в CSS обновлён соответственно. Scope unchanged: только body.menu-view-minimal."
 }
