@@ -11,8 +11,15 @@
  */
 
 body.menu-view-minimal {
-    --mm-ink: var(--text-color, var(--ui-text, #1a1a1a));
-    --mm-ink-muted: var(--ui-text-muted, rgba(18, 18, 18, 0.55));
+    /* Minimal-specific ink tokens. Не используем tenant --text-color /
+       --ui-text напрямую — labus tenant имеет их misconfigured:
+       --text-color = #dedede, --ui-text = --light-text = #555 (dark-theme
+       palette, не подходящий для light bg minimal view). --mm-ink-strong
+       hard-coded dark hex гарантирует readable contrast независимо от
+       tenant overrides; --mm-ink-muted — для secondary text (captions). */
+    --mm-ink-strong: #1a1a1a;
+    --mm-ink: #1a1a1a;
+    --mm-ink-muted: rgba(26, 26, 26, 0.55);
     --mm-border: var(--ui-border, rgba(0, 0, 0, 0.08));
     --mm-accent: var(--primary-color, #cd1719);
     --mm-accent-rgb: var(--primary-color-rgb, 205, 23, 25);
@@ -24,20 +31,18 @@ body.menu-view-minimal {
     font-family: var(--font-text, "proxima-nova", sans-serif);
 }
 
-/* ===== Header. Симметричный отступ сверху + снизу (то же значение что и
-   margin-bottom), чтобы header был визуально centered между discovery
-   strip выше и tabs ниже. ===== */
+/* ===== Header. Симметричный отступ сверху и снизу. Используем padding
+   а не margin, чтобы избежать margin-collapse escape в .container
+   parent (margin-top «уползал» в parent и не рендерился). ===== */
 body.menu-view-minimal .menu-minimal-header {
     align-items: baseline;
-    margin-top: clamp(24px, 3vw, 40px);
-    margin-bottom: clamp(24px, 3vw, 40px);
-    padding: 0;
+    padding-top: clamp(24px, 3vw, 40px);
+    padding-bottom: clamp(24px, 3vw, 40px);
+    margin: 0;
 }
-/* «Меню» heading — высоко-контрастный текст. var(--text-color) это canonical
-   primary-text token проекта; literal fallback #0a0a0a гарантирует max
-   contrast в случае tenant override на muted value. */
+/* «Меню» heading — high-contrast тёмный текст через minimal-specific token. */
 body.menu-view-minimal .menu-minimal-h2 {
-    color: var(--text-color, #0a0a0a);
+    color: var(--mm-ink-strong);
     font-family: var(--font-heading, var(--font-text, "Inter", sans-serif));
     font-weight: 700;
     letter-spacing: -0.01em;
