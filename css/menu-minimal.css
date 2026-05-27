@@ -314,29 +314,63 @@ body.menu-view-minimal .menu-minimal-tile-buy .buy-text {
     }
     body.menu-view-minimal .menu-minimal-tile-buy .buy-text { font-size: 22px; }
 }
+/* ===== Buy button expanded counter state. После клика cart.js добавляет
+   `.buy-active` на .menu-minimal-tile-buy, скрывает .buy-text (через
+   .hidden class) и показывает .buy-counter (снимает .hidden). В этом
+   состоянии расширяем button до pill ~120px с layout: «− value +».
+   Background остаётся transparent (как до клика), brand outline тот же. */
+body.menu-view-minimal .menu-minimal-tile-buy.buy-active,
+body.menu-view-minimal .menu-minimal-tile .buy.buy-active {
+    aspect-ratio: auto;
+    border-radius: 999px;
+    flex: 0 0 auto;
+    height: 44px;
+    max-width: none;
+    min-width: 120px;
+    padding: 0 14px;
+    width: auto;
+}
+body.menu-view-minimal .menu-minimal-tile-buy .buy-text.hidden {
+    display: none;
+}
 body.menu-view-minimal .menu-minimal-tile-buy .buy-counter {
     align-items: center;
     background: transparent;
     color: inherit;
     display: inline-flex;
     flex-direction: row;
-    gap: 8px;
+    gap: 14px;
+    justify-content: space-between;
+    width: 100%;
 }
 body.menu-view-minimal .menu-minimal-tile-buy .buy-counter.hidden { display: none; }
 body.menu-view-minimal .menu-minimal-tile-buy .counter-minus,
 body.menu-view-minimal .menu-minimal-tile-buy .counter-plus {
-    color: inherit;
+    align-items: center;
+    color: var(--mm-accent);
     cursor: pointer;
-    font-size: 16px;
+    display: inline-flex;
+    font-size: 22px;
+    font-weight: 400;
+    justify-content: center;
     line-height: 1;
     padding: 0 4px;
+    user-select: none;
 }
 body.menu-view-minimal .menu-minimal-tile-buy .counter-value {
-    color: inherit;
+    color: var(--mm-ink-strong);
     font-size: 14px;
-    font-weight: 600;
-    min-width: 12px;
+    font-weight: 700;
+    line-height: 1;
+    min-width: 18px;
     text-align: center;
+}
+/* Hover не должен инвертировать button когда он в counter mode — это
+   мешало бы interaction с ± buttons. */
+body.menu-view-minimal .menu-minimal-tile-buy.buy-active:hover {
+    background: transparent;
+    color: var(--mm-accent);
+    transform: none;
 }
 
 /* ===== Modal ===== */
@@ -460,27 +494,186 @@ body.menu-view-minimal .menu-minimal-modal-close:hover {
     }
 }
 
-/* ===== Cart page adaptation (when user has menu_view=minimal active) ===== */
-body.menu-view-minimal.cart-page .cart-item {
-    background: var(--ui-surface, #ffffff);
+/* ===== Cart page adaptation (only when body has menu-view-minimal class).
+   Mirroring minimal tile aesthetic: sharp corners, transparent surfaces,
+   dark text, brand-red outline для primary actions, muted outline для
+   secondary. Scope: cart.php при `users.menu_view === 'minimal'`. Когда
+   user другой view, body НЕ получает .menu-view-minimal class и cart.php
+   рендерится глобальными стилями без single override. ===== */
+body.menu-view-minimal.cart-page {
+    color: var(--mm-ink-strong);
+    font-family: var(--font-text, "proxima-nova", sans-serif);
+}
+body.menu-view-minimal.cart-page h1,
+body.menu-view-minimal.cart-page h2,
+body.menu-view-minimal.cart-page h3 {
+    color: var(--mm-ink-strong);
+    font-family: var(--font-heading, var(--font-text, inherit));
+    font-weight: 700;
+}
+body.menu-view-minimal.cart-page .account-section,
+body.menu-view-minimal.cart-page .account-section--cart-shell {
+    background: transparent;
     border: 0;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.04);
+    box-shadow: none;
 }
+
+/* Cart item: sharp, transparent, separated by subtle 1px line */
+body.menu-view-minimal.cart-page .cart-item {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 16px 0;
+    position: relative;
+}
+body.menu-view-minimal.cart-page .cart-item + .cart-item {
+    border-top: 1px solid var(--ui-border, rgba(0, 0, 0, 0.08));
+}
+body.menu-view-minimal.cart-page .cart-item-image {
+    border-radius: 0;
+    box-shadow: none;
+}
+body.menu-view-minimal.cart-page .cart-item-info {
+    align-items: center;
+    color: var(--mm-ink-strong);
+}
+body.menu-view-minimal.cart-page .cart-item-title {
+    color: var(--mm-ink-strong);
+    font-family: var(--font-heading, var(--font-text, inherit));
+    font-weight: 700;
+}
+body.menu-view-minimal.cart-page .cart-item-price {
+    color: var(--mm-ink-strong);
+    font-family: var(--font-heading, var(--font-text, inherit));
+    font-weight: 700;
+}
+
+/* Quantity controls: brand-red outline pill вместо filled box */
 body.menu-view-minimal.cart-page .cart-item-quantity {
-    background: var(--ui-surface, #ffffff);
-    border: 1px solid var(--mm-border);
-    border-radius: 10px;
-    color: var(--mm-ink);
+    align-items: center;
+    background: transparent;
+    border: 1.5px solid var(--mm-accent);
+    border-radius: 999px;
+    box-shadow: none;
+    color: var(--mm-accent);
+    display: inline-flex;
+    gap: 6px;
+    padding: 4px 8px;
 }
+body.menu-view-minimal.cart-page .cart-item-quantity .quantity-btn {
+    background: transparent;
+    border: 0;
+    color: var(--mm-accent);
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1;
+    padding: 4px 8px;
+}
+body.menu-view-minimal.cart-page .cart-item-quantity > span {
+    color: var(--mm-ink-strong);
+    font-weight: 700;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* Cart total — big bold ink */
+body.menu-view-minimal.cart-page .cart-total {
+    color: var(--mm-ink-strong);
+    font-family: var(--font-heading, var(--font-text, inherit));
+    font-size: 22px;
+    font-weight: 700;
+}
+
+/* Primary buttons (Заказать, Подтвердить, Ок, Принять звонок, Очистить) —
+   filled brand-red, sharp corners, no shadow, contrasting text */
 body.menu-view-minimal.cart-page .checkout-btn {
     background: var(--mm-accent);
-    border-radius: 10px;
+    border: 1.5px solid var(--mm-accent);
+    border-radius: 0;
+    box-shadow: none;
     color: var(--ui-accent-contrast, #ffffff);
+    font-family: var(--font-text, inherit);
+    font-weight: 600;
+    letter-spacing: 0.02em;
 }
+body.menu-view-minimal.cart-page .checkout-btn:hover {
+    filter: brightness(0.94);
+}
+
+/* Cancel-style buttons — muted outline */
+body.menu-view-minimal.cart-page .checkout-btn.cancel-btn,
 body.menu-view-minimal.cart-page .clear-cart-btn {
     background: transparent;
-    border: 1px solid var(--mm-border);
-    border-radius: 10px;
+    border: 1.5px solid var(--ui-border, rgba(0, 0, 0, 0.08));
+    border-radius: 0;
+    box-shadow: none;
     color: var(--mm-ink-muted);
+    filter: none;
+}
+body.menu-view-minimal.cart-page .checkout-btn.cancel-btn:hover,
+body.menu-view-minimal.cart-page .clear-cart-btn:hover {
+    border-color: var(--mm-accent);
+    color: var(--mm-accent);
+    filter: none;
+}
+
+/* Back-to-menu link as outline brand chip */
+body.menu-view-minimal.cart-page .back-to-menu-btn {
+    background: transparent;
+    border: 1.5px solid var(--mm-accent);
+    border-radius: 0;
+    box-shadow: none;
+    color: var(--mm-accent);
+    font-family: var(--font-text, inherit);
+    font-weight: 600;
+    padding: 8px 16px;
+    text-decoration: none;
+}
+body.menu-view-minimal.cart-page .back-to-menu-btn:hover {
+    background: var(--mm-accent);
+    color: var(--ui-accent-contrast, #ffffff);
+}
+
+/* Tips section: outline chips, active = filled brand */
+body.menu-view-minimal.cart-page .tips-section {
+    color: var(--mm-ink-strong);
+}
+body.menu-view-minimal.cart-page .tips-option {
+    background: transparent;
+    border: 1.5px solid var(--ui-border, rgba(0, 0, 0, 0.08));
+    border-radius: 0;
+    box-shadow: none;
+    color: var(--mm-ink-strong);
+}
+body.menu-view-minimal.cart-page .tips-option:hover {
+    border-color: var(--mm-accent);
+    color: var(--mm-accent);
+}
+body.menu-view-minimal.cart-page .tips-option.active {
+    background: var(--mm-accent);
+    border-color: var(--mm-accent);
+    color: var(--ui-accent-contrast, #ffffff);
+}
+
+/* Delivery options — keep readable on minimal */
+body.menu-view-minimal.cart-page .delivery-options {
+    color: var(--mm-ink-strong);
+}
+body.menu-view-minimal.cart-page input[type="text"],
+body.menu-view-minimal.cart-page input[type="tel"],
+body.menu-view-minimal.cart-page input[type="email"],
+body.menu-view-minimal.cart-page select,
+body.menu-view-minimal.cart-page textarea {
+    background: transparent;
+    border: 1px solid var(--ui-border, rgba(0, 0, 0, 0.08));
+    border-radius: 0;
+    color: var(--mm-ink-strong);
+}
+body.menu-view-minimal.cart-page input:focus,
+body.menu-view-minimal.cart-page select:focus,
+body.menu-view-minimal.cart-page textarea:focus {
+    border-color: var(--mm-accent);
+    outline: 0;
 }

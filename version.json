@@ -1,5 +1,5 @@
 {
-  "version": "3.14.13",
+  "version": "3.14.14",
   "release_date": "2026-05-27",
-  "changelog": "Phase L100.13 — remove header vertical padding в minimal view (per user). Удалены `padding-top` / `padding-bottom: clamp(24, 3vw, 40)` из `.menu-minimal-header`. Header теперь без явного vertical spacing — inherits natural rhythm от discovery-strip выше и tabs-container ниже. Scope unchanged: только body.menu-view-minimal."
+  "changelog": "Phase L100.14 — buy-counter expansion + cart.php minimal aesthetic. (1) Buy button: после клика cart.js добавляет .buy-active class и swaps .hidden между .buy-text и .buy-counter. Теперь .buy-active расширяет button до pill ~120px wide с layout «− value +» (brand color для signs, dark для value, transparent fill — как до клика). Hover в counter mode не инвертирует bg чтобы ± buttons оставались интерактивными. (2) Cart.php при active body.menu-view-minimal: cart-item bg transparent + border 0 + radius 0 + 1px separator между items; cart-item-image радиус 0; cart-item-title/price dark + bold; cart-item-quantity = brand-red outline pill (transparent fill, brand ± buttons, dark value); cart-total 22px bold ink; checkout-btn (primary) = filled brand-red sharp; checkout-btn.cancel-btn + clear-cart-btn = muted outline; back-to-menu-btn = brand outline; tips-option = outline, .active = filled brand; inputs/selects = transparent + bottom border. Scope: только body.menu-view-minimal.cart-page — на остальных 3 views cart.php рендерится глобальными стилями, ни один override не применяется."
 }
