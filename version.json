@@ -1,5 +1,5 @@
 {
-  "version": "3.14.17",
+  "version": "3.14.18",
   "release_date": "2026-05-27",
-  "changelog": "Phase L100.17 — cap grid at 3 columns max на любом устройстве. Раньше .menu-minimal-grid использовал `repeat(auto-fill, minmax(240px, 1fr))` + `@media (min-width: 1440px) minmax(260px, 1fr)` — на широких экранах рендерилось 4-5 колонок. Per user: fixed cap 3 cols. Default: `repeat(3, minmax(0, 1fr))`. Mobile (≤480): 2 cols (unchanged для читаемости). Удалён 1440px media query (был бы overridden 3-col rule всё равно, но cleaner без него). Scope: только body.menu-view-minimal."
+  "changelog": "Phase L100.18 — footer breakpoint bumped 768 → 1280 (per user). Раньше footer column-stack рендерился только при ≤768px; теперь — при ≤1280px. Создан отдельный `@media (max-width: 1280px)` блок с правилами flex-direction column + buy-active 100% width. Mobile typography compression остаётся в существующем `@media (max-width: 768px)` блоке (font sizes, paddings). На >1280px footer всегда row inline. Scope: только body.menu-view-minimal."
 }
