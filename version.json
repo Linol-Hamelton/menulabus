@@ -1,5 +1,5 @@
 {
-  "version": "3.14.18",
+  "version": "3.14.19",
   "release_date": "2026-05-27",
-  "changelog": "Phase L100.18 — footer breakpoint bumped 768 → 1280 (per user). Раньше footer column-stack рендерился только при ≤768px; теперь — при ≤1280px. Создан отдельный `@media (max-width: 1280px)` блок с правилами flex-direction column + buy-active 100% width. Mobile typography compression остаётся в существующем `@media (max-width: 768px)` блоке (font sizes, paddings). На >1280px footer всегда row inline. Scope: только body.menu-view-minimal."
+  "changelog": "Phase L100.19 — buy-active pill sizes to content + «шт.» suffix. Раньше .buy-active растягивался: min-width 120 на desktop, width 100% на ≤1280. Per user — должен sizes to content (компактный outline pill, как на референс-изображении). Fix: min-width 0, max-width none, width auto, padding 0 10px; @media (≤1280) — align-self: flex-start + align-items: flex-start на footer (вместо stretch) чтобы pill не растягивался в column-stretch. Counter-value получает «шт.» suffix через CSS `::after { content: \" шт.\" }` — markup не тронут, cart.js пишет только число. Counter typography tuned: `−` / `+` 20px / weight 500, value 13px / weight 600 (вместо 22/700 — компактнее под pill). Counter gap 10px (вместо space-between/14gap). Scope unchanged."
 }

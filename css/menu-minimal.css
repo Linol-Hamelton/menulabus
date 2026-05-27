@@ -289,24 +289,24 @@ body.menu-view-minimal .menu-minimal-tile-buy .buy-text {
     line-height: 1;
 }
 
-/* Footer breakpoint: при ширине экрана ≤1280px (per user) footer
-   переключается на column-stack — price на row 1, buy кнопка на row 2.
-   Resting 44px circle и expanded pill оба сидят под ценой, никаких
-   overlap'ов. На >1280px footer остаётся row layout (price + buy
-   inline через space-between). */
+/* Footer breakpoint: при ≤1280px footer column-stack — price row 1,
+   buy на row 2. Button НЕ растягивается на полную ширину tile — sizes
+   to content. align-items: flex-start (не stretch) сохраняет компактный
+   pill. На >1280px footer остаётся row layout (price + buy inline). */
 @media (max-width: 1280px) {
     body.menu-view-minimal .menu-minimal-tile-footer {
-        align-items: stretch;
+        align-items: flex-start;
         flex-direction: column;
         gap: 10px;
     }
     body.menu-view-minimal .menu-minimal-tile-buy.buy-active,
     body.menu-view-minimal .menu-minimal-tile .buy.buy-active {
+        align-self: flex-start;
         flex: 0 0 auto;
         max-width: 100%;
         min-width: 0;
-        padding: 0 14px;
-        width: 100%;
+        padding: 0 10px;
+        width: auto;
     }
 }
 
@@ -335,15 +335,14 @@ body.menu-view-minimal .menu-minimal-tile-buy .buy-text {
     }
     body.menu-view-minimal .menu-minimal-tile-buy.buy-active,
     body.menu-view-minimal .menu-minimal-tile .buy.buy-active {
-        padding: 0 12px;
+        padding: 0 10px;
     }
     body.menu-view-minimal .menu-minimal-tile-buy .buy-text { font-size: 22px; }
 }
-/* ===== Buy button expanded counter state. После клика cart.js добавляет
-   `.buy-active` на .menu-minimal-tile-buy, скрывает .buy-text (через
-   .hidden class) и показывает .buy-counter (снимает .hidden). В этом
-   состоянии расширяем button до pill ~120px с layout: «− value +».
-   Background остаётся transparent (как до клика), brand outline тот же. */
+/* ===== Buy button expanded counter state. cart.js добавляет .buy-active
+   и swaps .hidden между .buy-text и .buy-counter. В этом состоянии button
+   превращается в outline pill размером по content «− N шт. +» (НЕ
+   растягивается на 100%). Background transparent, brand outline тот же. */
 body.menu-view-minimal .menu-minimal-tile-buy.buy-active,
 body.menu-view-minimal .menu-minimal-tile .buy.buy-active {
     aspect-ratio: auto;
@@ -351,8 +350,8 @@ body.menu-view-minimal .menu-minimal-tile .buy.buy-active {
     flex: 0 0 auto;
     height: 44px;
     max-width: none;
-    min-width: 120px;
-    padding: 0 14px;
+    min-width: 0;
+    padding: 0 10px;
     width: auto;
 }
 body.menu-view-minimal .menu-minimal-tile-buy .buy-text.hidden {
@@ -364,8 +363,8 @@ body.menu-view-minimal .menu-minimal-tile-buy .buy-counter {
     color: inherit;
     display: inline-flex;
     flex-direction: row;
-    justify-content: space-between;
-    width: 100%;
+    gap: 10px;
+    justify-content: center;
 }
 body.menu-view-minimal .menu-minimal-tile-buy .buy-counter.hidden { display: none; }
 body.menu-view-minimal .menu-minimal-tile-buy .counter-minus,
@@ -374,8 +373,8 @@ body.menu-view-minimal .menu-minimal-tile-buy .counter-plus {
     color: var(--mm-accent);
     cursor: pointer;
     display: inline-flex;
-    font-size: 22px;
-    font-weight: 400;
+    font-size: 20px;
+    font-weight: 500;
     justify-content: center;
     line-height: 1;
     padding: 0 4px;
@@ -383,11 +382,19 @@ body.menu-view-minimal .menu-minimal-tile-buy .counter-plus {
 }
 body.menu-view-minimal .menu-minimal-tile-buy .counter-value {
     color: var(--mm-ink-strong);
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 13px;
+    font-weight: 600;
     line-height: 1;
-    min-width: 18px;
+    min-width: 0;
     text-align: center;
+}
+/* «шт.» suffix через CSS-only — markup не трогаем; cart.js пишет в
+   .counter-value только число, мы рисуем единицу измерения после
+   через ::after, только в minimal scope. */
+body.menu-view-minimal .menu-minimal-tile-buy .counter-value::after {
+    content: " шт.";
+    color: var(--mm-ink-strong);
+    font-weight: 600;
 }
 /* Hover не должен инвертировать button когда он в counter mode — это
    мешало бы interaction с ± buttons. */
