@@ -1,5 +1,5 @@
 {
-  "version": "3.14.16",
+  "version": "3.14.17",
   "release_date": "2026-05-27",
-  "changelog": "Phase L100.16 — four polish edits в локальном menu-minimal.css (без правки global): (1) buy-counter снят `gap: 14px` — `−`, value, `+` теперь распределяются только через `justify-content: space-between` (естественная равномерность краям). (2) `.menu-minimal-tile .price` локально override `justify-content: flex-start` (global .price имеет `center` — не трогаю global, заменяю scoped). (3) `.menu-minimal-tile-price` padding 0 → 5px (мягче visual rhythm). (4) Mobile (≤768): footer ВСЕГДА column-stretch (не только при `.buy-active` через `:has()`). Кнопка переезжает на новую строку ещё до клика — resting circle и expanded pill оба сидят под ценой консистентно."
+  "changelog": "Phase L100.17 — cap grid at 3 columns max на любом устройстве. Раньше .menu-minimal-grid использовал `repeat(auto-fill, minmax(240px, 1fr))` + `@media (min-width: 1440px) minmax(260px, 1fr)` — на широких экранах рендерилось 4-5 колонок. Per user: fixed cap 3 cols. Default: `repeat(3, minmax(0, 1fr))`. Mobile (≤480): 2 cols (unchanged для читаемости). Удалён 1440px media query (был бы overridden 3-col rule всё равно, но cleaner без него). Scope: только body.menu-view-minimal."
 }

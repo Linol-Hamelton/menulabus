@@ -108,18 +108,16 @@ body.menu-view-minimal .tab-pane.active {
 body.menu-view-minimal .tab-pane:not(.active) {
     display: none;
 }
+/* Max 3 columns на любом устройстве (per user). Раньше auto-fill
+   позволяло 4-5 колонок на широких экранах; теперь fixed 3-col max.
+   На mobile (≤480) — 2 cols для читаемости. */
 body.menu-view-minimal .menu-minimal-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     column-gap: var(--mm-tile-gap);
     row-gap: var(--mm-row-gap);
     padding: 4px 0 32px;
     width: 100%;
-}
-@media (min-width: 1440px) {
-    body.menu-view-minimal .menu-minimal-grid {
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    }
 }
 @media (max-width: 480px) {
     body.menu-view-minimal .menu-minimal-grid {
