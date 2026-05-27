@@ -31,13 +31,11 @@ body.menu-view-minimal {
     font-family: var(--font-text, "proxima-nova", sans-serif);
 }
 
-/* ===== Header. Симметричный отступ сверху и снизу. Используем padding
-   а не margin, чтобы избежать margin-collapse escape в .container
-   parent (margin-top «уползал» в parent и не рендерился). ===== */
+/* ===== Header — без vertical padding в minimal view (per user request).
+   Header inherits только natural spacing от .menu-discovery-strip выше и
+   .menu-minimal-tabs-container ниже. ===== */
 body.menu-view-minimal .menu-minimal-header {
     align-items: baseline;
-    padding-top: clamp(24px, 3vw, 40px);
-    padding-bottom: clamp(24px, 3vw, 40px);
     margin: 0;
 }
 /* «Меню» heading — high-contrast тёмный текст через minimal-specific token. */

@@ -1,5 +1,5 @@
 {
-  "version": "3.14.12",
+  "version": "3.14.13",
   "release_date": "2026-05-27",
-  "changelog": "Phase L100.12 — fix invisible text + header margin. v3.14.11 deploy показал что labus tenant имеет misconfigured tokens: --text-color=#dedede (very light, dark-theme palette), --ui-text=--light-text=#555. На светлом bg minimal view это делало h2/price/text почти invisible (rgb 222,222,222 ≈ white on white). Fix: define minimal-specific tokens с reliable dark hex fallbacks — `--mm-ink-strong: #1a1a1a` / `--mm-ink: #1a1a1a` / `--mm-ink-muted: rgba(26,26,26,0.55)`. Это всё ещё CSS variables (satisfies «из переменных»), но не зависят от broken tenant tokens. H2 «Меню» now использует var(--mm-ink-strong). Также header margin-top уползал через margin-collapse в .container parent (rendered 0px); переключил на padding-top — explicit space, no collapse."
+  "changelog": "Phase L100.13 — remove header vertical padding в minimal view (per user). Удалены `padding-top` / `padding-bottom: clamp(24, 3vw, 40)` из `.menu-minimal-header`. Header теперь без явного vertical spacing — inherits natural rhythm от discovery-strip выше и tabs-container ниже. Scope unchanged: только body.menu-view-minimal."
 }
