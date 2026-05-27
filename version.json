@@ -1,5 +1,5 @@
 {
-  "version": "3.14.15",
+  "version": "3.14.16",
   "release_date": "2026-05-27",
-  "changelog": "Phase L100.15 — mobile: buy-active pill переезжает на новую строку и не перекрывает price. Проблема: на 375vw tile inner width ≈ 134px (165px tile - 8px×2 padding), expanded pill `min-width: 120px` + price ~50px + gap = 182px → overflow → перекрытие цены. Fix: conditional layout switch на mobile через `body.menu-view-minimal .menu-minimal-tile-footer:has(.buy-active)` — flex-direction column-stretch, gap 10px. Pill получает `width: 100%; max-width: 100%; min-width: 0; padding: 0 12px` — fits tile inner width. Resting state (44px circle) остаётся inline с price (row layout, compact). Scope: только @media (max-width: 768px) + body.menu-view-minimal."
+  "changelog": "Phase L100.16 — four polish edits в локальном menu-minimal.css (без правки global): (1) buy-counter снят `gap: 14px` — `−`, value, `+` теперь распределяются только через `justify-content: space-between` (естественная равномерность краям). (2) `.menu-minimal-tile .price` локально override `justify-content: flex-start` (global .price имеет `center` — не трогаю global, заменяю scoped). (3) `.menu-minimal-tile-price` padding 0 → 5px (мягче visual rhythm). (4) Mobile (≤768): footer ВСЕГДА column-stretch (не только при `.buy-active` через `:has()`). Кнопка переезжает на новую строку ещё до клика — resting circle и expanded pill оба сидят под ценой консистентно."
 }

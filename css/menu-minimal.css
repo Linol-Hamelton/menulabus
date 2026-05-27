@@ -246,9 +246,10 @@ body.menu-view-minimal .menu-minimal-tile .price {
     font-family: var(--font-heading, var(--font-text, inherit));
     font-size: 22px;
     font-weight: 700;
+    justify-content: flex-start;
     letter-spacing: -0.01em;
     margin: 0;
-    padding: 0;
+    padding: 5px;
 }
 
 /* Buy button — outline circle. Legacy .buy уже даёт min-width/height 44 +
@@ -309,15 +310,15 @@ body.menu-view-minimal .menu-minimal-tile-buy .buy-text {
         margin-bottom: 14px;
         padding: 0 6px;
     }
+    /* Mobile: footer всегда column-stack (price row 1, buy row 2)
+       независимо от состояния .buy-active — кнопка переезжает на
+       следующую строку ещё до добавления товара. Pill при click потом
+       расширяется по 100% ширине, не overflow tile. */
     body.menu-view-minimal .menu-minimal-tile-footer {
-        padding: 0 6px;
-    }
-    /* Когда footer содержит активную кнопку — switch на column stack,
-       price на row 1 (full width), pill на row 2 (full width). */
-    body.menu-view-minimal .menu-minimal-tile-footer:has(.buy-active) {
-        flex-direction: column;
         align-items: stretch;
-        gap: 10px;
+        flex-direction: column;
+        gap: 8px;
+        padding: 0 6px;
     }
     body.menu-view-minimal .menu-minimal-tile-price,
     body.menu-view-minimal .menu-minimal-tile .price {
@@ -361,7 +362,6 @@ body.menu-view-minimal .menu-minimal-tile-buy .buy-counter {
     color: inherit;
     display: inline-flex;
     flex-direction: row;
-    gap: 14px;
     justify-content: space-between;
     width: 100%;
 }
