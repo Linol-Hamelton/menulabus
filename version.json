@@ -1,5 +1,5 @@
 {
-  "version": "3.14.20",
+  "version": "3.14.21",
   "release_date": "2026-05-27",
-  "changelog": "Phase L100.20 — remove «шт.» suffix. Per user — убрать «шт.» отовсюду. Удалён `.counter-value::after { content: \" шт.\" }` правило из menu-minimal.css. Counter теперь показывает только число между `−` и `+` (например «− 1 +»). Comment в CSS обновлён соответственно. Scope unchanged: только body.menu-view-minimal."
+  "changelog": "Phase L100.21 — user tweak: cart-item-quantity pill padding tightened `4px 8px → 2px 1px`. Compact spacing inside qty controls на /cart.php при minimal view. Scope unchanged: только body.menu-view-minimal.cart-page."
 }

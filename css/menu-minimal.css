@@ -582,7 +582,7 @@ body.menu-view-minimal.cart-page .cart-item-quantity {
     color: var(--mm-accent);
     display: inline-flex;
     gap: 6px;
-    padding: 4px 8px;
+    padding: 2px 1px;
 }
 body.menu-view-minimal.cart-page .cart-item-quantity .quantity-btn {
     background: transparent;
