@@ -1555,7 +1555,7 @@ body.admin-menu-page {
   body.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs,
   body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs {
     align-items: center !important;
-    background: rgba(255, 255, 255, 0.94) !important;
+    background: var(--white);
     border: 0 !important;
     border-radius: 0 !important;
     border-top: 1px solid rgba(18, 18, 18, 0.08) !important;

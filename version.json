@@ -1,5 +1,5 @@
 {
-  "version": "3.14.22",
+  "version": "3.14.23",
   "release_date": "2026-05-27",
-  "changelog": "Phase L100.22 — cart-link refinement в minimal view. Element имеет два class'а (.order-summary-btn + .menu-minimal-cart-link). Per user — локальный override без правки global rule .order-summary-btn (которое имеет brand box-shadow): border 1px solid var(--primary-color) (brand outline), box-shadow none (override global brand glow), font-weight 700, min-height 50px, display inline-flex + align-items center + gap 10px для vertical alignment текста и иконки. Compound selector `.order-summary-btn.menu-minimal-cart-link` bumps specificity чтобы override стабильно выигрывал у global. Scope unchanged: только body.menu-view-minimal."
+  "changelog": "Phase L100.23 — user manual edit на admin-menu tabs (ui-ux-polish.css): `.admin-menu-page .menu-tabs-container.admin-menu-categories .menu-tabs` background `rgba(255, 255, 255, 0.94) !important` → `var(--white)` (без !important). Cleanup — переход на token + drop opacity overlay (solid white). Затрагивает admin/employee menu pages, не клиентский minimal view."
 }
