@@ -290,7 +290,11 @@ body.menu-view-minimal .menu-minimal-tile-buy .buy-text {
     line-height: 1;
 }
 
-/* Mobile / narrow tile — пропорционально уменьшаем typography */
+/* Mobile / narrow tile — пропорционально уменьшаем typography, и кнопка
+   buy-active переезжает на новую строку чтобы не перекрывать цену
+   (expanded pill 120px > tile inner width ~134px на 375vw). Решение —
+   conditional layout switch через :has(): пока buy resting, footer row;
+   когда buy-active, footer column-stretch и pill width 100%. */
 @media (max-width: 768px) {
     body.menu-view-minimal .menu-minimal-tile { padding: 8px; }
     body.menu-view-minimal .menu-minimal-tile-body { padding: 14px 0 0; }
@@ -308,9 +312,27 @@ body.menu-view-minimal .menu-minimal-tile-buy .buy-text {
     body.menu-view-minimal .menu-minimal-tile-footer {
         padding: 0 6px;
     }
+    /* Когда footer содержит активную кнопку — switch на column stack,
+       price на row 1 (full width), pill на row 2 (full width). */
+    body.menu-view-minimal .menu-minimal-tile-footer:has(.buy-active) {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
     body.menu-view-minimal .menu-minimal-tile-price,
     body.menu-view-minimal .menu-minimal-tile .price {
         font-size: 17px;
+    }
+    /* Resting buy (44px circle) constrained для безопасной inline пары
+       с price. Active pill — full row width tile (max-width 100%, не
+       overflows). */
+    body.menu-view-minimal .menu-minimal-tile-buy.buy-active,
+    body.menu-view-minimal .menu-minimal-tile .buy.buy-active {
+        flex: 0 0 auto;
+        max-width: 100%;
+        min-width: 0;
+        padding: 0 12px;
+        width: 100%;
     }
     body.menu-view-minimal .menu-minimal-tile-buy .buy-text { font-size: 22px; }
 }
