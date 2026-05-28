@@ -174,6 +174,10 @@
       $$('input[name], textarea[name]', form).forEach(function (el) {
         if (el.type === 'checkbox') {
           data[el.name] = el.checked ? 1 : 0;
+        } else if (el.type === 'radio') {
+          // Phase L101: only assign from the checked radio (last-wins would
+          // otherwise overwrite with the trailing radio's value).
+          if (el.checked) data[el.name] = el.value;
         } else if (el.type === 'number') {
           data[el.name] = el.value === '' ? null : parseFloat(el.value);
         } else {
@@ -187,18 +191,51 @@
       // Reset all
       $$('input[name], textarea[name]', form).forEach(function (el) {
         if (el.type === 'checkbox') el.checked = false;
-        else el.value = '';
+        else if (el.type !== 'radio') el.value = '';
       });
       if (!item) return;
-      var fields = ['name','description','composition','price','image','calories','protein','fat','carbs','category'];
+      var fields = ['name','description','composition','price','cost','image','calories','protein','fat','carbs','category'];
       fields.forEach(function (f) {
-        var el = form.querySelector('[name="' + f + '"]');
+        var el = form.querySelector('[name="' + f + '"]:not([type="radio"])');
         if (el) el.value = item[f] == null ? '' : item[f];
       });
       var avail = form.querySelector('[name="available"]');
       if (avail) avail.checked = !!Number(item.available != null ? item.available : 1);
+      // Phase L101: cost_source радио + interactive enable/disable cost input
+      var source = (item.cost_source === 'manual') ? 'manual' : 'recipe';
+      var radios = form.querySelectorAll('[name="cost_source"]');
+      radios.forEach(function (r) { r.checked = (r.value === source); });
+      syncCostSourceUI();
       updateImageSummary();
       updatePreview();
+    }
+
+    // Phase L101: при cost_source='recipe' cost input read-only + показывает
+    // recipe-derived value; при 'manual' — editable.
+    function syncCostSourceUI() {
+      var costInput = form.querySelector('[name="cost"]');
+      var hint = form.querySelector('.cost-recipe-hint');
+      var hintValue = form.querySelector('.cost-recipe-value');
+      var checked = form.querySelector('[name="cost_source"]:checked');
+      var source = checked ? checked.value : 'recipe';
+      if (!costInput) return;
+      if (source === 'recipe') {
+        costInput.readOnly = true;
+        costInput.classList.add('is-derived');
+        if (hint) hint.hidden = false;
+        if (hintValue && costInput.value) hintValue.textContent = Number(costInput.value).toFixed(2);
+      } else {
+        costInput.readOnly = false;
+        costInput.classList.remove('is-derived');
+        if (hint) hint.hidden = true;
+      }
+    }
+    // Re-run on radio change (delegated once).
+    if (form && !form.__costSourceWired) {
+      form.addEventListener('change', function (e) {
+        if (e.target && e.target.name === 'cost_source') syncCostSourceUI();
+      });
+      form.__costSourceWired = true;
     }
 
     function open(itemId) {

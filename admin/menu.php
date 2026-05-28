@@ -474,7 +474,7 @@ $savedDbFontsJson = htmlspecialchars(
                         <input type="file" name="csv_file" accept=".csv" required>
                         <button type="submit" name="bulk_upload" class="checkout-btn">Загрузить</button>
                     </form>
-                    <small>UTF-8 CSV. Полная синхронизация: позиции вне файла будут архивированы. Формат: external_id;name;description;composition;price;image;calories;protein;fat;carbs;category;available</small>
+                    <small>UTF-8 CSV. Полная синхронизация: позиции вне файла будут архивированы. Формат: external_id;name;description;composition;price;cost;image;calories;protein;fat;carbs;category;available. Пустая ячейка cost — значение в БД сохраняется (recipe-derived); заполненная — переключает источник на ручной.</small>
                     <small class="admin-csv-recipe-hint">📋 Импорт <strong>техкарт</strong> (ингредиенты и количества для блюд) — в карточке блюда → вкладка «Рецепт» → «Загрузить из CSV». <a href="/download-recipe-sample.php">Скачать пример</a>.</small>
                 </section>
                 </div>
@@ -1156,6 +1156,24 @@ $savedDbFontsJson = htmlspecialchars(
                   <span>Цена, ₽ *</span>
                   <input type="number" step="0.01" min="0" name="price" required>
                 </label>
+
+                <label class="form-field">
+                  <span>Себестоимость, ₽</span>
+                  <input type="number" step="0.01" min="0" name="cost">
+                  <small class="hint cost-recipe-hint" hidden>Берётся из рецепта: <span class="cost-recipe-value">0.00</span> ₽</small>
+                </label>
+
+                <fieldset class="form-field form-field-wide cost-source-group">
+                  <legend>Источник себестоимости</legend>
+                  <label class="cost-source-option">
+                    <input type="radio" name="cost_source" value="recipe" checked>
+                    <span>Авто из рецепта</span>
+                  </label>
+                  <label class="cost-source-option">
+                    <input type="radio" name="cost_source" value="manual">
+                    <span>Ручное значение</span>
+                  </label>
+                </fieldset>
 
                 <label class="form-field form-field-wide">
                   <span>Описание</span>

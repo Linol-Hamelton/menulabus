@@ -4117,3 +4117,40 @@ body.employee-page.admin-menu-page .menu-tabs-container.admin-menu-categories {
     flex-wrap: wrap;
   }
 }
+
+/* === Phase L101 — cost + cost_source UI inside dish editor modal === */
+.dish-form .cost-source-group {
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  border-radius: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0;
+  padding: 10px 12px;
+}
+.dish-form .cost-source-group legend {
+  color: var(--text-color, #1a1a1a);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0 6px;
+  text-transform: uppercase;
+}
+.dish-form .cost-source-option {
+  align-items: center;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 14px;
+  gap: 6px;
+}
+.dish-form input[name="cost"].is-derived {
+  background: var(--bg-light, #f5f5f5);
+  color: var(--ui-text-muted, #555);
+  cursor: not-allowed;
+}
+.dish-form .cost-recipe-hint {
+  color: var(--primary-color, #cd1719);
+  font-size: 12px;
+  margin-top: 4px;
+}
+

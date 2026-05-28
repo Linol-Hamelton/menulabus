@@ -115,6 +115,21 @@ switch ($action) {
         $category    = trim((string)($input['category'] ?? ''));
         $available   = !empty($input['available']) ? 1 : 0;
 
+        // Phase L101: cost + cost_source (опциональные).
+        $costSourceRaw = (string)($input['cost_source'] ?? 'recipe');
+        $costSource    = in_array($costSourceRaw, ['manual', 'recipe'], true) ? $costSourceRaw : 'recipe';
+        $costRaw       = $input['cost'] ?? null;
+        if ($costRaw === '' || $costRaw === null) {
+            $cost = $costSource === 'manual' ? 0.0 : null;
+        } else {
+            $cost = (float)$costRaw;
+            if ($cost < 0) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'invalid_cost']);
+                exit;
+            }
+        }
+
         if ($name === '' || $category === '' || $price < 0) {
             http_response_code(400);
             echo json_encode(['success' => false, 'error' => 'invalid_params']);
@@ -128,7 +143,7 @@ switch ($action) {
 
         if ($id > 0) {
             $ok = $db->updateMenuItems($id, $name, $description, $composition, $price, $image ?: null,
-                $calories, $protein, $fat, $carbs, $category, $available);
+                $calories, $protein, $fat, $carbs, $category, $available, $cost, $costSource);
             if (!$ok) {
                 http_response_code(500);
                 echo json_encode(['success' => false, 'error' => 'update_failed']);
@@ -138,7 +153,7 @@ switch ($action) {
             echo json_encode(['success' => true, 'id' => $id, 'item' => $item, 'created' => false], JSON_UNESCAPED_UNICODE);
         } else {
             $newId = $db->addMenuItem($name, $description, $composition, $price, $image ?: null,
-                $calories, $protein, $fat, $carbs, $category, $available);
+                $calories, $protein, $fat, $carbs, $category, $available, $cost, $costSource);
             if (!$newId) {
                 http_response_code(500);
                 echo json_encode(['success' => false, 'error' => 'create_failed']);

@@ -400,7 +400,7 @@ class Database
         
         try {
             $stmt = $this->prepareCached(
-                "SELECT id, external_id, name, description, composition, price, image,
+                "SELECT id, external_id, name, description, composition, price, cost, cost_source, image,
                  calories, protein, fat, carbs, category, available, archived_at
                  FROM menu_items WHERE id = :id"
             );
@@ -462,7 +462,7 @@ class Database
         }
 
         try {
-            $sql = "SELECT id, external_id, name, description, composition, price, image,
+            $sql = "SELECT id, external_id, name, description, composition, price, cost, cost_source, image,
                    calories, protein, fat, carbs, category, available, archived_at
                    FROM menu_items
                    WHERE archived_at IS NULL";
@@ -582,9 +582,18 @@ class Database
         ?int $fat,
         ?int $carbs,
         string $category,
-        int $available = 1
+        int $available = 1,
+        ?float $cost = null,
+        ?string $costSource = null
     ): bool {
         try {
+            // Phase L101: cost + cost_source — опциональные параметры; если оба
+            // null, не трогаем эти колонки (legacy callers продолжают работать).
+            // Если costSource = 'recipe', сам recompute в конце метода подтянет
+            // актуальное значение из getRecipeCost(); manual записываем как есть.
+            $touchCost = ($cost !== null || $costSource !== null);
+            $costSourceNormalised = $costSource === 'manual' ? 'manual' : 'recipe';
+
             $sql = "
                 UPDATE menu_items
                 SET name = :name,
@@ -597,13 +606,19 @@ class Database
                     fat = :fat,
                     carbs = :carbs,
                     category = :category,
-                    available = :available
+                    available = :available";
+            if ($touchCost) {
+                $sql .= ",
+                    cost = :cost,
+                    cost_source = :cost_source";
+            }
+            $sql .= "
                 WHERE id = :id
             ";
 
             $stmt = $this->prepareCached($sql);
 
-            $result = $stmt->execute([
+            $params = [
                 ':name' => $name,
                 ':description' => $description,
                 ':composition' => $composition,
@@ -616,12 +631,22 @@ class Database
                 ':category' => $category,
                 ':available' => $available,
                 ':id' => $id
-            ]);
-            
+            ];
+            if ($touchCost) {
+                $params[':cost'] = $cost !== null ? $cost : 0.0;
+                $params[':cost_source'] = $costSourceNormalised;
+            }
+
+            $result = $stmt->execute($params);
+
             if ($result) {
+                if ($touchCost && $costSourceNormalised === 'recipe') {
+                    // Подтягиваем cost из рецепта если выбран recipe-source.
+                    $this->recomputeMenuItemCost($id);
+                }
                 $this->invalidateMenuCache();
             }
-            
+
             return $result;
         } catch (PDOException $e) {
             error_log("updateMenuItems Error: " . $e->getMessage());
@@ -1642,12 +1667,17 @@ class Database
         }
     }
 
-    public function addMenuItem($name, $description, $composition, $price, $image, $calories, $protein, $fat, $carbs, $category, $available = 1)
+    public function addMenuItem($name, $description, $composition, $price, $image, $calories, $protein, $fat, $carbs, $category, $available = 1, ?float $cost = null, ?string $costSource = null)
     {
         try {
-            $sql = "INSERT INTO menu_items (external_id, name, description, composition, price, image, 
-                    calories, protein, fat, carbs, category, available, archived_at) 
-                    VALUES (:eid, :n, :d, :cmp, :p, :i, :cal, :prot, :fat, :carb, :c, :a, NULL)";
+            // Phase L101: optional cost + cost_source params (legacy callers
+            // продолжают работать без них — defaults: cost=0, source='recipe').
+            $costValue = $cost !== null ? $cost : 0.0;
+            $costSourceNormalised = $costSource === 'manual' ? 'manual' : 'recipe';
+
+            $sql = "INSERT INTO menu_items (external_id, name, description, composition, price, cost, cost_source, image,
+                    calories, protein, fat, carbs, category, available, archived_at)
+                    VALUES (:eid, :n, :d, :cmp, :p, :cost, :cost_source, :i, :cal, :prot, :fat, :carb, :c, :a, NULL)";
             $stmt = $this->prepareCached($sql);
             $result = $stmt->execute([
                 ':eid' => $this->generateMenuExternalId(),
@@ -1655,6 +1685,8 @@ class Database
                 ':d' => $description,
                 ':cmp' => $composition,
                 ':p' => $price,
+                ':cost' => $costValue,
+                ':cost_source' => $costSourceNormalised,
                 ':i' => $image,
                 ':cal' => $calories,
                 ':prot' => $protein,
@@ -1663,10 +1695,16 @@ class Database
                 ':c' => $category,
                 ':a' => $available
             ]);
-            
+
             if ($result) {
+                $newId = (int)$this->connection->lastInsertId();
+                // Если source = recipe, попробовать сразу подтянуть из рецепта
+                // (на старте рецепта ещё нет — вернёт 0, что эквивалентно default).
+                if ($costSourceNormalised === 'recipe' && $cost === null) {
+                    $this->recomputeMenuItemCost($newId);
+                }
                 $this->invalidateMenuCache();
-                return (int)$this->connection->lastInsertId();
+                return $newId;
             }
 
             return false;
@@ -1819,12 +1857,18 @@ class Database
                 return strtolower(trim($value));
             };
             $normalizedHeader = array_map($normalizeHeader, $header);
+            // Phase L101: добавлена колонка `cost` после `price`. Пустая
+            // ячейка cost = «не трогать существующее значение» (preserves
+            // recipe-derived cost). Заполненная = force `cost_source='manual'`
+            // + write number. Header валидируется строго чтобы CSV-шаблон
+            // оставался прозрачным; backwards-compat для 12-col CSV отсутствует.
             $expectedHeader = [
                 'external_id',
                 'name',
                 'description',
                 'composition',
                 'price',
+                'cost',
                 'image',
                 'calories',
                 'protein',
@@ -1851,6 +1895,7 @@ class Database
                     description TEXT NULL,
                     composition TEXT NULL,
                     price DECIMAL(10,2) NOT NULL,
+                    cost DECIMAL(10,2) NULL,
                     image VARCHAR(255) NULL,
                     calories INT NULL,
                     protein INT NULL,
@@ -1861,6 +1906,15 @@ class Database
                     PRIMARY KEY (external_id)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             ");
+            // Phase L101: drop and recreate cost column on the temp table so
+            // that long-lived PHP-FPM workers (which cache the prior 12-col
+            // schema across requests via CREATE IF NOT EXISTS) pick up the
+            // new column without a restart. The migration is idempotent on
+            // both fresh and recycled connections.
+            $hasCostCol = $this->connection->query("SHOW COLUMNS FROM tmp_menu_sync LIKE 'cost'")->fetch();
+            if (!$hasCostCol) {
+                $this->connection->exec("ALTER TABLE tmp_menu_sync ADD COLUMN cost DECIMAL(10,2) NULL AFTER price");
+            }
             // Do not use TRUNCATE in transactional flow: it can implicitly commit in MySQL.
             $this->connection->exec("DELETE FROM tmp_menu_sync");
 
@@ -1869,10 +1923,10 @@ class Database
 
             $insertTmpStmt = $this->prepareCached("
                 INSERT INTO tmp_menu_sync (
-                    external_id, name, description, composition, price, image,
+                    external_id, name, description, composition, price, cost, image,
                     calories, protein, fat, carbs, category, available
                 ) VALUES (
-                    :external_id, :name, :description, :composition, :price, :image,
+                    :external_id, :name, :description, :composition, :price, :cost, :image,
                     :calories, :protein, :fat, :carbs, :category, :available
                 )
             ");
@@ -1898,8 +1952,8 @@ class Database
                 if (count($row) === 1 && trim((string)$row[0]) === '') {
                     continue;
                 }
-                if (count($row) !== 12) {
-                    throw new Exception("Строка {$lineNo}: ожидается 12 колонок");
+                if (count($row) !== 13) {
+                    throw new Exception("Строка {$lineNo}: ожидается 13 колонок");
                 }
                 if (function_exists('mb_check_encoding')) {
                     foreach ($row as $cell) {
@@ -1937,12 +1991,26 @@ class Database
                 }
                 $price = (float)$priceRaw;
 
-                $category = trim((string)$row[10]);
+                // Phase L101: cost optional. Empty cell = NULL = «keep existing»;
+                // filled cell forces cost_source='manual' on the final UPSERT.
+                $costRaw = str_replace(',', '.', trim((string)$row[5]));
+                if ($costRaw === '') {
+                    $costParsed = null;
+                } elseif (!is_numeric($costRaw)) {
+                    throw new Exception("Строка {$lineNo}: cost должен быть числом или пустым");
+                } else {
+                    $costParsed = (float)$costRaw;
+                    if ($costParsed < 0) {
+                        throw new Exception("Строка {$lineNo}: cost не может быть отрицательным");
+                    }
+                }
+
+                $category = trim((string)$row[11]);
                 if ($category === '') {
                     throw new Exception("Строка {$lineNo}: category обязателен");
                 }
 
-                $availableRaw = strtolower(trim((string)$row[11]));
+                $availableRaw = strtolower(trim((string)$row[12]));
                 if ($availableRaw === '' || $availableRaw === '1' || $availableRaw === 'true' || $availableRaw === 'yes' || $availableRaw === 'да') {
                     $available = 1;
                 } elseif ($availableRaw === '0' || $availableRaw === 'false' || $availableRaw === 'no' || $availableRaw === 'нет') {
@@ -1957,11 +2025,12 @@ class Database
                     ':description' => trim((string)$row[2]),
                     ':composition' => $composition,
                     ':price' => $price,
-                    ':image' => trim((string)$row[5]),
-                    ':calories' => $toNullableInt($row[6]),
-                    ':protein' => $toNullableInt($row[7]),
-                    ':fat' => $toNullableInt($row[8]),
-                    ':carbs' => $toNullableInt($row[9]),
+                    ':cost' => $costParsed,
+                    ':image' => trim((string)$row[6]),
+                    ':calories' => $toNullableInt($row[7]),
+                    ':protein' => $toNullableInt($row[8]),
+                    ':fat' => $toNullableInt($row[9]),
+                    ':carbs' => $toNullableInt($row[10]),
                     ':category' => $category,
                     ':available' => $available,
                 ]);
@@ -1982,20 +2051,30 @@ class Database
             ");
             $statsRow = $statsStmt ? $statsStmt->fetch() : [];
 
+            // Phase L101: UPSERT с cost + cost_source semantics.
+            // - INSERT (новые блюда): cost = COALESCE(tmp.cost, 0); cost_source
+            //   = 'manual' если tmp.cost IS NOT NULL, иначе 'recipe' (default).
+            // - UPDATE (existing): если tmp.cost IS NOT NULL → cost = tmp.cost
+            //   + cost_source = 'manual' (CSV-driven override). Если NULL —
+            //   preserve existing cost+source (recipe-derived остаётся как был).
             $upsertStmt = $this->prepareCached("
                 INSERT INTO menu_items (
-                    external_id, name, description, composition, price, image,
+                    external_id, name, description, composition, price, cost, cost_source, image,
                     calories, protein, fat, carbs, category, available, archived_at
                 )
                 SELECT
-                    external_id, name, description, composition, price, image,
-                    calories, protein, fat, carbs, category, available, NULL
+                    external_id, name, description, composition, price,
+                    COALESCE(cost, 0),
+                    CASE WHEN cost IS NOT NULL THEN 'manual' ELSE 'recipe' END,
+                    image, calories, protein, fat, carbs, category, available, NULL
                 FROM tmp_menu_sync
                 ON DUPLICATE KEY UPDATE
                     name = VALUES(name),
                     description = VALUES(description),
                     composition = VALUES(composition),
                     price = VALUES(price),
+                    cost = IF(VALUES(cost) IS NOT NULL, VALUES(cost), menu_items.cost),
+                    cost_source = IF(VALUES(cost) IS NOT NULL, 'manual', menu_items.cost_source),
                     image = VALUES(image),
                     calories = VALUES(calories),
                     protein = VALUES(protein),
@@ -4314,10 +4393,11 @@ class Database
                     ':supplier' => $supplierId,
                     ':id'       => $id,
                 ]);
+                $costActuallyChanged = $prev && abs(((float)$prev['cost_per_unit']) - $costPerUnit) > 0.00001;
                 if ($prev && class_exists('WebhookDispatcher', false)) {
                     $oldCost = (float)$prev['cost_per_unit'];
                     // Compare with float tolerance to avoid stray-zero noise.
-                    if (abs($oldCost - $costPerUnit) > 0.00001) {
+                    if ($costActuallyChanged) {
                         $diffPct = $oldCost > 0
                             ? round((($costPerUnit - $oldCost) / $oldCost) * 100, 2)
                             : null;
@@ -4331,6 +4411,12 @@ class Database
                             'changed_at' => date('c'),
                         ], $this);
                     }
+                }
+                // Phase L101: каскадный пересчёт menu_items.cost для всех блюд
+                // с recipe-source, использующих этот ингредиент. Manual blokking
+                // остаются нетронутыми (логика внутри recomputeMenuItemCost).
+                if ($costActuallyChanged) {
+                    $this->recomputeRecipesUsingIngredient($id);
                 }
                 return $id;
             }
@@ -4544,6 +4630,96 @@ class Database
     }
 
     /**
+     * Phase L101 — атомарно установить cost + cost_source на блюде. Если
+     * source = 'recipe', значение cost подтягивается из getRecipeCost(id),
+     * параметр $cost игнорируется. Если 'manual', берётся переданное $cost.
+     */
+    public function setMenuItemCost(int $menuItemId, ?float $cost, string $source): bool
+    {
+        if ($menuItemId <= 0) return false;
+        $sourceNorm = ($source === 'manual') ? 'manual' : 'recipe';
+        try {
+            $value = ($sourceNorm === 'recipe')
+                ? $this->getRecipeCost($menuItemId)
+                : (float)max(0, $cost ?? 0.0);
+            $stmt = $this->prepareCached(
+                "UPDATE menu_items SET cost = :c, cost_source = :s WHERE id = :id"
+            );
+            $ok = $stmt->execute([
+                ':c'  => $value,
+                ':s'  => $sourceNorm,
+                ':id' => $menuItemId,
+            ]);
+            if ($ok) $this->invalidateMenuCache();
+            return (bool)$ok;
+        } catch (PDOException $e) {
+            error_log('setMenuItemCost error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Phase L101 — пересчёт cost из рецепта, если cost_source = 'recipe'.
+     * No-op для manual. Возвращает применённое значение (или 0 при no-op).
+     */
+    public function recomputeMenuItemCost(int $menuItemId): float
+    {
+        if ($menuItemId <= 0) return 0.0;
+        try {
+            $stmt = $this->prepareCached(
+                "SELECT cost_source FROM menu_items WHERE id = :id"
+            );
+            $stmt->execute([':id' => $menuItemId]);
+            $row = $stmt->fetch();
+            if (!$row || (string)$row['cost_source'] !== 'recipe') {
+                return 0.0;
+            }
+            $new = $this->getRecipeCost($menuItemId);
+            $upd = $this->prepareCached(
+                "UPDATE menu_items SET cost = :c WHERE id = :id AND cost_source = 'recipe'"
+            );
+            $upd->execute([':c' => $new, ':id' => $menuItemId]);
+            $this->invalidateMenuCache();
+            return $new;
+        } catch (PDOException $e) {
+            error_log('recomputeMenuItemCost error: ' . $e->getMessage());
+            return 0.0;
+        }
+    }
+
+    /**
+     * Phase L101 — каскадный пересчёт cost для всех блюд с
+     * cost_source='recipe', использующих указанный ингредиент. Вызывается
+     * из saveIngredient() когда cost_per_unit реально меняется. Возвращает
+     * число обновлённых блюд.
+     */
+    public function recomputeRecipesUsingIngredient(int $ingredientId): int
+    {
+        if ($ingredientId <= 0) return 0;
+        try {
+            $sel = $this->prepareCached("
+                SELECT DISTINCT r.menu_item_id
+                FROM recipes r
+                JOIN menu_items mi ON mi.id = r.menu_item_id
+                WHERE r.ingredient_id = :iid
+                  AND mi.cost_source = 'recipe'
+                  AND mi.archived_at IS NULL
+            ");
+            $sel->execute([':iid' => $ingredientId]);
+            $ids = array_map('intval', array_column($sel->fetchAll(), 'menu_item_id'));
+            $count = 0;
+            foreach ($ids as $mid) {
+                $this->recomputeMenuItemCost($mid);
+                $count++;
+            }
+            return $count;
+        } catch (PDOException $e) {
+            error_log('recomputeRecipesUsingIngredient error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
      * Phase 34 — three rollup numbers for the inventory page summary cards:
      *   active   — count of non-archived ingredients
      *   low      — count of low-stock ingredients (threshold > 0 AND stock ≤ threshold)
@@ -4598,6 +4774,10 @@ class Database
                 }
             }
             $this->connection->commit();
+            // Phase L101: после save recipe — пересчитать menu_items.cost
+            // если cost_source='recipe' (no-op для manual; sees the new recipe
+            // because we already committed выше).
+            $this->recomputeMenuItemCost($menuItemId);
             return true;
         } catch (PDOException $e) {
             try { $this->connection->rollBack(); } catch (Throwable $ignored) {}
