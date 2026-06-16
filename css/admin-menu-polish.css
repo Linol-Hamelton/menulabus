@@ -4227,3 +4227,27 @@ body.admin-menu-page .admin-block--menu-view .menu-view-form button[type="submit
   margin-top: 4px;
 }
 
+/* === Phase L102.4 — fix .admin-design-panel mobile grid collapse ===
+ *
+ * Bug existed before L102: line 3195-3199 sets `repeat(12, minmax(0, 1fr))`
+ * OUTSIDE any @media, AFTER the `@media (max-width: 1199px)` 2-col override
+ * at line 2961-... So at viewports ≤1199px the 12-col rule wins via source
+ * order, and at ≤768px children spanning `1 / -1` get distributed across
+ * 12 fr-tracks where only col 1 receives content (admin-pane-header h2)
+ * → resolved sizes are 126px + 0×11 → admin-pane-header caption text
+ * wraps one word per line, .admin-block--project visually tiny.
+ *
+ * Fix: explicit 1-col mobile grid + min-width: 0 on children. Placed at
+ * end of file so source order beats the 3198 declaration. */
+@media (max-width: 768px) {
+  body.admin-menu-page .admin-design-panel,
+  body.employee-page.admin-menu-page .admin-design-panel {
+    grid-template-columns: 1fr;
+  }
+  body.admin-menu-page .admin-design-panel > *,
+  body.employee-page.admin-menu-page .admin-design-panel > * {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+}
+

@@ -1,5 +1,5 @@
 {
-  "version": "3.16.3",
+  "version": "3.16.4",
   "release_date": "2026-06-16",
-  "changelog": "Phase L102.3 — fix invisible text на 4 опциях admin menu-view block. MCP verify показал rgb(222, 222, 222) (= #dedede) — это broken labus tenant token --text-color (same issue фикснули в Phase L100.12 для minimal view). Fix: hardcoded `#1a1a1a` в `.menu-view-text` color вместо var(--text-color, #1a1a1a) — fallback не помогал т.к. var определён (просто misconfigured). Mobile (375) проверен — layout без overflow, та же fix применима. Все остальные элементы (heading, hint, cards, radio accent, button) уже visible. Single-line fix."
+  "changelog": "Phase L102.4 — fix .admin-design-panel mobile grid collapse (bug pre-L102). MCP-deep-dive показал: line 3195-3199 в admin-menu-polish.css объявляет `grid-template-columns: repeat(12, minmax(0, 1fr))` БЕЗ @media, ПОСЛЕ @media (max-width: 1199px) на line 2961-... который ставил 2-col mobile override. По source order line 3198 побеждает на всех viewports → mobile получает 12-col grid → дети со span 1/-1 распределяются криво (col 1 = 126px от h2, cols 2-12 = 0px) → admin-pane-header caption wraps по одному слову, project-name block ужат до 126px. Fix: append `@media (max-width: 768px)` в конец файла с `grid-template-columns: 1fr` + `grid-column: 1/-1` + `min-width: 0` на детей. По source order побеждает все предыдущие декларации. Existing bug не введён L102, но был замаскирован — теперь явный из-за нового блока."
 }
