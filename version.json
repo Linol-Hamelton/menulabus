@@ -1,5 +1,5 @@
 {
-  "version": "3.16.1",
+  "version": "3.16.2",
   "release_date": "2026-06-16",
-  "changelog": "Phase L102.1 — fix anonymous cached path для menu_view. v3.16.0 propagated tenant-wide menu_view только в menu.php (залогиненные), но nginx-optimized.conf маршрутизирует анонимных visitors на menu-public.php (cached 10min). Anonymous см. menu-public.php — он не звал getMenuView, не эмитил menu-minimal.css link, не ставил body class. Fix: menu-public.php теперь зеркалит menu.php: $menuView = $db->getMenuView(), conditional body class menu-view-minimal, link на menu-minimal.css, и case 'minimal' в view-switch. Trade-off: cache 10min TTL даёт задержку на anonymous propagation после admin change (документировано comment в menu-public.php)."
+  "changelog": "Phase L102.2 — admin/menu-view block visual polish. Глобальное правило `.admin-form-group :is(input, textarea, select) { width: 10%; margin: auto }` в ui-ux-polish.css ломало radio-инпуты в нашем новом блоке (становились 10% ширины). Плюс `.admin-design-panel > .admin-form-group:nth-of-type(3) { grid-column: span 12 }` после вставки нашего блока попадал не туда. Fix: scoped overrides в admin-menu-polish.css под `body.admin-menu-page .admin-block--menu-view`: explicit grid-column span 12, label-as-card layout с hover/checked state (через :has(input:checked)), native radio 18×18 с accent-color brand-red, тёмный text-color на menu-view-text. Global rules не тронуты — другие admin-form-group inputs работают как было."
 }
