@@ -27,8 +27,17 @@ $GLOBALS['appVersion'] = $appVersion;
 $GLOBALS['projectName'] = $projectName;
 $categories = $db->getUniqueCategories();
 $activeCategory = $_COOKIE['activeMenuCategory'] ?? ($categories[0]['category'] ?? '');
-$menuView = 'default';
+// Phase L102: tenant-wide menu view (см. db.php::getMenuView). Поскольку
+// эта страница серверится анонимам через nginx fastcgi_cache (10 min TTL),
+// смена вида админом распространяется на анонимных visitors с задержкой
+// до 10 мин — это by design trade-off для perf. Залогиненные посетители
+// идут на menu.php и видят change сразу.
+$menuView = $db->getMenuView();
 $csrfToken = bin2hex(random_bytes(16));
+$bodyClasses = 'menu-catalog-page';
+if ($menuView === 'minimal') {
+    $bodyClasses .= ' menu-view-minimal';
+}
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -40,10 +49,11 @@ $csrfToken = bin2hex(random_bytes(16));
     <link rel="stylesheet" href="/css/fa-purged.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/menu-alt.min.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/menu-content-info.min.css?v=<?= htmlspecialchars($appVersion) ?>">
+    <link rel="stylesheet" href="/css/menu-minimal.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/css/menu-discovery.css?v=<?= htmlspecialchars($appVersion) ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($appVersion) ?>">
 </head>
-<body id="body" class="menu-catalog-page">
+<body id="body" class="<?= htmlspecialchars($bodyClasses) ?>">
     <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
 
     <section class="menu-discovery-strip">
@@ -74,6 +84,9 @@ $csrfToken = bin2hex(random_bytes(16));
             break;
         case 'info':
             require_once __DIR__ . '/menu-content-info.php';
+            break;
+        case 'minimal':
+            require_once __DIR__ . '/menu-content-minimal.php';
             break;
         default:
             require_once __DIR__ . '/menu-alt.php';
