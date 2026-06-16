@@ -11,6 +11,11 @@ class Database
     private const PRODUCT_CACHE_TTL = 1800;
     private const MENU_CACHE_TTL = 1800;
     private const CATEGORIES_CACHE_TTL = 3600;
+    // Phase L102: whitelist менюрезентаций; единая точка истины для
+    // валидации входных значений как в settings ('menu_view' key), так и
+    // в legacy users.menu_view colonna (которая теперь deprecated и
+    // используется только как одноразовый seed-источник при первом read).
+    public const MENU_VIEWS = ['default', 'alt', 'info', 'minimal'];
     private $connection;
     private static $instance = null;
     private $preparedStatements = [];
@@ -3255,6 +3260,73 @@ class Database
             error_log("setSetting Error: " . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Phase L102 — tenant-wide menu view selector.
+     *
+     * Read priority:
+     *   1. settings('menu_view')      — authoritative; что админ выбрал в /admin/menu.php
+     *   2. owner.menu_view fallback   — одноразовый seed из старой per-user колонки;
+     *                                   результат сразу же записывается в settings,
+     *                                   так что эта ветка отрабатывает максимум один раз
+     *                                   на tenant и не даёт «фликера на default» во время
+     *                                   первого деплоя L102
+     *   3. 'default'                  — финальный safety net
+     *
+     * Per-request static cache: один SQL-roundtrip + один json_decode за запрос,
+     * даже если menu.php и cart.php оба зовут helper.
+     */
+    public function getMenuView(): string
+    {
+        static $cached = null;
+        if ($cached !== null) return $cached;
+
+        $raw = $this->getSetting('menu_view');
+        if (is_string($raw) && $raw !== '') {
+            $decoded = json_decode($raw, true);
+            if (is_string($decoded) && in_array($decoded, self::MENU_VIEWS, true)) {
+                return $cached = $decoded;
+            }
+        }
+
+        // Seed-once из per-user owner-выбора (см. Phase L100).
+        try {
+            $stmt = $this->prepareCached("
+                SELECT menu_view FROM users
+                WHERE role IN ('owner','admin')
+                  AND menu_view IS NOT NULL
+                  AND menu_view <> ''
+                ORDER BY (role = 'owner') DESC, id ASC
+                LIMIT 1
+            ");
+            $stmt->execute();
+            $row = $stmt->fetch();
+            $seed = ($row && in_array($row['menu_view'], self::MENU_VIEWS, true))
+                ? (string)$row['menu_view']
+                : 'default';
+        } catch (PDOException $e) {
+            error_log('getMenuView seed-lookup error: ' . $e->getMessage());
+            $seed = 'default';
+        }
+
+        // One-shot persist в settings: следующий read попадёт в шаг 1.
+        $this->setSetting('menu_view', json_encode($seed));
+        return $cached = $seed;
+    }
+
+    /**
+     * Phase L102 — admin/owner-only setter. Валидирует значение по whitelist,
+     * пишет в settings('menu_view'). Возвращает финально применённое значение
+     * (либо null при ошибке). $updatedBy — id того, кто сохраняет (для аудита).
+     */
+    public function setMenuView(string $view, ?int $updatedBy = null): ?string
+    {
+        if (!in_array($view, self::MENU_VIEWS, true)) {
+            return null;
+        }
+        $ok = $this->setSetting('menu_view', json_encode($view), $updatedBy);
+        return $ok ? $view : null;
     }
 
     public function getAllSettings()

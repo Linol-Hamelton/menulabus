@@ -508,6 +508,37 @@ $savedDbFontsJson = htmlspecialchars(
                     </div>
                 </div>
 
+                <!-- Phase L102: Tenant-wide menu view (раньше per-user в /account.php?tab=menu).
+                     Read через $db->getMenuView() (см. db.php — settings('menu_view') + seed
+                     fallback). Write через /api/save-menu-view.php (admin/owner role gate). -->
+                <div class="admin-form-group admin-block admin-block--menu-view">
+                    <h3>Отображение меню для клиентов</h3>
+                    <p class="admin-block-hint">Выбор применяется ко всему меню для всех гостей. Настройка единая на тенанта.</p>
+                    <form method="POST" action="/api/save-menu-view.php" class="menu-view-form">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                        <?php $tenantMenuView = $db->getMenuView(); ?>
+                        <div class="menu-view-options">
+                            <label>
+                                <input type="radio" name="menu_view" value="default" <?= $tenantMenuView === 'default' ? 'checked' : '' ?>>
+                                <p class="menu-view-text">Меню список. С информацией и увеличением фото.</p>
+                            </label>
+                            <label>
+                                <input type="radio" name="menu_view" value="info" <?= $tenantMenuView === 'info' ? 'checked' : '' ?>>
+                                <p class="menu-view-text">Меню плиткой с информацией о составе и увеличением фото.</p>
+                            </label>
+                            <label>
+                                <input type="radio" name="menu_view" value="alt" <?= $tenantMenuView === 'alt' ? 'checked' : '' ?>>
+                                <p class="menu-view-text">Меню плиткой без информации о составе и увеличения фото.</p>
+                            </label>
+                            <label>
+                                <input type="radio" name="menu_view" value="minimal" <?= $tenantMenuView === 'minimal' ? 'checked' : '' ?>>
+                                <p class="menu-view-text">Меню плитка в стиле минимализм с информацией о составе и увеличением фото.</p>
+                            </label>
+                        </div>
+                        <button type="submit" class="checkout-btn">Сохранить вид меню</button>
+                    </form>
+                </div>
+
                 <?php
                 // Compute brand setting reader once (used in plates + later in modals).
                 $bs = static function (string $key, string $default = '') use ($db): string {

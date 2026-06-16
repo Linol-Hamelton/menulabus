@@ -48,14 +48,12 @@ unset($_SESSION['qr_table']);
 </head>
 
 <?php
-// Phase L100: propagate user.menu_view → body class so cart inherits styling.
+// Phase L102: menu view tenant-wide через $db->getMenuView() (был per-user
+// через $_SESSION['user']['menu_view'] в Phase L100). Body class теперь
+// читается из общего settings, единого для всех клиентов.
 $cartBodyClasses = 'cart-page account-page';
-if (isset($_SESSION['user_id'])) {
-    $cartUserView = $_SESSION['user']['menu_view']
-        ?? ($db->getUserById((int)$_SESSION['user_id'])['menu_view'] ?? 'default');
-    if ($cartUserView === 'minimal') {
-        $cartBodyClasses .= ' menu-view-minimal';
-    }
+if ($db->getMenuView() === 'minimal') {
+    $cartBodyClasses .= ' menu-view-minimal';
 }
 ?>
 <body id="body"

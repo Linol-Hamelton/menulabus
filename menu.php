@@ -18,8 +18,10 @@ if (isset($_GET['table']) && ctype_digit((string)$_GET['table']) && (int)$_GET['
     $_SESSION['qr_table'] = min((int)$_GET['table'], 999);
 }
 
-// Sync user + compute menu_view BEFORE rendering <body> so body class is correct
-// on first request after user changes view in account.php.
+// Phase L102: menu view теперь tenant-wide, читается из settings через
+// $db->getMenuView() (с fallback-seed из owner per-user value на первом
+// deploy). User-sync остаётся для других целей: $_SESSION['user']
+// используется в header / cart-counter / role gating.
 $now = time();
 $user = $_SESSION['user'] ?? null;
 $userSyncInterval = 300;
@@ -33,7 +35,7 @@ if (isset($_SESSION['user_id'])) {
         }
     }
 }
-$menuView = $user['menu_view'] ?? 'default';
+$menuView = $db->getMenuView();
 $csrfToken = $_SESSION['csrf_token'] ?? ($GLOBALS['csrfToken'] ?? '');
 $GLOBALS['menu_request_ts'] = $now;
 ?>

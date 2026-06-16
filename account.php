@@ -37,10 +37,11 @@ if (!$user || !$user['is_active']) {
     exit;
 }
 
-// Получение предпочтений вида меню
-$menuView = $user['menu_view'] ?? 'alt';
+// Phase L102: menu_view перенесён в tenant-wide settings; per-user форма
+// удалена. Tab 'menu' больше не существует — соответствующая секция и
+// POST-handler ниже тоже удалены.
 $canManageUpdates = in_array($user['role'], ['owner', 'admin', 'employee'], true);
-$allowedTabs = ['profile', 'security', 'menu'];
+$allowedTabs = ['profile', 'security'];
 if ($canManageUpdates) {
     $allowedTabs[] = 'updates';
 }
@@ -130,19 +131,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $successMessage = "Пароль успешно изменен";
                 } else {
                     $errors[] = "Ошибка при изменении пароля";
-                }
-            }
-        } elseif (isset($_POST['change_menu_view'])) {
-            // Изменение вида меню
-            $newView = $_POST['menu_view'] ?? 'default';
-            if (in_array($newView, ['default', 'alt', 'info', 'minimal'], true)) {
-                if ($db->updateMenuView($_SESSION['user_id'], $newView)) {
-                    $menuView = $newView;
-                    // Обновляем данные пользователя в сессии
-                    $_SESSION['user'] = $db->getUserById($_SESSION['user_id']);
-                    $successMessage = "Вид меню успешно изменен";
-                } else {
-                    $errors[] = "Ошибка при изменении вида меню";
                 }
             }
         } elseif (isset($_POST['repeat_order'])) {
@@ -245,7 +233,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="menu-tabs">
             <a href="account.php?tab=profile" class="tab-btn <?= $activeTab === 'profile' ? 'active' : '' ?>">Профиль</a>
             <a href="account.php?tab=security" class="tab-btn <?= $activeTab === 'security' ? 'active' : '' ?>">Безопасность</a>
-            <a href="account.php?tab=menu" class="tab-btn <?= $activeTab === 'menu' ? 'active' : '' ?>">Меню</a>
             <?php if ($canManageUpdates): ?>
             <a href="account.php?tab=updates" class="tab-btn <?= $activeTab === 'updates' ? 'active' : '' ?>">Обновления</a>
             <?php endif; ?>
@@ -331,48 +318,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
         </div>
 
-        <!-- Секция настройки вида меню -->
-        <?php if ($activeTab === 'menu'): ?>
-        <section class="account-section">
-                        <div class="account-section-head">
-                <div class="account-section-heading">
-                    <p class="account-section-kicker">Menu</p>
-                    <h2>Настройки отображения меню</h2>
-                    <p class="account-section-copy">Выберите удобный вид каталога. Настройка сохраняется на вашем аккаунте.</p>
-                </div>
-                <div class="account-section-actions">
-                    <a href="menu.php" class="back-to-menu-btn">Открыть меню</a>
-                </div>
-            </div>
-            <form method="POST">
-                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-                <div class="form-group">
-                    <label>Выберите вид меню:</label><br>
-                    <div class="menu-view-options">
-                        <label>
-                            <input type="radio" name="menu_view" value="default" <?= $menuView === 'default' ? 'checked' : '' ?>>
-                            <p class="menu-view-text">Меню список. С информацией и увеличением фото.</p>
-                        </label>
-                        <label>
-                            <input type="radio" name="menu_view" value="info" <?= $menuView === 'info' ? 'checked' : '' ?>>
-                            <p class="menu-view-text">Меню плиткой с информацией о составе и увеличением фото.</p>
-                        </label>
-                        <label>
-                            <input type="radio" name="menu_view" value="alt" <?= $menuView === 'alt' ? 'checked' : '' ?>>
-                            <p class="menu-view-text">Меню плиткой без информации о составе и увеличения фото.</p>
-                        </label>
-                        <label>
-                            <input type="radio" name="menu_view" value="minimal" <?= $menuView === 'minimal' ? 'checked' : '' ?>>
-                            <p class="menu-view-text">Меню плитка в стиле минимализм с информацией о составе и увеличением фото.</p>
-                        </label>
-                    </div>
-                </div>
-                <div class="section-header-menu">
-                    <button type="submit" name="change_menu_view" class="checkout-btn">Сохранить</button><a href="logout.php" class="back-to-menu-btn">Выйти</a>
-                </div>
-            </form>
-        </section>
-        <?php endif; ?>
+        <?php /* Phase L102: tab 'menu' и форма выбора вида меню удалены —
+                 setting tenant-wide, управляется через /admin/menu.php → Дизайн. */ ?>
 
         <?php if ($canManageUpdates && $activeTab === 'updates'): ?>
         <section class="account-section">
