@@ -1,5 +1,5 @@
 {
-  "version": "3.16.2",
+  "version": "3.16.3",
   "release_date": "2026-06-16",
-  "changelog": "Phase L102.2 — admin/menu-view block visual polish. Глобальное правило `.admin-form-group :is(input, textarea, select) { width: 10%; margin: auto }` в ui-ux-polish.css ломало radio-инпуты в нашем новом блоке (становились 10% ширины). Плюс `.admin-design-panel > .admin-form-group:nth-of-type(3) { grid-column: span 12 }` после вставки нашего блока попадал не туда. Fix: scoped overrides в admin-menu-polish.css под `body.admin-menu-page .admin-block--menu-view`: explicit grid-column span 12, label-as-card layout с hover/checked state (через :has(input:checked)), native radio 18×18 с accent-color brand-red, тёмный text-color на menu-view-text. Global rules не тронуты — другие admin-form-group inputs работают как было."
+  "changelog": "Phase L102.3 — fix invisible text на 4 опциях admin menu-view block. MCP verify показал rgb(222, 222, 222) (= #dedede) — это broken labus tenant token --text-color (same issue фикснули в Phase L100.12 для minimal view). Fix: hardcoded `#1a1a1a` в `.menu-view-text` color вместо var(--text-color, #1a1a1a) — fallback не помогал т.к. var определён (просто misconfigured). Mobile (375) проверен — layout без overflow, та же fix применима. Все остальные элементы (heading, hint, cards, radio accent, button) уже visible. Single-line fix."
 }

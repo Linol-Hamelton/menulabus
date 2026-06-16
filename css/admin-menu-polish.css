@@ -4214,8 +4214,11 @@ body.employee-page.admin-menu-page .admin-form-group.admin-block--menu-view inpu
   padding: 0;
   width: 18px;
 }
+/* labus tenant publishes --text-color: #dedede (very light, dark-theme palette
+   that breaks on light card surfaces). Same issue surfaced in Phase L100.12 —
+   reliable fix is hardcoded dark ink. See memory `labus_broken_text_tokens`. */
 body.admin-menu-page .admin-block--menu-view .menu-view-text {
-  color: var(--text-color, #1a1a1a);
+  color: #1a1a1a;
   font-size: 14px;
   line-height: 1.4;
   margin: 0;
