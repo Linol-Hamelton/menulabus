@@ -1,5 +1,5 @@
 {
-  "version": "3.16.4",
-  "release_date": "2026-06-16",
-  "changelog": "Phase L102.4 — fix .admin-design-panel mobile grid collapse (bug pre-L102). MCP-deep-dive показал: line 3195-3199 в admin-menu-polish.css объявляет `grid-template-columns: repeat(12, minmax(0, 1fr))` БЕЗ @media, ПОСЛЕ @media (max-width: 1199px) на line 2961-... который ставил 2-col mobile override. По source order line 3198 побеждает на всех viewports → mobile получает 12-col grid → дети со span 1/-1 распределяются криво (col 1 = 126px от h2, cols 2-12 = 0px) → admin-pane-header caption wraps по одному слову, project-name block ужат до 126px. Fix: append `@media (max-width: 768px)` в конец файла с `grid-template-columns: 1fr` + `grid-column: 1/-1` + `min-width: 0` на детей. По source order побеждает все предыдущие декларации. Existing bug не введён L102, но был замаскирован — теперь явный из-за нового блока."
+  "version": "3.16.5",
+  "release_date": "2026-06-17",
+  "changelog": "Phase L102.5 — add !important к L102.4 mobile grid override. MCP verify на проде показал что L102.4 правило БЫЛО задеплоено (probe-test со свежесозданным div получил 1fr), но реальный `.admin-design-panel` всё ещё рендерил 12 cols. CSSOM walk нашёл 10 matching rules — два моих 1fr самые поздние с (0,3,1) specificity, должны winить, но computed grid-template-columns остаётся `33.07px 0px ×11`. Точную точку override не нашёл (возможно grid-template shorthand где-то), но !important на grid-template-columns + grid-column + min-width гарантирует финальную победу. Tactical fix, не блокирующий."
 }

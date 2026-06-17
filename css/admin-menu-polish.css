@@ -4240,14 +4240,19 @@ body.admin-menu-page .admin-block--menu-view .menu-view-form button[type="submit
  * Fix: explicit 1-col mobile grid + min-width: 0 on children. Placed at
  * end of file so source order beats the 3198 declaration. */
 @media (max-width: 768px) {
+  /* !important на grid-template-columns — Phase L102.4 verify on prod показал
+     что без !important computed-стиль оставался `repeat(12, ...)` несмотря на
+     LATER source order. Видимо где-то ниже по cascade rule с shorthand или
+     equivalent specificity побеждает — точная точка не найдена, но
+     !important решает финально. Те же три properties для consistency. */
   body.admin-menu-page .admin-design-panel,
   body.employee-page.admin-menu-page .admin-design-panel {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
   body.admin-menu-page .admin-design-panel > *,
   body.employee-page.admin-menu-page .admin-design-panel > * {
-    grid-column: 1 / -1;
-    min-width: 0;
+    grid-column: 1 / -1 !important;
+    min-width: 0 !important;
   }
 }
 
