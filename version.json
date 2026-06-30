@@ -1,5 +1,5 @@
 {
-  "version": "3.17.5",
+  "version": "3.17.6",
   "release_date": "2026-06-30",
-  "changelog": "Phase L103.5b — Tier 2 (Заказ+) feature gates wired at 4 callsites. cart.php → CART_BASIC paywall. reservation.php → ORDER_RESERVATION paywall. account.php + customer_orders.php → CUSTOMER_ACCOUNT/CUSTOMER_ORDERS_HIST paywall ONLY when role=customer (staff always see their own kabinet at any tier). Skipped signup.php (SaaS signup, not a tenant feature), auth.php (login must stay open so owners can upgrade), and menu-content* templates (cart button stays — paywall triggers on /cart.php). In legacy single-DB mode all gates are no-ops via Database::hasFeature fail-open. Renders /partials/tier_paywall.php with 402 status."
+  "changelog": "Phase L103.5c — Tier 3 (Доставка+) feature gates wired at 6 callsites. admin/waitlist.php → ORDER_WAITLIST paywall. api/save-courier.php → TierGate ORDER_COURIER_ASSIGN (JSON 402). api/save-aggregator.php → TierGate ORDER_AGGREGATOR (JSON 402). create_new_order.php / create_guest_order.php / api/v1/orders/create.php → server-side block on delivery_type ∈ {takeaway,delivery} if no ORDER_DELIVERY tier (402 + meaningful error). Legacy mode no-op via hasFeature fail-open."
 }

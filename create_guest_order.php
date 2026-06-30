@@ -49,6 +49,24 @@ try {
         exit;
     }
 
+    // Phase L103.5c — server-side delivery-type tier check.
+    // takeaway / delivery requires order.delivery (tier 3+ «Доставка+»).
+    if (in_array($deliveryType, ['takeaway', 'delivery'], true)) {
+        require_once __DIR__ . '/db.php';
+        require_once __DIR__ . '/lib/Billing/Features.php';
+        $dbForGate = Database::getInstance();
+        if (!$dbForGate->hasFeature(\Cleanmenu\Billing\Features::ORDER_DELIVERY, $dbForGate->activeLocationId())) {
+            guest_order_fail('billing', 'tier_upgrade_required', 402, [
+                'delivery_type' => $deliveryType,
+                'required_feature' => \Cleanmenu\Billing\Features::ORDER_DELIVERY,
+            ]);
+            $response['error'] = 'Доставка и самовывоз доступны на тарифе «Доставка+» и выше';
+            http_response_code(402);
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+
     $cleanPhone = preg_replace('/\D/', '', $phone);
     if (strlen($cleanPhone) < 10) {
         guest_order_fail('validation', 'invalid_phone', 400, [

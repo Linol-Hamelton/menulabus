@@ -18,6 +18,7 @@ require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../lib/Csrf.php';
 require_once __DIR__ . '/../lib/AuditLog.php';
+require_once __DIR__ . '/../lib/Billing/TierGate.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -28,6 +29,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 Csrf::requireValid();
+
+// Phase L103.5c — gate behind order.aggregator feature (tier 3+ «Доставка+»).
+\Cleanmenu\Billing\TierGate::requireFeature(
+    \Cleanmenu\Billing\Features::ORDER_AGGREGATOR,
+    'Интеграции с агрегаторами (Яндекс.Еда, Delivery Club)'
+);
 
 $raw   = file_get_contents('php://input');
 $input = json_decode($raw ?: '', true);

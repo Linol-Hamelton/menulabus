@@ -27,6 +27,23 @@ $GLOBALS['api_order_create_items_count'] = is_array($items) ? count($items) : 0;
 if (!is_array($items) || empty($items)) {
     api_v1_order_create_fail('validation', 'invalid_order_payload', 'Invalid order payload', 400);
 }
+
+// Phase L103.5c — server-side delivery-type tier check.
+// takeaway / delivery requires order.delivery (tier 3+ «Доставка+»).
+if (in_array($deliveryType, ['takeaway', 'delivery'], true)) {
+    require_once __DIR__ . '/../../../lib/Billing/Features.php';
+    $dbForGate = Database::getInstance();
+    if (!$dbForGate->hasFeature(\Cleanmenu\Billing\Features::ORDER_DELIVERY, $dbForGate->activeLocationId())) {
+        api_v1_order_create_fail(
+            'billing',
+            'tier_upgrade_required',
+            'Delivery and takeaway require Доставка+ tariff',
+            402,
+            ['required_feature' => \Cleanmenu\Billing\Features::ORDER_DELIVERY]
+        );
+    }
+}
+
 if ($deliveryType === 'delivery' && trim($deliveryDetail) === '') {
     api_v1_order_create_fail('validation', 'missing_delivery_details', 'delivery_details is required for delivery', 400);
 }

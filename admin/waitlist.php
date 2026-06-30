@@ -18,6 +18,11 @@ if (!in_array($role, ['employee', 'admin', 'owner'], true)) {
     exit;
 }
 
+// Phase L103.5c — gate behind order.waitlist feature (tier 3+ «Доставка+»).
+$l103_feature = \Cleanmenu\Billing\Features::ORDER_WAITLIST;
+$l103_label   = 'Очередь ожидания (waitlist)';
+require __DIR__ . '/../partials/tier_paywall.php';
+
 $db = Database::getInstance();
 $filterDate = (string)($_GET['date'] ?? '');
 $entries = $db->listActiveWaitlist($filterDate !== '' ? $filterDate : null, null);

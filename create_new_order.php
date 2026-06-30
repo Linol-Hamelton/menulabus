@@ -72,6 +72,21 @@ try {
             echo json_encode($response, JSON_UNESCAPED_UNICODE);
             exit;
         }
+        // Phase L103.5c — server-side delivery-type tier check.
+        // takeaway / delivery requires order.delivery (tier 3+ «Доставка+»).
+        if (in_array($deliveryType, ['takeaway', 'delivery'], true)) {
+            require_once __DIR__ . '/lib/Billing/Features.php';
+            if (!$db->hasFeature(\Cleanmenu\Billing\Features::ORDER_DELIVERY, $db->activeLocationId())) {
+                web_order_fail('billing', 'tier_upgrade_required', 402, [
+                    'delivery_type' => $deliveryType,
+                    'required_feature' => \Cleanmenu\Billing\Features::ORDER_DELIVERY,
+                ]);
+                $response['error'] = 'Доставка и самовывоз доступны на тарифе «Доставка+» и выше';
+                http_response_code(402);
+                echo json_encode($response, JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+        }
         if ($deliveryType === 'delivery' && trim($deliveryDetail) === '') {
             web_order_fail('validation', 'missing_delivery_details', 400, [
                 'delivery_type' => $deliveryType,
