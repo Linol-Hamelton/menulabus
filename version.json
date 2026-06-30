@@ -1,5 +1,5 @@
 {
-  "version": "3.16.5",
-  "release_date": "2026-06-17",
-  "changelog": "Phase L102.5 — add !important к L102.4 mobile grid override. MCP verify на проде показал что L102.4 правило БЫЛО задеплоено (probe-test со свежесозданным div получил 1fr), но реальный `.admin-design-panel` всё ещё рендерил 12 cols. CSSOM walk нашёл 10 matching rules — два моих 1fr самые поздние с (0,3,1) specificity, должны winить, но computed grid-template-columns остаётся `33.07px 0px ×11`. Точную точку override не нашёл (возможно grid-template shorthand где-то), но !important на grid-template-columns + grid-column + min-width гарантирует финальную победу. Tactical fix, не блокирующий."
+  "version": "3.17.0",
+  "release_date": "2026-06-30",
+  "changelog": "Phase L103.1 — schema + reference data for 6-tier per-location pricing (Меню/Заказ+/Доставка+/Контроль+/Смена+/Кухня+). New control-plane tables: tariffs (8 seed rows), tenant_locations (FK-mirror), subscriptions (one per tenant+location). Extends subscription_invoices/addon_purchases/subscription_events with nullable location_id. ZERO behaviour change — application code still reads tenants.plan_id until Phase L103.6 swap. Migration sql/l103-six-tier-migration.sql is idempotent and safe to deploy any time."
 }
