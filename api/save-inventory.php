@@ -19,8 +19,16 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../lib/Csrf.php';
+require_once __DIR__ . '/../lib/Billing/TierGate.php';
 
 header('Content-Type: application/json; charset=utf-8');
+
+// Phase L103.5e — gate behind inventory.ingredients feature (tier 6+ «Кухня+»).
+// Covers all CRUD actions (ingredients/suppliers/recipes/stock movements).
+\Cleanmenu\Billing\TierGate::requireFeature(
+    \Cleanmenu\Billing\Features::INVENTORY_INGREDIENTS,
+    'Складской учёт ингредиентов'
+);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);

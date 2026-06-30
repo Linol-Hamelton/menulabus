@@ -24,6 +24,7 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../lib/Csrf.php';
+require_once __DIR__ . '/../lib/Billing/TierGate.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -33,6 +34,12 @@ if (!in_array($role, ['employee', 'admin', 'owner'], true)) {
     echo json_encode(['success' => false, 'error' => 'forbidden']);
     exit;
 }
+
+// Phase L103.5e — gate behind staff.kds feature (tier 5+ «Смена+»).
+\Cleanmenu\Billing\TierGate::requireFeature(
+    \Cleanmenu\Billing\Features::STAFF_KDS,
+    'KDS — Kitchen Display System'
+);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);

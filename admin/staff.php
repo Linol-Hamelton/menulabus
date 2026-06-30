@@ -9,6 +9,11 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 
+// Phase L103.5e — gate behind staff.crud feature (tier 5+ «Смена+»).
+$l103_feature = \Cleanmenu\Billing\Features::STAFF_CRUD;
+$l103_label   = 'Управление штатом и сменами';
+require __DIR__ . '/../partials/tier_paywall.php';
+
 $db = Database::getInstance();
 $role = (string)($_SESSION['user_role'] ?? '');
 if (!in_array($role, ['employee', 'admin', 'owner'], true)) {

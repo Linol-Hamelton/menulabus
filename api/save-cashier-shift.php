@@ -18,8 +18,15 @@ require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../lib/Csrf.php';
 require_once __DIR__ . '/../lib/AuditLog.php';
+require_once __DIR__ . '/../lib/Billing/TierGate.php';
 
 header('Content-Type: application/json; charset=utf-8');
+
+// Phase L103.5e — gate behind staff.cashier_shift feature (tier 5+ «Смена+»).
+\Cleanmenu\Billing\TierGate::requireFeature(
+    \Cleanmenu\Billing\Features::STAFF_CASHIER_SHIFT,
+    'Кассовая смена с Z-отчётом'
+);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);

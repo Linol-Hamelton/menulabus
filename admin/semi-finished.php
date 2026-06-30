@@ -12,6 +12,12 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 
+// Phase L103.5e — gate behind inventory.semi_finished feature (tier 6+ «Кухня+»).
+$l103_feature = \Cleanmenu\Billing\Features::INVENTORY_SEMI_FINISHED;
+$l103_label   = 'Полуфабрикаты и production-runs';
+require __DIR__ . '/../partials/tier_paywall.php';
+
+// Legacy gate stays for back-compat with PlanRegistry 'inventory' feature.
 $gate_feature = 'inventory';
 $gate_label   = 'Полуфабрикаты';
 require __DIR__ . '/../partials/billing_feature_gate.php';

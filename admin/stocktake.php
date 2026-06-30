@@ -11,6 +11,12 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 
+// Phase L103.5e — gate behind inventory.stocktake feature (tier 6+ «Кухня+»).
+$l103_feature = \Cleanmenu\Billing\Features::INVENTORY_STOCKTAKE;
+$l103_label   = 'Физическая инвентаризация';
+require __DIR__ . '/../partials/tier_paywall.php';
+
+// Legacy gate stays for back-compat with PlanRegistry 'inventory' feature.
 $gate_feature = 'inventory';
 $gate_label   = 'Инвентаризация';
 require __DIR__ . '/../partials/billing_feature_gate.php';

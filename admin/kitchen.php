@@ -16,7 +16,12 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 
-// Phase 14.8 — gate behind 'kds' plan feature.
+// Phase L103.5e — gate behind staff.kds feature (tier 5+ «Смена+»).
+$l103_feature = \Cleanmenu\Billing\Features::STAFF_KDS;
+$l103_label   = 'KDS — Kitchen Display System';
+require __DIR__ . '/../partials/tier_paywall.php';
+
+// Phase 14.8 — legacy gate behind PlanRegistry 'kds' feature (stays for back-compat).
 $gate_feature = 'kds';
 $gate_label   = 'Kitchen Display System';
 require __DIR__ . '/../partials/billing_feature_gate.php';

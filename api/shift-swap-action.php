@@ -42,6 +42,13 @@ if (!$user || empty($user['is_active']) || !in_array($user['role'], ['employee',
     exit;
 }
 
+// Phase L103.5e — gate behind staff.shift_swap feature (tier 5+ «Смена+»).
+require_once __DIR__ . '/../lib/Billing/TierGate.php';
+\Cleanmenu\Billing\TierGate::requireFeature(
+    \Cleanmenu\Billing\Features::STAFF_SHIFT_SWAP,
+    'Обмен сменами между сотрудниками'
+);
+
 $input = json_decode(file_get_contents('php://input'), true) ?: [];
 $action = (string)($input['action'] ?? '');
 $userId = (int)$user['id'];

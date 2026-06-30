@@ -22,6 +22,13 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../lib/Csrf.php';
+require_once __DIR__ . '/../lib/Billing/TierGate.php';
+
+// Phase L103.5e — gate behind staff.kds feature (tier 5+ «Смена+»).
+\Cleanmenu\Billing\TierGate::requireFeature(
+    \Cleanmenu\Billing\Features::STAFF_KDS,
+    'KDS — настройка станций кухни'
+);
 
 header('Content-Type: application/json; charset=utf-8');
 

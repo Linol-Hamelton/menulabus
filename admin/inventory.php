@@ -23,7 +23,12 @@ require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../lib/Inventory/UnitCatalog.php';
 
-// Phase 14.8 — gate behind 'inventory' plan feature.
+// Phase L103.5e — gate behind inventory.ingredients feature (tier 6+ «Кухня+»).
+$l103_feature = \Cleanmenu\Billing\Features::INVENTORY_INGREDIENTS;
+$l103_label   = 'Складской учёт ингредиентов';
+require __DIR__ . '/../partials/tier_paywall.php';
+
+// Phase 14.8 — legacy gate behind PlanRegistry 'inventory' feature (stays for back-compat).
 $gate_feature = 'inventory';
 $gate_label   = 'Управление складом';
 require __DIR__ . '/../partials/billing_feature_gate.php';

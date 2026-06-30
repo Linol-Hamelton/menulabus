@@ -19,7 +19,12 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 
-// Same feature gate as /admin/inventory.php — ВСД is part of inventory operations.
+// Phase L103.5e — gate behind inventory.vsd_mercury feature (tier 6+ «Кухня+»).
+$l103_feature = \Cleanmenu\Billing\Features::INVENTORY_VSD;
+$l103_label   = 'ВСД / Меркурий (ветеринарный регулятор)';
+require __DIR__ . '/../partials/tier_paywall.php';
+
+// Legacy gate stays for back-compat with PlanRegistry 'inventory' feature.
 $gate_feature = 'inventory';
 $gate_label   = 'Меркурий / ВСД';
 require __DIR__ . '/../partials/billing_feature_gate.php';
