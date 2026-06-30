@@ -1,0 +1,113 @@
+/* Phase L103.5 — tier paywall page styles.
+ * Scoped to .tier-paywall* only; no global selectors.
+ */
+
+.tier-paywall-page {
+    background: #f5f6fa;
+    min-height: 100vh;
+}
+
+.tier-paywall {
+    max-width: 640px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.tier-paywall-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06);
+    padding: 32px 28px;
+    text-align: center;
+}
+
+.tier-paywall-kicker {
+    margin: 0 0 16px;
+    font-size: 14px;
+    color: var(--ui-text, #555);
+    line-height: 1.5;
+}
+
+.tier-paywall-title {
+    margin: 0 0 12px;
+    font-size: 22px;
+    line-height: 1.3;
+    color: #1a1a1a;
+}
+
+.tier-paywall-lead {
+    margin: 0 0 18px;
+    font-size: 14px;
+    color: var(--ui-text, #555);
+}
+
+.tier-paywall-price {
+    display: inline-block;
+    margin: 0 0 10px;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 999px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.tier-paywall-desc {
+    margin: 0 0 22px;
+    font-size: 14px;
+    color: var(--ui-text, #555);
+    line-height: 1.55;
+}
+
+.tier-paywall-cta {
+    display: inline-block;
+    margin: 6px 0 18px;
+    padding: 12px 28px;
+    background: var(--brand, #3a7afe);
+    color: #fff;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+    transition: opacity 0.15s ease;
+}
+
+.tier-paywall-cta:hover,
+.tier-paywall-cta:focus-visible {
+    opacity: 0.9;
+}
+
+.tier-paywall-owner-only {
+    margin: 6px 0 18px;
+    padding: 14px 16px;
+    background: #fff7e6;
+    border-radius: 10px;
+    color: #7a4d00;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.tier-paywall-link {
+    display: inline-block;
+    margin-top: 8px;
+    color: var(--brand, #3a7afe);
+    font-size: 14px;
+    text-decoration: none;
+}
+
+.tier-paywall-link:hover,
+.tier-paywall-link:focus-visible {
+    text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+    .tier-paywall {
+        margin: 20px auto;
+    }
+    .tier-paywall-card {
+        padding: 24px 18px;
+        border-radius: 12px;
+    }
+    .tier-paywall-title {
+        font-size: 19px;
+    }
+}
