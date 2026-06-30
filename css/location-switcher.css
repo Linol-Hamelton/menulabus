@@ -1,0 +1,70 @@
+/* Phase L103.2 — active-location switcher in account-header.php.
+ * Scoped to .location-switcher only; no global selectors.
+ * Visible only when staff role + >1 active location (см. account-header.php).
+ */
+
+.location-switcher {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 999px;
+    flex: 0 0 auto;
+}
+
+.location-switcher-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.location-switcher-caption {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ui-text, #555);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.location-switcher-select {
+    appearance: auto;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: #fff;
+    color: #1a1a1a;
+    padding: 4px 22px 4px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.3;
+    max-width: 240px;
+    cursor: pointer;
+}
+
+.location-switcher-select:focus-visible {
+    outline: 2px solid var(--brand, #3a7afe);
+    outline-offset: 1px;
+}
+
+.location-switcher-submit {
+    padding: 4px 10px;
+    border: 1px solid var(--brand, #3a7afe);
+    background: var(--brand, #3a7afe);
+    color: #fff;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    .location-switcher {
+        padding: 3px 8px;
+    }
+    .location-switcher-caption {
+        display: none;
+    }
+    .location-switcher-select {
+        font-size: 12px;
+        max-width: 160px;
+    }
+}

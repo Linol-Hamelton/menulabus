@@ -6986,6 +6986,7 @@ class Database
                     ':tz' => $timezone, ':active' => $active ? 1 : 0, ':so' => $sortOrder,
                     ':id' => $id,
                 ]);
+                $this->syncLocationToControlPlane($id, $name, $active);
                 return $id;
             }
             $stmt = $this->prepareCached("
@@ -6996,7 +6997,9 @@ class Database
                 ':name' => $name, ':addr' => $address, ':phone' => $phone,
                 ':tz' => $timezone, ':active' => $active ? 1 : 0, ':so' => $sortOrder,
             ]);
-            return (int)$this->connection->lastInsertId();
+            $newId = (int)$this->connection->lastInsertId();
+            $this->syncLocationToControlPlane($newId, $name, $active);
+            return $newId;
         } catch (PDOException $e) {
             error_log('saveLocation error: ' . $e->getMessage());
             return null;
@@ -7009,10 +7012,76 @@ class Database
         // flip active=0 instead of hard delete so existing history stays intact.
         try {
             $stmt = $this->prepareCached("UPDATE locations SET active = 0 WHERE id = :id");
-            return $stmt->execute([':id' => $id]);
+            $ok = $stmt->execute([':id' => $id]);
+            if ($ok) {
+                $row = $this->getLocationById($id);
+                if ($row !== null) {
+                    $this->syncLocationToControlPlane($id, (string)$row['name'], false);
+                }
+            }
+            return $ok;
         } catch (PDOException $e) {
             error_log('deleteLocation error: ' . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Phase L103.2 — return the location_id the current session is operating
+     * against. Lazy resolves on first access:
+     *   1. $_SESSION['active_location_id'] (set by /api/set-active-location.php)
+     *   2. fallback: first active location in this tenant DB
+     *   3. fallback: 0 (chain-level / no location)
+     *
+     * Cached in $_SESSION on first lazy resolve so subsequent calls are O(1).
+     * Anonymous requests (no PHP session active) skip caching and always re-query.
+     */
+    public function activeLocationId(): int
+    {
+        $isSession = (session_status() === PHP_SESSION_ACTIVE);
+        if ($isSession && !empty($_SESSION['active_location_id'])) {
+            return (int)$_SESSION['active_location_id'];
+        }
+        $list = $this->listLocations(true);
+        $first = $list[0] ?? null;
+        $locId = $first ? (int)$first['id'] : 0;
+        if ($isSession) {
+            $_SESSION['active_location_id'] = $locId;
+        }
+        return $locId;
+    }
+
+    /**
+     * Phase L103.2 — mirror a tenant-DB location row into the control-plane
+     * `tenant_locations` table. Used as a side-effect of saveLocation /
+     * deleteLocation so subscriptions.location_id has a valid FK target.
+     *
+     * Best-effort: silently no-ops when control plane is not configured
+     * (legacy single-DB mode, CLI, tests). Failures are logged, never thrown —
+     * the tenant DB write must not be rolled back if the mirror lags behind.
+     */
+    private function syncLocationToControlPlane(int $locationId, string $name, bool $isActive): void
+    {
+        $tenantId = (int)($GLOBALS['tenantId'] ?? 0);
+        if ($tenantId <= 0 || $locationId <= 0) return;
+        if (!function_exists('tenant_control_configured') || !function_exists('tenant_control_pdo')) return;
+        try {
+            if (!tenant_control_configured()) return;
+            $cp = tenant_control_pdo();
+            if (!$cp instanceof PDO) return;
+            $stmt = $cp->prepare(
+                'INSERT INTO tenant_locations (tenant_id, location_id, name, is_active)
+                 VALUES (:tid, :lid, :name, :act)
+                 ON DUPLICATE KEY UPDATE name = VALUES(name), is_active = VALUES(is_active)'
+            );
+            $stmt->execute([
+                ':tid'  => $tenantId,
+                ':lid'  => $locationId,
+                ':name' => $name,
+                ':act'  => $isActive ? 1 : 0,
+            ]);
+        } catch (Throwable $e) {
+            error_log('syncLocationToControlPlane (tenant=' . $tenantId . ', loc=' . $locationId . '): ' . $e->getMessage());
         }
     }
 

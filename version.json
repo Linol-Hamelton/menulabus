@@ -1,5 +1,5 @@
 {
-  "version": "3.17.0",
+  "version": "3.17.1",
   "release_date": "2026-06-30",
-  "changelog": "Phase L103.1 — schema + reference data for 6-tier per-location pricing (Меню/Заказ+/Доставка+/Контроль+/Смена+/Кухня+). New control-plane tables: tariffs (8 seed rows), tenant_locations (FK-mirror), subscriptions (one per tenant+location). Extends subscription_invoices/addon_purchases/subscription_events with nullable location_id. ZERO behaviour change — application code still reads tenants.plan_id until Phase L103.6 swap. Migration sql/l103-six-tier-migration.sql is idempotent and safe to deploy any time."
+  "changelog": "Phase L103.2 — active-location session plumbing. New /api/set-active-location.php (CSRF-guarded, employee+ role) writes $_SESSION['active_location_id']. Database::activeLocationId() lazy-resolves with fallback to first active location. Database::syncLocationToControlPlane() mirrors tenant-DB locations into control-plane tenant_locations on every saveLocation/deleteLocation (best-effort, fail-open). New /css/location-switcher.css + /js/location-switcher.js render an inline switcher in account-header.php (visible only when staff role + >1 active location). ZERO behaviour change for tenants with a single location or for customer role — switcher is hidden."
 }
