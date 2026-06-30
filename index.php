@@ -138,9 +138,58 @@ $tenantSecondaryLabel = $hasTenantContacts
             <div class="container">
                 <div class="section-header">
                     <h2>Тарифы</h2>
-                    <p>Прозрачно. Без скрытых сборов. Без привязки к партнёрской сети и хардверу.</p>
+                    <p>6 уровней — от каталога до полного управления заведением. Цена за одну торговую точку.</p>
                 </div>
 
+                <?php
+                // Phase L103.7 — data-driven cards from control-plane.tariffs.
+                // Falls back to legacy 3-card grid if control plane is unconfigured
+                // (local dev) or seed migration hasn't run yet.
+                require_once __DIR__ . '/lib/Billing/TariffRegistry.php';
+                $l103PublicTiers = \Cleanmenu\Billing\TariffRegistry::publicTiers();
+                $l103ChainTier   = \Cleanmenu\Billing\TariffRegistry::byCode('chain');
+                $l103UseDB       = count($l103PublicTiers) >= 6;
+                ?>
+
+                <?php if ($l103UseDB): ?>
+                <div class="pricing-grid pricing-grid--six-tiers">
+                    <?php foreach ($l103PublicTiers as $l103Tier): ?>
+                        <?php
+                        $rank = (int)($l103Tier['tier_rank'] ?? 0);
+                        $isFeatured = ($rank === 3);  // «Доставка+» — most-likely sweet spot, highlight
+                        $price = htmlspecialchars(\Cleanmenu\Billing\TariffRegistry::priceLabel((string)$l103Tier['code']));
+                        ?>
+                        <article class="pricing-card<?= $isFeatured ? ' pricing-card--featured' : '' ?>">
+                            <?php if ($isFeatured): ?>
+                                <p class="pricing-card-kicker">Старт работы с клиентами</p>
+                            <?php endif; ?>
+                            <h3><?= htmlspecialchars($l103Tier['display_name']) ?></h3>
+                            <p class="pricing-card-price">
+                                <span class="pricing-card-amount"><?= $price ?></span>
+                            </p>
+                            <?php if (!empty($l103Tier['description'])): ?>
+                                <p class="pricing-card-desc"><?= htmlspecialchars($l103Tier['description']) ?></p>
+                            <?php endif; ?>
+                            <a href="/signup.php?tariff=<?= htmlspecialchars((string)$l103Tier['code']) ?>" class="btn <?= $isFeatured ? 'hero-btn-primary' : 'hero-btn-secondary' ?>">Выбрать</a>
+                        </article>
+                    <?php endforeach; ?>
+                </div>
+
+                <?php if ($l103ChainTier): ?>
+                    <article class="pricing-card pricing-card--sales pricing-card--chain">
+                        <h3><?= htmlspecialchars($l103ChainTier['display_name']) ?></h3>
+                        <p class="pricing-card-price">
+                            <span class="pricing-card-amount">Договорная</span>
+                        </p>
+                        <?php if (!empty($l103ChainTier['description'])): ?>
+                            <p class="pricing-card-desc"><?= htmlspecialchars($l103ChainTier['description']) ?></p>
+                        <?php endif; ?>
+                        <a href="mailto:sales@labus.pro?subject=%D0%A1%D0%B5%D1%82%D1%8C%2B%20inquiry" class="btn hero-btn-secondary">Связаться</a>
+                    </article>
+                <?php endif; ?>
+
+                <?php else: ?>
+                <!-- Legacy fallback: 3-card grid when control plane is unconfigured. -->
                 <div class="pricing-grid">
                     <article class="pricing-card pricing-card--featured">
                         <p class="pricing-card-kicker">Самый популярный</p>
@@ -197,6 +246,7 @@ $tenantSecondaryLabel = $hasTenantContacts
                         <a href="mailto:sales@labus.pro?subject=Enterprise%2B%20%2F%20Сеть%20inquiry" class="btn hero-btn-secondary">Связаться</a>
                     </article>
                 </div>
+                <?php endif; ?>
 
                 <div class="pricing-addons">
                     <h3>Дополнительные услуги</h3>
