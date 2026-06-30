@@ -26,6 +26,14 @@ if (!in_array($user['role'], ['owner', 'customer', 'employee', 'admin'])) {
     exit;
 }
 
+// Phase L103.5b — gate customer order history behind customer.orders_history
+// feature (tier 2+ «Заказ+»). Staff sees their own history at any tier.
+if (($user['role'] ?? '') === 'customer') {
+    $l103_feature = \Cleanmenu\Billing\Features::CUSTOMER_ORDERS_HIST;
+    $l103_label   = 'История заказов клиента';
+    require __DIR__ . '/partials/tier_paywall.php';
+}
+
 // Generate/refresh CSRF token
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(16));

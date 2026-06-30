@@ -2,6 +2,11 @@
 require_once __DIR__ . '/session_init.php';
 require_once __DIR__ . '/db.php';
 
+// Phase L103.5b — gate behind order.reservation feature (tier 2+ «Заказ+»).
+$l103_feature = \Cleanmenu\Billing\Features::ORDER_RESERVATION;
+$l103_label   = 'Бронирование столов';
+require __DIR__ . '/partials/tier_paywall.php';
+
 $db = Database::getInstance();
 $siteName = $GLOBALS['siteName'] ?? 'labus';
 $appVersion = $_SESSION['app_version'] ?? '1.0.0';

@@ -37,6 +37,14 @@ if (!$user || !$user['is_active']) {
     exit;
 }
 
+// Phase L103.5b — gate customer kabinet behind customer.account feature
+// (tier 2+ «Заказ+»). Staff (owner/admin/employee) always see their account.
+if (($user['role'] ?? '') === 'customer') {
+    $l103_feature = \Cleanmenu\Billing\Features::CUSTOMER_ACCOUNT;
+    $l103_label   = 'Личный кабинет клиента';
+    require __DIR__ . '/partials/tier_paywall.php';
+}
+
 // Phase L102: menu_view перенесён в tenant-wide settings; per-user форма
 // удалена. Tab 'menu' больше не существует — соответствующая секция и
 // POST-handler ниже тоже удалены.

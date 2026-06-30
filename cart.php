@@ -2,6 +2,11 @@
 // Начало сессии с безопасными настройками
 require_once __DIR__ . '/session_init.php';
 
+// Phase L103.5b — gate behind cart.basic feature (tier 2+ «Заказ+»).
+$l103_feature = \Cleanmenu\Billing\Features::CART_BASIC;
+$l103_label   = 'Корзина и онлайн-заказы';
+require __DIR__ . '/partials/tier_paywall.php';
+
 $db = Database::getInstance();
 $paymentEnabled = json_decode($db->getSetting('yookassa_enabled') ?? '"false"', true) === 'true';
 $paymentEnabled = $paymentEnabled

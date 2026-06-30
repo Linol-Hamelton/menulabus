@@ -1,5 +1,5 @@
 {
-  "version": "3.17.4",
+  "version": "3.17.5",
   "release_date": "2026-06-30",
-  "changelog": "Phase L103.5a — paywall foundation (no callsites wired yet). New partials/tier_paywall.php (HTML 402 paywall for web routes; reads Database::hasFeature; renders upgrade CTA for owner, owner-redirect message for non-owner). New lib/Billing/TierGate.php (JSON 402 helper for API endpoints + non-exit isAllowed() variant for inline render conditions). New css/tier-paywall.css (scoped, mobile-aware). Coexists with legacy partials/billing_feature_gate.php — does NOT replace it. Phase L103.5b-e will wire the gates at 30+ callsites in 4 themed batches (Tier 2 → 3 → 4 → 5+6). ZERO behaviour change — both gates fail-open in legacy mode and no callsite reads from tier_paywall yet."
+  "changelog": "Phase L103.5b — Tier 2 (Заказ+) feature gates wired at 4 callsites. cart.php → CART_BASIC paywall. reservation.php → ORDER_RESERVATION paywall. account.php + customer_orders.php → CUSTOMER_ACCOUNT/CUSTOMER_ORDERS_HIST paywall ONLY when role=customer (staff always see their own kabinet at any tier). Skipped signup.php (SaaS signup, not a tenant feature), auth.php (login must stay open so owners can upgrade), and menu-content* templates (cart button stays — paywall triggers on /cart.php). In legacy single-DB mode all gates are no-ops via Database::hasFeature fail-open. Renders /partials/tier_paywall.php with 402 status."
 }
