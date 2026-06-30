@@ -1,5 +1,5 @@
 {
-  "version": "3.17.1",
+  "version": "3.17.2",
   "release_date": "2026-06-30",
-  "changelog": "Phase L103.2 — active-location session plumbing. New /api/set-active-location.php (CSRF-guarded, employee+ role) writes $_SESSION['active_location_id']. Database::activeLocationId() lazy-resolves with fallback to first active location. Database::syncLocationToControlPlane() mirrors tenant-DB locations into control-plane tenant_locations on every saveLocation/deleteLocation (best-effort, fail-open). New /css/location-switcher.css + /js/location-switcher.js render an inline switcher in account-header.php (visible only when staff role + >1 active location). ZERO behaviour change for tenants with a single location or for customer role — switcher is hidden."
+  "changelog": "Phase L103.3 — feature gating helpers (pure scaffold, no callsites yet). New lib/Billing/Features.php enumerates 38 atomic feature keys (catalog.*, cart.*, customer.*, order.*, analytics.*, staff.*, inventory.*) and pins each to a minimum tier rank 1-6 via TIER_MATRIX. New lib/Billing/TariffRegistry.php reads from control-plane.tariffs table with per-request cache, exposes publicTiers/ownerSwitchableCodes/priceLabel. Database::getActiveTariff(locationId) and Database::hasFeature(featureKey, locationId) added with fail-open semantics in legacy single-DB mode and catalog.display always-on policy when no subscription. tests/L103FeaturesTest.php locks the matrix contract (no MySQL required). ZERO behaviour change — Phase L103.5 will wire the gates at callsites."
 }

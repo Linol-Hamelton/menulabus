@@ -26,6 +26,14 @@ class Database
     private $tenantContext = [];
     private $tenantCacheNamespace = 'tenant:legacy';
 
+    /**
+     * Phase L103.3 — per-request cache for getActiveTariff().
+     * Keyed by location_id; value is the joined subscriptions+tariffs row
+     * or null. Static across the Database singleton lifetime — invalidated
+     * by clearTariffCache() when the owner changes their plan.
+     */
+    private static $tariffCache = [];
+
     private function __construct()
     {
         $this->connect();
@@ -7083,6 +7091,109 @@ class Database
         } catch (Throwable $e) {
             error_log('syncLocationToControlPlane (tenant=' . $tenantId . ', loc=' . $locationId . '): ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Phase L103.3 — return the active subscription+tariff row for the given
+     * location, or null if none / suspended / cancelled.
+     *
+     * Result shape (joined subscriptions + tariffs):
+     *   tariff_code, status, current_period_end, trial_ends_at,
+     *   legacy_grandfather, custom_price_kop,
+     *   tier_rank, display_name, price_kop, billing_period
+     *
+     * Returns null in legacy single-DB mode (no control plane configured).
+     * Callers that need fail-open semantics should use hasFeature() instead
+     * — it knows how to interpret null in legacy vs. SaaS mode.
+     */
+    public function getActiveTariff(int $locationId): ?array
+    {
+        if (array_key_exists($locationId, self::$tariffCache)) {
+            return self::$tariffCache[$locationId];
+        }
+        $tenantId = (int)($GLOBALS['tenantId'] ?? 0);
+        if ($tenantId <= 0 || $locationId <= 0) {
+            return self::$tariffCache[$locationId] = null;
+        }
+        if (!function_exists('tenant_control_configured') || !function_exists('tenant_control_pdo')) {
+            return self::$tariffCache[$locationId] = null;
+        }
+        try {
+            if (!tenant_control_configured()) {
+                return self::$tariffCache[$locationId] = null;
+            }
+            $cp = tenant_control_pdo();
+            if (!$cp instanceof PDO) {
+                return self::$tariffCache[$locationId] = null;
+            }
+            $stmt = $cp->prepare(
+                'SELECT s.tariff_code, s.status, s.current_period_end, s.trial_ends_at,
+                        s.legacy_grandfather, s.custom_price_kop,
+                        t.tier_rank, t.display_name, t.price_kop, t.billing_period
+                   FROM subscriptions s
+                   JOIN tariffs t ON t.code = s.tariff_code
+                  WHERE s.tenant_id = :tid AND s.location_id = :lid
+                  LIMIT 1'
+            );
+            $stmt->execute([':tid' => $tenantId, ':lid' => $locationId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            if ($row !== null && in_array((string)$row['status'], ['suspended', 'cancelled'], true)) {
+                $row = null;
+            }
+            return self::$tariffCache[$locationId] = $row;
+        } catch (Throwable $e) {
+            error_log('getActiveTariff (tenant=' . $tenantId . ', loc=' . $locationId . '): ' . $e->getMessage());
+            return self::$tariffCache[$locationId] = null;
+        }
+    }
+
+    /**
+     * Phase L103.3 — boolean feature check for the given location.
+     *
+     * Semantics:
+     *   - Legacy mode (no control plane configured) → true (fail-open),
+     *     same fallback policy as the existing FeatureGate::state().
+     *   - Active subscription with tier_rank ≥ Features::minTierRank → true.
+     *   - No subscription, status=suspended, status=cancelled, or tier_rank
+     *     below the minimum → false EXCEPT for catalog.display which always
+     *     returns true (the public menu must render even without billing).
+     *
+     * No throws. Reads from per-request cache after the first hit per
+     * location. To bust the cache after a plan change, call clearTariffCache().
+     */
+    public function hasFeature(string $featureKey, int $locationId): bool
+    {
+        if (!class_exists('Cleanmenu\\Billing\\Features', false)) {
+            $featuresPath = __DIR__ . '/lib/Billing/Features.php';
+            if (is_file($featuresPath)) {
+                require_once $featuresPath;
+            }
+        }
+        if (!function_exists('tenant_control_configured')) {
+            return true;
+        }
+        try {
+            if (!tenant_control_configured()) return true;
+        } catch (Throwable $_) {
+            return true;
+        }
+        $tariff = $this->getActiveTariff($locationId);
+        if ($tariff === null) {
+            return $featureKey === \Cleanmenu\Billing\Features::CATALOG_DISPLAY;
+        }
+        $required = \Cleanmenu\Billing\Features::minTierRank($featureKey);
+        $actual = isset($tariff['tier_rank']) ? (int)$tariff['tier_rank'] : 0;
+        return $actual >= $required;
+    }
+
+    /** Invalidate per-request tariff cache (call after a subscription change). */
+    public function clearTariffCache(?int $locationId = null): void
+    {
+        if ($locationId === null) {
+            self::$tariffCache = [];
+            return;
+        }
+        unset(self::$tariffCache[$locationId]);
     }
 
     /**
