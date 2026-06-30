@@ -80,6 +80,95 @@ final class SubscriptionStore
         return (bool)$ok;
     }
 
+    /**
+     * Phase L103.6 — per-location subscription update (additive companion to
+     * updateTenantStatus). Writes to control-plane.subscriptions row keyed by
+     * (tenant_id, location_id). Returns false if no subscription row exists
+     * for that pair (use upsertLocationSubscription if you want INSERT-on-miss).
+     *
+     * @param ?string $status      one of trial|active|past_due|suspended|cancelled
+     * @param ?string $periodEnd   YYYY-MM-DD HH:MM:SS, null = leave unchanged
+     * @param ?string $tariffCode  if non-null, also switches tariff_code
+     */
+    public static function updateLocationSubscription(
+        int $tenantId,
+        int $locationId,
+        ?string $status = null,
+        ?string $periodEnd = null,
+        ?string $tariffCode = null
+    ): bool {
+        if ($tenantId <= 0 || $locationId <= 0) return false;
+        $allowed = ['trial', 'active', 'past_due', 'suspended', 'cancelled'];
+        if ($status !== null && !in_array($status, $allowed, true)) return false;
+
+        $sets   = [];
+        $params = [':tid' => $tenantId, ':lid' => $locationId];
+        if ($status !== null)     { $sets[] = 'status = :status';            $params[':status'] = $status; }
+        if ($periodEnd !== null)  { $sets[] = 'current_period_end = :pe';    $params[':pe']     = $periodEnd; }
+        if ($tariffCode !== null) { $sets[] = 'tariff_code = :tc';           $params[':tc']     = $tariffCode; }
+        if ($status === 'cancelled') {
+            $sets[] = 'cancelled_at = NOW()';
+        }
+        if (empty($sets)) return false;
+
+        $sql = 'UPDATE subscriptions SET ' . implode(', ', $sets)
+             . ' WHERE tenant_id = :tid AND location_id = :lid';
+        try {
+            $ok = self::pdo()->prepare($sql)->execute($params);
+        } catch (\Throwable $e) {
+            error_log('updateLocationSubscription (t=' . $tenantId . ', loc=' . $locationId . '): ' . $e->getMessage());
+            return false;
+        }
+        if ($ok) {
+            self::logEventForLocation($tenantId, $locationId, 'location_subscription_updated', [
+                'status'      => $status,
+                'period_end'  => $periodEnd,
+                'tariff_code' => $tariffCode,
+            ]);
+        }
+        return (bool)$ok;
+    }
+
+    public static function getLocationSubscription(int $tenantId, int $locationId): ?array
+    {
+        if ($tenantId <= 0 || $locationId <= 0) return null;
+        try {
+            $stmt = self::pdo()->prepare(
+                'SELECT id, tenant_id, location_id, tariff_code, status,
+                        trial_ends_at, current_period_start, current_period_end,
+                        cancelled_at, custom_price_kop, legacy_grandfather,
+                        created_at, updated_at
+                   FROM subscriptions
+                  WHERE tenant_id = :tid AND location_id = :lid
+                  LIMIT 1'
+            );
+            $stmt->execute([':tid' => $tenantId, ':lid' => $locationId]);
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return $row ?: null;
+        } catch (\Throwable $e) {
+            error_log('getLocationSubscription (t=' . $tenantId . ', loc=' . $locationId . '): ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /** Phase L103.6 — variant of logEvent that records location_id in subscription_events. */
+    public static function logEventForLocation(int $tenantId, int $locationId, string $eventType, array $payload = []): void
+    {
+        try {
+            self::pdo()->prepare(
+                'INSERT INTO subscription_events (tenant_id, location_id, event_type, payload)
+                 VALUES (:tid, :lid, :type, :pl)'
+            )->execute([
+                ':tid'  => $tenantId,
+                ':lid'  => $locationId,
+                ':type' => $eventType,
+                ':pl'   => json_encode($payload, JSON_UNESCAPED_UNICODE),
+            ]);
+        } catch (\Throwable $e) {
+            error_log('SubscriptionStore::logEventForLocation: ' . $e->getMessage());
+        }
+    }
+
     public static function getDefaultPaymentMethod(int $tenantId): ?array
     {
         $stmt = self::pdo()->prepare(
@@ -366,10 +455,33 @@ final class SubscriptionStore
                     $newEnd = date('Y-m-d H:i:s', strtotime('+1 month'));
                     self::updateTenantStatus($tenantId, 'active', $newEnd, null);
                 }
+
+                // Phase L103.6 — additive per-location subscription update.
+                // If the payment carried metadata.location_id (set by post-L103
+                // billing flows), also update subscriptions row for the same
+                // tenant+location pair. Legacy webhooks without location_id
+                // continue to flow through updateTenantStatus only.
+                $metaLocationId = isset($metadata['location_id']) ? (int)$metadata['location_id'] : 0;
+                $metaTariffCode = isset($metadata['tariff_code']) && is_string($metadata['tariff_code'])
+                    ? (string)$metadata['tariff_code']
+                    : null;
+                if ($metaLocationId > 0) {
+                    $newEndLoc = date('Y-m-d H:i:s', strtotime('+1 month'));
+                    self::updateLocationSubscription(
+                        $tenantId,
+                        $metaLocationId,
+                        'active',
+                        $newEndLoc,
+                        $metaTariffCode
+                    );
+                }
+
                 self::logEvent($tenantId, 'charge_success', [
                     'yk_payment_id' => $paymentId,
                     'phase'         => $phase ?: 'unknown',
                     'amount_kop'    => $amountKop,
+                    'location_id'   => $metaLocationId ?: null,
+                    'tariff_code'   => $metaTariffCode,
                 ]);
             }
         } elseif ($apiStatus === 'canceled') {
@@ -399,10 +511,22 @@ final class SubscriptionStore
                     self::setNextRetry($invoiceId, date('Y-m-d H:i:s', strtotime('+24 hours')));
                 }
             }
+
+            // Phase L103.6 — additive per-location status update for cancel.
+            $metaLocationId = isset($metadata['location_id']) ? (int)$metadata['location_id'] : 0;
+            if ($metaLocationId > 0 && isset($retryCount)) {
+                if ($retryCount >= 4) {
+                    self::updateLocationSubscription($tenantId, $metaLocationId, 'suspended');
+                } elseif ($retryCount >= 2) {
+                    self::updateLocationSubscription($tenantId, $metaLocationId, 'past_due');
+                }
+            }
+
             self::logEvent($tenantId, 'charge_failed', [
                 'yk_payment_id' => $paymentId,
                 'reason'        => $reason,
                 'retry_count'   => $row['retry_count'] ?? 0,
+                'location_id'   => $metaLocationId ?: null,
             ]);
         }
     }

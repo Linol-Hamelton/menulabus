@@ -61,12 +61,26 @@ final class YookassaRecurring
         int $amountKop,
         string $description,
         string $returnUrl,
-        string $idempotencyKey
+        string $idempotencyKey,
+        ?int $locationId = null,
+        ?string $tariffCode = null
     ): array {
         if ($amountKop <= 0) {
             throw new RuntimeException('YookassaRecurring: amount must be positive');
         }
         [$shopId, $secretKey] = self::credentials();
+
+        $metadata = [
+            'kind'      => 'subscription_invoice',
+            'tenant_id' => (string)$tenantId,
+            'phase'     => 'initial',
+        ];
+        if ($locationId !== null) {
+            $metadata['location_id'] = (string)$locationId;
+        }
+        if ($tariffCode !== null && $tariffCode !== '') {
+            $metadata['tariff_code'] = $tariffCode;
+        }
 
         $payload = [
             'amount' => [
@@ -80,11 +94,7 @@ final class YookassaRecurring
             ],
             'save_payment_method' => true,
             'description' => $description,
-            'metadata' => [
-                'kind'      => 'subscription_invoice',
-                'tenant_id' => (string)$tenantId,
-                'phase'     => 'initial',
-            ],
+            'metadata' => $metadata,
         ];
         return self::createPayment($payload, $idempotencyKey, $shopId, $secretKey);
     }
@@ -109,9 +119,24 @@ final class YookassaRecurring
         string $paymentMethodId,
         int $amountKop,
         string $description,
-        string $idempotencyKey
+        string $idempotencyKey,
+        ?int $locationId = null,
+        ?string $tariffCode = null
     ): array {
         [$shopId, $secretKey] = self::credentials();
+
+        $metadata = [
+            'kind'       => 'subscription_invoice',
+            'tenant_id'  => (string)$tenantId,
+            'invoice_id' => (string)$invoiceId,
+            'phase'      => 'recurring',
+        ];
+        if ($locationId !== null) {
+            $metadata['location_id'] = (string)$locationId;
+        }
+        if ($tariffCode !== null && $tariffCode !== '') {
+            $metadata['tariff_code'] = $tariffCode;
+        }
 
         $payload = [
             'amount' => [
@@ -121,12 +146,7 @@ final class YookassaRecurring
             'capture'           => true,
             'payment_method_id' => $paymentMethodId,
             'description'       => $description,
-            'metadata' => [
-                'kind'       => 'subscription_invoice',
-                'tenant_id'  => (string)$tenantId,
-                'invoice_id' => (string)$invoiceId,
-                'phase'      => 'recurring',
-            ],
+            'metadata' => $metadata,
         ];
         return self::createPayment($payload, $idempotencyKey, $shopId, $secretKey);
     }
