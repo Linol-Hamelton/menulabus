@@ -43,6 +43,13 @@ if (!$user || $user['role'] !== 'owner') {
     exit;
 }
 
+// Phase L103.5d — gate behind analytics.fiscal_54fz feature (tier 4+ «Контроль+»).
+require_once __DIR__ . '/../lib/Billing/TierGate.php';
+\Cleanmenu\Billing\TierGate::requireFeature(
+    \Cleanmenu\Billing\Features::ANALYTICS_FISCAL_54FZ,
+    'Фискальные чеки 54-ФЗ (АтолОнлайн)'
+);
+
 $input = json_decode(file_get_contents('php://input'), true);
 if (!is_array($input)) {
     $input = $_POST;

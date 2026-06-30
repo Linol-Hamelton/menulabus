@@ -1,5 +1,5 @@
 {
-  "version": "3.17.6",
+  "version": "3.17.7",
   "release_date": "2026-06-30",
-  "changelog": "Phase L103.5c — Tier 3 (Доставка+) feature gates wired at 6 callsites. admin/waitlist.php → ORDER_WAITLIST paywall. api/save-courier.php → TierGate ORDER_COURIER_ASSIGN (JSON 402). api/save-aggregator.php → TierGate ORDER_AGGREGATOR (JSON 402). create_new_order.php / create_guest_order.php / api/v1/orders/create.php → server-side block on delivery_type ∈ {takeaway,delivery} if no ORDER_DELIVERY tier (402 + meaningful error). Legacy mode no-op via hasFeature fail-open."
+  "changelog": "Phase L103.5d — Tier 4 (Контроль+) feature gates wired at 5 API endpoints. api/analytics-v2.php → TierGate ANALYTICS_V2. api/save-fiscal-settings.php → TierGate ANALYTICS_FISCAL_54FZ (after owner_only check). api/save-webhook.php → TierGate ANALYTICS_WEBHOOKS. api/save-campaign.php → TierGate ANALYTICS_MARKETING. api/moderate-review.php → TierGate ANALYTICS_REVIEWS_MOD. owner.php tab-pane conditional rendering DEFERRED to Phase L103.7 (marketing refresh) — API hard-stops mean tabs become non-functional on tier < 4 but stay visible; safer than risking regressions in a 54k file inline. Legacy mode no-op."
 }

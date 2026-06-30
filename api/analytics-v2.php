@@ -15,6 +15,7 @@ $required_role = 'owner';
 require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../lib/Billing/TierGate.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -23,6 +24,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     echo json_encode(['success' => false, 'error' => 'method_not_allowed']);
     exit;
 }
+
+// Phase L103.5d — gate behind analytics.v2 feature (tier 4+ «Контроль+»).
+\Cleanmenu\Billing\TierGate::requireFeature(
+    \Cleanmenu\Billing\Features::ANALYTICS_V2,
+    'Расширенная аналитика (когорты, тепловая карта, прогноз)'
+);
 
 $role = (string)($_SESSION['user_role'] ?? '');
 if (!in_array($role, ['owner', 'admin'], true)) {

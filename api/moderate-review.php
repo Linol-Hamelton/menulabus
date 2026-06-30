@@ -18,8 +18,15 @@ require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../lib/Csrf.php';
+require_once __DIR__ . '/../lib/Billing/TierGate.php';
 
 header('Content-Type: application/json; charset=utf-8');
+
+// Phase L103.5d — gate behind analytics.reviews_moderation feature (tier 4+ «Контроль+»).
+\Cleanmenu\Billing\TierGate::requireFeature(
+    \Cleanmenu\Billing\Features::ANALYTICS_REVIEWS_MOD,
+    'Модерация отзывов клиентов'
+);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
