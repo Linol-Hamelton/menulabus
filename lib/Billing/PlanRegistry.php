@@ -2,6 +2,21 @@
 /**
  * PlanRegistry — static catalog of subscription plans (Phase 32, 2026-05-08).
  *
+ * @deprecated Phase L103 (2026-06-30) — superseded by control-plane.tariffs
+ *             table + lib/Billing/TariffRegistry.php for the new 6-tier
+ *             per-location pricing model (Меню / Заказ+ / Доставка+ /
+ *             Контроль+ / Смена+ / Кухня+ + Сеть+). New code MUST read tier
+ *             metadata via TariffRegistry and gate features via
+ *             Database::hasFeature(Features::*, $locationId) (see
+ *             lib/Billing/Features.php).
+ *
+ *             This class is kept ALIVE during the transition so legacy
+ *             surfaces (signup.php, owner_billing_section.php,
+ *             billing-cycle-worker.php, partials/billing_feature_gate.php)
+ *             continue to work without an emergency rewrite. It will be
+ *             removed once those callsites migrate to the per-location
+ *             model — tracked under follow-up phase L104.
+ *
  * Single source of truth for plan IDs, prices, included features, and
  * usage limits. Used by:
  *   - signup.php           — render plan picker
@@ -10,7 +25,10 @@
  *   - FeatureGate          — runtime feature checks
  *   - provider/billing.php — list MRR contribution by plan
  *
- * Phase 32 v3 pricing model:
+ * Phase 32 v3 pricing model (DEPRECATED — see L103 mapping in
+ * scripts/l103-backfill-subscriptions.php for the legacy→new tariff_code
+ * translation: trial→menu_trial, pro/pro_annual→order,
+ * enterprise/enterprise_annual→kitchen, enterprise_plus→chain):
  *   - Killed `starter` (2 990 ₽) tier — was a "starter trap" with severely
  *     gutted features. New entry point is the 90-day Pro trial.
  *   - `trial` is now a 90-day Pro trial (full Pro feature set, full Pro limits).
