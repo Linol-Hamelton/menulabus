@@ -116,7 +116,9 @@ if (!$tenants) {
 $processed = 0;
 $inserted  = 0;
 $skipped   = 0;
-$placeholderLocId = 1;
+// location_id=0 = fallback for legacy / single-location tenants; matches
+// Database::activeLocationId() when the tenant DB has no `locations` rows.
+$placeholderLocId = 0;
 
 foreach ($tenants as $t) {
     $tenantId   = (int)$t['id'];

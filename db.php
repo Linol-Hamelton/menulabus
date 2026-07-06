@@ -7071,7 +7071,9 @@ class Database
     private function syncLocationToControlPlane(int $locationId, string $name, bool $isActive): void
     {
         $tenantId = (int)($GLOBALS['tenantId'] ?? 0);
-        if ($tenantId <= 0 || $locationId <= 0) return;
+        // Accept location_id=0 (valid "no-location fallback"). Reject only
+        // strictly negative ids and missing tenant context.
+        if ($tenantId <= 0 || $locationId < 0) return;
         if (!function_exists('tenant_control_configured') || !function_exists('tenant_control_pdo')) return;
         try {
             if (!tenant_control_configured()) return;
@@ -7112,7 +7114,12 @@ class Database
             return self::$tariffCache[$locationId];
         }
         $tenantId = (int)($GLOBALS['tenantId'] ?? 0);
-        if ($tenantId <= 0 || $locationId <= 0) {
+        // location_id=0 is a valid "no-location fallback" — activeLocationId()
+        // returns 0 when the tenant DB has no rows in `locations`, and the
+        // Phase L103.4 backfill seeds subscriptions on that same 0 for
+        // single-location / legacy tenants. Only reject strictly negative ids
+        // and missing tenant context.
+        if ($tenantId <= 0 || $locationId < 0) {
             return self::$tariffCache[$locationId] = null;
         }
         if (!function_exists('tenant_control_configured') || !function_exists('tenant_control_pdo')) {
