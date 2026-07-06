@@ -28,18 +28,22 @@ if (!is_array($items) || empty($items)) {
     api_v1_order_create_fail('validation', 'invalid_order_payload', 'Invalid order payload', 400);
 }
 
-// Phase L103.5c — server-side delivery-type tier check.
-// takeaway / delivery requires order.delivery (tier 3+ «Доставка+»).
+// Phase L103.5c/L103.9 — server-side delivery-type tier check.
+// takeaway → order.takeaway, delivery → order.delivery (both tier 3+
+// «Доставка+», each under its own atomic TIER_MATRIX key).
 if (in_array($deliveryType, ['takeaway', 'delivery'], true)) {
     require_once __DIR__ . '/../../../lib/Billing/Features.php';
     $dbForGate = Database::getInstance();
-    if (!$dbForGate->hasFeature(\Cleanmenu\Billing\Features::ORDER_DELIVERY, $dbForGate->activeLocationId())) {
+    $requiredFeature = $deliveryType === 'takeaway'
+        ? \Cleanmenu\Billing\Features::ORDER_TAKEAWAY
+        : \Cleanmenu\Billing\Features::ORDER_DELIVERY;
+    if (!$dbForGate->hasFeature($requiredFeature, $dbForGate->activeLocationId())) {
         api_v1_order_create_fail(
             'billing',
             'tier_upgrade_required',
-            'Delivery and takeaway require Доставка+ tariff',
+            ($deliveryType === 'takeaway' ? 'Takeaway requires' : 'Delivery requires') . ' Доставка+ tariff',
             402,
-            ['required_feature' => \Cleanmenu\Billing\Features::ORDER_DELIVERY]
+            ['required_feature' => $requiredFeature]
         );
     }
 }

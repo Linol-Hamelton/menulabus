@@ -15,6 +15,7 @@
 require_once __DIR__ . '/../session_init.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../lib/Csrf.php';
+require_once __DIR__ . '/../lib/Billing/TierGate.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -25,6 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 Csrf::requireValid();
+
+// Phase L103.9 — gate behind order.waitlist feature (tier 3+ «Доставка+»).
+// Covers ALL actions (create is customer-open; list/update_status are staff)
+// consistent with the admin/waitlist.php page-level paywall.
+\Cleanmenu\Billing\TierGate::requireFeature(
+    \Cleanmenu\Billing\Features::ORDER_WAITLIST,
+    'Лист ожидания'
+);
 
 $raw   = file_get_contents('php://input');
 $input = json_decode($raw ?: '', true);

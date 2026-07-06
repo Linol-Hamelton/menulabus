@@ -8,6 +8,10 @@
  *   force_past_due(tenant_id)                  — manually flip to past_due
  *   force_suspended(tenant_id)                 — manually flip to suspended
  *   comp(tenant_id, amount_kop, reason)        — write a paid-zero invoice
+ *   change_plan(tenant_id, tariff_code, location_id=0, days=30)
+ *       — Phase L103.9: set an L103 tariff on one location without payment
+ *         (QA / support / comp use). Writes BOTH the legacy tenants.plan_id
+ *         and the per-location subscriptions row so every read path agrees.
  */
 
 require_once __DIR__ . '/../../require_provider_admin.php';
@@ -86,6 +90,67 @@ try {
                 SubscriptionStore::updateTenantStatus($tenantId, 'active', $end);
             }
             echo json_encode(['success' => true, 'invoice_id' => $invoiceId]);
+            break;
+
+        case 'change_plan':
+            // Phase L103.9 — provider-side tariff switch without payment.
+            // Validates the code against the live tariffs catalog, then writes
+            // both billing sources in lockstep:
+            //   1. subscriptions(tenant_id, location_id) — the L103 read path
+            //      (Database::getActiveTariff / hasFeature)
+            //   2. tenants.plan_id — the legacy FeatureGate / PlanRegistry path
+            $tariffCode = trim((string)($input['tariff_code'] ?? ''));
+            $locationId = max(0, (int)($input['location_id'] ?? 0));
+            $days       = max(1, min(36500, (int)($input['days'] ?? 30)));
+            if ($tariffCode === '') {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'missing_tariff_code']);
+                break;
+            }
+            $pdo = SubscriptionStore::pdo();
+            $chk = $pdo->prepare('SELECT code, tier_rank FROM tariffs WHERE code = :c AND is_active = 1 LIMIT 1');
+            $chk->execute([':c' => $tariffCode]);
+            $tariffRow = $chk->fetch(PDO::FETCH_ASSOC);
+            if (!$tariffRow) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'unknown_tariff_code']);
+                break;
+            }
+            $periodEnd = date('Y-m-d H:i:s', strtotime('+' . $days . ' days'));
+
+            // Ensure the FK target exists, then upsert the subscription row
+            // (updateLocationSubscription is UPDATE-only and would no-op on
+            // locations that never had a subscription).
+            $pdo->prepare('INSERT INTO tenant_locations (tenant_id, location_id, name, is_active)
+                           VALUES (:tid, :lid, :name, 1)
+                           ON DUPLICATE KEY UPDATE is_active = 1')
+                ->execute([':tid' => $tenantId, ':lid' => $locationId, ':name' => 'Основная']);
+            $pdo->prepare('INSERT INTO subscriptions
+                             (tenant_id, location_id, tariff_code, status, current_period_end)
+                           VALUES (:tid, :lid, :code, "active", :pe)
+                           ON DUPLICATE KEY UPDATE
+                             tariff_code = VALUES(tariff_code),
+                             status = "active",
+                             current_period_end = VALUES(current_period_end),
+                             cancelled_at = NULL')
+                ->execute([':tid' => $tenantId, ':lid' => $locationId, ':code' => $tariffCode, ':pe' => $periodEnd]);
+
+            // Legacy column kept in sync so FeatureGate/PlanRegistry surfaces
+            // (owner billing tab, suspended-gate) don't contradict L103 state.
+            SubscriptionStore::updateTenantStatus($tenantId, 'active', $periodEnd, $tariffCode);
+
+            SubscriptionStore::logEventForLocation($tenantId, $locationId, 'provider_change_plan', [
+                'tariff_code' => $tariffCode,
+                'tier_rank'   => $tariffRow['tier_rank'] !== null ? (int)$tariffRow['tier_rank'] : null,
+                'period_end'  => $periodEnd,
+                'days'        => $days,
+            ]);
+            echo json_encode([
+                'success'     => true,
+                'tariff_code' => $tariffCode,
+                'location_id' => $locationId,
+                'period_end'  => $periodEnd,
+            ]);
             break;
 
         default:

@@ -11,6 +11,17 @@
 
 $required_role = 'employee';
 require_once __DIR__ . '/session_init.php';
+
+// Phase L103.9 — guests who guess /qr.php?table=N (or follow a legacy link)
+// get the real guest QR landing instead of an auth wall. The staff PNG-proxy
+// contract (?url=...) is untouched: this fires only when `table` is present
+// and `url` is not.
+if (isset($_GET['table']) && !isset($_GET['url'])) {
+    $qrTable = max(1, min((int)$_GET['table'], 999));
+    header('Location: /menu.php?table=' . $qrTable, true, 302);
+    exit;
+}
+
 require_once __DIR__ . '/require_auth.php';
 
 $url      = trim($_GET['url'] ?? '');

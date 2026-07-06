@@ -49,18 +49,23 @@ try {
         exit;
     }
 
-    // Phase L103.5c — server-side delivery-type tier check.
-    // takeaway / delivery requires order.delivery (tier 3+ «Доставка+»).
+    // Phase L103.5c/L103.9 — server-side delivery-type tier check.
+    // takeaway → order.takeaway, delivery → order.delivery (оба tier 3+
+    // «Доставка+», но каждый под своим атомарным ключом из TIER_MATRIX).
     if (in_array($deliveryType, ['takeaway', 'delivery'], true)) {
         require_once __DIR__ . '/db.php';
         require_once __DIR__ . '/lib/Billing/Features.php';
         $dbForGate = Database::getInstance();
-        if (!$dbForGate->hasFeature(\Cleanmenu\Billing\Features::ORDER_DELIVERY, $dbForGate->activeLocationId())) {
+        $requiredFeature = $deliveryType === 'takeaway'
+            ? \Cleanmenu\Billing\Features::ORDER_TAKEAWAY
+            : \Cleanmenu\Billing\Features::ORDER_DELIVERY;
+        if (!$dbForGate->hasFeature($requiredFeature, $dbForGate->activeLocationId())) {
             guest_order_fail('billing', 'tier_upgrade_required', 402, [
                 'delivery_type' => $deliveryType,
-                'required_feature' => \Cleanmenu\Billing\Features::ORDER_DELIVERY,
+                'required_feature' => $requiredFeature,
             ]);
-            $response['error'] = 'Доставка и самовывоз доступны на тарифе «Доставка+» и выше';
+            $response['error'] = ($deliveryType === 'takeaway' ? 'Самовывоз доступен' : 'Доставка доступна')
+                . ' на тарифе «Доставка+» и выше';
             http_response_code(402);
             echo json_encode($response, JSON_UNESCAPED_UNICODE);
             exit;

@@ -72,16 +72,38 @@ try {
             echo json_encode($response, JSON_UNESCAPED_UNICODE);
             exit;
         }
-        // Phase L103.5c — server-side delivery-type tier check.
-        // takeaway / delivery requires order.delivery (tier 3+ «Доставка+»).
+        // Phase L103.5c/L103.9 — server-side delivery-type tier check.
+        // takeaway → order.takeaway, delivery → order.delivery (оба tier 3+
+        // «Доставка+», но каждый под своим атомарным ключом из TIER_MATRIX).
         if (in_array($deliveryType, ['takeaway', 'delivery'], true)) {
             require_once __DIR__ . '/lib/Billing/Features.php';
-            if (!$db->hasFeature(\Cleanmenu\Billing\Features::ORDER_DELIVERY, $db->activeLocationId())) {
+            $requiredFeature = $deliveryType === 'takeaway'
+                ? \Cleanmenu\Billing\Features::ORDER_TAKEAWAY
+                : \Cleanmenu\Billing\Features::ORDER_DELIVERY;
+            if (!$db->hasFeature($requiredFeature, $db->activeLocationId())) {
                 web_order_fail('billing', 'tier_upgrade_required', 402, [
                     'delivery_type' => $deliveryType,
-                    'required_feature' => \Cleanmenu\Billing\Features::ORDER_DELIVERY,
+                    'required_feature' => $requiredFeature,
                 ]);
-                $response['error'] = 'Доставка и самовывоз доступны на тарифе «Доставка+» и выше';
+                $response['error'] = ($deliveryType === 'takeaway' ? 'Самовывоз доступен' : 'Доставка доступна')
+                    . ' на тарифе «Доставка+» и выше';
+                http_response_code(402);
+                echo json_encode($response, JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+        }
+
+        // Phase L103.9 — tips gate (tier 2+ «Заказ+»). Non-zero tips from a
+        // stale client session on a downgraded tenant are rejected, not
+        // silently zeroed — the client must re-render without the tips UI.
+        if ($tips > 0.0) {
+            require_once __DIR__ . '/lib/Billing/Features.php';
+            if (!$db->hasFeature(\Cleanmenu\Billing\Features::ORDER_TIPS, $db->activeLocationId())) {
+                web_order_fail('billing', 'tier_upgrade_required', 402, [
+                    'field' => 'tips',
+                    'required_feature' => \Cleanmenu\Billing\Features::ORDER_TIPS,
+                ]);
+                $response['error'] = 'Чаевые доступны на тарифе «Заказ+» и выше';
                 http_response_code(402);
                 echo json_encode($response, JSON_UNESCAPED_UNICODE);
                 exit;

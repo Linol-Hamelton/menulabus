@@ -6,6 +6,18 @@ api_v1_require_method('POST');
 $user = api_v1_auth_user_from_bearer();
 $input = ApiResponse::readJsonBody();
 
+// Phase L103.9 — gate behind order.reservation feature (tier 2+ «Заказ+»).
+// Mirrors the session-based api/reservations/create.php gate; error shape
+// follows the v1 ApiResponse convention (like api/v1/orders/create.php).
+require_once __DIR__ . '/../../../lib/Billing/Features.php';
+$dbForGate = Database::getInstance();
+if (!$dbForGate->hasFeature(\Cleanmenu\Billing\Features::ORDER_RESERVATION, $dbForGate->activeLocationId())) {
+    ApiResponse::error('Reservations require Заказ+ tariff or higher', 402, [
+        'error_code'       => 'tier_upgrade_required',
+        'required_feature' => \Cleanmenu\Billing\Features::ORDER_RESERVATION,
+    ]);
+}
+
 $tableLabel  = trim((string)($input['table_label'] ?? ''));
 $guestsCount = (int)($input['guests_count'] ?? 0);
 $startsAt    = trim((string)($input['starts_at'] ?? ''));
