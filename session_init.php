@@ -16,6 +16,15 @@ require_once __DIR__ . '/lib/tenant/launch-contract.php';
 // only when t() is first invoked — bundles are cached per request.
 require_once __DIR__ . '/lib/I18n.php';
 
+// Phase L103.5b hotfix (v3.18.3, 2026-07-06) — Features class must be loaded
+// eagerly because the L103 gate callsites reference \Cleanmenu\Billing\Features
+// class constants BEFORE their local `require partials/tier_paywall.php` runs.
+// The project has no PSR-4 autoloader, so a missing eager require here causes
+// Fatal "Class not found" on every page with an L103 gate (cart.php etc.).
+// Features.php is a pure-PHP constants class — zero side effects, safe to
+// load in web/api/sse contexts unconditionally.
+require_once __DIR__ . '/lib/Billing/Features.php';
+
 $labusCtx = defined('LABUS_CTX') ? (string)LABUS_CTX : 'web';
 if (!in_array($labusCtx, ['web', 'api', 'sse'], true)) {
     $labusCtx = 'web';

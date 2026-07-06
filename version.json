@@ -1,5 +1,5 @@
 {
-  "version": "3.18.2",
-  "release_date": "2026-06-30",
-  "changelog": "Phase L103.8 — cleanup + deprecation. lib/Billing/PlanRegistry.php gains @deprecated annotation pointing to TariffRegistry + Features + hasFeature as the new public API; the class stays alive so legacy callers (signup.php, owner_billing_section.php, billing-cycle-worker.php, partials/billing_feature_gate.php) keep working — full removal deferred to Phase L104 when those callsites migrate. New docs/billing-l103.md migration guide: feature key registry pattern, deploy steps, rollback strategy, deferred-work checklist, full file map across Phase L103.1-8. Stale ['trial','enterprise'] skip-list in billing-cycle-worker INTENTIONALLY KEPT — trial tenants are not auto-charged by design (manual conversion), Enterprise is sales-invoiced (custom contracts); removing the skip would mis-charge them."
+  "version": "3.18.3",
+  "release_date": "2026-07-06",
+  "changelog": "Phase L103 hotfix — HTTP 500 on cart.php and every other L103-gated page. Root cause: no PSR-4 autoloader in the project + gate callsites reference \\Cleanmenu\\Billing\\Features::* class constants BEFORE their local `require partials/tier_paywall.php` runs (which is where Features.php was being loaded). PHP evaluates the class-const reference first → Fatal 'Class not found'. Fix: unconditional `require_once __DIR__ . '/lib/Billing/Features.php'` at the top of session_init.php right after I18n. Features.php is a pure-PHP constants class with zero side effects, safe to eager-load in web/api/sse contexts. Verified locally: cart.php, reservation.php, account.php, customer_orders.php, admin/*, api/* all resolve Features::* references correctly after the eager load."
 }
