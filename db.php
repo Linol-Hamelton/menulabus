@@ -7114,6 +7114,19 @@ class Database
             return self::$tariffCache[$locationId];
         }
         $tenantId = (int)($GLOBALS['tenantId'] ?? 0);
+        // Phase L103.10 hotfix — $GLOBALS['tenantId'] is populated by
+        // session_init.php, which the anonymous menu path (menu-public.php,
+        // PUBLIC_MENU defined) never includes. Resolve straight from the
+        // host-based tenant runtime so anonymous visitors get the same
+        // tariff answer as logged-in ones. Without this, hasFeature failed
+        // closed for ALL anonymous traffic regardless of the actual tier.
+        if ($tenantId <= 0 && function_exists('tenant_runtime')) {
+            try {
+                $tenantId = (int)(tenant_runtime()['tenant_id'] ?? 0);
+            } catch (Throwable $_) {
+                $tenantId = 0;
+            }
+        }
         // location_id=0 is a valid "no-location fallback" — activeLocationId()
         // returns 0 when the tenant DB has no rows in `locations`, and the
         // Phase L103.4 backfill seeds subscriptions on that same 0 for
