@@ -70,6 +70,7 @@ if (!isset($l103CartEnabled)) {
     <section id="menu" class="section menu">
         <div class="container">
             <div class="section-header-menu">
+                <h1 class="sr-only">Меню ресторана</h1>
                 <h2>Меню</h2>
                 <?php if ($l103CartEnabled): ?>
                 <a href="cart.php" class="order-summary-btn">

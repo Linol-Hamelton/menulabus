@@ -72,6 +72,7 @@ if ($db->getMenuView() === 'minimal') {
     <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     <section id="menu" class="section menu">
         <div class="account-container">
+            <h1 class="sr-only">Корзина и оформление заказа</h1>
             <section class="account-section account-section--cart-shell">
                 <div class="account-header-bar account-section-head">
                     <div class="section-header-menu">

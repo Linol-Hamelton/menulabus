@@ -38,6 +38,31 @@ final class L103FeaturesTest extends TestCase
         $this->assertSame(3, Features::minTierRank(Features::ORDER_AGGREGATOR));
     }
 
+    /**
+     * Phase L103.9 split: takeaway and delivery are SEPARATE atomic keys —
+     * the order-create paths (create_new_order / create_guest_order /
+     * api/v1/orders/create) map delivery_type to its own key. Both live on
+     * tier 3, but the split must survive future re-pricing.
+     */
+    public function testTakeawayAndDeliveryAreSeparateKeys(): void
+    {
+        $this->assertNotSame(Features::ORDER_TAKEAWAY, Features::ORDER_DELIVERY);
+        $this->assertSame(3, Features::minTierRank(Features::ORDER_TAKEAWAY));
+        $this->assertFalse(Features::isUnlockedByRank(Features::ORDER_TAKEAWAY, 2));
+        $this->assertTrue(Features::isUnlockedByRank(Features::ORDER_TAKEAWAY, 3));
+    }
+
+    /** Tier-2 order sub-family wired in Phase L103.9/10 — lock the ranks. */
+    public function testTier2OrderFamilyRanks(): void
+    {
+        $this->assertSame(2, Features::minTierRank(Features::ORDER_TIPS));
+        $this->assertSame(2, Features::minTierRank(Features::ORDER_RESERVATION));
+        $this->assertSame(2, Features::minTierRank(Features::ORDER_PAYMENT_ONLINE));
+        $this->assertSame(2, Features::minTierRank(Features::ORDER_IN_RESTAURANT));
+        $this->assertSame(2, Features::minTierRank(Features::ORDER_REVIEWS));
+        $this->assertSame(3, Features::minTierRank(Features::ORDER_WAITLIST));
+    }
+
     public function testAnalyticsIsTier4(): void
     {
         $this->assertSame(4, Features::minTierRank(Features::ANALYTICS_REVENUE));

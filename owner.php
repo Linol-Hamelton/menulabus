@@ -38,6 +38,17 @@ if ($reviewRatingCount > 0) {
 // Определяем активную вкладку
 $tab = $_GET['tab'] ?? 'stats';
 
+// Phase L103.11 — tier-гейт для табов «Аналитика» и «Чеки 54-ФЗ» (tier 4+
+// «Контроль+»). API-endpoints этих табов уже возвращают 402 (L103.5d);
+// здесь прячем сами кнопки/панели, чтобы владелец не видел нерабочий UI.
+// Таб «Подписка» остаётся доступен на ЛЮБОМ тарифе — через него апгрейдятся.
+require_once __DIR__ . '/lib/Billing/TierGate.php';
+$ownerHasAnalyticsV2 = \Cleanmenu\Billing\TierGate::isAllowed(\Cleanmenu\Billing\Features::ANALYTICS_V2);
+$ownerHasFiscal      = \Cleanmenu\Billing\TierGate::isAllowed(\Cleanmenu\Billing\Features::ANALYTICS_FISCAL_54FZ);
+if (($tab === 'analytics-v2' && !$ownerHasAnalyticsV2) || ($tab === 'fiscal' && !$ownerHasFiscal)) {
+    $tab = 'billing'; // прямой заход по URL на запертый таб ведёт к апгрейду
+}
+
 // Получаем данные для отчетов
 $period = $_GET['period'] ?? 'day';
 $report_type = $_GET['report'] ?? 'sales';
@@ -416,8 +427,12 @@ if (!empty($report_data)) {
                 <button type="button" class="admin-tab-btn <?= $tab === 'stats' ? 'active' : '' ?>" data-tab="stats">Статистика</button>
                 <button type="button" class="admin-tab-btn <?= $tab === 'users' ? 'active' : '' ?>" data-tab="users">Пользователи</button>
                 <button type="button" class="admin-tab-btn <?= $tab === 'reviews' ? 'active' : '' ?>" data-tab="reviews">Отзывы<?= $reviewRatingCount > 0 ? ' <span class="owner-tab-count">' . $reviewRatingCount . '</span>' : '' ?></button>
+                <?php if ($ownerHasAnalyticsV2): ?>
                 <button type="button" class="admin-tab-btn <?= $tab === 'analytics-v2' ? 'active' : '' ?>" data-tab="analytics-v2">Аналитика</button>
+                <?php endif; ?>
+                <?php if ($ownerHasFiscal): ?>
                 <button type="button" class="admin-tab-btn <?= $tab === 'fiscal' ? 'active' : '' ?>" data-tab="fiscal">Чеки 54-ФЗ</button>
+                <?php endif; ?>
                 <button type="button" class="admin-tab-btn <?= $tab === 'billing' ? 'active' : '' ?>" data-tab="billing">Подписка</button>
                 <button type="button" class="admin-tab-btn <?= $tab === 'integrations' ? 'active' : '' ?>" data-tab="integrations">Интеграции</button>
             </div>
@@ -852,6 +867,7 @@ if (!empty($report_data)) {
                 </div>
             </div>
 
+            <?php if ($ownerHasAnalyticsV2): ?>
             <div class="admin-tab-pane <?= $tab === 'analytics-v2' ? 'active' : '' ?>" id="analytics-v2">
                 <div class="owner-analytics-workspace">
                     <div class="owner-workspace-header">
@@ -917,11 +933,14 @@ if (!empty($report_data)) {
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
 
             <!-- Phase 13A.3 — fiscal receipts tab -->
+            <?php if ($ownerHasFiscal): ?>
             <div class="admin-tab-pane <?= $tab === 'fiscal' ? 'active' : '' ?>" id="fiscal">
                 <?php require_once __DIR__ . '/partials/owner_fiscal_section.php'; ?>
             </div>
+            <?php endif; ?>
 
             <!-- Phase 14.5 — subscription billing tab -->
             <div class="admin-tab-pane <?= $tab === 'billing' ? 'active' : '' ?>" id="billing">

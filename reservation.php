@@ -62,6 +62,7 @@ $minDateTime = date('Y-m-d\TH:i', time() + 30 * 60);
     <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
 
     <div class="account-container">
+        <h1 class="sr-only">Бронирование стола</h1>
         <section class="account-section">
             <div class="section-header-menu">
                 <h2>Бронь стола</h2>

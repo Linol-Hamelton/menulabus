@@ -268,7 +268,7 @@ $pendingEmail  = $pendingEmail  ?? '';
     <link rel="stylesheet" href="/css/account-styles.min.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/css/admin-menu-polish.css?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
     <link rel="stylesheet" href="/auto-fonts.php?v=<?= htmlspecialchars($_SESSION['app_version'] ?? '1.0.0') ?>">
-    <title><?= htmlspecialchars($mode === 'register' ? 'Регистрация' : 'Вход') ?></title>
+    <title><?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?> | <?= htmlspecialchars($mode === 'register' ? 'Регистрация' : 'Вход') ?></title>
 
     <!-- Preloader - мгновенная загрузка -->
     
@@ -277,6 +277,7 @@ $pendingEmail  = $pendingEmail  ?? '';
     <?php $GLOBALS['header_css_in_head'] = true; require_once __DIR__ . '/header.php'; ?>
     
     <div class="auth-container">
+<h1 class="sr-only"><?= htmlspecialchars($mode === 'register' ? 'Регистрация' : 'Вход') ?></h1>
 <div class="auth-tabs">
     <a href="/auth.php?mode=login" class="auth-tab <?= $mode === 'login' ? 'active' : '' ?>">Вход</a>
     <a href="/auth.php?mode=register" class="auth-tab <?= $mode === 'register' ? 'active' : '' ?>">Регистрация</a>

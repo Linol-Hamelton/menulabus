@@ -23,6 +23,7 @@ require_once __DIR__ . '/../require_auth.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../lib/Csrf.php';
 require_once __DIR__ . '/../lib/AuditLog.php';
+require_once __DIR__ . '/../lib/Billing/TierGate.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -33,6 +34,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 Csrf::requireValid();
+
+// Phase L103.11 — gate behind order.payment_online (tier 2+ «Заказ+»).
+// Refunds exist wherever payments exist; binding to the fiscal tier (4)
+// would strand tier-2/3 tenants unable to reverse a charge. The АТОЛ
+// correction receipt inside stays best-effort as before.
+\Cleanmenu\Billing\TierGate::requireFeature(
+    \Cleanmenu\Billing\Features::ORDER_PAYMENT_ONLINE,
+    'Возврат оплаты (чек коррекции)'
+);
 
 $raw   = file_get_contents('php://input');
 $input = json_decode($raw ?: '', true);
