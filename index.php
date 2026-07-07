@@ -145,9 +145,11 @@ $tenantSecondaryLabel = $hasTenantContacts
                 // Phase L103.7 — data-driven cards from control-plane.tariffs.
                 // Falls back to legacy 3-card grid if control plane is unconfigured
                 // (local dev) or seed migration hasn't run yet.
+                // Phase L103.9c — «Сеть+» card removed from the landing per user
+                // request; the sales-led tariff stays in the DB catalog (help.php
+                // still mentions it, sales flow via email).
                 require_once __DIR__ . '/lib/Billing/TariffRegistry.php';
                 $l103PublicTiers = \Cleanmenu\Billing\TariffRegistry::publicTiers();
-                $l103ChainTier   = \Cleanmenu\Billing\TariffRegistry::byCode('chain');
                 $l103UseDB       = count($l103PublicTiers) >= 6;
                 ?>
 
@@ -174,19 +176,6 @@ $tenantSecondaryLabel = $hasTenantContacts
                         </article>
                     <?php endforeach; ?>
                 </div>
-
-                <?php if ($l103ChainTier): ?>
-                    <article class="pricing-card pricing-card--sales pricing-card--chain">
-                        <h3><?= htmlspecialchars($l103ChainTier['display_name']) ?></h3>
-                        <p class="pricing-card-price">
-                            <span class="pricing-card-amount">Договорная</span>
-                        </p>
-                        <?php if (!empty($l103ChainTier['description'])): ?>
-                            <p class="pricing-card-desc"><?= htmlspecialchars($l103ChainTier['description']) ?></p>
-                        <?php endif; ?>
-                        <a href="mailto:sales@labus.pro?subject=%D0%A1%D0%B5%D1%82%D1%8C%2B%20inquiry" class="btn hero-btn-secondary">Связаться</a>
-                    </article>
-                <?php endif; ?>
 
                 <?php else: ?>
                 <!-- Legacy fallback: 3-card grid when control plane is unconfigured. -->
