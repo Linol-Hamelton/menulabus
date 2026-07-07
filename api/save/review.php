@@ -46,6 +46,15 @@ if (!is_string($csrfToken) || $csrfToken === '' || $sessionToken === '' || !hash
     exit;
 }
 
+// Phase L103.10 — gate behind order.reviews feature (tier 2+ «Заказ+»).
+require_once __DIR__ . '/../../lib/Billing/Features.php';
+$dbForGate = Database::getInstance();
+if (!$dbForGate->hasFeature(\Cleanmenu\Billing\Features::ORDER_REVIEWS, $dbForGate->activeLocationId())) {
+    http_response_code(402);
+    echo json_encode(['error' => 'Отзывы доступны на тарифе «Заказ+» и выше'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 $orderId = isset($input['order_id']) ? (int)$input['order_id'] : 0;
 $rating  = isset($input['rating']) ? (int)$input['rating'] : 0;
 $comment = isset($input['comment']) ? (string)$input['comment'] : '';

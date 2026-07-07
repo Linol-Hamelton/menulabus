@@ -13,6 +13,12 @@ if (!isset($categories)) {
 }
 $activeCategory = $_COOKIE['activeMenuCategory'] ?? ($categories[0]['category'] ?? '');
 $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
+// Phase L103.10 — cart CTA renders only when the location's tariff includes
+// cart.basic (tier 2+ «Заказ+»). Menu stays fully browsable on tier 1 «Меню».
+if (!isset($l103CartEnabled)) {
+    require_once __DIR__ . '/lib/Billing/TierGate.php';
+    $l103CartEnabled = \Cleanmenu\Billing\TierGate::isAllowed(\Cleanmenu\Billing\Features::CART_BASIC);
+}
 ?>
 <?php if ($includeMenuCss): ?>
 <!DOCTYPE html>
@@ -65,12 +71,14 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
         <div class="container">
             <div class="section-header-menu">
                 <h2>Меню</h2>
+                <?php if ($l103CartEnabled): ?>
                 <a href="cart.php" class="order-summary-btn">
                     <span class="order-total">0 ₽</span>
                     <svg class="btn-inline-icon" aria-hidden="true" viewBox="0 0 256 256">
                         <use href="/images/icons/phosphor-sprite.svg#shopping-cart-simple"></use>
                     </svg>
                 </a>
+                <?php endif; ?>
             </div>
 
             <div class="menu-tabs-container">
@@ -117,7 +125,7 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
                                 <div class="menu-item-quantity">
                                     <?php if ($unavail): ?>
                                         <span class="menu-item__stopbadge">Снято</span>
-                                    <?php else: ?>
+                                    <?php elseif ($l103CartEnabled): ?>
                                     <div class="buy"
                                         data-product-id="<?= $item['id'] ?>"
                                         data-product-name="<?= htmlspecialchars($item['name']) ?>"

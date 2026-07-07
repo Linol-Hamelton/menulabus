@@ -11,6 +11,14 @@ if (!isset($categories)) {
     $categories = $db->getUniqueCategories();
 }
 $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
+// Phase L103.10 — cart CTA renders only when the location's tariff includes
+// cart.basic (tier 2+ «Заказ+»). Menu stays fully browsable on tier 1 «Меню».
+// Anonymous path is fastcgi-cached 10 min → tier switch propagates with the
+// same delay as menu_view (documented trade-off).
+if (!isset($l103CartEnabled)) {
+    require_once __DIR__ . '/lib/Billing/TierGate.php';
+    $l103CartEnabled = \Cleanmenu\Billing\TierGate::isAllowed(\Cleanmenu\Billing\Features::CART_BASIC);
+}
 ?>
 <?php if ($includeMenuCss): ?>
 <!DOCTYPE html>
@@ -67,12 +75,14 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
         <div class="container">
             <div class="section-header-menu menu-minimal-header">
                 <h2 class="menu-minimal-h2">Меню</h2>
+                <?php if ($l103CartEnabled): ?>
                 <a href="cart.php" class="order-summary-btn menu-minimal-cart-link">
                     <span class="order-total">0 ₽</span>
                     <svg class="btn-inline-icon" aria-hidden="true" viewBox="0 0 256 256">
                         <use href="/images/icons/phosphor-sprite.svg#shopping-cart-simple"></use>
                     </svg>
                 </a>
+                <?php endif; ?>
             </div>
 
             <div class="menu-tabs-container menu-minimal-tabs-container">
@@ -128,7 +138,7 @@ $includeMenuCss = empty($GLOBALS['menu_css_in_head']);
                                     <?php endif; ?>
                                     <div class="menu-minimal-tile-footer">
                                         <span class="price menu-minimal-tile-price"><?= number_format($item['price'], 0, '.', '') ?> ₽</span>
-                                        <?php if (!$unavail): ?>
+                                        <?php if (!$unavail && $l103CartEnabled): ?>
                                             <span class="buy menu-minimal-tile-buy"
                                                 data-product-id="<?= $item['id'] ?>"
                                                 data-product-name="<?= htmlspecialchars($item['name']) ?>"

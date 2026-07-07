@@ -39,6 +39,18 @@ try {
     }
 
     $db = Database::getInstance();
+
+    // Phase L103.10 — gate behind order.in_restaurant feature (tier 2+ «Заказ+»).
+    require_once __DIR__ . '/../../lib/Billing/Features.php';
+    if (!$db->hasFeature(\Cleanmenu\Billing\Features::ORDER_IN_RESTAURANT, $db->activeLocationId())) {
+        $response['error'] = 'Приём оплаты доступен на тарифе «Заказ+» и выше';
+        http_response_code(402);
+        ob_end_clean();
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($response, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     $user = $db->getUserById((int)$_SESSION['user_id']);
     if (!$user || !$user['is_active'] || !in_array($user['role'], ['owner', 'admin', 'employee'], true)) {
         $response['error'] = 'Доступ запрещён';

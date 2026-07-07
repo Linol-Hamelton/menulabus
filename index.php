@@ -301,19 +301,19 @@ $tenantSecondaryLabel = $hasTenantContacts
                         <h2>Консультация</h2>
                         <form id="reservationForm">
                             <div class="form-group">
-                                <input type="text" name="name" placeholder="Ваше имя" required>
+                                <input type="text" name="name" placeholder="Ваше имя" aria-label="Ваше имя" required>
                             </div>
                             <div class="form-group">
-                                <input type="tel" name="phone" placeholder="Телефон" required>
+                                <input type="tel" name="phone" placeholder="Телефон" aria-label="Телефон" required>
                             </div>
                             <div class="form-group">
-                                <input type="date" name="date" placeholder="Дата" required>
+                                <input type="date" name="date" placeholder="Дата" aria-label="Дата" required>
                             </div>
                             <div class="form-group">
-                                <input type="time" name="time" placeholder="Время" required>
+                                <input type="time" name="time" placeholder="Время" aria-label="Время" required>
                             </div>
                             <div class="form-group">
-                                <input type="number" name="guests" placeholder="Количество гостей" min="1" required>
+                                <input type="number" name="guests" placeholder="Количество гостей" aria-label="Количество гостей" min="1" required>
                             </div>
                             <button type="submit" class="btn-form">Записаться</button>
                         </form>

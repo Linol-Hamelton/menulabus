@@ -5,15 +5,50 @@ require_once __DIR__ . '/session_init.php';
 // Only exposes status and order composition, no personal data.
 
 $orderId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-if ($orderId <= 0) {
-    header('Location: /index.php');
-    exit;
-}
+$order   = $orderId > 0 ? $db->getOrderById($orderId) : null;
 
-$order = $db->getOrderById($orderId);
-if (!$order) {
-    header('HTTP/1.1 404 Not Found');
-    header('Location: /index.php');
+// Phase L103.10 — вместо silent 302 на главную рендерим форму поиска заказа.
+// Раньше гость без ?id= (или с несуществующим id) молча улетал на /index.php
+// без какого-либо объяснения. Никаких inline-стилей: только существующие
+// классы track-page / track-card / checkout-btn.
+if ($orderId <= 0 || !$order) {
+    if ($orderId > 0 && !$order) {
+        http_response_code(404);
+    }
+    $appVersion = htmlspecialchars($_SESSION['app_version'] ?? '1.0.0');
+    ?>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Где мой заказ? — <?= htmlspecialchars($GLOBALS['siteName'] ?? 'labus') ?></title>
+    <link rel="stylesheet" href="/css/fa-styles.min.css?v=<?= $appVersion ?>">
+    <link rel="stylesheet" href="/css/order-track.css?v=<?= $appVersion ?>">
+    <link rel="stylesheet" href="/auto-fonts.php?v=<?= $appVersion ?>">
+</head>
+<body class="track-page">
+<header class="track-header">
+    <a href="/index.php" class="back-link" aria-label="На главную">&#8592;</a>
+    <h1>Трекинг заказа</h1>
+</header>
+<main class="track-card">
+    <?php if ($orderId > 0): ?>
+        <p class="track-meta">Заказ #<?= $orderId ?> не найден. Проверьте номер — он указан в подтверждении заказа.</p>
+    <?php else: ?>
+        <p class="track-meta">Введите номер заказа — он указан в подтверждении после оформления.</p>
+    <?php endif; ?>
+    <form method="GET" action="/order-track.php" class="track-lookup-form">
+        <label for="orderLookupId">Номер заказа</label>
+        <input type="number" id="orderLookupId" name="id" min="1" inputmode="numeric"
+               required placeholder="Например, 1024"
+               value="<?= $orderId > 0 ? $orderId : '' ?>">
+        <button type="submit" class="checkout-btn">Показать статус</button>
+    </form>
+</main>
+</body>
+</html>
+    <?php
     exit;
 }
 
