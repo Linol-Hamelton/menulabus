@@ -104,7 +104,8 @@ final class TariffRegistry
     {
         $out = [];
         foreach (self::all() as $code => $t) {
-            if ($t['tier_rank'] === null) continue;       // trial / chain
+            if ($t['tier_rank'] === null) continue;       // chain (sales-led)
+            if (($t['trial_days'] ?? 0) > 0) continue;    // trial variants (menu_trial) — not a purchasable card
             if ($t['billing_period'] !== 'monthly') continue; // skip annual variants in the main grid
             if (!$t['is_self_service']) continue;
             $out[$code] = $t;
@@ -122,6 +123,7 @@ final class TariffRegistry
         $out = [];
         foreach (self::all() as $code => $t) {
             if ($t['tier_rank'] === null) continue;
+            if (($t['trial_days'] ?? 0) > 0) continue;    // trial variants are auto-assigned, not owner-switchable
             if (!$t['is_self_service']) continue;
             $out[] = $code;
         }

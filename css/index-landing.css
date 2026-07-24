@@ -615,6 +615,27 @@
   text-align: center;
 }
 
+/* Phase L103.12 — pricing-card CTA visibility fix.
+ * hero-btn-secondary is designed for the DARK hero section (transparent
+ * background + white text + translucent white border) and renders invisible
+ * on the white pricing cards. Re-skin the secondary CTA ONLY when nested in a
+ * pricing card: this selector (0,3,0) is one level deeper than the base
+ * hero-btn-secondary rules (0,2,0 / 0,2,1), so it wins here while the hero
+ * section stays untouched. Reuses the brand --primary-color already used by
+ * the featured button and the feature checkmarks — no new palette. */
+.index-landing-page .pricing-card .hero-btn-secondary {
+  background: var(--white, #fff);
+  color: var(--primary-color, #cd1719);
+  border: 1px solid var(--primary-color, #cd1719);
+  box-shadow: none;
+}
+
+.index-landing-page .pricing-card .hero-btn-secondary:hover {
+  background: var(--primary-color, #cd1719);
+  color: var(--white, #fff);
+  border-color: var(--primary-color, #cd1719);
+}
+
 .index-landing-page .pricing-addons {
   margin: 32px 0 0;
   padding: 28px 24px;
